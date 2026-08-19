@@ -1132,15 +1132,18 @@ const styles = StyleSheet.create({
   rankedCardContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    width: 175,
+    width: 155,
   },
   rankNumber: {
-    fontSize: 72,
+    fontSize: 44,
     fontWeight: '900',
-    color: '#33334d',
-    lineHeight: 78,
-    marginRight: -18,
+    color: '#2a2a42',
+    lineHeight: 48,
+    marginRight: -12,
     zIndex: 1,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   posterCard: {
     width: 130,
@@ -1201,17 +1204,18 @@ const styles = StyleSheet.create({
   standardList: {
     paddingHorizontal: 16,
     gap: 12,
+    paddingBottom: 4,
   },
   standardCard: {
-    width: 140,
+    width: 130,
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#242436',
   },
   standardImageWrapper: {
-    width: 140,
-    height: 190,
+    width: 130,
+    height: 180,
     position: 'relative',
   },
   standardImage: {

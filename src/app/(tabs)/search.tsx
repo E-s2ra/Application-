@@ -21,7 +21,10 @@ import { DEFAULT_CATALOG, CATEGORIES } from './index';
 
 const { width } = Dimensions.get('window');
 const isLargeScreen = Platform.OS === 'web' && width > 768;
-const CARD_WIDTH = isLargeScreen ? (width - 64) / 4 : (width - 48) / 2;
+const NUM_COLS = isLargeScreen ? 4 : 2;
+const CARD_GAP = 12;
+const CARD_PADDING = 16;
+const CARD_WIDTH = Math.floor((width - CARD_PADDING * 2 - CARD_GAP * (NUM_COLS - 1)) / NUM_COLS);
 
 const GENRES = ['All', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
@@ -248,8 +251,9 @@ export default function SearchScreen() {
           data={filteredList}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderCard}
-          numColumns={isLargeScreen ? 4 : 2}
-          columnWrapperStyle={styles.gridRow}
+          numColumns={NUM_COLS}
+          key={NUM_COLS}
+          columnWrapperStyle={NUM_COLS > 1 ? styles.gridRow : undefined}
           contentContainerStyle={styles.grid}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -353,13 +357,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   grid: {
-    padding: 16,
+    padding: CARD_PADDING,
     paddingTop: 4,
     paddingBottom: 40,
   },
   gridRow: {
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    gap: CARD_GAP,
+    marginBottom: CARD_GAP,
   },
   card: {
     borderRadius: 12,
