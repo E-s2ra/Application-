@@ -29,6 +29,8 @@ import {
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
+import { useGamification } from '@/hooks/useGamification';
+import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -317,6 +319,8 @@ export default function HomeScreen() {
   const themeColors = Colors.dark;
   const insets = useSafeAreaInsets();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { coins, streakDays, level, activeEvent } = useGamification();
+  const [showRewardsModal, setShowRewardsModal] = useState(false);
   const {
     heroHeight,
     railCardWidth,
@@ -602,6 +606,20 @@ export default function HomeScreen() {
               </Text>
             </View>
           )}
+
+          {/* 🎁 Rewards & Streak Hub Header Button */}
+          <Pressable
+            style={styles.rewardsHeaderBtn}
+            onPress={() => setShowRewardsModal(true)}
+          >
+            <Flame size={14} color="#FF5722" />
+            <Text style={styles.streakBadgeText}>{streakDays}d</Text>
+            <Text style={styles.headerDivider}>·</Text>
+            <Text style={styles.coinsBadgeText}>💰 {coins}</Text>
+            <View style={styles.levelPill}>
+              <Text style={styles.levelPillText}>LVL {level}</Text>
+            </View>
+          </Pressable>
         </View>
 
         {/* 🚀 Main Category Switcher Pills */}
@@ -639,6 +657,28 @@ export default function HomeScreen() {
             );
           })}
         </ScrollView>
+
+        {/* 🎉 Active Seasonal Event Live Mini-Banner */}
+        {activeEvent && (
+          <Pressable
+            style={styles.eventMiniBanner}
+            onPress={() => setShowRewardsModal(true)}
+          >
+            <View style={styles.eventMiniContent}>
+              <View style={styles.eventTagRow}>
+                <View style={styles.eventTag}>
+                  <Text style={styles.eventTagText}>🎉 LIVE EVENT</Text>
+                </View>
+                <Text style={styles.eventBonusBadge}>2x XP & Coins</Text>
+              </View>
+              <Text style={styles.eventMiniTitle}>{activeEvent.title}</Text>
+              <Text style={styles.eventMiniSubtitle}>{activeEvent.subtitle}</Text>
+            </View>
+            <View style={styles.eventActionBox}>
+              <Text style={styles.eventActionText}>Missions & Spin →</Text>
+            </View>
+          </Pressable>
+        )}
 
         {/* 🎬 Animated Auto-Moving Hero Banner */}
         {featured.length > 0 && (
@@ -944,6 +984,9 @@ export default function HomeScreen() {
 
         <View style={{ height: 40 }} />
       </View>
+
+      {/* 🎁 AniFlix Gamification & Rewards Hub Modal */}
+      <RewardsHubModal visible={showRewardsModal} onClose={() => setShowRewardsModal(false)} />
     </ScrollView>
   );
 }
@@ -992,6 +1035,107 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
+  },
+  rewardsHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#161622',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#262638',
+    gap: 5,
+  },
+  streakBadgeText: {
+    color: '#FF5722',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  headerDivider: {
+    color: '#444458',
+    fontSize: 12,
+  },
+  coinsBadgeText: {
+    color: '#FFD700',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  levelPill: {
+    backgroundColor: '#262010',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FFB800',
+    marginLeft: 2,
+  },
+  levelPillText: {
+    color: '#FFB800',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  eventMiniBanner: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 10,
+    backgroundColor: '#181510',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#3D3216',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  eventMiniContent: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  eventTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  eventTag: {
+    backgroundColor: '#E50914',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  eventTagText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  eventBonusBadge: {
+    color: '#FFB800',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  eventMiniTitle: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  eventMiniSubtitle: {
+    color: '#9E9EB4',
+    fontSize: 11,
+  },
+  eventActionBox: {
+    backgroundColor: '#2A2210',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFB800',
+  },
+  eventActionText: {
+    color: '#FFB800',
+    fontSize: 11,
+    fontWeight: '700',
   },
   categoryContainer: {
     paddingHorizontal: 16,
