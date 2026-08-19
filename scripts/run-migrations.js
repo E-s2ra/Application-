@@ -4,8 +4,8 @@ const path = require('path');
 
 // We use Supabase REST API + pg_rest endpoint approach
 // The full migrations are concatenated and posted to the db
-const SUPABASE_URL = 'https://guebvvlopuyebpwbzuri.supabase.co';
-const KEY = 'sb_publishable_JGe_EcnyE14JrGkXdz4arg_ZoTejNNb';
+const SUPABASE_URL = 'https://zkbprmyxwjfznsucyuvi.supabase.co';
+const KEY = 'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'supabase', 'migrations');
 
 function post(url, headers, body) {
@@ -99,7 +99,7 @@ async function main() {
   
   if (failed > 0 || skipped > 0) {
     console.log('ℹ️  To apply manually, run consolidated_migration.sql in Supabase Dashboard SQL Editor:');
-    console.log('   https://supabase.com/dashboard/project/guebvvlopuyebpwbzuri/sql');
+    console.log('   https://supabase.com/dashboard/project/zkbprmyxwjfznsucyuvi/sql');
   }
 }
 

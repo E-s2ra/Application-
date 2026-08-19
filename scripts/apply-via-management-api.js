@@ -12,7 +12,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_REF = 'guebvvlopuyebpwbzuri';
+const PROJECT_REF = 'zkbprmyxwjfznsucyuvi';
 const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN || '';
 
 if (!ACCESS_TOKEN) {

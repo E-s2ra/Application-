@@ -1,8 +1,14 @@
--- ========= 001_create_profiles.sql =========
--- Migration: 001_create_profiles.sql
+-- ============================================================================
+-- AniFlix Complete Database Schema & Migrations
+-- Target Database: Supabase PostgreSQL (Project: guebvvlopuyebpwbzuri)
+-- ============================================================================
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- ----------------------------------------------------------------------------
+-- 1. PROFILES TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username text UNIQUE,
@@ -24,9 +30,51 @@ CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 CREATE INDEX IF NOT EXISTS idx_profiles_coins ON public.profiles(coins);
 CREATE INDEX IF NOT EXISTS idx_profiles_level ON public.profiles(level);
 
+-- ----------------------------------------------------------------------------
+-- 2. ANIME / MEDIA CATALOG TABLE
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.anime (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  description text,
+  image_url text,
+  video_url text,
+  episodes integer NOT NULL DEFAULT 1 CHECK (episodes >= 1),
+  genre text,
+  category text DEFAULT 'Movies',
+  is_featured boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
--- ========= 002_create_daily_logins.sql =========
--- Migration: 002_create_daily_logins.sql
+CREATE INDEX IF NOT EXISTS idx_anime_featured ON public.anime(is_featured);
+CREATE INDEX IF NOT EXISTS idx_anime_category ON public.anime(category);
+
+-- ----------------------------------------------------------------------------
+-- 3. FAVORITES TABLE
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.favorites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  anime_id text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT unique_user_anime_favorite UNIQUE (user_id, anime_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON public.favorites(user_id);
+
+-- ----------------------------------------------------------------------------
+-- 4. DEVICE SESSIONS TABLE
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.device_sessions (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  device_id text NOT NULL CHECK (char_length(device_id) between 20 and 200),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ----------------------------------------------------------------------------
+-- 5. DAILY LOGINS TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.daily_logins (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -40,9 +88,9 @@ CREATE TABLE IF NOT EXISTS public.daily_logins (
 
 CREATE INDEX IF NOT EXISTS idx_daily_logins_user_date ON public.daily_logins(user_id, login_date);
 
-
--- ========= 003_create_missions.sql =========
--- Migration: 003_create_missions.sql
+-- ----------------------------------------------------------------------------
+-- 6. MISSIONS CATALOG TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.missions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text UNIQUE NOT NULL,
@@ -58,9 +106,9 @@ CREATE TABLE IF NOT EXISTS public.missions (
 CREATE INDEX IF NOT EXISTS idx_missions_type ON public.missions(mission_type);
 CREATE INDEX IF NOT EXISTS idx_missions_code ON public.missions(code);
 
-
--- ========= 004_create_user_missions.sql =========
--- Migration: 004_create_user_missions.sql
+-- ----------------------------------------------------------------------------
+-- 7. USER MISSIONS PROGRESS TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.user_missions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -77,9 +125,9 @@ CREATE TABLE IF NOT EXISTS public.user_missions (
 CREATE INDEX IF NOT EXISTS idx_user_missions_user_id ON public.user_missions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_missions_mission_id ON public.user_missions(mission_id);
 
-
--- ========= 005_create_spins.sql =========
--- Migration: 005_create_spins.sql
+-- ----------------------------------------------------------------------------
+-- 8. SPINS TABLE (LUCKY WHEEL)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.spins (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -92,24 +140,24 @@ CREATE TABLE IF NOT EXISTS public.spins (
 CREATE INDEX IF NOT EXISTS idx_spins_user_id ON public.spins(user_id);
 CREATE INDEX IF NOT EXISTS idx_spins_created_at ON public.spins(created_at);
 
-
--- ========= 006_create_rewarded_ads.sql =========
--- Migration: 006_create_rewarded_ads.sql
+-- ----------------------------------------------------------------------------
+-- 9. REWARDED ADS TABLE (ADMOB WATCH LEDGER)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.rewarded_ads (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   ad_unit_id text,
   reward_type text NOT NULL DEFAULT 'coins',
-  reward_coins integer NOT NULL DEFAULT 50 CHECK (reward_coins >= 0),
+  reward_coins integer NOT NULL DEFAULT 100 CHECK (reward_coins >= 0),
   watched_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_rewarded_ads_user_id ON public.rewarded_ads(user_id);
 CREATE INDEX IF NOT EXISTS idx_rewarded_ads_watched_at ON public.rewarded_ads(watched_at);
 
-
--- ========= 007_create_comments.sql =========
--- Migration: 007_create_comments.sql
+-- ----------------------------------------------------------------------------
+-- 10. COMMENTS TABLE (COMMUNITY REVIEWS)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.comments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   movie_id text NOT NULL,
@@ -125,9 +173,9 @@ CREATE INDEX IF NOT EXISTS idx_comments_movie_id ON public.comments(movie_id);
 CREATE INDEX IF NOT EXISTS idx_comments_user_id ON public.comments(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_created_at ON public.comments(created_at);
 
-
--- ========= 008_create_comment_likes.sql =========
--- Migration: 008_create_comment_likes.sql
+-- ----------------------------------------------------------------------------
+-- 11. COMMENT LIKES TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.comment_likes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id uuid NOT NULL REFERENCES public.comments(id) ON DELETE CASCADE,
@@ -139,9 +187,9 @@ CREATE TABLE IF NOT EXISTS public.comment_likes (
 CREATE INDEX IF NOT EXISTS idx_comment_likes_comment_id ON public.comment_likes(comment_id);
 CREATE INDEX IF NOT EXISTS idx_comment_likes_user_id ON public.comment_likes(user_id);
 
-
--- ========= 009_create_follows.sql =========
--- Migration: 009_create_follows.sql
+-- ----------------------------------------------------------------------------
+-- 12. FOLLOWS TABLE (SOCIAL GRAPH)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.follows (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   follower_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -154,9 +202,9 @@ CREATE TABLE IF NOT EXISTS public.follows (
 CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON public.follows(follower_id);
 CREATE INDEX IF NOT EXISTS idx_follows_following_id ON public.follows(following_id);
 
-
--- ========= 010_create_themes.sql =========
--- Migration: 010_create_themes.sql
+-- ----------------------------------------------------------------------------
+-- 13. THEMES CATALOG TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.themes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text UNIQUE NOT NULL,
@@ -174,9 +222,9 @@ CREATE TABLE IF NOT EXISTS public.themes (
 
 CREATE INDEX IF NOT EXISTS idx_themes_code ON public.themes(code);
 
-
--- ========= 011_create_user_themes.sql =========
--- Migration: 011_create_user_themes.sql
+-- ----------------------------------------------------------------------------
+-- 14. USER THEMES UNLOCKED TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.user_themes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -188,9 +236,9 @@ CREATE TABLE IF NOT EXISTS public.user_themes (
 CREATE INDEX IF NOT EXISTS idx_user_themes_user_id ON public.user_themes(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_themes_theme_id ON public.user_themes(theme_id);
 
-
--- ========= 012_create_badges.sql =========
--- Migration: 012_create_badges.sql
+-- ----------------------------------------------------------------------------
+-- 15. BADGES CATALOG TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.badges (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text UNIQUE NOT NULL,
@@ -203,9 +251,9 @@ CREATE TABLE IF NOT EXISTS public.badges (
 
 CREATE INDEX IF NOT EXISTS idx_badges_code ON public.badges(code);
 
-
--- ========= 013_create_user_badges.sql =========
--- Migration: 013_create_user_badges.sql
+-- ----------------------------------------------------------------------------
+-- 16. USER BADGES EARNED TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.user_badges (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -217,9 +265,9 @@ CREATE TABLE IF NOT EXISTS public.user_badges (
 CREATE INDEX IF NOT EXISTS idx_user_badges_user_id ON public.user_badges(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_badges_badge_id ON public.user_badges(badge_id);
 
-
--- ========= 014_create_vip_transactions.sql =========
--- Migration: 014_create_vip_transactions.sql
+-- ----------------------------------------------------------------------------
+-- 17. VIP TRANSACTIONS TABLE
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.vip_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -231,11 +279,14 @@ CREATE TABLE IF NOT EXISTS public.vip_transactions (
 CREATE INDEX IF NOT EXISTS idx_vip_transactions_user_id ON public.vip_transactions(user_id);
 
 
--- ========= 015_create_rls_policies.sql =========
--- Migration: 015_create_rls_policies.sql
--- Enable Row Level Security on ALL user-related tables
+-- ============================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================================
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.anime ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.device_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.daily_logins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.missions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_missions ENABLE ROW LEVEL SECURITY;
@@ -250,177 +301,185 @@ ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vip_transactions ENABLE ROW LEVEL SECURITY;
 
+-- Helper admin function
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT coalesce((SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()), false);
+$$;
+
 -- 1. Profiles Policies
 DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
-CREATE POLICY "profiles_select_public"
-  ON public.profiles FOR SELECT
-  USING (true);
+CREATE POLICY "profiles_select_public" ON public.profiles FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
-CREATE POLICY "profiles_update_own"
-  ON public.profiles FOR UPDATE TO authenticated
-  USING (id = auth.uid())
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE TO authenticated
+  USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
+CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT TO authenticated
   WITH CHECK (id = auth.uid());
 
--- 2. Daily Logins Policies
+-- 2. Anime Policies
+DROP POLICY IF EXISTS "anime_read_all" ON public.anime;
+CREATE POLICY "anime_read_all" ON public.anime FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "anime_admin_insert" ON public.anime;
+CREATE POLICY "anime_admin_insert" ON public.anime FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "anime_admin_update" ON public.anime;
+CREATE POLICY "anime_admin_update" ON public.anime FOR UPDATE TO authenticated
+  USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "anime_admin_delete" ON public.anime;
+CREATE POLICY "anime_admin_delete" ON public.anime FOR DELETE TO authenticated
+  USING (public.is_admin());
+
+-- 3. Favorites Policies
+DROP POLICY IF EXISTS "favorites_select_own" ON public.favorites;
+CREATE POLICY "favorites_select_own" ON public.favorites FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "favorites_insert_own" ON public.favorites;
+CREATE POLICY "favorites_insert_own" ON public.favorites FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "favorites_delete_own" ON public.favorites;
+CREATE POLICY "favorites_delete_own" ON public.favorites FOR DELETE TO authenticated
+  USING (user_id = auth.uid());
+
+-- 4. Daily Logins Policies
 DROP POLICY IF EXISTS "daily_logins_select_own" ON public.daily_logins;
-CREATE POLICY "daily_logins_select_own"
-  ON public.daily_logins FOR SELECT TO authenticated
+CREATE POLICY "daily_logins_select_own" ON public.daily_logins FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "daily_logins_insert_own" ON public.daily_logins;
-CREATE POLICY "daily_logins_insert_own"
-  ON public.daily_logins FOR INSERT TO authenticated
+CREATE POLICY "daily_logins_insert_own" ON public.daily_logins FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
--- 3. Missions Policies (Catalog is readable by all)
+-- 5. Missions Catalog Policies
 DROP POLICY IF EXISTS "missions_select_all" ON public.missions;
-CREATE POLICY "missions_select_all"
-  ON public.missions FOR SELECT
-  USING (true);
+CREATE POLICY "missions_select_all" ON public.missions FOR SELECT USING (true);
 
--- 4. User Missions Policies
+-- 6. User Missions Policies
 DROP POLICY IF EXISTS "user_missions_select_own" ON public.user_missions;
-CREATE POLICY "user_missions_select_own"
-  ON public.user_missions FOR SELECT TO authenticated
+CREATE POLICY "user_missions_select_own" ON public.user_missions FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "user_missions_insert_own" ON public.user_missions;
-CREATE POLICY "user_missions_insert_own"
-  ON public.user_missions FOR INSERT TO authenticated
+CREATE POLICY "user_missions_insert_own" ON public.user_missions FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "user_missions_update_own" ON public.user_missions;
-CREATE POLICY "user_missions_update_own"
-  ON public.user_missions FOR UPDATE TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "user_missions_update_own" ON public.user_missions FOR UPDATE TO authenticated
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
--- 5. Spins Policies
+-- 7. Spins Policies
 DROP POLICY IF EXISTS "spins_select_own" ON public.spins;
-CREATE POLICY "spins_select_own"
-  ON public.spins FOR SELECT TO authenticated
+CREATE POLICY "spins_select_own" ON public.spins FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "spins_insert_own" ON public.spins;
-CREATE POLICY "spins_insert_own"
-  ON public.spins FOR INSERT TO authenticated
+CREATE POLICY "spins_insert_own" ON public.spins FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
--- 6. Rewarded Ads Policies
+-- 8. Rewarded Ads Policies
 DROP POLICY IF EXISTS "rewarded_ads_select_own" ON public.rewarded_ads;
-CREATE POLICY "rewarded_ads_select_own"
-  ON public.rewarded_ads FOR SELECT TO authenticated
+CREATE POLICY "rewarded_ads_select_own" ON public.rewarded_ads FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "rewarded_ads_insert_own" ON public.rewarded_ads;
-CREATE POLICY "rewarded_ads_insert_own"
-  ON public.rewarded_ads FOR INSERT TO authenticated
+CREATE POLICY "rewarded_ads_insert_own" ON public.rewarded_ads FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
--- 7. Comments Policies
+-- 9. Comments Policies
 DROP POLICY IF EXISTS "comments_select_public" ON public.comments;
-CREATE POLICY "comments_select_public"
-  ON public.comments FOR SELECT
-  USING (true);
+CREATE POLICY "comments_select_public" ON public.comments FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "comments_insert_own" ON public.comments;
-CREATE POLICY "comments_insert_own"
-  ON public.comments FOR INSERT TO authenticated
+CREATE POLICY "comments_insert_own" ON public.comments FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "comments_update_own" ON public.comments;
-CREATE POLICY "comments_update_own"
-  ON public.comments FOR UPDATE TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "comments_update_own" ON public.comments FOR UPDATE TO authenticated
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "comments_delete_own_or_admin" ON public.comments;
-CREATE POLICY "comments_delete_own_or_admin"
-  ON public.comments FOR DELETE TO authenticated
-  USING (user_id = auth.uid() OR coalesce((SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()), false));
+CREATE POLICY "comments_delete_own_or_admin" ON public.comments FOR DELETE TO authenticated
+  USING (user_id = auth.uid() OR public.is_admin());
 
--- 8. Comment Likes Policies
+-- 10. Comment Likes Policies
 DROP POLICY IF EXISTS "comment_likes_select_public" ON public.comment_likes;
-CREATE POLICY "comment_likes_select_public"
-  ON public.comment_likes FOR SELECT
-  USING (true);
+CREATE POLICY "comment_likes_select_public" ON public.comment_likes FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "comment_likes_insert_own" ON public.comment_likes;
-CREATE POLICY "comment_likes_insert_own"
-  ON public.comment_likes FOR INSERT TO authenticated
+CREATE POLICY "comment_likes_insert_own" ON public.comment_likes FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "comment_likes_delete_own" ON public.comment_likes;
-CREATE POLICY "comment_likes_delete_own"
-  ON public.comment_likes FOR DELETE TO authenticated
+CREATE POLICY "comment_likes_delete_own" ON public.comment_likes FOR DELETE TO authenticated
   USING (user_id = auth.uid());
 
--- 9. Follows Policies
+-- 11. Follows Policies
 DROP POLICY IF EXISTS "follows_select_public" ON public.follows;
-CREATE POLICY "follows_select_public"
-  ON public.follows FOR SELECT
-  USING (true);
+CREATE POLICY "follows_select_public" ON public.follows FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "follows_insert_own" ON public.follows;
-CREATE POLICY "follows_insert_own"
-  ON public.follows FOR INSERT TO authenticated
+CREATE POLICY "follows_insert_own" ON public.follows FOR INSERT TO authenticated
   WITH CHECK (follower_id = auth.uid());
 
 DROP POLICY IF EXISTS "follows_delete_own" ON public.follows;
-CREATE POLICY "follows_delete_own"
-  ON public.follows FOR DELETE TO authenticated
+CREATE POLICY "follows_delete_own" ON public.follows FOR DELETE TO authenticated
   USING (follower_id = auth.uid());
 
--- 10. Themes Policies
+-- 12. Themes Policies
 DROP POLICY IF EXISTS "themes_select_public" ON public.themes;
-CREATE POLICY "themes_select_public"
-  ON public.themes FOR SELECT
-  USING (true);
+CREATE POLICY "themes_select_public" ON public.themes FOR SELECT USING (true);
 
--- 11. User Themes Policies
+-- 13. User Themes Policies
 DROP POLICY IF EXISTS "user_themes_select_own" ON public.user_themes;
-CREATE POLICY "user_themes_select_own"
-  ON public.user_themes FOR SELECT TO authenticated
+CREATE POLICY "user_themes_select_own" ON public.user_themes FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "user_themes_insert_own" ON public.user_themes;
-CREATE POLICY "user_themes_insert_own"
-  ON public.user_themes FOR INSERT TO authenticated
+CREATE POLICY "user_themes_insert_own" ON public.user_themes FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
--- 12. Badges Policies
+-- 14. Badges Policies
 DROP POLICY IF EXISTS "badges_select_public" ON public.badges;
-CREATE POLICY "badges_select_public"
-  ON public.badges FOR SELECT
-  USING (true);
+CREATE POLICY "badges_select_public" ON public.badges FOR SELECT USING (true);
 
--- 13. User Badges Policies
+-- 15. User Badges Policies
 DROP POLICY IF EXISTS "user_badges_select_public" ON public.user_badges;
-CREATE POLICY "user_badges_select_public"
-  ON public.user_badges FOR SELECT
-  USING (true);
+CREATE POLICY "user_badges_select_public" ON public.user_badges FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "user_badges_insert_own" ON public.user_badges;
-CREATE POLICY "user_badges_insert_own"
-  ON public.user_badges FOR INSERT TO authenticated
+CREATE POLICY "user_badges_insert_own" ON public.user_badges FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
--- 14. VIP Transactions Policies
+-- 16. VIP Transactions Policies
 DROP POLICY IF EXISTS "vip_transactions_select_own" ON public.vip_transactions;
-CREATE POLICY "vip_transactions_select_own"
-  ON public.vip_transactions FOR SELECT TO authenticated
+CREATE POLICY "vip_transactions_select_own" ON public.vip_transactions FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "vip_transactions_insert_own" ON public.vip_transactions;
-CREATE POLICY "vip_transactions_insert_own"
-  ON public.vip_transactions FOR INSERT TO authenticated
+CREATE POLICY "vip_transactions_insert_own" ON public.vip_transactions FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
--- Grant column and table privileges
+-- Grant table privileges
 GRANT SELECT ON public.profiles TO anon, authenticated;
 GRANT UPDATE (username, full_name, avatar_url, updated_at) ON public.profiles TO authenticated;
+GRANT INSERT ON public.profiles TO authenticated;
 
+GRANT SELECT ON public.anime TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.anime TO authenticated;
+
+GRANT SELECT, INSERT, DELETE ON public.favorites TO authenticated;
 GRANT SELECT, INSERT ON public.daily_logins TO authenticated;
 GRANT SELECT ON public.missions TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.user_missions TO authenticated;
@@ -439,13 +498,11 @@ GRANT SELECT, INSERT ON public.user_badges TO authenticated;
 GRANT SELECT, INSERT ON public.vip_transactions TO authenticated;
 
 
--- ========= 016_create_functions_and_triggers.sql =========
--- Migration: 016_create_functions_and_triggers.sql
--- Description: Security Definer functions and triggers for verified server-side reward distribution
+-- ============================================================================
+-- FUNCTIONS, TRIGGERS & SECURITY DEFINER RPCs
+-- ============================================================================
 
--- ----------------------------------------------------------------------------
--- 1. Profile Creation Trigger (on auth.users insert)
--- ----------------------------------------------------------------------------
+-- 1. Profile Creation Trigger on auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -457,7 +514,6 @@ DECLARE
   v_default_badge_id uuid;
   v_username text;
 BEGIN
-  -- Determine default username
   v_username := coalesce(
     new.raw_user_meta_data->>'username',
     new.raw_user_meta_data->>'full_name',
@@ -465,41 +521,17 @@ BEGIN
     'user_' || substr(new.id::text, 1, 8)
   );
 
-  -- Insert profile with mandatory default values
   INSERT INTO public.profiles (
-    id,
-    username,
-    full_name,
-    avatar_url,
-    role,
-    coins,
-    xp,
-    level,
-    streak_days,
-    is_vip,
-    vip_expires_at,
-    created_at,
-    updated_at
+    id, username, full_name, avatar_url, role, coins, xp, level, streak_days, is_vip, vip_expires_at, created_at, updated_at
   ) VALUES (
-    new.id,
-    v_username,
-    coalesce(new.raw_user_meta_data->>'full_name', v_username),
-    new.raw_user_meta_data->>'avatar_url',
-    'user',
-    0,
-    0,
-    1,
-    0,
-    false,
-    null,
-    now(),
-    now()
+    new.id, v_username, coalesce(new.raw_user_meta_data->>'full_name', v_username), new.raw_user_meta_data->>'avatar_url',
+    'user', 0, 0, 1, 0, false, null, now(), now()
   )
   ON CONFLICT (id) DO UPDATE SET
     username = coalesce(public.profiles.username, excluded.username),
     updated_at = now();
 
-  -- Automatically grant default theme (theme-crimson)
+  -- Grant default free theme
   SELECT id INTO v_default_theme_id FROM public.themes WHERE code = 'theme-crimson' LIMIT 1;
   IF v_default_theme_id IS NOT NULL THEN
     INSERT INTO public.user_themes (user_id, theme_id, unlocked_at)
@@ -507,7 +539,7 @@ BEGIN
     ON CONFLICT DO NOTHING;
   END IF;
 
-  -- Automatically grant first stream novice badge (b-novice)
+  -- Grant first stream novice badge
   SELECT id INTO v_default_badge_id FROM public.badges WHERE code = 'b-novice' LIMIT 1;
   IF v_default_badge_id IS NOT NULL THEN
     INSERT INTO public.user_badges (user_id, badge_id, unlocked_at)
@@ -524,9 +556,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ----------------------------------------------------------------------------
 -- 2. Comment Likes Counter Trigger
--- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.update_comment_likes_count()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -536,14 +566,12 @@ AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     UPDATE public.comments
-    SET likes_count = likes_count + 1,
-        updated_at = now()
+    SET likes_count = likes_count + 1, updated_at = now()
     WHERE id = NEW.comment_id;
     RETURN NEW;
   ELSIF TG_OP = 'DELETE' THEN
     UPDATE public.comments
-    SET likes_count = GREATEST(0, likes_count - 1),
-        updated_at = now()
+    SET likes_count = GREATEST(0, likes_count - 1), updated_at = now()
     WHERE id = OLD.comment_id;
     RETURN OLD;
   END IF;
@@ -556,9 +584,44 @@ CREATE TRIGGER trigger_comment_likes_count
   AFTER INSERT OR DELETE ON public.comment_likes
   FOR EACH ROW EXECUTE FUNCTION public.update_comment_likes_count();
 
--- ----------------------------------------------------------------------------
--- 3. SECURE FUNCTION: Claim Daily Login Reward
--- ----------------------------------------------------------------------------
+-- 3. Device Session RPCs
+CREATE OR REPLACE FUNCTION public.claim_device_session(p_device_id text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_device_id IS NULL OR char_length(p_device_id) NOT BETWEEN 20 AND 200 THEN
+    RAISE EXCEPTION 'Invalid device identifier';
+  END IF;
+
+  INSERT INTO public.device_sessions (user_id, device_id, updated_at)
+  VALUES (auth.uid(), p_device_id, now())
+  ON CONFLICT (user_id) DO UPDATE
+    SET device_id = excluded.device_id,
+        updated_at = excluded.updated_at;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_current_device(p_device_id text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT exists (
+    SELECT 1 FROM public.device_sessions
+    WHERE user_id = auth.uid() AND device_id = p_device_id
+  );
+$$;
+
+-- 4. Claim Daily Login Reward RPC
 CREATE OR REPLACE FUNCTION public.claim_daily_login_reward()
 RETURNS json
 LANGUAGE plpgsql
@@ -582,7 +645,6 @@ BEGIN
     RAISE EXCEPTION 'Authentication required to claim daily reward';
   END IF;
 
-  -- Check if already claimed today
   SELECT EXISTS (
     SELECT 1 FROM public.daily_logins
     WHERE user_id = v_user_id AND login_date = v_today AND reward_claimed = true
@@ -592,7 +654,6 @@ BEGIN
     RAISE EXCEPTION 'Daily login reward already claimed for today';
   END IF;
 
-  -- Get current user streak & stats
   SELECT streak_days, coins, xp INTO v_current_streak, v_new_coins, v_new_xp
   FROM public.profiles WHERE id = v_user_id;
 
@@ -605,7 +666,6 @@ BEGIN
   v_new_xp := coalesce(v_new_xp, 0) + v_reward_xp;
   v_new_level := (v_new_xp / 300) + 1;
 
-  -- Insert daily login record
   INSERT INTO public.daily_logins (user_id, login_date, reward_claimed, coins_awarded, xp_awarded, created_at)
   VALUES (v_user_id, v_today, true, v_reward_coins, v_reward_xp, now())
   ON CONFLICT (user_id, login_date) DO UPDATE SET
@@ -613,7 +673,6 @@ BEGIN
     coins_awarded = v_reward_coins,
     xp_awarded = v_reward_xp;
 
-  -- Atomically update profile
   UPDATE public.profiles SET
     coins = v_new_coins,
     xp = v_new_xp,
@@ -622,7 +681,6 @@ BEGIN
     updated_at = now()
   WHERE id = v_user_id;
 
-  -- Grant 3-day streak badge if milestone reached
   IF v_new_streak >= 3 THEN
     INSERT INTO public.user_badges (user_id, badge_id, unlocked_at)
     SELECT v_user_id, id, now() FROM public.badges WHERE code = 'b-streak-3'
@@ -641,9 +699,7 @@ BEGIN
 END;
 $$;
 
--- ----------------------------------------------------------------------------
--- 4. SECURE FUNCTION: Claim Rewarded Ad Reward (AdMob Verification)
--- ----------------------------------------------------------------------------
+-- 5. Claim Rewarded Ad RPC
 CREATE OR REPLACE FUNCTION public.claim_rewarded_ad(
   p_ad_unit_id text DEFAULT NULL,
   p_reward_type text DEFAULT 'coins',
@@ -668,7 +724,6 @@ BEGIN
     RAISE EXCEPTION 'Authentication required to claim rewarded ad';
   END IF;
 
-  -- Anti-Spam Rate Limit: Check if watched within last 10 seconds
   SELECT max(watched_at) INTO v_last_watched
   FROM public.rewarded_ads WHERE user_id = v_user_id;
 
@@ -676,11 +731,9 @@ BEGIN
     RAISE EXCEPTION 'Please wait before claiming another rewarded ad.';
   END IF;
 
-  -- Record into rewarded_ads ledger
   INSERT INTO public.rewarded_ads (user_id, ad_unit_id, reward_type, reward_coins, watched_at)
   VALUES (v_user_id, coalesce(p_ad_unit_id, 'admob-rewarded'), p_reward_type, v_reward_coins, now());
 
-  -- Update profile coins and xp atomically
   UPDATE public.profiles SET
     coins = coins + v_reward_coins,
     xp = xp + v_reward_xp,
@@ -700,9 +753,7 @@ BEGIN
 END;
 $$;
 
--- ----------------------------------------------------------------------------
--- 5. SECURE FUNCTION: Spin Lucky Wheel
--- ----------------------------------------------------------------------------
+-- 6. Spin Lucky Wheel RPC
 CREATE OR REPLACE FUNCTION public.spin_lucky_wheel()
 RETURNS json
 LANGUAGE plpgsql
@@ -724,7 +775,6 @@ BEGIN
     RAISE EXCEPTION 'Authentication required to spin wheel';
   END IF;
 
-  -- Server computes pseudorandom reward (1 to 6)
   v_random := floor(random() * 6) + 1;
 
   IF v_random = 1 THEN
@@ -741,11 +791,9 @@ BEGIN
     v_reward_type := 'coins'; v_reward_value := 500; v_reward_label := '500 Coins (Jackpot!)';
   END IF;
 
-  -- Insert spin history
   INSERT INTO public.spins (user_id, reward_type, reward_value, label, created_at)
   VALUES (v_user_id, v_reward_type, v_reward_value, v_reward_label, now());
 
-  -- Update profile atomically based on reward
   IF v_reward_type = 'coins' THEN
     UPDATE public.profiles SET coins = coins + v_reward_value, updated_at = now() WHERE id = v_user_id;
   ELSIF v_reward_type = 'xp' THEN
@@ -775,9 +823,7 @@ BEGIN
 END;
 $$;
 
--- ----------------------------------------------------------------------------
--- 6. SECURE FUNCTION: Unlock Theme with Coins
--- ----------------------------------------------------------------------------
+-- 7. Unlock Theme with Coins RPC
 CREATE OR REPLACE FUNCTION public.unlock_theme_with_coins(p_theme_code text)
 RETURNS json
 LANGUAGE plpgsql
@@ -797,7 +843,6 @@ BEGIN
     RAISE EXCEPTION 'Authentication required';
   END IF;
 
-  -- Get theme details
   SELECT id, coin_cost INTO v_theme_id, v_coin_cost
   FROM public.themes WHERE code = p_theme_code;
 
@@ -805,7 +850,6 @@ BEGIN
     RAISE EXCEPTION 'Theme not found';
   END IF;
 
-  -- Check if already unlocked
   SELECT EXISTS (
     SELECT 1 FROM public.user_themes
     WHERE user_id = v_user_id AND theme_id = v_theme_id
@@ -816,14 +860,12 @@ BEGIN
     RETURN json_build_object('success', true, 'theme_id', v_theme_id, 'remaining_coins', v_remaining_coins);
   END IF;
 
-  -- Check user coin balance
   SELECT coins INTO v_user_coins FROM public.profiles WHERE id = v_user_id;
 
   IF v_user_coins < v_coin_cost THEN
     RAISE EXCEPTION 'Insufficient coins to unlock this theme (Required: %, Available: %)', v_coin_cost, v_user_coins;
   END IF;
 
-  -- Deduct coins and insert into user_themes atomically
   UPDATE public.profiles SET coins = coins - v_coin_cost, updated_at = now() WHERE id = v_user_id
   RETURNING coins INTO v_remaining_coins;
 
@@ -838,16 +880,19 @@ BEGIN
 END;
 $$;
 
--- Grant execute permissions to authenticated users
+-- Grants for authenticated users
+GRANT EXECUTE ON FUNCTION public.claim_device_session(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_current_device(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_daily_login_reward() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_rewarded_ad(text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.spin_lucky_wheel() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.unlock_theme_with_coins(text) TO authenticated;
 
 
--- ========= 017_seed_data.sql =========
--- Migration: 017_seed_data.sql
--- Seed Initial Catalog Data (Themes, Badges, Missions)
+-- ============================================================================
+-- INITIAL SEED DATA (Themes, Badges, Missions, Default Catalog)
+-- ============================================================================
 
 -- Themes Catalog
 INSERT INTO public.themes (code, name, description, coin_cost, primary_color, accent_color, glow_color, badge_bg, is_default)
@@ -900,178 +945,3 @@ ON CONFLICT (code) DO UPDATE SET
   reward_xp = EXCLUDED.reward_xp,
   target = EXCLUDED.target,
   mission_type = EXCLUDED.mission_type;
-
-
--- ========= 20260819000000_single_device_security.sql =========
--- Run this migration in the Supabase SQL editor or through the Supabase CLI.
--- The RPC functions are SECURITY DEFINER so clients can only claim/check their
--- own session. They cannot read or update another account's device session.
-
-create table if not exists public.device_sessions (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  device_id text not null check (char_length(device_id) between 20 and 200),
-  updated_at timestamptz not null default now()
-);
-
-alter table public.device_sessions enable row level security;
-
-create or replace function public.claim_device_session(p_device_id text)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if auth.uid() is null then
-    raise exception 'Not authenticated';
-  end if;
-
-  if p_device_id is null or char_length(p_device_id) not between 20 and 200 then
-    raise exception 'Invalid device identifier';
-  end if;
-
-  insert into public.device_sessions (user_id, device_id, updated_at)
-  values (auth.uid(), p_device_id, now())
-  on conflict (user_id) do update
-    set device_id = excluded.device_id,
-        updated_at = excluded.updated_at;
-end;
-$$;
-
-create or replace function public.is_current_device(p_device_id text)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.device_sessions
-    where user_id = auth.uid()
-      and device_id = p_device_id
-  );
-$$;
-
-revoke all on function public.claim_device_session(text) from public;
-revoke all on function public.is_current_device(text) from public;
-grant execute on function public.claim_device_session(text) to authenticated;
-grant execute on function public.is_current_device(text) to authenticated;
-
-
--- ========= 20260819010000_enforce_rls_and_protect_streams.sql =========
--- Apply after the single-device migration. This intentionally replaces every
--- client-facing policy on these tables with a small, auditable policy set.
--- Supabase service-role operations remain unaffected because they bypass RLS.
-
-do $$
-declare
-  policy_record record;
-begin
-  for policy_record in
-    select schemaname, tablename, policyname
-    from pg_policies
-    where schemaname = 'public'
-      and tablename in ('profiles', 'anime', 'favorites')
-  loop
-    execute format('drop policy if exists %I on %I.%I',
-      policy_record.policyname, policy_record.schemaname, policy_record.tablename);
-  end loop;
-end;
-$$;
-
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce((select role = 'admin' from public.profiles where id = auth.uid()), false);
-$$;
-
-revoke all on function public.is_admin() from public;
-grant execute on function public.is_admin() to authenticated;
-
-alter table public.profiles enable row level security;
-alter table public.anime enable row level security;
-alter table public.favorites enable row level security;
-
-create policy "profiles_select_own"
-  on public.profiles for select to authenticated
-  using (id = auth.uid());
-
-create policy "anime_read_authenticated"
-  on public.anime for select to authenticated
-  using (true);
-
-create policy "anime_admin_insert"
-  on public.anime for insert to authenticated
-  with check (public.is_admin());
-
-create policy "anime_admin_update"
-  on public.anime for update to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
-
-create policy "anime_admin_delete"
-  on public.anime for delete to authenticated
-  using (public.is_admin());
-
-create policy "favorites_select_own"
-  on public.favorites for select to authenticated
-  using (user_id = auth.uid());
-
-create policy "favorites_insert_own"
-  on public.favorites for insert to authenticated
-  with check (user_id = auth.uid());
-
-create policy "favorites_delete_own"
-  on public.favorites for delete to authenticated
-  using (user_id = auth.uid());
-
--- Column privileges keep a raw stream URL out of all REST responses. A secure
--- server/Edge Function should exchange the content ID for a short-lived DRM URL.
-revoke all on table public.profiles from anon, authenticated;
-grant select (id, full_name, role) on public.profiles to authenticated;
-
-revoke all on table public.anime from anon, authenticated;
-grant select (id, title, description, image_url, episodes, genre, is_featured, created_at)
-  on public.anime to authenticated;
-grant insert (title, description, image_url, video_url, episodes, genre, is_featured)
-  on public.anime to authenticated;
-grant update (is_featured) on public.anime to authenticated;
-grant delete on public.anime to authenticated;
-
-revoke all on table public.favorites from anon, authenticated;
-grant select, insert, delete on public.favorites to authenticated;
-
-
--- ========= 20260819020000_fix_admin_account_and_bypass.sql =========
--- Ultra Simple Fix: Updates password and sets Admin role
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- 1. Update password for your account to 'E20440891esra@@' and mark email confirmed
-UPDATE auth.users
-SET 
-  encrypted_password = crypt('E20440891esra@@', gen_salt('bf', 10)),
-  email_confirmed_at = now()
-WHERE email ILIKE '%esra%';
-
--- 2. Ensure your account has the 'admin' role in profiles
-INSERT INTO public.profiles (id, full_name, role)
-SELECT id, 'Esra', 'admin'
-FROM auth.users
-WHERE email ILIKE '%esra%'
-ON CONFLICT (id) DO UPDATE SET role = 'admin', full_name = 'Esra';
-
--- Also insert deterministic ID for mock admin
-INSERT INTO public.profiles (id, full_name, role)
-VALUES ('a0000000-0000-0000-0000-000000000001', 'Esra', 'admin')
-ON CONFLICT (id) DO UPDATE SET role = 'admin', full_name = 'Esra';
-
--- 3. Allow anime to be viewed without login restrictions
-GRANT SELECT ON public.anime TO anon, authenticated;
-DROP POLICY IF EXISTS "anime_read_all" ON public.anime;
-DROP POLICY IF EXISTS "anime_read_authenticated" ON public.anime;
-CREATE POLICY "anime_read_all" ON public.anime FOR SELECT TO anon, authenticated USING (true);

@@ -6,6 +6,10 @@ import {
   Pressable,
   ActivityIndicator,
   ScrollView,
+  Image,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
@@ -24,6 +28,9 @@ import {
   Award,
   Users,
   PlayCircle,
+  Camera,
+  Check,
+  X,
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -33,10 +40,19 @@ import { useSocial } from '@/hooks/useSocial';
 import { useAdMob } from '@/hooks/useAdMob';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 
+const PRESET_AVATARS = [
+  { id: '1', name: 'Original Hero', url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=300&q=80' },
+  { id: '2', name: 'Shadow Shinobi', url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&q=80' },
+  { id: '3', name: 'Cyber Samurai', url: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=300&q=80' },
+  { id: '4', name: 'Solar Legend', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&q=80' },
+  { id: '5', name: 'Neon Valkyrie', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300&q=80' },
+  { id: '6', name: 'Crimson Hunter', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=300&q=80' },
+];
+
 export default function ProfileScreen() {
   const router = useRouter();
   const themeColors = Colors.dark;
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, profile, signOut, isLoading, updateProfile } = useAuth();
   const { favorites } = useFavorites();
   const { isDesktop, isTablet } = useResponsive();
   const {
@@ -56,6 +72,9 @@ export default function ProfileScreen() {
   const { showRewardedAd } = useAdMob();
 
   const [showRewardsModal, setShowRewardsModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
@@ -63,6 +82,19 @@ export default function ProfileScreen() {
 
   const handleAdminPanel = () => {
     router.push('/admin' as any);
+  };
+
+  const handleSelectAvatar = async (url: string) => {
+    if (!url.trim()) return;
+    setIsUpdatingAvatar(true);
+    const { error } = await updateProfile({ avatar_url: url.trim() });
+    setIsUpdatingAvatar(false);
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      setShowAvatarModal(false);
+      setCustomAvatarUrl('');
+    }
   };
 
   if (isLoading) {
@@ -77,7 +109,7 @@ export default function ProfileScreen() {
           },
         ]}
       >
-        <ActivityIndicator size="large" color={themeColors.primary} />
+        <ActivityIndicator size="large" color={activeTheme?.primary || themeColors.primary} />
       </View>
     );
   }
@@ -86,22 +118,35 @@ export default function ProfileScreen() {
   const levelXPProgress = xp - currentLevelBaseXP;
   const levelXPTarget = nextLevelXP - currentLevelBaseXP;
   const xpPercent = Math.min(100, Math.max(0, (levelXPProgress / levelXPTarget) * 100));
+  const primaryColor = activeTheme?.primary || themeColors.primary;
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.profileCard, (isDesktop || isTablet) && styles.profileCardWide]}>
         {/* 👤 Profile Hero Card */}
         <View style={styles.header}>
-          <View
+          <Pressable
+            onPress={() => setShowAvatarModal(true)}
             style={[
               styles.avatarGlow,
-              { borderColor: isAdmin ? themeColors.primary : '#242436' },
+              { borderColor: isAdmin ? primaryColor : '#242436' },
             ]}
           >
             <View style={[styles.avatar, { backgroundColor: themeColors.backgroundCard }]}>
-              <UserIcon color={isAdmin ? themeColors.primary : '#fff'} size={44} />
+              {profile?.avatar_url ? (
+                <Image
+                  source={{ uri: profile.avatar_url }}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <UserIcon color={isAdmin ? primaryColor : '#fff'} size={44} />
+              )}
             </View>
-          </View>
+            <View style={[styles.avatarEditBadge, { backgroundColor: primaryColor }]}>
+              <Camera size={13} color="#fff" />
+            </View>
+          </Pressable>
 
           <Text style={[styles.name, { color: themeColors.text }]}>
             {profile?.full_name ?? user?.email?.split('@')[0] ?? 'AniFlix Member'}
@@ -113,7 +158,7 @@ export default function ProfileScreen() {
           <View
             style={[
               styles.roleBadge,
-              { backgroundColor: isAdmin ? themeColors.primary : themeColors.backgroundCard },
+              { backgroundColor: isAdmin ? primaryColor : themeColors.backgroundCard },
             ]}
           >
             {isAdmin ? (
@@ -315,6 +360,83 @@ export default function ProfileScreen() {
 
       {/* Rewards & Quests Modal */}
       <RewardsHubModal visible={showRewardsModal} onClose={() => setShowRewardsModal(false)} />
+
+      {/* 🖼️ Avatar Selection Modal */}
+      <Modal
+        visible={showAvatarModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAvatarModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.avatarModalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Choose Profile Avatar</Text>
+              <Pressable onPress={() => setShowAvatarModal(false)} style={styles.closeBtn}>
+                <X size={20} color="#fff" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.avatarModalContent}>
+              <Text style={styles.avatarSubTitle}>Select an official AniFlix Anime Avatar:</Text>
+              <View style={styles.presetGrid}>
+                {PRESET_AVATARS.map((av) => {
+                  const isSelected = profile?.avatar_url === av.url;
+                  return (
+                    <Pressable
+                      key={av.id}
+                      style={[
+                        styles.presetItem,
+                        isSelected && { borderColor: primaryColor, borderWidth: 2 },
+                      ]}
+                      onPress={() => handleSelectAvatar(av.url)}
+                      disabled={isUpdatingAvatar}
+                    >
+                      <Image source={{ uri: av.url }} style={styles.presetImage} resizeMode="cover" />
+                      <Text style={styles.presetName} numberOfLines={1}>
+                        {av.name}
+                      </Text>
+                      {isSelected && (
+                        <View style={[styles.selectedCheck, { backgroundColor: primaryColor }]}>
+                          <Check size={12} color="#fff" />
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.avatarSubTitle, { marginTop: 18 }]}>Or paste custom photo URL:</Text>
+              <View style={styles.customUrlRow}>
+                <TextInput
+                  style={styles.customUrlInput}
+                  placeholder="https://example.com/photo.jpg"
+                  placeholderTextColor="#777"
+                  value={customAvatarUrl}
+                  onChangeText={setCustomAvatarUrl}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Pressable
+                  style={[
+                    styles.customUrlBtn,
+                    { backgroundColor: primaryColor },
+                    (!customAvatarUrl.trim() || isUpdatingAvatar) && { opacity: 0.5 },
+                  ]}
+                  disabled={!customAvatarUrl.trim() || isUpdatingAvatar}
+                  onPress={() => handleSelectAvatar(customAvatarUrl)}
+                >
+                  {isUpdatingAvatar ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.customUrlBtnText}>Save</Text>
+                  )}
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -602,5 +724,136 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8EA4',
     marginTop: 1,
+  },
+  avatarImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#07070A',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  avatarModalCard: {
+    width: '100%',
+    maxWidth: 520,
+    maxHeight: '85%',
+    backgroundColor: '#0C0C14',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#262638',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E1E2C',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1E1E2C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarModalContent: {
+    padding: 20,
+  },
+  avatarSubTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#A0A0B8',
+    marginBottom: 12,
+  },
+  presetGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  presetItem: {
+    width: '30%',
+    alignItems: 'center',
+    backgroundColor: '#13131F',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#202032',
+    position: 'relative',
+  },
+  presetImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 6,
+  },
+  presetName: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFF',
+    textAlign: 'center',
+  },
+  selectedCheck: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customUrlRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  customUrlInput: {
+    flex: 1,
+    height: 46,
+    backgroundColor: '#13131F',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 13,
+    color: '#FFF',
+    borderWidth: 1,
+    borderColor: '#202032',
+  },
+  customUrlBtn: {
+    paddingHorizontal: 18,
+    height: 46,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customUrlBtnText: {
+    color: '#FFF',
+    fontWeight: '800',
+    fontSize: 13,
   },
 });

@@ -10,8 +10,8 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 
-const SUPABASE_URL = 'https://guebvvlopuyebpwbzuri.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_JGe_EcnyE14JrGkXdz4arg_ZoTejNNb';
+const SUPABASE_URL = 'https://zkbprmyxwjfznsucyuvi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'supabase', 'migrations');
