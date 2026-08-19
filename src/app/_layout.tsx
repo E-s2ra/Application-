@@ -2,13 +2,14 @@ import { DarkTheme, ThemeProvider, Stack, useRouter, useSegments } from 'expo-ro
 import * as SplashScreen from 'expo-splash-screen';
 import { Colors } from '@/constants/theme';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, View } from 'react-native';
 import * as ScreenCapture from 'expo-screen-capture';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { FavoritesProvider } from '@/hooks/useFavorites';
+import { AniFlixSplashScreen } from '@/components/AniFlixSplashScreen';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function PrivacyProtection() {
   useEffect(() => {
@@ -23,15 +24,19 @@ function PrivacyProtection() {
   return null;
 }
 
-function AuthGuard() {
+function AuthGuard({ onReady }: { onReady: () => void }) {
   const { session, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoading) return;
+    // Hide native splash screen as our animated splash takes over
+    SplashScreen.hideAsync().catch(() => {});
+    onReady();
+  }, []);
 
-    SplashScreen.hideAsync();
+  useEffect(() => {
+    if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
@@ -47,29 +52,37 @@ function AuthGuard() {
 
 export default function RootLayout() {
   const themeColors = Colors.dark;
+  const [showSplash, setShowSplash] = useState(true);
 
   return (
     <AuthProvider>
       <FavoritesProvider>
         <ThemeProvider value={DarkTheme}>
-          <AuthGuard />
-          <PrivacyProtection />
-          <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerStyle: {
-                backgroundColor: themeColors.backgroundElement,
-              },
-              headerTintColor: themeColors.text,
-              contentStyle: { backgroundColor: themeColors.background },
-            }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="admin" options={{ headerShown: false }} />
-            <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-          </Stack>
+          <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+            <AuthGuard onReady={() => {}} />
+            <PrivacyProtection />
+            <StatusBar style="light" />
+            <Stack
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: themeColors.backgroundElement,
+                },
+                headerTintColor: themeColors.text,
+                contentStyle: { backgroundColor: themeColors.background },
+              }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="admin" options={{ headerShown: false }} />
+              <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+            </Stack>
+
+            {showSplash && (
+              <AniFlixSplashScreen onFinish={() => setShowSplash(false)} />
+            )}
+          </View>
         </ThemeProvider>
       </FavoritesProvider>
     </AuthProvider>
   );
 }
+
