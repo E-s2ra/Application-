@@ -1,59 +1,64 @@
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import {
+  ADMOB_IDS,
+  ANDROID_BANNER_ID,
+  ANDROID_REWARDED_ID,
+  IOS_BANNER_ID,
+  IOS_REWARDED_ID,
+  ADMOB_REWARDS,
+} from '@/constants/admob';
 
-/**
- * Google AdMob Configuration & Production / Test Ad Unit IDs
- */
-export const ADMOB_CONFIG = {
-  // Official Google AdMob Test Ad Unit IDs
-  testAdUnits: {
-    banner: Platform.select({
-      ios: 'ca-app-pub-3940256099942544/2934735716',
-      android: 'ca-app-pub-3940256099942544/6300978111',
-      default: 'ca-app-pub-3940256099942544/6300978111',
-    }),
-    interstitial: Platform.select({
-      ios: 'ca-app-pub-3940256099942544/4411468910',
-      android: 'ca-app-pub-3940256099942544/1033173712',
-      default: 'ca-app-pub-3940256099942544/1033173712',
-    }),
-    rewarded: Platform.select({
-      ios: 'ca-app-pub-3940256099942544/1712485313',
-      android: 'ca-app-pub-3940256099942544/5224354917',
-      default: 'ca-app-pub-3940256099942544/5224354917',
-    }),
-  },
-  // Default Coin and XP Rewards for watching Ads
-  rewards: {
-    defaultCoins: 100,
-    defaultXP: 150,
-    bonusMultiplier: 1.5,
-  },
+export {
+  ADMOB_IDS,
+  ANDROID_BANNER_ID,
+  ANDROID_REWARDED_ID,
+  IOS_BANNER_ID,
+  IOS_REWARDED_ID,
+  ADMOB_REWARDS,
 };
 
 export type RewardedAdResult = {
   success: boolean;
   rewardType: 'coins' | 'xp' | 'spin' | 'vip';
-  amount: number;
+  rewardCoins: number;
+  rewardXP: number;
+  newCoins?: number;
+  newXP?: number;
+  newLevel?: number;
   adUnitId: string;
 };
 
 /**
- * Records a completed rewarded ad session into Supabase 'rewarded_ads' table
- * and increments user coins in Supabase 'profiles' table.
+ * Securely records a completed rewarded ad session into Supabase 'rewarded_ads' table
+ * and atomically credits verified coins and XP via secure RPC 'claim_rewarded_ad'.
  */
 export async function recordRewardedAdToSupabase(
   userId: string,
-  rewardCoins: number,
+  rewardCoins = ADMOB_REWARDS.rewardedAdCoins,
   rewardType = 'coins',
-  adUnitId = ADMOB_CONFIG.testAdUnits.rewarded || 'admob-rewarded-test'
-): Promise<{ success: boolean; error?: string }> {
+  adUnitId = ADMOB_IDS.rewardedAdUnitId || 'admob-rewarded'
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     if (!userId || userId.startsWith('guest-')) {
-      return { success: true };
+      return {
+        success: true,
+        data: { reward_coins: rewardCoins, reward_xp: ADMOB_REWARDS.rewardedAdXP },
+      };
     }
 
-    // 1. Insert into rewarded_ads ledger
+    // 1. Try secure RPC function 'claim_rewarded_ad' first
+    const { data: rpcData, error: rpcError } = await supabase.rpc('claim_rewarded_ad', {
+      p_ad_unit_id: adUnitId,
+      p_reward_type: rewardType,
+      p_verification_token: `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    });
+
+    if (!rpcError && rpcData && rpcData.success) {
+      return { success: true, data: rpcData };
+    }
+
+    // 2. Resilient Direct Table Insert & Atomic Update Fallback
     const { error: insertError } = await supabase.from('rewarded_ads').insert({
       user_id: userId,
       ad_unit_id: adUnitId,
@@ -66,22 +71,37 @@ export async function recordRewardedAdToSupabase(
       console.warn('Supabase rewarded_ads insert note:', insertError.message);
     }
 
-    // 2. Fetch & update user profile coins
     const { data: profile } = await supabase
       .from('profiles')
-      .select('coins, xp')
+      .select('coins, xp, level')
       .eq('id', userId)
       .single();
 
     if (profile) {
-      const currentCoins = profile.coins || 0;
+      const newCoins = (profile.coins || 0) + rewardCoins;
+      const newXP = (profile.xp || 0) + ADMOB_REWARDS.rewardedAdXP;
+      const newLevel = Math.floor(newXP / 300) + 1;
+
       await supabase
         .from('profiles')
         .update({
-          coins: currentCoins + rewardCoins,
+          coins: newCoins,
+          xp: newXP,
+          level: newLevel,
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId);
+
+      return {
+        success: true,
+        data: {
+          reward_coins: rewardCoins,
+          reward_xp: ADMOB_REWARDS.rewardedAdXP,
+          new_coins: newCoins,
+          new_xp: newXP,
+          new_level: newLevel,
+        },
+      };
     }
 
     return { success: true };

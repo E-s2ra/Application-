@@ -32,6 +32,7 @@ import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { useGamification } from '@/hooks/useGamification';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
+import { AdMobBanner } from '@/components/AdMobBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -985,6 +986,11 @@ export default function HomeScreen() {
             )}
           </>
         )}
+
+        {/* 📢 Google AdMob Platform-Specific Banner Ad */}
+        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+          <AdMobBanner placement="home_bottom" />
+        </View>
 
         <View style={{ height: 40 }} />
       </View>

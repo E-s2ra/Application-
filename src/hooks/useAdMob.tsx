@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { ADMOB_CONFIG, recordRewardedAdToSupabase } from '@/lib/admob';
+import { ADMOB_REWARDS } from '@/constants/admob';
+import { recordRewardedAdToSupabase } from '@/lib/admob';
 
 type ShowAdOptions = {
   rewardCoins?: number;
@@ -26,13 +27,13 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
   const [isAdLoaded, setIsAdLoaded] = useState(true);
   const [isLoadingAd, setIsLoadingAd] = useState(false);
   const [isAdModalVisible, setIsAdModalVisible] = useState(false);
-  const [currentRewardCoins, setCurrentRewardCoins] = useState(ADMOB_CONFIG.rewards.defaultCoins);
+  const [currentRewardCoins, setCurrentRewardCoins] = useState(ADMOB_REWARDS.rewardedAdCoins);
   const [currentRewardType, setCurrentRewardType] = useState<'coins' | 'xp' | 'spin' | 'vip'>('coins');
   const [onRewardCallback, setOnRewardCallback] = useState<((amount: number) => void) | null>(null);
 
   const showRewardedAd = useCallback(
     async (options?: ShowAdOptions): Promise<boolean> => {
-      const coins = options?.rewardCoins ?? ADMOB_CONFIG.rewards.defaultCoins;
+      const coins = options?.rewardCoins ?? ADMOB_REWARDS.rewardedAdCoins;
       const type = options?.rewardType ?? 'coins';
 
       setCurrentRewardCoins(coins);

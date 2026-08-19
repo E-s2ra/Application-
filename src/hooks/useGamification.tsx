@@ -585,19 +585,15 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       hasClaimedDailyStreak: true,
     });
 
-    // Record in Supabase daily_logins
+    // Call secure RPC 'claim_daily_login_reward'
     if (user?.id && !user.id.startsWith('guest-')) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      supabase
-        .from('daily_logins')
-        .insert({
-          user_id: user.id,
-          login_date: todayStr,
-          reward_claimed: true,
-          coins_awarded: rewardCoins,
-          xp_awarded: rewardXP,
-        })
-        .then(() => {});
+      supabase.rpc('claim_daily_login_reward').then(({ data, error }) => {
+        if (!error && data && data.success) {
+          if (data.new_coins !== undefined) setCoins(data.new_coins);
+          if (data.new_xp !== undefined) setXp(data.new_xp);
+          if (data.streak_days !== undefined) setStreakDays(data.streak_days);
+        }
+      });
     }
 
     return { coins: rewardCoins, xp: rewardXP };
@@ -627,17 +623,14 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       canSpinWheel: false,
     });
 
-    // Record in Supabase spins table
+    // Call secure RPC 'spin_lucky_wheel'
     if (user?.id && !user.id.startsWith('guest-')) {
-      supabase
-        .from('spins')
-        .insert({
-          user_id: user.id,
-          reward_type: reward.type,
-          reward_value: reward.amount,
-          label: reward.label,
-        })
-        .then(() => {});
+      supabase.rpc('spin_lucky_wheel').then(({ data, error }) => {
+        if (!error && data && data.success) {
+          if (data.new_coins !== undefined) setCoins(data.new_coins);
+          if (data.new_xp !== undefined) setXp(data.new_xp);
+        }
+      });
     }
 
     return reward;
@@ -681,6 +674,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       unlockedThemeIds: newUnlocked,
       activeThemeId: themeId,
     });
+
+    // Call secure RPC 'unlock_theme_with_coins'
+    if (user?.id && !user.id.startsWith('guest-')) {
+      supabase
+        .rpc('unlock_theme_with_coins', { p_theme_code: themeId })
+        .then(({ data, error }) => {
+          if (!error && data && data.success) {
+            if (data.remaining_coins !== undefined) setCoins(data.remaining_coins);
+          }
+        });
+    }
 
     return true;
   };

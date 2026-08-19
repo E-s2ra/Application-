@@ -34,6 +34,7 @@ import { useGamification } from '@/hooks/useGamification';
 import { DEFAULT_CATALOG } from './(tabs)/index';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ReviewsSection } from '@/components/ReviewsSection';
+import { AdMobBanner } from '@/components/AdMobBanner';
 
 const SPEED_OPTIONS = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0];
 
@@ -501,6 +502,11 @@ export default function WatchScreen() {
         {anime && (
           <ReviewsSection mediaId={anime.id} mediaTitle={anime.title} />
         )}
+
+        {/* 📢 Google AdMob Banner */}
+        <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
+          <AdMobBanner placement="watch_bottom" />
+        </View>
 
         <View style={{ height: 60 }} />
       </View>

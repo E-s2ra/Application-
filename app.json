@@ -34,11 +34,32 @@
         }
       ],
       "expo-video",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6508988701499376~6377749194",
+          "iosAppId": "ca-app-pub-6508988701499376~4682307965"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "admob": {
+        "android": {
+          "appId": "ca-app-pub-6508988701499376~6377749194",
+          "bannerId": "ca-app-pub-6508988701499376/8868181169",
+          "rewardedId": "ca-app-pub-6508988701499376/4443363765"
+        },
+        "ios": {
+          "appId": "ca-app-pub-6508988701499376~4682307965",
+          "bannerId": "ca-app-pub-6508988701499376/5312079535",
+          "rewardedId": "ca-app-pub-6508988701499376/3978816560"
+        }
+      }
     }
   }
 }
