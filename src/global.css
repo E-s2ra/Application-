@@ -7,3 +7,32 @@
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+/* ── Native-app feel: disable text selection & image dragging ── */
+*, *::before, *::after {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Allow selection only inside inputs and text areas */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Remove the blue outline on focus for non-keyboard users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Buttons and clickable elements get pointer cursor */
+button, [role="button"], a, [onClick] {
+  cursor: pointer;
+}
+
