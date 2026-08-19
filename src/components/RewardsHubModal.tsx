@@ -24,7 +24,9 @@ import {
   Calendar,
   Award,
   Crown,
-  ChevronRight,
+  Palette,
+  ShieldCheck,
+  CheckCircle,
 } from 'lucide-react-native';
 import { useGamification, SPIN_REWARDS, SpinReward } from '@/hooks/useGamification';
 
@@ -45,14 +47,26 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     streakDays,
     hasClaimedDailyStreak,
     canSpinWheel,
+    vipDaysRemaining,
+    isVIP,
     activeEvent,
+    allEvents,
     missions,
+    themes,
+    activeTheme,
+    badges,
+    selectSeasonalEvent,
     claimDailyStreak,
     spinWheel,
     claimMission,
+    unlockTheme,
+    equipTheme,
+    activateVIP,
   } = useGamification();
 
-  const [activeTab, setActiveTab] = useState<'missions' | 'spin' | 'streak' | 'event'>('missions');
+  const [activeTab, setActiveTab] = useState<
+    'missions' | 'spin' | 'streak' | 'events' | 'themes' | 'badges'
+  >('missions');
   const [missionFilter, setMissionFilter] = useState<'all' | 'daily' | 'weekly' | 'event'>('all');
 
   // Spin Wheel Animation
@@ -70,7 +84,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     setIsSpinning(true);
     setWonReward(null);
 
-    // Spin 5 to 8 full rotations + target angle
     const targetReward = spinWheel();
     const targetIdx = SPIN_REWARDS.findIndex((r) => r.id === targetReward.id);
     const sliceAngle = 360 / SPIN_REWARDS.length;
@@ -106,14 +119,14 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <Trophy size={22} color="#FFB800" />
-              <Text style={styles.modalTitle}>AniFlix Rewards & Quests</Text>
+              <Text style={styles.modalTitle}>AniFlix Rewards & Events Hub</Text>
             </View>
             <Pressable style={styles.closeBtn} onPress={onClose}>
               <X size={20} color="#FFF" />
             </Pressable>
           </View>
 
-          {/* User Level & Coins Status Bar */}
+          {/* User Level, Coins & VIP Status Bar */}
           <View style={styles.userStatusBanner}>
             <View style={styles.statusRow}>
               <View style={styles.levelBadge}>
@@ -121,6 +134,17 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 <Text style={styles.levelText}>LVL {level}</Text>
               </View>
               <Text style={styles.levelTitleText}>{levelTitle}</Text>
+
+              {isVIP ? (
+                <View style={styles.vipBadge}>
+                  <Text style={styles.vipBadgeText}>👑 VIP ({vipDaysRemaining}d)</Text>
+                </View>
+              ) : (
+                <Pressable style={styles.getVipBtn} onPress={() => activateVIP(7)}>
+                  <Text style={styles.getVipBtnText}>+ Get VIP</Text>
+                </Pressable>
+              )}
+
               <View style={styles.coinBadge}>
                 <Text style={styles.coinText}>💰 {coins}</Text>
               </View>
@@ -137,8 +161,12 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             </View>
           </View>
 
-          {/* Navigation Pills */}
-          <View style={styles.tabsRow}>
+          {/* Navigation Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsRow}
+          >
             <Pressable
               style={[styles.tabBtn, activeTab === 'missions' && styles.tabBtnActive]}
               onPress={() => setActiveTab('missions')}
@@ -152,14 +180,14 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             </Pressable>
 
             <Pressable
-              style={[styles.tabBtn, activeTab === 'streak' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('streak')}
+              style={[styles.tabBtn, activeTab === 'events' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('events')}
             >
-              <Flame size={14} color={activeTab === 'streak' ? '#FFF' : '#8C8CA2'} />
+              <Sparkles size={14} color={activeTab === 'events' ? '#FFF' : '#8C8CA2'} />
               <Text
-                style={[styles.tabBtnText, activeTab === 'streak' && styles.tabBtnTextActive]}
+                style={[styles.tabBtnText, activeTab === 'events' && styles.tabBtnTextActive]}
               >
-                Streak ({streakDays}d)
+                Events
               </Text>
             </Pressable>
 
@@ -176,24 +204,50 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             </Pressable>
 
             <Pressable
-              style={[styles.tabBtn, activeTab === 'event' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('event')}
+              style={[styles.tabBtn, activeTab === 'streak' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('streak')}
             >
-              <Sparkles size={14} color={activeTab === 'event' ? '#FFF' : '#8C8CA2'} />
+              <Flame size={14} color={activeTab === 'streak' ? '#FFF' : '#8C8CA2'} />
               <Text
-                style={[styles.tabBtnText, activeTab === 'event' && styles.tabBtnTextActive]}
+                style={[styles.tabBtnText, activeTab === 'streak' && styles.tabBtnTextActive]}
               >
-                Event
+                Streak ({streakDays}d)
               </Text>
             </Pressable>
-          </View>
+
+            <Pressable
+              style={[styles.tabBtn, activeTab === 'themes' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('themes')}
+            >
+              <Palette size={14} color={activeTab === 'themes' ? '#FFF' : '#8C8CA2'} />
+              <Text
+                style={[styles.tabBtnText, activeTab === 'themes' && styles.tabBtnTextActive]}
+              >
+                Theme Shop
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.tabBtn, activeTab === 'badges' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('badges')}
+            >
+              <Award size={14} color={activeTab === 'badges' ? '#FFF' : '#8C8CA2'} />
+              <Text
+                style={[styles.tabBtnText, activeTab === 'badges' && styles.tabBtnTextActive]}
+              >
+                Badges
+              </Text>
+            </Pressable>
+          </ScrollView>
 
           {/* Tab Content */}
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             {/* 🎯 MISSIONS TAB */}
             {activeTab === 'missions' && (
               <View>
-                {/* Subfilter */}
                 <View style={styles.subfilterRow}>
                   {(['all', 'daily', 'weekly', 'event'] as const).map((cat) => (
                     <Pressable
@@ -216,7 +270,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   ))}
                 </View>
 
-                {/* Missions List */}
                 <View style={styles.missionsList}>
                   {filteredMissions.map((m) => (
                     <View key={m.id} style={styles.missionCard}>
@@ -232,7 +285,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                         </View>
                       </View>
 
-                      {/* Progress Bar & Claim Button */}
                       <View style={styles.missionFooter}>
                         <View style={styles.missionProgressBox}>
                           <View style={styles.missionTrack}>
@@ -266,7 +318,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                             onPress={() => claimMission(m.id)}
                           >
                             <Text style={styles.claimBtnText}>
-                              {m.completed ? 'Claim' : 'In Progress'}
+                              {m.completed ? 'Claim Reward' : 'In Progress'}
                             </Text>
                           </Pressable>
                         )}
@@ -277,56 +329,169 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </View>
             )}
 
-            {/* 🔥 DAILY STREAK TAB */}
-            {activeTab === 'streak' && (
-              <View style={styles.streakContainer}>
-                <View style={styles.streakHeroCard}>
-                  <Flame size={44} color="#FF5722" />
-                  <Text style={styles.streakDaysCount}>{streakDays} DAY STREAK</Text>
-                  <Text style={styles.streakSubtitle}>
-                    Watch movies & log in daily to build your streak multiplier!
-                  </Text>
+            {/* 🎉 SEASONAL EVENTS SELECTOR TAB */}
+            {activeTab === 'events' && (
+              <View style={styles.eventsListContainer}>
+                <Text style={styles.sectionHeading}>🌟 Seasonal Festival Calendar</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Choose an active festival to participate in unique quests & earn exclusive badges!
+                </Text>
 
-                  {/* 7-Day Roadmap */}
-                  <View style={styles.streakRoadmap}>
-                    {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-                      const isReached = day <= streakDays;
-                      const isCurrent = day === streakDays;
-                      return (
-                        <View key={day} style={styles.streakDayCol}>
+                {allEvents.map((evt) => {
+                  const isActive = activeEvent.id === evt.id;
+                  return (
+                    <View
+                      key={evt.id}
+                      style={[
+                        styles.eventCardItem,
+                        isActive && { borderColor: evt.themeColor, borderWidth: 1.5 },
+                      ]}
+                    >
+                      <Image source={{ uri: evt.bannerImage }} style={styles.eventCardImage} />
+                      <View style={styles.eventCardBody}>
+                        <View style={styles.eventMetaRow}>
                           <View
                             style={[
-                              styles.streakDayCircle,
-                              isReached && styles.streakDayReached,
-                              isCurrent && styles.streakDayCurrent,
+                              styles.eventLiveTag,
+                              { backgroundColor: isActive ? '#E50914' : '#222232' },
                             ]}
                           >
-                            {isReached ? (
-                              <Flame size={14} color="#FFF" />
-                            ) : (
-                              <Text style={styles.streakDayNum}>D{day}</Text>
+                            <Text style={styles.eventLiveTagText}>
+                              {isActive ? '🔥 ACTIVE EVENT' : '📅 UPCOMING EVENT'}
+                            </Text>
+                          </View>
+                          <Text style={[styles.eventBadgeRewardText, { color: evt.themeColor }]}>
+                            {evt.badgeIcon} {evt.badgeName}
+                          </Text>
+                        </View>
+
+                        <Text style={styles.eventCardTitle}>{evt.title}</Text>
+                        <Text style={styles.eventCardSubtitle}>{evt.subtitle}</Text>
+
+                        <View style={styles.eventCardFooter}>
+                          <Text style={styles.eventMultiplierText}>
+                            ⚡ {evt.bonusMultiplier}x Coin & XP Multiplier
+                          </Text>
+                          <Pressable
+                            style={[
+                              styles.eventSelectBtn,
+                              isActive
+                                ? { backgroundColor: '#1E1E2C', borderColor: evt.themeColor }
+                                : { backgroundColor: '#E50914' },
+                            ]}
+                            onPress={() => selectSeasonalEvent(evt.id)}
+                          >
+                            <Text style={styles.eventSelectBtnText}>
+                              {isActive ? '✓ Selected' : 'Activate Event'}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* 🎨 THEMES SHOP TAB */}
+            {activeTab === 'themes' && (
+              <View style={styles.themesContainer}>
+                <Text style={styles.sectionHeading}>🎨 AniFlix Cinema Theme Shop</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Spend your earned AniFlix Coins to unlock and equip custom event themes!
+                </Text>
+
+                <View style={styles.themesGrid}>
+                  {themes.map((th) => {
+                    const isEquipped = activeTheme.id === th.id;
+                    const canAfford = coins >= th.costCoins;
+                    return (
+                      <View key={th.id} style={styles.themeCard}>
+                        <View style={[styles.themeColorBar, { backgroundColor: th.primary }]} />
+                        <View style={styles.themeContent}>
+                          <View style={styles.themeTitleRow}>
+                            <Text style={styles.themeName}>{th.name}</Text>
+                            {isEquipped && (
+                              <View style={styles.equippedBadge}>
+                                <CheckCircle size={11} color="#00E676" />
+                                <Text style={styles.equippedText}>Equipped</Text>
+                              </View>
                             )}
                           </View>
-                          <Text style={styles.streakDayReward}>+{50 + day * 10}💰</Text>
-                        </View>
-                      );
-                    })}
-                  </View>
+                          <Text style={styles.themeDesc}>{th.description}</Text>
 
-                  <Pressable
-                    style={[
-                      styles.claimStreakBtn,
-                      hasClaimedDailyStreak && styles.claimStreakBtnClaimed,
-                    ]}
-                    disabled={hasClaimedDailyStreak}
-                    onPress={claimDailyStreak}
-                  >
-                    <Text style={styles.claimStreakBtnText}>
-                      {hasClaimedDailyStreak
-                        ? '✓ Today Claimed - Return Tomorrow!'
-                        : `Claim Today (+${50 + streakDays * 10} Coins, +${80 + streakDays * 15} XP)`}
-                    </Text>
-                  </Pressable>
+                          <View style={styles.themeActionRow}>
+                            {th.isUnlocked ? (
+                              <Pressable
+                                style={[
+                                  styles.equipBtn,
+                                  isEquipped && styles.equipBtnActive,
+                                ]}
+                                disabled={isEquipped}
+                                onPress={() => equipTheme(th.id)}
+                              >
+                                <Text style={styles.equipBtnText}>
+                                  {isEquipped ? 'Active Theme' : 'Equip Theme'}
+                                </Text>
+                              </Pressable>
+                            ) : (
+                              <Pressable
+                                style={[
+                                  styles.buyThemeBtn,
+                                  !canAfford && styles.buyThemeBtnDisabled,
+                                ]}
+                                disabled={!canAfford}
+                                onPress={() => unlockTheme(th.id)}
+                              >
+                                <Text style={styles.buyThemeBtnText}>
+                                  Unlock for 💰 {th.costCoins}
+                                </Text>
+                              </Pressable>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* 🏅 BADGES TAB */}
+            {activeTab === 'badges' && (
+              <View style={styles.badgesContainer}>
+                <Text style={styles.sectionHeading}>🏅 Achievement Badges</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Collect prestige badges by watching movies, building streaks, and reviewing!
+                </Text>
+
+                <View style={styles.badgesList}>
+                  {badges.map((b) => (
+                    <View
+                      key={b.id}
+                      style={[styles.badgeItemCard, !b.isUnlocked && styles.badgeItemLocked]}
+                    >
+                      <View
+                        style={[
+                          styles.badgeIconCircle,
+                          { backgroundColor: b.isUnlocked ? '#1E1E2C' : '#14141E' },
+                        ]}
+                      >
+                        <Text style={styles.badgeEmoji}>{b.icon}</Text>
+                      </View>
+                      <View style={styles.badgeInfoBox}>
+                        <View style={styles.badgeNameRow}>
+                          <Text style={styles.badgeTitle}>{b.title}</Text>
+                          {b.isUnlocked ? (
+                            <Text style={styles.unlockedDate}>✓ {b.unlockedAt}</Text>
+                          ) : (
+                            <Text style={styles.lockedTag}>🔒 Locked</Text>
+                          )}
+                        </View>
+                        <Text style={styles.badgeDesc}>{b.description}</Text>
+                      </View>
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -339,15 +504,12 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   Spin once every day for free Coins, XP, and VIP Passes!
                 </Text>
 
-                {/* Animated Wheel Visual */}
                 <View style={styles.wheelWrapper}>
                   <View style={styles.pointerTriangle} />
                   <Animated.View
                     style={[
                       styles.wheelCircle,
-                      {
-                        transform: [{ rotate: spinRotation }],
-                      },
+                      { transform: [{ rotate: spinRotation }] },
                     ]}
                   >
                     {SPIN_REWARDS.map((r, i) => (
@@ -355,9 +517,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                         key={r.id}
                         style={[
                           styles.wheelSlice,
-                          {
-                            transform: [{ rotate: `${i * 60}deg` }],
-                          },
+                          { transform: [{ rotate: `${i * 60}deg` }] },
                         ]}
                       >
                         <Text style={styles.sliceIcon}>{r.icon}</Text>
@@ -370,14 +530,12 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   </View>
                 </View>
 
-                {/* Won Reward Banner */}
                 {wonReward && (
                   <View style={styles.wonBanner}>
                     <Text style={styles.wonTitle}>🎉 You Won {wonReward.label}!</Text>
                   </View>
                 )}
 
-                {/* Spin Button */}
                 <Pressable
                   style={[
                     styles.spinActionBtn,
@@ -397,28 +555,55 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </View>
             )}
 
-            {/* 🎉 SEASONAL EVENT TAB */}
-            {activeTab === 'event' && (
-              <View style={styles.eventContainer}>
-                <View style={styles.eventCard}>
-                  <Image source={{ uri: activeEvent.bannerImage }} style={styles.eventBannerImg} />
-                  <View style={styles.eventContent}>
-                    <View style={styles.eventBadgeRow}>
-                      <View style={styles.liveEventTag}>
-                        <Text style={styles.liveEventTagText}>🔥 LIVE EVENT</Text>
-                      </View>
-                      <Text style={styles.eventEndsText}>Ends {activeEvent.endDate}</Text>
-                    </View>
-                    <Text style={styles.eventMainTitle}>{activeEvent.title}</Text>
-                    <Text style={styles.eventSubTitle}>{activeEvent.subtitle}</Text>
+            {/* 🔥 DAILY STREAK TAB */}
+            {activeTab === 'streak' && (
+              <View style={styles.streakContainer}>
+                <View style={styles.streakHeroCard}>
+                  <Flame size={44} color="#FF5722" />
+                  <Text style={styles.streakDaysCount}>{streakDays} DAY STREAK</Text>
+                  <Text style={styles.streakSubtitle}>
+                    Watch movies & log in daily to build your streak multiplier!
+                  </Text>
 
-                    <View style={styles.perksBox}>
-                      <Text style={styles.perksHeader}>EVENT PERKS & BONUSES:</Text>
-                      <Text style={styles.perkItem}>• 2x AniFlix Coins on all movie streams</Text>
-                      <Text style={styles.perkItem}>• Exclusive Kurdish Festival Gold Badge</Text>
-                      <Text style={styles.perkItem}>• Special Event Quests with 500+ XP</Text>
-                    </View>
+                  <View style={styles.streakRoadmap}>
+                    {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                      const isReached = day <= streakDays;
+                      const isCurrent = day === streakDays;
+                      return (
+                        <View key={day} style={styles.streakDayCol}>
+                          <View
+                            style={[
+                              styles.streakDayCircle,
+                              isReached && styles.streakDayReached,
+                              isCurrent && styles.streakDayCurrent,
+                            ]}
+                          >
+                            {isReached ? (
+                              <Flame size={14} color="#FFF" />
+                            ) : (
+                              <Text style={styles.streakDayNum}>D{day}</Text>
+                            )}
+                          </View>
+                          <Text style={styles.streakDayReward}>+{60 + day * 15}💰</Text>
+                        </View>
+                      );
+                    })}
                   </View>
+
+                  <Pressable
+                    style={[
+                      styles.claimStreakBtn,
+                      hasClaimedDailyStreak && styles.claimStreakBtnClaimed,
+                    ]}
+                    disabled={hasClaimedDailyStreak}
+                    onPress={claimDailyStreak}
+                  >
+                    <Text style={styles.claimStreakBtnText}>
+                      {hasClaimedDailyStreak
+                        ? '✓ Today Claimed - Return Tomorrow!'
+                        : `Claim Today (+${60 + streakDays * 15} Coins, +${90 + streakDays * 20} XP)`}
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
             )}
@@ -441,8 +626,8 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    maxWidth: 580,
-    maxHeight: '90%',
+    maxWidth: 620,
+    maxHeight: '92%',
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#262638',
@@ -463,7 +648,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#FFF',
   },
@@ -511,7 +696,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 8,
+  },
+  vipBadge: {
+    backgroundColor: '#2D1438',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#9C27B0',
+    marginRight: 6,
+  },
+  vipBadgeText: {
+    color: '#E1BEE7',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  getVipBtn: {
+    backgroundColor: '#1C1C28',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFB800',
+    marginRight: 6,
+  },
+  getVipBtnText: {
+    color: '#FFB800',
+    fontSize: 10,
+    fontWeight: '800',
   },
   coinBadge: {
     backgroundColor: '#1C1C28',
@@ -553,12 +766,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tabBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
     paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 10,
     backgroundColor: '#13131C',
     borderWidth: 1,
@@ -579,6 +792,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 24,
+  },
+  sectionHeading: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#8E8EA4',
+    marginBottom: 16,
   },
   subfilterRow: {
     flexDirection: 'row',
@@ -698,6 +922,220 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#00E676',
     fontWeight: '700',
+  },
+  eventsListContainer: {
+    gap: 14,
+  },
+  eventCardItem: {
+    backgroundColor: '#13131D',
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#242436',
+  },
+  eventCardImage: {
+    width: '100%',
+    height: 120,
+  },
+  eventCardBody: {
+    padding: 14,
+  },
+  eventMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  eventLiveTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  eventLiveTagText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  eventBadgeRewardText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  eventCardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  eventCardSubtitle: {
+    fontSize: 12,
+    color: '#A0A0B8',
+    marginBottom: 12,
+  },
+  eventCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  eventMultiplierText: {
+    fontSize: 12,
+    color: '#00D2FF',
+    fontWeight: '700',
+  },
+  eventSelectBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  eventSelectBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  themesContainer: {
+    gap: 12,
+  },
+  themesGrid: {
+    gap: 10,
+  },
+  themeCard: {
+    backgroundColor: '#13131D',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#242436',
+    flexDirection: 'row',
+  },
+  themeColorBar: {
+    width: 8,
+  },
+  themeContent: {
+    flex: 1,
+    padding: 14,
+  },
+  themeTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  themeName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  equippedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,230,118,0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  equippedText: {
+    fontSize: 10,
+    color: '#00E676',
+    fontWeight: '700',
+  },
+  themeDesc: {
+    fontSize: 12,
+    color: '#8E8EA4',
+    marginBottom: 10,
+  },
+  themeActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  equipBtn: {
+    backgroundColor: '#262638',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  equipBtnActive: {
+    backgroundColor: '#1E1E2C',
+    borderWidth: 1,
+    borderColor: '#00E676',
+  },
+  equipBtnText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  buyThemeBtn: {
+    backgroundColor: '#E50914',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  buyThemeBtnDisabled: {
+    backgroundColor: '#222230',
+  },
+  buyThemeBtnText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  badgesContainer: {
+    gap: 10,
+  },
+  badgesList: {
+    gap: 10,
+  },
+  badgeItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#13131D',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#242436',
+    gap: 12,
+  },
+  badgeItemLocked: {
+    opacity: 0.5,
+  },
+  badgeIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A2A3E',
+  },
+  badgeEmoji: {
+    fontSize: 20,
+  },
+  badgeInfoBox: {
+    flex: 1,
+  },
+  badgeNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  badgeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  unlockedDate: {
+    fontSize: 10,
+    color: '#00E676',
+    fontWeight: '600',
+  },
+  lockedTag: {
+    fontSize: 10,
+    color: '#717188',
+    fontWeight: '700',
+  },
+  badgeDesc: {
+    fontSize: 11,
+    color: '#8E8EA4',
   },
   streakContainer: {
     alignItems: 'center',
@@ -880,74 +1318,5 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '800',
     fontSize: 14,
-  },
-  eventContainer: {
-    gap: 12,
-  },
-  eventCard: {
-    backgroundColor: '#13131D',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#2E2818',
-  },
-  eventBannerImg: {
-    width: '100%',
-    height: 140,
-  },
-  eventContent: {
-    padding: 16,
-  },
-  eventBadgeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  liveEventTag: {
-    backgroundColor: '#E50914',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  liveEventTagText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  eventEndsText: {
-    color: '#FFB800',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  eventMainTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  eventSubTitle: {
-    fontSize: 13,
-    color: '#B0B0C4',
-    marginBottom: 14,
-  },
-  perksBox: {
-    backgroundColor: '#1A1812',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#3D3418',
-  },
-  perksHeader: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFB800',
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  perkItem: {
-    fontSize: 12,
-    color: '#D8D8E6',
-    lineHeight: 18,
   },
 });

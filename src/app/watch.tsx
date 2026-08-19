@@ -25,10 +25,12 @@ import {
   Volume2,
   VolumeX,
   Maximize2,
+  Sparkles,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
 import { useReviews } from '@/hooks/useReviews';
+import { useGamification } from '@/hooks/useGamification';
 import { DEFAULT_CATALOG } from './(tabs)/index';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ReviewsSection } from '@/components/ReviewsSection';
@@ -41,6 +43,7 @@ export default function WatchScreen() {
   const themeColors = Colors.dark;
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getStatsForMedia } = useReviews();
+  const { awardWatchTimeReward } = useGamification();
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet } = useResponsive();
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
@@ -53,6 +56,19 @@ export default function WatchScreen() {
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [earnedNotification, setEarnedNotification] = useState<string | null>(null);
+
+  // 🍿 Watch-to-Earn: Award Coins & XP during active playback
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      const reward = awardWatchTimeReward(1);
+      setEarnedNotification(`🍿 Watching AniFlix: +${reward.coins} Coins & +${reward.xp} XP!`);
+      setTimeout(() => setEarnedNotification(null), 4000);
+    }, 45000);
+
+    return () => clearInterval(interval);
+  }, [isPlaying]);
 
   // Ref for VideoView (needed for fullscreen)
   const videoViewRef = useRef<VideoView>(null);
@@ -240,6 +256,14 @@ export default function WatchScreen() {
             <View style={styles.ratioBadge}>
               <Text style={styles.ratioBadgeText}>{aspectRatio}</Text>
             </View>
+
+            {/* 🍿 Live Watch-to-Earn Rewards Floating Toast */}
+            {earnedNotification && (
+              <View style={styles.watchRewardToast}>
+                <Sparkles size={14} color="#FFD700" />
+                <Text style={styles.watchRewardText}>{earnedNotification}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -565,8 +589,28 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   ratioBadgeText: {
-    color: '#00D2FF',
-    fontSize: 10,
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  watchRewardToast: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(18, 18, 29, 0.92)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    zIndex: 20,
+  },
+  watchRewardText: {
+    color: '#FFD700',
+    fontSize: 12,
     fontWeight: '800',
   },
   controlsBar: {
