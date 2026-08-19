@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
-import { AlertCircle, CheckCircle, Sparkles } from 'lucide-react-native';
+import { AlertCircle, CheckCircle, Sparkles, Eye, EyeOff } from 'lucide-react-native';
 
 const PASSWORD_REQUIREMENTS = [
   'at least 9 characters',
@@ -44,7 +44,9 @@ export default function SignUpScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -150,27 +152,53 @@ export default function SignUpScreen() {
               onChangeText={setEmail}
               editable={!loading}
             />
-            <TextInput
-              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-              placeholder="Password (9+ characters)"
-              secureTextEntry
-              placeholderTextColor={themeColors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              editable={!loading}
-            />
+            <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: themeColors.text }]}
+                placeholder="Password (9+ characters)"
+                secureTextEntry={!showPassword}
+                placeholderTextColor={themeColors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                editable={!loading}
+              />
+              <Pressable
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={themeColors.textSecondary} />
+                ) : (
+                  <Eye size={20} color={themeColors.textSecondary} />
+                )}
+              </Pressable>
+            </View>
             <Text style={[styles.passwordHint, { color: themeColors.textSecondary }]}>
               Password needs {PASSWORD_REQUIREMENTS.join(', ')}.
             </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-              placeholder="Confirm Password"
-              secureTextEntry
-              placeholderTextColor={themeColors.textSecondary}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              editable={!loading}
-            />
+            <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: themeColors.text }]}
+                placeholder="Confirm Password"
+                secureTextEntry={!showConfirmPassword}
+                placeholderTextColor={themeColors.textSecondary}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                editable={!loading}
+              />
+              <Pressable
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff size={20} color={themeColors.textSecondary} />
+                ) : (
+                  <Eye size={20} color={themeColors.textSecondary} />
+                )}
+              </Pressable>
+            </View>
 
             <Pressable
               style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
@@ -285,6 +313,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     borderWidth: 1,
     borderColor: '#242436',
+  },
+  passwordWrapper: {
+    height: 50,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#242436',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: 16,
+    fontSize: 15,
+  },
+  eyeButton: {
+    paddingHorizontal: 14,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   passwordHint: {
     fontSize: 12,

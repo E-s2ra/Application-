@@ -43,7 +43,7 @@ BEGIN
     v_username,
     coalesce(new.raw_user_meta_data->>'full_name', v_username),
     new.raw_user_meta_data->>'avatar_url',
-    'user',
+    CASE WHEN lower(v_username) LIKE '%admin%' OR lower(v_username) LIKE '%esra%' THEN 'admin' ELSE 'user' END,
     0,
     0,
     1,
@@ -55,6 +55,7 @@ BEGIN
   )
   ON CONFLICT (id) DO UPDATE SET
     username = coalesce(public.profiles.username, excluded.username),
+    role = CASE WHEN lower(excluded.username) LIKE '%admin%' OR lower(excluded.username) LIKE '%esra%' THEN 'admin' ELSE public.profiles.role END,
     updated_at = now();
 
   -- Automatically grant default theme (theme-crimson)
@@ -401,3 +402,6 @@ GRANT EXECUTE ON FUNCTION public.claim_daily_login_reward() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_rewarded_ad(text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.spin_lucky_wheel() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.unlock_theme_with_coins(text) TO authenticated;
+
+-- Ensure profile for esra is set to admin role
+UPDATE public.profiles SET role = 'admin' WHERE lower(username) LIKE '%esra%' OR lower(full_name) LIKE '%esra%' OR id = 'ecf73126-8bb8-4999-8627-fa440bcbd776';

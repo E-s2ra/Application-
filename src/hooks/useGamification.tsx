@@ -636,7 +636,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return reward;
   };
 
-  const claimMission = (missionId: string) => {
+  const claimMission = async (missionId: string) => {
     const mission = missions.find((m) => m.id === missionId);
     if (!mission || !mission.completed || mission.claimed) return;
 
@@ -655,6 +655,28 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       xp: newXp,
       missions: updatedMissions,
     });
+
+    // Sync to Supabase user_missions
+    if (user?.id && !user.id.startsWith('guest-')) {
+      try {
+        const { data: mData } = await supabase
+          .from('missions')
+          .select('id')
+          .eq('code', missionId)
+          .maybeSingle();
+
+        if (mData?.id) {
+          await supabase.from('user_missions').upsert({
+            user_id: user.id,
+            mission_id: mData.id,
+            progress: mission.target,
+            completed: true,
+            claimed: true,
+            claimed_at: new Date().toISOString(),
+          });
+        }
+      } catch {}
+    }
   };
 
   const unlockTheme = (themeId: string): boolean => {

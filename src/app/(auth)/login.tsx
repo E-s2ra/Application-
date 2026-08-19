@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
-import { Sparkles, AlertCircle } from 'lucide-react-native';
+import { Sparkles, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -26,6 +26,7 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -96,18 +97,31 @@ export default function LoginScreen() {
               }}
               editable={!loading}
             />
-            <TextInput
-              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-              placeholder="Password"
-              secureTextEntry
-              placeholderTextColor={themeColors.textSecondary}
-              value={password}
-              onChangeText={(val) => {
-                setPassword(val);
-                if (errorMessage) setErrorMessage(null);
-              }}
-              editable={!loading}
-            />
+            <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: themeColors.text }]}
+                placeholder="Password"
+                secureTextEntry={!showPassword}
+                placeholderTextColor={themeColors.textSecondary}
+                value={password}
+                onChangeText={(val) => {
+                  setPassword(val);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                editable={!loading}
+              />
+              <Pressable
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={themeColors.textSecondary} />
+                ) : (
+                  <Eye size={20} color={themeColors.textSecondary} />
+                )}
+              </Pressable>
+            </View>
             <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={styles.forgotBtn}>
               <Text style={[styles.forgotText, { color: themeColors.textSecondary }]}>Forgot Password?</Text>
             </Pressable>
@@ -210,6 +224,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     borderWidth: 1,
     borderColor: '#242436',
+  },
+  passwordWrapper: {
+    height: 52,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#242436',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: 16,
+    fontSize: 15,
+  },
+  eyeButton: {
+    paddingHorizontal: 14,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   button: {
     height: 52,
