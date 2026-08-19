@@ -28,8 +28,10 @@ import {
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
+import { useReviews } from '@/hooks/useReviews';
 import { DEFAULT_CATALOG } from './(tabs)/index';
 import { useResponsive } from '@/hooks/useResponsive';
+import { ReviewsSection } from '@/components/ReviewsSection';
 
 const SPEED_OPTIONS = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0];
 
@@ -38,6 +40,7 @@ export default function WatchScreen() {
   const router = useRouter();
   const themeColors = Colors.dark;
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { getStatsForMedia } = useReviews();
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet } = useResponsive();
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
@@ -115,6 +118,7 @@ export default function WatchScreen() {
   }, [id]);
 
   const favorited = anime ? isFavorite(anime.id) : false;
+  const stats = anime ? getStatsForMedia(anime.id) : { average: 4.8, count: 14 };
   const totalEps = anime?.episodes && anime.episodes > 0 ? Math.min(anime.episodes, 24) : 12;
   const episodesList = Array.from({ length: totalEps }, (_, i) => i + 1);
 
@@ -370,7 +374,7 @@ export default function WatchScreen() {
             </View>
             <View style={styles.ratingBadge}>
               <Star color="#FFB800" size={12} fill="#FFB800" />
-              <Text style={styles.ratingText}>9.8</Text>
+              <Text style={styles.ratingText}>{stats.average.toFixed(1)}</Text>
             </View>
           </View>
 
@@ -467,6 +471,11 @@ export default function WatchScreen() {
               ))}
             </ScrollView>
           </View>
+        )}
+
+        {/* ⭐ Ratings & Community Reviews Section */}
+        {anime && (
+          <ReviewsSection mediaId={anime.id} mediaTitle={anime.title} />
         )}
 
         <View style={{ height: 60 }} />

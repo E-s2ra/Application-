@@ -7,6 +7,7 @@ import { Platform, View } from 'react-native';
 import * as ScreenCapture from 'expo-screen-capture';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { FavoritesProvider } from '@/hooks/useFavorites';
+import { ReviewsProvider } from '@/hooks/useReviews';
 import { AniFlixSplashScreen } from '@/components/AniFlixSplashScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -57,32 +58,35 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <FavoritesProvider>
-        <ThemeProvider value={DarkTheme}>
-          <View style={{ flex: 1, backgroundColor: themeColors.background }}>
-            <AuthGuard onReady={() => {}} />
-            <PrivacyProtection />
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerStyle: {
-                  backgroundColor: themeColors.backgroundElement,
-                },
-                headerTintColor: themeColors.text,
-                contentStyle: { backgroundColor: themeColors.background },
-              }}>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="admin" options={{ headerShown: false }} />
-              <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-            </Stack>
+        <ReviewsProvider>
+          <ThemeProvider value={DarkTheme}>
+            <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+              <AuthGuard onReady={() => {}} />
+              <PrivacyProtection />
+              <StatusBar style="light" />
+              <Stack
+                screenOptions={{
+                  headerStyle: {
+                    backgroundColor: themeColors.backgroundElement,
+                  },
+                  headerTintColor: themeColors.text,
+                  contentStyle: { backgroundColor: themeColors.background },
+                }}>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="admin" options={{ headerShown: false }} />
+                <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+              </Stack>
 
-            {showSplash && (
-              <AniFlixSplashScreen onFinish={() => setShowSplash(false)} />
-            )}
-          </View>
-        </ThemeProvider>
+              {showSplash && (
+                <AniFlixSplashScreen onFinish={() => setShowSplash(false)} />
+              )}
+            </View>
+          </ThemeProvider>
+        </ReviewsProvider>
       </FavoritesProvider>
     </AuthProvider>
   );
 }
+
 
