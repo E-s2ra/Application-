@@ -10,12 +10,13 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
-import { AlertCircle, CheckCircle, Sparkles, Eye, EyeOff } from 'lucide-react-native';
+import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react-native';
 
 const PASSWORD_REQUIREMENTS = [
   'at least 9 characters',
@@ -107,9 +108,11 @@ export default function SignUpScreen() {
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
           <View style={styles.header}>
-            <View style={[styles.brandLogoCircle, { backgroundColor: themeColors.primary }]}>
-              <Sparkles color="#fff" size={28} />
-            </View>
+            <Image
+              source={require('../../../assets/images/icon.png')}
+              style={styles.brandLogoImage}
+              resizeMode="contain"
+            />
             <Text style={styles.brandTitle}>
               ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
             </Text>
@@ -252,12 +255,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  brandLogoCircle: {
-    width: 56,
-    height: 56,
+  brandLogoImage: {
+    width: 64,
+    height: 64,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 12,
   },
   brandTitle: {

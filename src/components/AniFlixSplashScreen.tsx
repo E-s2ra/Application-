@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform } from 'react-native';
+import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image } from 'react-native';
 import { Colors } from '@/constants/theme';
-import { Film, Sparkles, Flame } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 
 const TOTAL_DURATION = 4000; // Exactly 4 seconds
 const isNativeDriver = Platform.OS !== 'web';
@@ -132,13 +132,12 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
           },
         ]}
       >
-        {/* Cinema Icon Badge */}
-        <View style={styles.iconBadge}>
-          <Film size={34} color="#FFF" />
-          <View style={styles.flameBadge}>
-            <Flame size={16} color="#FFD700" />
-          </View>
-        </View>
+        {/* New 1:1 App Logo Icon */}
+        <Image
+          source={require('../../assets/images/icon.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
 
         {/* Brand Title */}
         <View style={styles.brandTitleRow}>
@@ -192,6 +191,12 @@ const styles = StyleSheet.create({
   logoContent: {
     alignItems: 'center',
     paddingHorizontal: 24,
+  },
+  logoImage: {
+    width: 104,
+    height: 104,
+    borderRadius: 24,
+    marginBottom: 20,
   },
   iconBadge: {
     width: 76,

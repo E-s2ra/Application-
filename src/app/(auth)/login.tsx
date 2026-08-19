@@ -10,10 +10,11 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
-import { Sparkles, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -64,9 +65,11 @@ export default function LoginScreen() {
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
           <View style={styles.header}>
-            <View style={[styles.brandLogoCircle, { backgroundColor: themeColors.primary }]}>
-              <Sparkles color="#fff" size={28} />
-            </View>
+            <Image
+              source={require('../../../assets/images/icon.png')}
+              style={styles.brandLogoImage}
+              resizeMode="contain"
+            />
             <Text style={styles.brandTitle}>
               ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
             </Text>
@@ -178,12 +181,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 28,
   },
-  brandLogoCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+  brandLogoImage: {
+    width: 68,
+    height: 68,
+    borderRadius: 18,
     marginBottom: 12,
   },
   brandTitle: {
