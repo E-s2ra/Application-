@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const SUPABASE_URL = 'https://guebvvlopuyebpwbzuri.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_JGe_EcnyE14JrGkXdz4arg_ZoTejNNb';
+const SUPABASE_URL = 'https://zkbprmyxwjfznsucyuvi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
 
 // Access and refresh tokens must never be kept in general-purpose app storage.
 // Expo SecureStore uses the platform's encrypted credential storage on native.
