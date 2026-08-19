@@ -45,7 +45,7 @@ export default function ForgotPasswordScreen() {
     Alert.alert(
       'Reset Link Sent',
       'A password reset link has been sent to your email. Check your inbox and follow the instructions.',
-      [{ text: 'OK', onPress: () => router.back() }],
+      [{ text: 'OK', onPress: () => (router.canGoBack() ? router.back() : router.replace('/(auth)/login')) }],
     );
   };
 
@@ -62,7 +62,7 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/login'))} style={styles.backBtn}>
             <ArrowLeft color="#fff" size={20} />
             <Text style={[styles.backText, { color: themeColors.textSecondary }]}>Back to Sign In</Text>
           </Pressable>

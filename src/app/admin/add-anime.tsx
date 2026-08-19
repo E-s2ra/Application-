@@ -76,7 +76,7 @@ export default function AddAnimeScreen() {
 
     Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to AniFlix.`, [
       { text: 'Add Another', onPress: () => resetForm() },
-      { text: 'Back to Panel', onPress: () => router.back() },
+      { text: 'Back to Panel', onPress: () => (router.canGoBack() ? router.back() : router.replace('/admin')) },
     ]);
   };
 
@@ -101,7 +101,7 @@ export default function AddAnimeScreen() {
       <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 800) }]}>
         {/* Custom Header */}
         <View style={styles.headerBar}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/admin'))} style={styles.backBtn}>
             <ArrowLeft color="#fff" size={22} />
           </Pressable>
           <Text style={styles.headerTitle}>Add New Media</Text>

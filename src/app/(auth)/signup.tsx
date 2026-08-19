@@ -215,7 +215,7 @@ export default function SignUpScreen() {
 
           <View style={styles.footer}>
             <Text style={{ color: themeColors.textSecondary }}>Already have an account? </Text>
-            <Pressable onPress={() => router.back()}>
+            <Pressable onPress={() => router.replace('/(auth)/login')}>
               <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>Sign In</Text>
             </Pressable>
           </View>

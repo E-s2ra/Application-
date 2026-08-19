@@ -223,7 +223,7 @@ export default function WatchScreen() {
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
         {/* 🔙 Custom Top Navigation Bar */}
         <View style={[styles.customNav, { backgroundColor: themeColors.backgroundElement }]}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable style={styles.backButton} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}>
             <ArrowLeft color="#fff" size={22} />
           </Pressable>
           <Text style={styles.navTitle} numberOfLines={1}>
