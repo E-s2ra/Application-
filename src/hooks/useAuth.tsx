@@ -196,18 +196,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fallback to Supabase
       }
 
-      // 2. Fallback to Supabase session
-      const { data: { session: sbSession } } = await supabase.auth.getSession();
-      if (isMounted) {
-        setSession(sbSession);
-        setUser(sbSession?.user ?? null);
-        if (sbSession?.user) {
-          fetchProfile(sbSession.user.id, sbSession.user.email).finally(() => {
-            if (isMounted) setIsLoading(false);
-          });
-        } else {
-          setIsLoading(false);
+      // 2. Fallback to Supabase session with 1.5s timeout guard
+      try {
+        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null } }), 1500)
+        );
+
+        const result = (await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise,
+        ])) as { data: { session: Session | null } };
+
+        const sbSession = result?.data?.session ?? null;
+
+        if (isMounted) {
+          setSession(sbSession);
+          setUser(sbSession?.user ?? null);
+          if (sbSession?.user) {
+            fetchProfile(sbSession.user.id, sbSession.user.email).finally(() => {
+              if (isMounted) setIsLoading(false);
+            });
+          } else {
+            setIsLoading(false);
+          }
         }
+      } catch {
+        if (isMounted) setIsLoading(false);
       }
     }
 

@@ -338,13 +338,20 @@ export default function HomeScreen() {
 
   const fetchMedia = async () => {
     try {
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 1500)
+      );
+
+      const fetchPromise = supabase
         .from('anime')
         .select('id, title, description, image_url, episodes, genre, category, is_featured')
         .order('created_at', { ascending: false });
 
+      const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
+      const { data, error } = result || {};
+
       if (!error && data && data.length > 0) {
-        const customItems = data.map((item) => ({
+        const customItems = data.map((item: any) => ({
           ...item,
           category: item.category || 'Anime Series',
         })) as AnimeItem[];
