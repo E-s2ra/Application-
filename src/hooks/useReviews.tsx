@@ -28,6 +28,8 @@ type ReviewsContextType = {
   getStatsForMedia: (mediaId: string) => RatingStats;
   getUserReview: (mediaId: string) => Review | undefined;
   addReview: (mediaId: string, rating: number, comment: string) => Promise<void>;
+  editReview: (reviewId: string, rating: number, comment: string) => Promise<void>;
+  deleteReview: (reviewId: string) => Promise<void>;
   toggleHelpful: (reviewId: string) => Promise<void>;
 };
 
@@ -191,7 +193,6 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
     const breakdown: { [stars: number]: number } = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
 
     if (list.length === 0) {
-      // Default baseline rating 4.8 for pristine catalog display
       return {
         average: 4.8,
         count: 14,
@@ -228,13 +229,12 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
     let updated: Review[];
 
     if (existingIndex >= 0) {
-      // Update existing review
       updated = [...reviews];
       updated[existingIndex] = {
         ...updated[existingIndex],
         rating,
         comment,
-        createdAt: 'Just now',
+        createdAt: 'Just now (edited)',
       };
     } else {
       const newReview: Review = {
@@ -251,6 +251,31 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
       updated = [newReview, ...reviews];
     }
 
+    await saveReviews(updated);
+  };
+
+  const editReview = async (reviewId: string, rating: number, comment: string) => {
+    const currentUserId = user?.id || 'guest-user';
+    const updated = reviews.map((r) => {
+      if (r.id === reviewId && r.userId === currentUserId) {
+        return {
+          ...r,
+          rating,
+          comment,
+          createdAt: r.createdAt.includes('edited') ? r.createdAt : r.createdAt + ' · edited',
+        };
+      }
+      return r;
+    });
+    await saveReviews(updated);
+  };
+
+  const deleteReview = async (reviewId: string) => {
+    const currentUserId = user?.id || 'guest-user';
+    // Only allow deletion of own reviews (default seeded reviews have different userId)
+    const updated = reviews.filter(
+      (r) => !(r.id === reviewId && r.userId === currentUserId)
+    );
     await saveReviews(updated);
   };
 
@@ -292,6 +317,8 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         getStatsForMedia,
         getUserReview,
         addReview,
+        editReview,
+        deleteReview,
         toggleHelpful,
       }}
     >

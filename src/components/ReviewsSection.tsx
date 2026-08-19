@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,11 +6,24 @@ import {
   TextInput,
   Pressable,
   Image,
-  Animated,
+  Alert,
+  Platform,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
-import { Star, ThumbsUp, CheckCircle, MessageSquare, Send, Sparkles } from 'lucide-react-native';
-import { useReviews } from '@/hooks/useReviews';
+import {
+  Star,
+  ThumbsUp,
+  CheckCircle,
+  MessageSquare,
+  Send,
+  Sparkles,
+  Edit3,
+  Trash2,
+  X,
+  Check,
+} from 'lucide-react-native';
+import { useReviews, Review } from '@/hooks/useReviews';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ReviewsSectionProps {
   mediaId: string;
@@ -27,20 +40,48 @@ const RATING_LABELS: Record<number, string> = {
 
 export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
   const themeColors = Colors.dark;
-  const { getReviewsForMedia, getStatsForMedia, getUserReview, addReview, toggleHelpful } =
-    useReviews();
+  const { user } = useAuth();
+  const currentUserId = user?.id || 'guest-user';
+
+  const {
+    getReviewsForMedia,
+    getStatsForMedia,
+    getUserReview,
+    addReview,
+    editReview,
+    deleteReview,
+    toggleHelpful,
+  } = useReviews();
 
   const reviews = getReviewsForMedia(mediaId);
   const stats = getStatsForMedia(mediaId);
   const userReview = getUserReview(mediaId);
 
-  // Form State
+  // Main Composer State
   const [selectedRating, setSelectedRating] = useState<number>(userReview?.rating || 5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [comment, setComment] = useState(userReview?.comment || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeSort, setActiveSort] = useState<'top' | 'recent'>('top');
+
+  // Inline Review Edit State
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [inlineEditRating, setInlineEditRating] = useState<number>(5);
+  const [inlineEditComment, setInlineEditComment] = useState<string>('');
+
+  // Keep composer in sync when userReview changes
+  useEffect(() => {
+    if (userReview) {
+      setSelectedRating(userReview.rating);
+      setComment(userReview.comment);
+    }
+  }, [userReview]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleStarPress = (rating: number) => {
     setSelectedRating(rating);
@@ -51,11 +92,55 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     setIsSubmitting(true);
     try {
       await addReview(mediaId, selectedRating, comment.trim());
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      showToast(userReview ? 'Review updated successfully!' : 'Review published!');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    const performDelete = async () => {
+      await deleteReview(reviewId);
+      if (editingReviewId === reviewId) {
+        setEditingReviewId(null);
+      }
+      setComment('');
+      setSelectedRating(5);
+      showToast('Comment deleted');
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this comment?')) {
+        await performDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Comment',
+        'Are you sure you want to delete your review?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: performDelete },
+        ]
+      );
+    }
+  };
+
+  const startInlineEdit = (rev: Review) => {
+    setEditingReviewId(rev.id);
+    setInlineEditRating(rev.rating);
+    setInlineEditComment(rev.comment);
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingReviewId(null);
+    setInlineEditComment('');
+  };
+
+  const saveInlineEdit = async (reviewId: string) => {
+    if (!inlineEditComment.trim()) return;
+    await editReview(reviewId, inlineEditRating, inlineEditComment.trim());
+    setEditingReviewId(null);
+    showToast('Comment updated!');
   };
 
   const sortedReviews = [...reviews].sort((a, b) => {
@@ -117,9 +202,20 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
 
       {/* ⭐ Interactive "Rate This Title" & Review Box */}
       <View style={styles.composerCard}>
-        <Text style={styles.composerTitle}>
-          {userReview ? 'Edit Your Review' : `How was ${mediaTitle || 'this title'}?`}
-        </Text>
+        <View style={styles.composerHeader}>
+          <Text style={styles.composerTitle}>
+            {userReview ? '✏️ Your Review (Edit or Update)' : `How was ${mediaTitle || 'this title'}?`}
+          </Text>
+          {userReview && (
+            <Pressable
+              style={styles.deleteTopBtn}
+              onPress={() => handleDeleteReview(userReview.id)}
+            >
+              <Trash2 size={13} color="#FF5252" />
+              <Text style={styles.deleteTopBtnText}>Delete</Text>
+            </Pressable>
+          )}
+        </View>
 
         {/* Star Rating Selector */}
         <View style={styles.starSelectorRow}>
@@ -159,10 +255,10 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
 
         {/* Action Button */}
         <View style={styles.composerActionRow}>
-          {showSuccessToast && (
+          {toastMessage && (
             <View style={styles.toastSuccess}>
               <Sparkles size={14} color="#00E676" />
-              <Text style={styles.toastText}>Review published!</Text>
+              <Text style={styles.toastText}>{toastMessage}</Text>
             </View>
           )}
 
@@ -178,7 +274,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
           >
             <Send size={15} color="#FFF" style={{ marginRight: 6 }} />
             <Text style={styles.submitBtnText}>
-              {isSubmitting ? 'Posting...' : userReview ? 'Update Review' : 'Post Review'}
+              {isSubmitting ? 'Saving...' : userReview ? 'Save Changes' : 'Post Review'}
             </Text>
           </Pressable>
         </View>
@@ -219,22 +315,42 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
           </View>
         ) : (
           sortedReviews.map((rev) => {
+            const isUserAuthor =
+              rev.userId === currentUserId ||
+              (rev.userId.startsWith('guest-') && userReview?.id === rev.id);
+            const isEditing = editingReviewId === rev.id;
             const avatarInitial = rev.userName?.charAt(0)?.toUpperCase() || 'A';
+
             return (
-              <View key={rev.id} style={styles.reviewCard}>
-                {/* Author Info */}
+              <View
+                key={rev.id}
+                style={[
+                  styles.reviewCard,
+                  isUserAuthor && styles.userReviewCard,
+                ]}
+              >
+                {/* Author Header */}
                 <View style={styles.reviewHeader}>
                   <View style={styles.authorRow}>
                     {rev.userAvatar ? (
                       <Image source={{ uri: rev.userAvatar }} style={styles.avatarImg} />
                     ) : (
-                      <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarText}>{avatarInitial}</Text>
+                      <View
+                        style={[
+                          styles.avatarPlaceholder,
+                          isUserAuthor && { backgroundColor: '#FFB800' },
+                        ]}
+                      >
+                        <Text style={[styles.avatarText, isUserAuthor && { color: '#000' }]}>
+                          {avatarInitial}
+                        </Text>
                       </View>
                     )}
                     <View>
                       <View style={styles.nameRow}>
-                        <Text style={styles.userNameText}>{rev.userName}</Text>
+                        <Text style={styles.userNameText}>
+                          {rev.userName} {isUserAuthor ? '(You)' : ''}
+                        </Text>
                         {rev.isVerified && (
                           <View style={styles.verifiedBadge}>
                             <CheckCircle size={11} color="#00D2FF" />
@@ -246,24 +362,101 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                     </View>
                   </View>
 
-                  {/* Stars */}
-                  <View style={styles.cardStars}>
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star
-                        key={s}
-                        size={13}
-                        color="#FFB800"
-                        fill={s <= rev.rating ? '#FFB800' : 'transparent'}
-                      />
-                    ))}
-                  </View>
+                  {/* Stars Rating */}
+                  {!isEditing && (
+                    <View style={styles.cardStars}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={13}
+                          color="#FFB800"
+                          fill={s <= rev.rating ? '#FFB800' : 'transparent'}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
 
-                {/* Comment Body */}
-                <Text style={styles.reviewComment}>{rev.comment}</Text>
+                {/* 📝 Inline Edit Mode vs Normal View */}
+                {isEditing ? (
+                  <View style={styles.inlineEditBox}>
+                    {/* Inline Star Picker */}
+                    <View style={styles.inlineStarsRow}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Pressable
+                          key={star}
+                          onPress={() => setInlineEditRating(star)}
+                          style={styles.starBtnSmall}
+                        >
+                          <Star
+                            size={20}
+                            color="#FFB800"
+                            fill={star <= inlineEditRating ? '#FFB800' : 'transparent'}
+                          />
+                        </Pressable>
+                      ))}
+                      <Text style={styles.inlineRatingLabel}>
+                        {RATING_LABELS[inlineEditRating]}
+                      </Text>
+                    </View>
 
-                {/* Helpful Button */}
+                    {/* Inline Comment Input */}
+                    <TextInput
+                      style={styles.inlineTextInput}
+                      multiline
+                      numberOfLines={3}
+                      value={inlineEditComment}
+                      onChangeText={setInlineEditComment}
+                    />
+
+                    {/* Save / Cancel buttons */}
+                    <View style={styles.inlineActionsRow}>
+                      <Pressable style={styles.inlineCancelBtn} onPress={cancelInlineEdit}>
+                        <X size={14} color="#A0A0B8" />
+                        <Text style={styles.inlineCancelText}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.inlineSaveBtn,
+                          !inlineEditComment.trim() && { opacity: 0.5 },
+                        ]}
+                        disabled={!inlineEditComment.trim()}
+                        onPress={() => saveInlineEdit(rev.id)}
+                      >
+                        <Check size={14} color="#FFF" />
+                        <Text style={styles.inlineSaveText}>Save</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.reviewComment}>{rev.comment}</Text>
+                )}
+
+                {/* Footer with Helpful Button & Author Actions (Edit / Delete) */}
                 <View style={styles.reviewFooter}>
+                  {/* Author Edit & Delete buttons */}
+                  {isUserAuthor && !isEditing ? (
+                    <View style={styles.authorActionsRow}>
+                      <Pressable
+                        style={styles.authorActionBtn}
+                        onPress={() => startInlineEdit(rev)}
+                      >
+                        <Edit3 size={13} color="#00D2FF" />
+                        <Text style={[styles.authorActionText, { color: '#00D2FF' }]}>Edit</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.authorActionBtn}
+                        onPress={() => handleDeleteReview(rev.id)}
+                      >
+                        <Trash2 size={13} color="#FF5252" />
+                        <Text style={[styles.authorActionText, { color: '#FF5252' }]}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View />
+                  )}
+
+                  {/* Helpful Button */}
                   <Pressable
                     style={({ pressed }) => [
                       styles.helpfulBtn,
@@ -398,11 +591,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#262638',
   },
+  composerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   composerTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#FFF',
-    marginBottom: 10,
+  },
+  deleteTopBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(255, 82, 82, 0.12)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 82, 82, 0.3)',
+  },
+  deleteTopBtnText: {
+    color: '#FF5252',
+    fontSize: 11,
+    fontWeight: '700',
   },
   starSelectorRow: {
     flexDirection: 'row',
@@ -513,6 +727,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1D1D2C',
   },
+  userReviewCard: {
+    borderColor: '#3D3D58',
+    backgroundColor: '#141422',
+  },
   reviewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -583,7 +801,26 @@ const styles = StyleSheet.create({
   },
   reviewFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  authorActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  authorActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#1E1E2C',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  authorActionText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   helpfulBtn: {
     flexDirection: 'row',
@@ -598,5 +835,72 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#9A9AA8',
     fontWeight: '500',
+  },
+  inlineEditBox: {
+    backgroundColor: '#0A0A10',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#262638',
+    marginBottom: 10,
+    gap: 8,
+  },
+  inlineStarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  starBtnSmall: {
+    padding: 2,
+  },
+  inlineRatingLabel: {
+    fontSize: 12,
+    color: '#FFB800',
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+  inlineTextInput: {
+    backgroundColor: '#12121D',
+    borderRadius: 6,
+    padding: 10,
+    color: '#FFF',
+    fontSize: 13,
+    minHeight: 50,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: '#1F1F30',
+  },
+  inlineActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  inlineCancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: '#1C1C28',
+  },
+  inlineCancelText: {
+    fontSize: 12,
+    color: '#A0A0B8',
+    fontWeight: '600',
+  },
+  inlineSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: '#00E676',
+  },
+  inlineSaveText: {
+    fontSize: 12,
+    color: '#000',
+    fontWeight: '800',
   },
 });
