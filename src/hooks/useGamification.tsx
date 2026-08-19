@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './useAuth';
 
 export type Mission = {
   id: string;
@@ -392,9 +394,10 @@ type GamificationContextType = {
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
-const GAMIFICATION_STORAGE_KEY = 'aniflix_gamification_v2';
+const GAMIFICATION_STORAGE_KEY = 'aniflix_gamification_v3';
 
 export function GamificationProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [coins, setCoins] = useState(450);
   const [xp, setXp] = useState(580);
   const [streakDays, setStreakDays] = useState(4);
@@ -433,6 +436,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   const activeTheme = themes.find((t) => t.id === activeThemeId) || themes[0];
 
+  // Sync with Supabase on user sign-in & load cached state
   useEffect(() => {
     async function loadData() {
       try {
@@ -456,12 +460,55 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           if (parsed.missions) setMissions(parsed.missions);
           if (parsed.badges) setBadges(parsed.badges);
         }
+
+        // Live Supabase Sync
+        if (user?.id && !user.id.startsWith('guest-')) {
+          const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
+          const syncPromise = (async () => {
+            // 1. Fetch Profile
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('coins, xp, level, streak_days, is_vip, vip_expires_at')
+              .eq('id', user.id)
+              .single();
+
+            if (profile) {
+              if (profile.coins !== undefined && profile.coins !== null) setCoins(profile.coins);
+              if (profile.xp !== undefined && profile.xp !== null) setXp(profile.xp);
+              if (profile.streak_days !== undefined && profile.streak_days !== null)
+                setStreakDays(profile.streak_days);
+              if (profile.is_vip !== undefined && profile.is_vip !== null) {
+                // Calculate remaining days from vip_expires_at
+                if (profile.vip_expires_at) {
+                  const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
+                  const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                  setVipDaysRemaining(days);
+                }
+              }
+            }
+
+            // 2. Check Daily Logins for today
+            const todayStr = new Date().toISOString().split('T')[0];
+            const { data: loginData } = await supabase
+              .from('daily_logins')
+              .select('id, reward_claimed')
+              .eq('user_id', user.id)
+              .eq('login_date', todayStr)
+              .maybeSingle();
+
+            if (loginData) {
+              setHasClaimedDailyStreak(loginData.reward_claimed);
+            }
+          })();
+
+          await Promise.race([syncPromise, timeoutPromise]);
+        }
       } catch (e) {
-        console.warn('Error loading gamification:', e);
+        console.warn('Gamification init note:', e);
       }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   const persist = async (updates: any) => {
     try {
@@ -483,6 +530,26 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         localStorage.setItem(GAMIFICATION_STORAGE_KEY, json);
       } else {
         await AsyncStorage.setItem(GAMIFICATION_STORAGE_KEY, json);
+      }
+
+      // Sync to Supabase profiles in background
+      if (user?.id && !user.id.startsWith('guest-')) {
+        const payload: any = { updated_at: new Date().toISOString() };
+        if (updates.coins !== undefined) payload.coins = updates.coins;
+        if (updates.xp !== undefined) {
+          payload.xp = updates.xp;
+          payload.level = Math.floor(updates.xp / 300) + 1;
+        }
+        if (updates.streakDays !== undefined) payload.streak_days = updates.streakDays;
+        if (updates.vipDaysRemaining !== undefined) {
+          payload.is_vip = updates.vipDaysRemaining > 0;
+          if (updates.vipDaysRemaining > 0) {
+            const exp = new Date();
+            exp.setDate(exp.getDate() + updates.vipDaysRemaining);
+            payload.vip_expires_at = exp.toISOString();
+          }
+        }
+        await supabase.from('profiles').update(payload).eq('id', user.id);
       }
     } catch {}
   };
@@ -518,6 +585,21 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       hasClaimedDailyStreak: true,
     });
 
+    // Record in Supabase daily_logins
+    if (user?.id && !user.id.startsWith('guest-')) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      supabase
+        .from('daily_logins')
+        .insert({
+          user_id: user.id,
+          login_date: todayStr,
+          reward_claimed: true,
+          coins_awarded: rewardCoins,
+          xp_awarded: rewardXP,
+        })
+        .then(() => {});
+    }
+
     return { coins: rewardCoins, xp: rewardXP };
   };
 
@@ -544,6 +626,19 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       vipDaysRemaining: newVipDays,
       canSpinWheel: false,
     });
+
+    // Record in Supabase spins table
+    if (user?.id && !user.id.startsWith('guest-')) {
+      supabase
+        .from('spins')
+        .insert({
+          user_id: user.id,
+          reward_type: reward.type,
+          reward_value: reward.amount,
+          label: reward.label,
+        })
+        .then(() => {});
+    }
 
     return reward;
   };
@@ -600,6 +695,18 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     const newVip = vipDaysRemaining + days;
     setVipDaysRemaining(newVip);
     persist({ vipDaysRemaining: newVip });
+
+    // Record in Supabase vip_transactions
+    if (user?.id && !user.id.startsWith('guest-')) {
+      supabase
+        .from('vip_transactions')
+        .insert({
+          user_id: user.id,
+          type: 'coins_purchase',
+          duration: days,
+        })
+        .then(() => {});
+    }
   };
 
   const awardWatchTimeReward = (minutes: number) => {
@@ -613,7 +720,6 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     const idx = SEASONAL_EVENTS.findIndex((e) => e.id === eventId);
     if (idx >= 0) {
       setActiveEventIndex(idx);
-      // Merge event missions
       const eventMissions = SEASONAL_EVENTS[idx].eventMissions;
       const otherMissions = missions.filter((m) => m.category !== 'event');
       const updated = [...otherMissions, ...eventMissions];

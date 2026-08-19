@@ -27,8 +27,10 @@ import {
   Palette,
   ShieldCheck,
   CheckCircle,
+  Film,
 } from 'lucide-react-native';
 import { useGamification, SPIN_REWARDS, SpinReward } from '@/hooks/useGamification';
+import { useAdMob } from '@/hooks/useAdMob';
 
 interface RewardsHubModalProps {
   visible: boolean;
@@ -37,6 +39,7 @@ interface RewardsHubModalProps {
 
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = Colors.dark;
+  const { showRewardedAd } = useAdMob();
   const {
     coins,
     xp,
@@ -160,6 +163,25 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </Text>
             </View>
           </View>
+
+          {/* 📺 AdMob Rewarded Ads Instant Coins Button */}
+          <Pressable
+            style={styles.admobRewardedBtn}
+            onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
+          >
+            <View style={styles.admobBtnLeft}>
+              <View style={styles.admobIconCircle}>
+                <Film size={16} color="#FFB800" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.admobBtnTitle}>Watch Ad & Earn Coins</Text>
+                <Text style={styles.admobBtnSub}>Watch a quick sponsored clip for instant reward</Text>
+              </View>
+            </View>
+            <View style={styles.admobRewardPill}>
+              <Text style={styles.admobRewardPillText}>+100 💰</Text>
+            </View>
+          </Pressable>
 
           {/* Navigation Tabs */}
           <ScrollView
@@ -758,6 +780,58 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#76768E',
     textAlign: 'right',
+  },
+  admobRewardedBtn: {
+    backgroundColor: '#16140D',
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#3D3418',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  admobBtnLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    paddingRight: 8,
+  },
+  admobIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#262010',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFB800',
+  },
+  admobBtnTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  admobBtnSub: {
+    fontSize: 10,
+    color: '#A0A0B8',
+    marginTop: 1,
+  },
+  admobRewardPill: {
+    backgroundColor: '#262010',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFB800',
+  },
+  admobRewardPillText: {
+    color: '#FFD700',
+    fontWeight: '800',
+    fontSize: 12,
   },
   tabsRow: {
     flexDirection: 'row',

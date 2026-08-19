@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { useAuth } from './useAuth';
+import { supabase } from '@/lib/supabase';
 
 export type Review = {
   id: string;
@@ -34,8 +35,8 @@ type ReviewsContextType = {
 };
 
 const ReviewsContext = createContext<ReviewsContextType | undefined>(undefined);
-const REVIEWS_STORAGE_KEY = 'aniflix_community_reviews_v1';
-const HELPFUL_STORAGE_KEY = 'aniflix_helpful_reviews_v1';
+const REVIEWS_STORAGE_KEY = 'aniflix_community_reviews_v2';
+const HELPFUL_STORAGE_KEY = 'aniflix_helpful_reviews_v2';
 
 // Seed Initial Reviews for Top Titles
 const DEFAULT_REVIEWS: Review[] = [
@@ -130,7 +131,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
   const [reviews, setReviews] = useState<Review[]>(DEFAULT_REVIEWS);
   const [helpfulIds, setHelpfulIds] = useState<string[]>([]);
 
-  // Load reviews from persistent storage
+  // Load reviews from persistent storage and Supabase
   useEffect(() => {
     async function load() {
       try {
@@ -150,7 +151,6 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (storedReviews && storedReviews.length > 0) {
-          // Merge unique reviews
           const merged = [...storedReviews];
           DEFAULT_REVIEWS.forEach((def) => {
             if (!merged.some((r) => r.id === def.id)) {
@@ -163,8 +163,40 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (storedHelpful) setHelpfulIds(storedHelpful);
+
+        // Fetch from Supabase comments table
+        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
+        const fetchCommentsPromise = supabase
+          .from('comments')
+          .select('id, movie_id, user_id, content, rating, likes_count, created_at')
+          .order('created_at', { ascending: false });
+
+        const res = (await Promise.race([fetchCommentsPromise, timeoutPromise])) as any;
+        if (res && res.data && res.data.length > 0) {
+          const dbReviews: Review[] = res.data.map((c: any) => ({
+            id: c.id,
+            mediaId: c.movie_id,
+            userId: c.user_id,
+            userName: 'Community Streamer',
+            rating: c.rating || 5,
+            comment: c.content,
+            createdAt: 'Recently',
+            helpfulCount: c.likes_count || 0,
+            isVerified: true,
+          }));
+
+          setReviews((prev) => {
+            const combined = [...dbReviews];
+            prev.forEach((p) => {
+              if (!combined.some((item) => item.id === p.id)) {
+                combined.push(p);
+              }
+            });
+            return combined;
+          });
+        }
       } catch (err) {
-        console.warn('Error loading reviews:', err);
+        console.warn('Reviews load note:', err);
       }
     }
     load();
@@ -229,16 +261,31 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
     let updated: Review[];
 
     if (existingIndex >= 0) {
+      const existing = reviews[existingIndex];
       updated = [...reviews];
       updated[existingIndex] = {
-        ...updated[existingIndex],
+        ...existing,
         rating,
         comment,
         createdAt: 'Just now (edited)',
       };
+
+      // Sync to Supabase
+      if (user?.id && !user.id.startsWith('guest-') && !existing.id.startsWith('rev-')) {
+        supabase
+          .from('comments')
+          .update({
+            content: comment,
+            rating,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id)
+          .then(() => {});
+      }
     } else {
+      const newId = 'rev-' + Date.now();
       const newReview: Review = {
-        id: 'rev-' + Date.now(),
+        id: newId,
         mediaId: String(mediaId),
         userId: authorId,
         userName: authorName,
@@ -249,6 +296,20 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         isVerified: true,
       };
       updated = [newReview, ...reviews];
+
+      // Sync to Supabase comments
+      if (user?.id && !user.id.startsWith('guest-')) {
+        supabase
+          .from('comments')
+          .insert({
+            movie_id: String(mediaId),
+            user_id: user.id,
+            content: comment,
+            rating,
+            likes_count: 0,
+          })
+          .then(() => {});
+      }
     }
 
     await saveReviews(updated);
@@ -268,15 +329,32 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
       return r;
     });
     await saveReviews(updated);
+
+    // Sync to Supabase
+    if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
+      supabase
+        .from('comments')
+        .update({
+          content: comment,
+          rating,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reviewId)
+        .then(() => {});
+    }
   };
 
   const deleteReview = async (reviewId: string) => {
     const currentUserId = user?.id || 'guest-user';
-    // Only allow deletion of own reviews (default seeded reviews have different userId)
     const updated = reviews.filter(
       (r) => !(r.id === reviewId && r.userId === currentUserId)
     );
     await saveReviews(updated);
+
+    // Sync to Supabase
+    if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
+      supabase.from('comments').delete().eq('id', reviewId).then(() => {});
+    }
   };
 
   const toggleHelpful = async (reviewId: string) => {
@@ -298,6 +376,26 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
     });
 
     await saveReviews(updatedReviews);
+
+    // Sync to Supabase comment_likes
+    if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
+      if (isAlreadyHelpful) {
+        supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', reviewId)
+          .eq('user_id', user.id)
+          .then(() => {});
+      } else {
+        supabase
+          .from('comment_likes')
+          .insert({
+            comment_id: reviewId,
+            user_id: user.id,
+          })
+          .then(() => {});
+      }
+    }
 
     try {
       const json = JSON.stringify(updatedHelpful);

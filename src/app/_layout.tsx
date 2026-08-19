@@ -9,7 +9,9 @@ import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { FavoritesProvider } from '@/hooks/useFavorites';
 import { ReviewsProvider } from '@/hooks/useReviews';
 import { GamificationProvider } from '@/hooks/useGamification';
+import { AdMobProvider } from '@/hooks/useAdMob';
 import { AniFlixSplashScreen } from '@/components/AniFlixSplashScreen';
+import { AdMobRewardedModal } from '@/components/AdMobRewardedModal';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -61,30 +63,35 @@ export default function RootLayout() {
       <FavoritesProvider>
         <ReviewsProvider>
           <GamificationProvider>
-            <ThemeProvider value={DarkTheme}>
-              <View style={{ flex: 1, backgroundColor: themeColors.background }}>
-                <AuthGuard onReady={() => {}} />
-                <PrivacyProtection />
-                <StatusBar style="light" />
-                <Stack
-                  screenOptions={{
-                    headerStyle: {
-                      backgroundColor: themeColors.backgroundElement,
-                    },
-                    headerTintColor: themeColors.text,
-                    contentStyle: { backgroundColor: themeColors.background },
-                  }}>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                  <Stack.Screen name="admin" options={{ headerShown: false }} />
-                  <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-                </Stack>
+            <AdMobProvider>
+              <ThemeProvider value={DarkTheme}>
+                <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+                  <AuthGuard onReady={() => {}} />
+                  <PrivacyProtection />
+                  <StatusBar style="light" />
+                  <Stack
+                    screenOptions={{
+                      headerStyle: {
+                        backgroundColor: themeColors.backgroundElement,
+                      },
+                      headerTintColor: themeColors.text,
+                      contentStyle: { backgroundColor: themeColors.background },
+                    }}>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="admin" options={{ headerShown: false }} />
+                    <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+                  </Stack>
 
-                {showSplash && (
-                  <AniFlixSplashScreen onFinish={() => setShowSplash(false)} />
-                )}
-              </View>
-            </ThemeProvider>
+                  {/* Google AdMob Rewarded Ad Modal */}
+                  <AdMobRewardedModal />
+
+                  {showSplash && (
+                    <AniFlixSplashScreen onFinish={() => setShowSplash(false)} />
+                  )}
+                </View>
+              </ThemeProvider>
+            </AdMobProvider>
           </GamificationProvider>
         </ReviewsProvider>
       </FavoritesProvider>
