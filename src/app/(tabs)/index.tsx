@@ -15,15 +15,37 @@ import {
   Animated,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
-import { Play, Heart, Star, Sparkles, TrendingUp, Compass, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import {
+  Play,
+  Heart,
+  Star,
+  Sparkles,
+  TrendingUp,
+  Compass,
+  ChevronLeft,
+  ChevronRight,
+  Film,
+  Clapperboard,
+  Tv,
+  Flame,
+} from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
+import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
-const HERO_HEIGHT = Platform.OS === 'web' ? Math.min(width * 0.46, 480) : 400;
+const HERO_HEIGHT = Platform.OS === 'web' ? Math.min(width * 0.46, 480) : 410;
 
-const GENRES = ['All', '🔥 Trending', 'Action', 'Shonen', 'Fantasy', 'Adventure', 'Sci-Fi', 'Romance', 'Horror'];
+export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: string }[] = [
+  { id: 'All', label: 'All', icon: '🌟' },
+  { id: 'Movies', label: 'Movies', icon: '🎬' },
+  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
+  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
+  { id: 'Drama', label: 'Drama', icon: '🎭' },
+  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
+];
+
+const GENRES = ['All', '🔥 Trending', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
 const PLACEHOLDER_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
@@ -32,50 +54,244 @@ const PLACEHOLDER_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
 ];
 
-const DEFAULT_DEMO_ANIME: AnimeItem[] = [
+export const DEFAULT_CATALOG: AnimeItem[] = [
+  // 🎬 MOVIES
   {
-    id: 'demo-1',
+    id: 'movie-1',
+    title: 'Inception',
+    description: 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
+    image_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&q=80',
+    episodes: 1,
+    genre: 'Sci-Fi, Action, Thriller',
+    category: 'Movies',
+    is_featured: true,
+  },
+  {
+    id: 'movie-2',
+    title: 'Interstellar',
+    description: 'When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft along with a team of researchers to find a new planet for humans.',
+    image_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80',
+    episodes: 1,
+    genre: 'Sci-Fi, Adventure, Drama',
+    category: 'Movies',
+    is_featured: true,
+  },
+  {
+    id: 'movie-3',
+    title: 'Oppenheimer',
+    description: 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb during World War II.',
+    image_url: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=1200&q=80',
+    episodes: 1,
+    genre: 'Biography, Drama, History',
+    category: 'Movies',
+    is_featured: false,
+  },
+  {
+    id: 'movie-4',
+    title: 'Dune: Part Two',
+    description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.',
+    image_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80',
+    episodes: 1,
+    genre: 'Sci-Fi, Adventure, Action',
+    category: 'Movies',
+    is_featured: false,
+  },
+  {
+    id: 'movie-5',
+    title: 'The Dark Knight',
+    description: 'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.',
+    image_url: 'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=1200&q=80',
+    episodes: 1,
+    genre: 'Action, Crime, Drama',
+    category: 'Movies',
+    is_featured: false,
+  },
+
+  // 🎌 ANIME MOVIES
+  {
+    id: 'amovie-1',
+    title: 'Your Name (Kimi no Na wa)',
+    description: 'Two teenagers share a profound, magical connection upon discovering they are swapping bodies. Things manage to become even more complicated when the boy and girl decide to meet in person.',
+    image_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80',
+    episodes: 1,
+    genre: 'Romance, Fantasy, Drama',
+    category: 'Anime Movies',
+    is_featured: true,
+  },
+  {
+    id: 'amovie-2',
+    title: 'Spirited Away',
+    description: 'During her family move to the suburbs, a sullen 10-year-old girl wanders into a world ruled by gods, witches, and spirits, and where humans are changed into beasts.',
+    image_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
+    episodes: 1,
+    genre: 'Fantasy, Adventure',
+    category: 'Anime Movies',
+    is_featured: true,
+  },
+  {
+    id: 'amovie-3',
+    title: 'Suzume',
+    description: 'A modern action adventure road story where a 17-year-old girl named Suzume helps a mysterious young man close doors from the outside that are releasing disasters all over Japan.',
+    image_url: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1200&q=80',
+    episodes: 1,
+    genre: 'Adventure, Fantasy',
+    category: 'Anime Movies',
+    is_featured: false,
+  },
+  {
+    id: 'amovie-4',
+    title: 'Demon Slayer: Mugen Train',
+    description: 'After completing their rehabilitation training, Tanjiro and his comrades arrive at their next mission on the Mugen Train, where over forty people have disappeared in a very short time.',
+    image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
+    episodes: 1,
+    genre: 'Action, Supernatural, Fantasy',
+    category: 'Anime Movies',
+    is_featured: false,
+  },
+  {
+    id: 'amovie-5',
+    title: 'A Silent Voice',
+    description: 'A young man is ostracized by his classmates after he bullies a deaf girl to the point where she moves away. Years later, he sets off on a path for redemption.',
+    image_url: 'https://images.unsplash.com/photo-1528722828814-77b9b83aafb2?w=1200&q=80',
+    episodes: 1,
+    genre: 'Drama, Romance',
+    category: 'Anime Movies',
+    is_featured: false,
+  },
+
+  // 🌸 K-DRAMA
+  {
+    id: 'kdrama-1',
+    title: 'Queen of Tears',
+    description: 'The queen of department stores and the prince of supermarkets weather a marital crisis until love miraculously begins to bloom again.',
+    image_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1200&q=80',
+    episodes: 16,
+    genre: 'Romance, Comedy, Drama',
+    category: 'K-Drama',
+    is_featured: true,
+  },
+  {
+    id: 'kdrama-2',
+    title: 'Squid Game',
+    description: 'Hundreds of cash-strapped players accept a strange invitation to compete in children games. Inside, a tempting prize awaits with deadly high stakes.',
+    image_url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&q=80',
+    episodes: 9,
+    genre: 'Thriller, Mystery, Drama',
+    category: 'K-Drama',
+    is_featured: true,
+  },
+  {
+    id: 'kdrama-3',
+    title: 'Crash Landing on You',
+    description: 'A South Korean heiress accidentally paraglides into North Korea and into the life of an army officer, who decides he will help her hide.',
+    image_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1200&q=80',
+    episodes: 16,
+    genre: 'Romance, Comedy, Drama',
+    category: 'K-Drama',
+    is_featured: false,
+  },
+  {
+    id: 'kdrama-4',
+    title: 'Vincenzo',
+    description: 'During a visit to his motherland, a Korean-Italian mafia lawyer gives a conglomerate a taste of its own medicine with a side of justice.',
+    image_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=80',
+    episodes: 20,
+    genre: 'Crime, Comedy, Drama',
+    category: 'K-Drama',
+    is_featured: false,
+  },
+  {
+    id: 'kdrama-5',
+    title: 'Goblin (Guardian)',
+    description: 'In his quest for a bride to break his immortal curse, a 939-year-old guardian of souls meets a grim reaper and a cheerful student with a tragic past.',
+    image_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=1200&q=80',
+    episodes: 16,
+    genre: 'Fantasy, Romance, Drama',
+    category: 'K-Drama',
+    is_featured: false,
+  },
+
+  // 🎭 DRAMA
+  {
+    id: 'drama-1',
+    title: 'Succession',
+    description: 'The Roy family is known for controlling the biggest media and entertainment company in the world. However, their world changes when their aging father steps down from the company.',
+    image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80',
+    episodes: 39,
+    genre: 'Drama, Satire',
+    category: 'Drama',
+    is_featured: true,
+  },
+  {
+    id: 'drama-2',
+    title: 'Breaking Bad',
+    description: 'A chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine with a former student in order to secure his family future.',
+    image_url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
+    episodes: 62,
+    genre: 'Crime, Drama, Thriller',
+    category: 'Drama',
+    is_featured: true,
+  },
+  {
+    id: 'drama-3',
+    title: 'The Last of Us',
+    description: 'After a global pandemic destroys civilization, a hardened survivor takes charge of a 14-year-old girl who may be humanity last hope.',
+    image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
+    episodes: 9,
+    genre: 'Action, Adventure, Drama',
+    category: 'Drama',
+    is_featured: false,
+  },
+  {
+    id: 'drama-4',
+    title: 'Chernobyl',
+    description: 'In April 1986, an explosion at the Chernobyl nuclear power plant in the Union of Soviet Socialist Republics becomes one of the world worst man-made catastrophes.',
+    image_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80',
+    episodes: 5,
+    genre: 'History, Drama, Thriller',
+    category: 'Drama',
+    is_featured: false,
+  },
+
+  // ⚡ ANIME SERIES
+  {
+    id: 'anime-1',
     title: 'Solo Leveling: Arise',
     description: 'In a world where hunters battle deadly monsters, Sung Jinwoo discovers an extraordinary system that awakens limitless power.',
     image_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
     episodes: 24,
     genre: 'Action, Fantasy',
+    category: 'Anime Series',
     is_featured: true,
   },
   {
-    id: 'demo-2',
+    id: 'anime-2',
     title: 'Demon Slayer: Hashira Training',
     description: 'Tanjiro undergoes rigorous training with the Stone Hashira to prepare for the final confrontation against Muzan.',
     image_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80',
     episodes: 12,
     genre: 'Shonen, Supernatural',
+    category: 'Anime Series',
     is_featured: true,
   },
   {
-    id: 'demo-3',
+    id: 'anime-3',
     title: 'Jujutsu Kaisen: Shibuya Incident',
     description: 'Curses and sorcerers clash in an unprecedented, explosive battle across the crowded streets of Tokyo.',
     image_url: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1200&q=80',
     episodes: 23,
     genre: 'Action, Dark Fantasy',
-    is_featured: true,
+    category: 'Anime Series',
+    is_featured: false,
   },
   {
-    id: 'demo-4',
+    id: 'anime-4',
     title: 'Attack on Titan: The Final Chapters',
     description: 'The fate of humanity hangs in the balance as the Rumbling approaches its apocalyptic climax.',
     image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
     episodes: 28,
     genre: 'Action, Drama',
-    is_featured: true,
-  },
-  {
-    id: 'demo-5',
-    title: 'Cyberpunk: Edgerunners',
-    description: 'A street kid trying to survive in a technology-obsessed city of the future where chrome is king.',
-    image_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80',
-    episodes: 10,
-    genre: 'Sci-Fi, Cyberpunk',
+    category: 'Anime Series',
     is_featured: false,
   },
 ];
@@ -86,8 +302,8 @@ export default function HomeScreen() {
   const themeColors = Colors.dark;
   const { isFavorite, toggleFavorite } = useFavorites();
 
-  const [allAnime, setAllAnime] = useState<AnimeItem[]>([]);
-  const [featured, setFeatured] = useState<AnimeItem[]>([]);
+  const [allMedia, setAllMedia] = useState<AnimeItem[]>(DEFAULT_CATALOG);
+  const [activeCategory, setActiveCategory] = useState<'All' | MediaCategory>('All');
   const [activeGenre, setActiveGenre] = useState('All');
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -95,24 +311,25 @@ export default function HomeScreen() {
 
   const [fadeAnim] = useState(() => new Animated.Value(1));
 
-  const fetchAnime = async () => {
+  const fetchMedia = async () => {
     try {
       const { data, error } = await supabase
         .from('anime')
-        .select('id, title, description, image_url, episodes, genre, is_featured')
+        .select('id, title, description, image_url, episodes, genre, category, is_featured')
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        setAllAnime(data as AnimeItem[]);
-        const feat = (data as AnimeItem[]).filter((a) => a.is_featured);
-        setFeatured(feat.length > 0 ? feat : (data as AnimeItem[]).slice(0, 4));
+        // Merge Supabase items with defaults
+        const customItems = data.map((item) => ({
+          ...item,
+          category: item.category || 'Anime Series',
+        })) as AnimeItem[];
+        setAllMedia([...customItems, ...DEFAULT_CATALOG]);
       } else {
-        setAllAnime(DEFAULT_DEMO_ANIME);
-        setFeatured(DEFAULT_DEMO_ANIME.filter((a) => a.is_featured));
+        setAllMedia(DEFAULT_CATALOG);
       }
     } catch {
-      setAllAnime(DEFAULT_DEMO_ANIME);
-      setFeatured(DEFAULT_DEMO_ANIME.filter((a) => a.is_featured));
+      setAllMedia(DEFAULT_CATALOG);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -120,23 +337,44 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    fetchAnime();
+    fetchMedia();
   }, []);
 
-  // 🎬 Smooth Auto-Sliding Hero Timer: changes every 4 seconds (4000ms)
+  // Category filtered media
+  const categoryFiltered = allMedia.filter((item) => {
+    if (activeCategory === 'All') return true;
+    return item.category === activeCategory;
+  });
+
+  // Featured items for the hero carousel based on active category
+  const featured = categoryFiltered.filter((a) => a.is_featured).length > 0
+    ? categoryFiltered.filter((a) => a.is_featured)
+    : categoryFiltered.slice(0, 4);
+
+  // Genre filtered media
+  const genreFiltered = categoryFiltered.filter((item) => {
+    if (activeGenre === 'All' || activeGenre === '🔥 Trending') return true;
+    return item.genre?.toLowerCase().includes(activeGenre.toLowerCase());
+  });
+
+  // Rails by Category
+  const moviesRail = allMedia.filter((item) => item.category === 'Movies');
+  const animeMoviesRail = allMedia.filter((item) => item.category === 'Anime Movies');
+  const kdramaRail = allMedia.filter((item) => item.category === 'K-Drama');
+  const dramaRail = allMedia.filter((item) => item.category === 'Drama');
+  const animeSeriesRail = allMedia.filter((item) => item.category === 'Anime Series');
+
+  // Auto-sliding Hero timer: 4 seconds
   useEffect(() => {
     if (featured.length <= 1) return;
 
     const timer = setInterval(() => {
-      // Fade out
       Animated.timing(fadeAnim, {
         toValue: 0.2,
         duration: 300,
         useNativeDriver: true,
       }).start(() => {
-        // Change photo
         setCurrentHeroIndex((prev) => (prev + 1) % featured.length);
-        // Fade in
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 400,
@@ -175,19 +413,14 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchAnime();
+    fetchMedia();
   }, []);
 
   const handleWatch = (id: string) => {
     router.push({ pathname: '/watch', params: { id } });
   };
 
-  const filteredAnime = allAnime.filter((item) => {
-    if (activeGenre === 'All' || activeGenre === '🔥 Trending') return true;
-    return item.genre?.toLowerCase().includes(activeGenre.toLowerCase());
-  });
-
-  const activeHeroItem = featured[currentHeroIndex] || DEFAULT_DEMO_ANIME[0];
+  const activeHeroItem = featured[currentHeroIndex] || DEFAULT_CATALOG[0];
   const activeHeroFavorited = activeHeroItem ? isFavorite(activeHeroItem.id) : false;
 
   const renderRankedCard = ({ item, index }: { item: AnimeItem; index: number }) => {
@@ -204,6 +437,11 @@ export default function HomeScreen() {
             style={styles.posterImage}
             resizeMode="cover"
           />
+          {item.category && (
+            <View style={styles.cardCategoryBadge}>
+              <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
+            </View>
+          )}
           <Pressable
             style={styles.cardHeartBtn}
             onPress={(e) => {
@@ -222,7 +460,7 @@ export default function HomeScreen() {
               {item.title}
             </Text>
             <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]}>
-              {item.episodes > 0 ? `${item.episodes} Episodes` : item.genre ?? 'Series'}
+              {item.episodes > 1 ? `${item.episodes} Episodes` : item.genre ?? 'Feature'}
             </Text>
           </View>
         </View>
@@ -243,6 +481,11 @@ export default function HomeScreen() {
             style={styles.standardImage}
             resizeMode="cover"
           />
+          {item.category && (
+            <View style={styles.cardCategoryBadge}>
+              <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
+            </View>
+          )}
           <Pressable
             style={styles.cardHeartBtn}
             onPress={(e) => {
@@ -256,18 +499,18 @@ export default function HomeScreen() {
               size={16}
             />
           </Pressable>
-          {item.episodes > 0 && (
-            <View style={styles.epBadge}>
-              <Text style={styles.epBadgeText}>{item.episodes} EPS</Text>
-            </View>
-          )}
+          <View style={styles.epBadge}>
+            <Text style={styles.epBadgeText}>
+              {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
+            </Text>
+          </View>
         </View>
         <View style={styles.standardCardInfo}>
           <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
             {item.title}
           </Text>
           <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {item.genre ?? 'Anime Series'}
+            {item.genre ?? item.category ?? 'Stream'}
           </Text>
         </View>
       </Pressable>
@@ -297,10 +540,46 @@ export default function HomeScreen() {
             <Sparkles color="#fff" size={18} />
           </View>
           <Text style={styles.brandName}>
-            ANIME<Text style={{ color: themeColors.primary }}>STREAM</Text>
+            STREAM<Text style={{ color: themeColors.primary }}>FLIX</Text>
           </Text>
         </View>
       </View>
+
+      {/* 🚀 Main Category Switcher Pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryContainer}
+      >
+        {CATEGORIES.map((cat) => {
+          const isSelected = activeCategory === cat.id;
+          return (
+            <Pressable
+              key={cat.id}
+              style={[
+                styles.categoryPill,
+                isSelected
+                  ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
+                  : { backgroundColor: themeColors.backgroundElement },
+              ]}
+              onPress={() => {
+                setActiveCategory(cat.id);
+                setCurrentHeroIndex(0);
+              }}
+            >
+              <Text style={styles.categoryIcon}>{cat.icon}</Text>
+              <Text
+                style={[
+                  styles.categoryPillText,
+                  { color: isSelected ? '#fff' : themeColors.textSecondary },
+                ]}
+              >
+                {cat.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
       {/* 🎬 Animated 4-Second Auto-Moving Hero Banner */}
       {featured.length > 0 && (
@@ -317,7 +596,9 @@ export default function HomeScreen() {
               {/* Badges Row */}
               <View style={styles.heroBadges}>
                 <View style={[styles.pillBadge, { backgroundColor: themeColors.primary }]}>
-                  <Text style={styles.pillBadgeText}>FEATURED</Text>
+                  <Text style={styles.pillBadgeText}>
+                    {activeHeroItem.category?.toUpperCase() || 'FEATURED'}
+                  </Text>
                 </View>
                 <View style={styles.pillGlass}>
                   <Text style={styles.pillGlassText}>4K ULTRA HD</Text>
@@ -431,60 +712,162 @@ export default function HomeScreen() {
         })}
       </ScrollView>
 
-      {/* 🔥 TOP 10 Ranked Row */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <TrendingUp color={themeColors.primary} size={20} />
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Top 10 Today</Text>
-        </View>
-      </View>
-      <FlatList
-        data={allAnime.slice(0, 10)}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={renderRankedCard}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.rankedList}
-      />
-
-      {/* ⚡ Trending / Filtered Rail */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <Compass color={themeColors.accentCyan} size={20} />
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-            {activeGenre === 'All' ? 'Trending Now' : `${activeGenre} Anime`}
-          </Text>
-        </View>
-        <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-          {filteredAnime.length} Shows
-        </Text>
-      </View>
-      <FlatList
-        data={filteredAnime}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={renderStandardCard}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.standardList}
-      />
-
-      {/* 🌟 New Releases Rail */}
-      {allAnime.length > 3 && (
+      {/* When a specific category is chosen, show focused filtered list */}
+      {activeCategory !== 'All' ? (
         <>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Sparkles color="#FFB800" size={20} />
-              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>New Releases</Text>
+              <Flame color={themeColors.primary} size={20} />
+              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+                {activeCategory} {activeGenre !== 'All' ? `· ${activeGenre}` : ''}
+              </Text>
             </View>
+            <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+              {genreFiltered.length} Titles
+            </Text>
           </View>
           <FlatList
-            data={[...allAnime].reverse()}
-            keyExtractor={(item) => `rev-${item.id}`}
+            data={genreFiltered}
+            keyExtractor={(item) => String(item.id)}
             renderItem={renderStandardCard}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.standardList}
           />
+        </>
+      ) : (
+        /* When "All" is chosen, show organized categorized sections */
+        <>
+          {/* 🔥 TOP 10 Ranked Row */}
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <TrendingUp color={themeColors.primary} size={20} />
+              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Top 10 Today</Text>
+            </View>
+          </View>
+          <FlatList
+            data={allMedia.slice(0, 10)}
+            keyExtractor={(item) => `top-${item.id}`}
+            renderItem={renderRankedCard}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rankedList}
+          />
+
+          {/* 🎬 Blockbuster Movies Rail */}
+          {moviesRail.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <Film color="#E50914" size={20} />
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Blockbuster Movies</Text>
+                </View>
+                <Pressable onPress={() => setActiveCategory('Movies')}>
+                  <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                </Pressable>
+              </View>
+              <FlatList
+                data={moviesRail}
+                keyExtractor={(item) => `mov-${item.id}`}
+                renderItem={renderStandardCard}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.standardList}
+              />
+            </>
+          )}
+
+          {/* 🎌 Anime Movies Rail */}
+          {animeMoviesRail.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <Clapperboard color="#FF8A00" size={20} />
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Must-Watch Anime Movies</Text>
+                </View>
+                <Pressable onPress={() => setActiveCategory('Anime Movies')}>
+                  <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                </Pressable>
+              </View>
+              <FlatList
+                data={animeMoviesRail}
+                keyExtractor={(item) => `amov-${item.id}`}
+                renderItem={renderStandardCard}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.standardList}
+              />
+            </>
+          )}
+
+          {/* 🌸 Trending K-Drama Rail */}
+          {kdramaRail.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <Sparkles color="#FF69B4" size={20} />
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Trending K-Drama</Text>
+                </View>
+                <Pressable onPress={() => setActiveCategory('K-Drama')}>
+                  <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                </Pressable>
+              </View>
+              <FlatList
+                data={kdramaRail}
+                keyExtractor={(item) => `kd-${item.id}`}
+                renderItem={renderStandardCard}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.standardList}
+              />
+            </>
+          )}
+
+          {/* 🎭 Gripping Drama Series Rail */}
+          {dramaRail.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <Tv color="#9D4EDD" size={20} />
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Critically Acclaimed Dramas</Text>
+                </View>
+                <Pressable onPress={() => setActiveCategory('Drama')}>
+                  <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                </Pressable>
+              </View>
+              <FlatList
+                data={dramaRail}
+                keyExtractor={(item) => `dr-${item.id}`}
+                renderItem={renderStandardCard}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.standardList}
+              />
+            </>
+          )}
+
+          {/* ⚡ Anime Series Rail */}
+          {animeSeriesRail.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <Compass color={themeColors.accentCyan} size={20} />
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Popular Anime Series</Text>
+                </View>
+                <Pressable onPress={() => setActiveCategory('Anime Series')}>
+                  <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                </Pressable>
+              </View>
+              <FlatList
+                data={animeSeriesRail}
+                keyExtractor={(item) => `as-${item.id}`}
+                renderItem={renderStandardCard}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.standardList}
+              />
+            </>
+          )}
         </>
       )}
 
@@ -504,7 +887,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -528,9 +911,35 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.5,
   },
+  categoryContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#242436',
+  },
+  categoryPillActive: {
+    borderColor: 'transparent',
+  },
+  categoryIcon: {
+    fontSize: 14,
+  },
+  categoryPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
   heroSection: {
     height: HERO_HEIGHT,
     position: 'relative',
+    marginTop: 4,
   },
   heroSlide: {
     height: HERO_HEIGHT,
@@ -600,11 +1009,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   heroDesc: {
-    color: '#D0D0DC',
+    color: '#rgba(255,255,255,0.8)',
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 16,
-    maxWidth: '90%',
   },
   heroActions: {
     flexDirection: 'row',
@@ -614,11 +1022,10 @@ const styles = StyleSheet.create({
   playBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 24,
+    borderRadius: 8,
     gap: 8,
-    boxShadow: '0px 4px 10px rgba(229, 9, 20, 0.5)',
   },
   playBtnText: {
     color: '#fff',
@@ -628,10 +1035,10 @@ const styles = StyleSheet.create({
   listBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 24,
-    gap: 6,
+    borderRadius: 8,
+    gap: 8,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
@@ -642,13 +1049,13 @@ const styles = StyleSheet.create({
   navArrow: {
     position: 'absolute',
     top: '40%',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 20,
+    zIndex: 10,
   },
   navArrowLeft: {
     left: 12,
@@ -658,21 +1065,20 @@ const styles = StyleSheet.create({
   },
   indicatorRow: {
     position: 'absolute',
-    bottom: 8,
+    bottom: 12,
     alignSelf: 'center',
     flexDirection: 'row',
     gap: 6,
-    zIndex: 20,
+    zIndex: 10,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   activeDot: {
-    width: 24,
-    height: 8,
-    borderRadius: 4,
+    width: 18,
+    borderRadius: 3,
   },
   genreContainer: {
     paddingHorizontal: 16,
@@ -680,18 +1086,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   genreChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#242436',
   },
   genreChipActive: {
-    borderColor: '#E50914',
+    borderColor: 'transparent',
   },
   genreChipText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -712,35 +1118,41 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   sectionCount: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   rankedList: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 16,
   },
   rankedCardContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
+    alignItems: 'flex-end',
+    width: 175,
   },
   rankNumber: {
-    fontSize: 80,
+    fontSize: 72,
     fontWeight: '900',
-    color: '#303046',
+    color: '#33334d',
+    lineHeight: 78,
     marginRight: -18,
-    zIndex: 5,
+    zIndex: 1,
   },
   posterCard: {
-    width: 140,
-    borderRadius: 12,
+    width: 130,
+    height: 190,
+    borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#242436',
   },
   posterImage: {
-    width: 140,
-    height: 200,
+    width: '100%',
+    height: '100%',
   },
   cardHeartBtn: {
     position: 'absolute',
@@ -749,37 +1161,58 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
+    zIndex: 3,
+  },
+  cardCategoryBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 3,
+  },
+  cardCategoryText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   cardInfo: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 8,
+    backgroundColor: 'rgba(7, 7, 10, 0.85)',
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    marginBottom: 2,
   },
   cardMeta: {
     fontSize: 11,
+    marginTop: 2,
   },
   standardList: {
     paddingHorizontal: 16,
-    gap: 14,
+    gap: 12,
   },
   standardCard: {
     width: 140,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#242436',
   },
   standardImageWrapper: {
-    position: 'relative',
     width: 140,
-    height: 200,
+    height: 190,
+    position: 'relative',
   },
   standardImage: {
     width: '100%',
@@ -787,17 +1220,17 @@ const styles = StyleSheet.create({
   },
   epBadge: {
     position: 'absolute',
-    bottom: 6,
-    left: 6,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.75)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   epBadgeText: {
     color: '#fff',
-    fontSize: 9,
-    fontWeight: '800',
+    fontSize: 10,
+    fontWeight: '700',
   },
   standardCardInfo: {
     padding: 8,

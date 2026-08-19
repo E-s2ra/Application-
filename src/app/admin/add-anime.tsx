@@ -15,7 +15,16 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { Sparkles } from 'lucide-react-native';
+import { Sparkles, Film } from 'lucide-react-native';
+import { MediaCategory } from '@/hooks/useFavorites';
+
+const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
+  { id: 'Movies', label: 'Movies', icon: '🎬' },
+  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
+  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
+  { id: 'Drama', label: 'Drama', icon: '🎭' },
+  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
+];
 
 export default function AddAnimeScreen() {
   const router = useRouter();
@@ -25,8 +34,9 @@ export default function AddAnimeScreen() {
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
-  const [episodes, setEpisodes] = useState('');
+  const [episodes, setEpisodes] = useState('1');
   const [genre, setGenre] = useState('');
+  const [category, setCategory] = useState<MediaCategory>('Movies');
   const [isFeatured, setIsFeatured] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +46,7 @@ export default function AddAnimeScreen() {
       return;
     }
 
-    const epsNum = episodes ? parseInt(episodes, 10) : 0;
+    const epsNum = episodes ? parseInt(episodes, 10) : 1;
     if (episodes && isNaN(epsNum)) {
       Alert.alert('Error', 'Episodes must be a number.');
       return;
@@ -51,6 +61,7 @@ export default function AddAnimeScreen() {
       video_url: videoUrl.trim() || null,
       episodes: epsNum,
       genre: genre.trim() || null,
+      category: category,
       is_featured: isFeatured,
     });
 
@@ -61,7 +72,7 @@ export default function AddAnimeScreen() {
       return;
     }
 
-    Alert.alert('Success! 🎉', `"${title}" has been published to the catalog.`, [
+    Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to the catalog.`, [
       { text: 'Add Another', onPress: () => resetForm() },
       { text: 'Back to Panel', onPress: () => router.back() },
     ]);
@@ -72,8 +83,9 @@ export default function AddAnimeScreen() {
     setDescription('');
     setImageUrl('');
     setVideoUrl('');
-    setEpisodes('');
+    setEpisodes('1');
     setGenre('');
+    setCategory('Movies');
     setIsFeatured(false);
   };
 
@@ -86,11 +98,49 @@ export default function AddAnimeScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
+        {/* 🏷️ Category Selection Group */}
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: themeColors.textSecondary }]}>MEDIA CATEGORY *</Text>
+          <View style={styles.categoryRow}>
+            {CATEGORY_OPTIONS.map((cat) => {
+              const isSelected = category === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={[
+                    styles.categoryChip,
+                    { backgroundColor: isSelected ? themeColors.primary : themeColors.backgroundElement },
+                    isSelected && styles.categoryChipActive,
+                  ]}
+                  onPress={() => {
+                    setCategory(cat.id);
+                    if (cat.id === 'Movies' || cat.id === 'Anime Movies') {
+                      setEpisodes('1');
+                    } else if (episodes === '1') {
+                      setEpisodes('16');
+                    }
+                  }}
+                >
+                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      { color: isSelected ? '#fff' : themeColors.textSecondary },
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: themeColors.textSecondary }]}>TITLE *</Text>
           <TextInput
             style={inputStyle}
-            placeholder="e.g. Attack on Titan"
+            placeholder="e.g. Inception, Queen of Tears, Suzume"
             placeholderTextColor={themeColors.textSecondary}
             value={title}
             onChangeText={setTitle}
@@ -145,10 +195,12 @@ export default function AddAnimeScreen() {
 
         <View style={styles.row}>
           <View style={[styles.fieldGroup, { flex: 1 }]}>
-            <Text style={[styles.label, { color: themeColors.textSecondary }]}>EPISODES</Text>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>
+              {category.includes('Movie') ? 'EPISODES (1 FOR MOVIES)' : 'EPISODES'}
+            </Text>
             <TextInput
               style={inputStyle}
-              placeholder="12"
+              placeholder="1"
               placeholderTextColor={themeColors.textSecondary}
               value={episodes}
               onChangeText={setEpisodes}
@@ -160,7 +212,7 @@ export default function AddAnimeScreen() {
             <Text style={[styles.label, { color: themeColors.textSecondary }]}>GENRES</Text>
             <TextInput
               style={inputStyle}
-              placeholder="Action, Shonen..."
+              placeholder="Sci-Fi, Romance..."
               placeholderTextColor={themeColors.textSecondary}
               value={genre}
               onChangeText={setGenre}
@@ -173,10 +225,10 @@ export default function AddAnimeScreen() {
           <View style={{ flex: 1, marginRight: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Sparkles color="#FFB800" size={16} />
-              <Text style={[styles.switchLabel, { color: themeColors.text }]}>Featured in 4s Hero</Text>
+              <Text style={[styles.switchLabel, { color: themeColors.text }]}>Featured Hero Banner</Text>
             </View>
             <Text style={[styles.switchSub, { color: themeColors.textSecondary }]}>
-              Show in the top auto-rotating homepage carousel
+              Show in the top rotating homepage hero carousel
             </Text>
           </View>
           <Switch
@@ -196,7 +248,7 @@ export default function AddAnimeScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Publish Anime</Text>
+            <Text style={styles.buttonText}>Publish to {category}</Text>
           )}
         </Pressable>
 
@@ -221,6 +273,31 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#242436',
+  },
+  categoryChipActive: {
+    borderColor: 'transparent',
+  },
+  categoryIcon: {
+    fontSize: 13,
+  },
+  categoryChipText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   input: {
     height: 50,

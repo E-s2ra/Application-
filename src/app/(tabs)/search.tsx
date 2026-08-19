@@ -16,13 +16,14 @@ import {
 import { Colors } from '@/constants/theme';
 import { Search as SearchIcon, X, Heart, Play, Sparkles } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
+import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
+import { DEFAULT_CATALOG, CATEGORIES } from './index';
 
 const { width } = Dimensions.get('window');
 const isLargeScreen = Platform.OS === 'web' && width > 768;
 const CARD_WIDTH = isLargeScreen ? (width - 64) / 4 : (width - 48) / 2;
 
-const GENRES = ['All', 'Action', 'Shonen', 'Fantasy', 'Adventure', 'Sci-Fi', 'Romance', 'Horror', 'Supernatural'];
+const GENRES = ['All', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
 const PLACEHOLDER_IMAGES = [
   'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
@@ -36,8 +37,9 @@ export default function SearchScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [query, setQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'All' | MediaCategory>('All');
   const [selectedGenre, setSelectedGenre] = useState('All');
-  const [animeList, setAnimeList] = useState<AnimeItem[]>([]);
+  const [mediaList, setMediaList] = useState<AnimeItem[]>(DEFAULT_CATALOG);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,14 +47,21 @@ export default function SearchScreen() {
       try {
         const { data, error } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, episodes, genre, is_featured')
+          .select('id, title, description, image_url, episodes, genre, category, is_featured')
           .order('created_at', { ascending: false });
 
-        if (!error && data) {
-          setAnimeList(data as AnimeItem[]);
+        if (!error && data && data.length > 0) {
+          const customItems = data.map((item) => ({
+            ...item,
+            category: item.category || 'Anime Series',
+          })) as AnimeItem[];
+          setMediaList([...customItems, ...DEFAULT_CATALOG]);
+        } else {
+          setMediaList(DEFAULT_CATALOG);
         }
       } catch (err) {
         console.warn('Error loading search data:', err);
+        setMediaList(DEFAULT_CATALOG);
       } finally {
         setLoading(false);
       }
@@ -60,17 +69,21 @@ export default function SearchScreen() {
     loadData();
   }, []);
 
-  const filteredList = animeList.filter((item) => {
+  const filteredList = mediaList.filter((item) => {
     const matchesQuery =
       query.trim() === '' ||
       item.title.toLowerCase().includes(query.toLowerCase()) ||
-      (item.genre && item.genre.toLowerCase().includes(query.toLowerCase()));
+      (item.genre && item.genre.toLowerCase().includes(query.toLowerCase())) ||
+      (item.category && item.category.toLowerCase().includes(query.toLowerCase()));
+
+    const matchesCategory =
+      selectedCategory === 'All' || item.category === selectedCategory;
 
     const matchesGenre =
       selectedGenre === 'All' ||
       (item.genre && item.genre.toLowerCase().includes(selectedGenre.toLowerCase()));
 
-    return matchesQuery && matchesGenre;
+    return matchesQuery && matchesCategory && matchesGenre;
   });
 
   const handleWatch = (id: string) => {
@@ -92,6 +105,11 @@ export default function SearchScreen() {
               <Play color="#fff" size={16} fill="#fff" />
             </View>
           </View>
+          {item.category && (
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryBadgeText}>{item.category.toUpperCase()}</Text>
+            </View>
+          )}
           <Pressable
             style={styles.heartButton}
             onPress={(e) => {
@@ -105,11 +123,11 @@ export default function SearchScreen() {
               size={18}
             />
           </Pressable>
-          {item.episodes > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item.episodes} EPS</Text>
-            </View>
-          )}
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
+            </Text>
+          </View>
         </Pressable>
 
         <View style={styles.cardInfo}>
@@ -117,7 +135,7 @@ export default function SearchScreen() {
             {item.title}
           </Text>
           <Text style={[styles.cardGenre, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {item.genre ?? 'Anime Series'}
+            {item.genre ?? item.category ?? 'Stream'}
           </Text>
         </View>
       </View>
@@ -132,7 +150,7 @@ export default function SearchScreen() {
           <SearchIcon color={themeColors.textSecondary} size={20} />
           <TextInput
             style={[styles.input, { color: themeColors.text }]}
-            placeholder="Search anime title, genre, or keyword..."
+            placeholder="Search Movies, Anime, K-Drama, Drama..."
             placeholderTextColor={themeColors.textSecondary}
             value={query}
             onChangeText={setQuery}
@@ -146,68 +164,103 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      {/* 🏷️ Genre Filter Chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.genreContainer}
-      >
-        {GENRES.map((genre) => {
-          const isSelected = selectedGenre === genre;
-          return (
-            <Pressable
-              key={genre}
-              style={[
-                styles.genreChip,
-                isSelected
-                  ? [styles.genreChipActive, { backgroundColor: themeColors.primary }]
-                  : { backgroundColor: themeColors.backgroundElement },
-              ]}
-              onPress={() => setSelectedGenre(genre)}
-            >
-              <Text
+      {/* 🏷️ Category Filter Pills */}
+      <View style={styles.filterSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
+        >
+          {CATEGORIES.map((cat) => {
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <Pressable
+                key={cat.id}
                 style={[
-                  styles.genreChipText,
-                  { color: isSelected ? '#fff' : themeColors.textSecondary },
+                  styles.categoryPill,
+                  isSelected
+                    ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
+                    : { backgroundColor: themeColors.backgroundElement },
                 ]}
+                onPress={() => setSelectedCategory(cat.id)}
               >
-                {genre}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+                <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                <Text
+                  style={[
+                    styles.categoryPillText,
+                    { color: isSelected ? '#fff' : themeColors.textSecondary },
+                  ]}
+                >
+                  {cat.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
-      {/* Results Grid */}
+        {/* 🏷️ Genre Filter Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.genreScroll}
+        >
+          {GENRES.map((genre) => {
+            const isSelected = selectedGenre === genre;
+            return (
+              <Pressable
+                key={genre}
+                style={[
+                  styles.genreChip,
+                  isSelected
+                    ? [styles.genreChipActive, { backgroundColor: themeColors.accentCyan }]
+                    : { backgroundColor: themeColors.backgroundElement },
+                ]}
+                onPress={() => setSelectedGenre(genre)}
+              >
+                <Text
+                  style={[
+                    styles.genreChipText,
+                    { color: isSelected ? '#000' : themeColors.textSecondary },
+                  ]}
+                >
+                  {genre}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* 📊 Results Count Header */}
+      <View style={styles.resultsHeader}>
+        <Text style={[styles.resultsCount, { color: themeColors.textSecondary }]}>
+          Showing {filteredList.length} results
+        </Text>
+      </View>
+
+      {/* 🎬 Grid of Results */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={themeColors.primary} />
         </View>
-      ) : filteredList.length > 0 ? (
+      ) : (
         <FlatList
           data={filteredList}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderCard}
           numColumns={isLargeScreen ? 4 : 2}
-          key={isLargeScreen ? 'search-4' : 'search-2'}
-          contentContainerStyle={styles.list}
-          columnWrapperStyle={styles.columnWrapper}
-          ListHeaderComponent={
-            <View style={styles.resultsInfo}>
-              <Text style={[styles.resultsText, { color: themeColors.textSecondary }]}>
-                {filteredList.length} {filteredList.length === 1 ? 'result' : 'results'} found
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={styles.grid}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Sparkles color={themeColors.textSecondary} size={48} />
+              <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No titles found</Text>
+              <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
+                Try searching for a different keyword or switching categories.
               </Text>
             </View>
           }
         />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Sparkles color={themeColors.textMuted} size={40} />
-          <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No Anime Found</Text>
-          <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-            Try searching for another keyword or pick a different genre above.
-          </Text>
-        </View>
       )}
     </View>
   );
@@ -229,9 +282,9 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    height: 48,
     borderRadius: 12,
-    height: 50,
+    paddingHorizontal: 14,
     gap: 10,
     borderWidth: 1,
     borderColor: '#242436',
@@ -244,40 +297,68 @@ const styles = StyleSheet.create({
   clearBtn: {
     padding: 4,
   },
-  genreContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  filterSection: {
     gap: 8,
   },
+  categoryScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    gap: 8,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#242436',
+  },
+  categoryPillActive: {
+    borderColor: 'transparent',
+  },
+  categoryIcon: {
+    fontSize: 12,
+  },
+  categoryPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  genreScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    gap: 6,
+  },
   genreChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#242436',
   },
   genreChipActive: {
-    borderColor: '#E50914',
+    borderColor: 'transparent',
   },
   genreChipText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  resultsInfo: {
-    marginBottom: 12,
+  resultsHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  resultsText: {
+  resultsCount: {
     fontSize: 12,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  list: {
+  grid: {
     padding: 16,
+    paddingTop: 4,
     paddingBottom: 40,
   },
-  columnWrapper: {
-    gap: 16,
+  gridRow: {
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   card: {
@@ -287,9 +368,9 @@ const styles = StyleSheet.create({
     borderColor: '#242436',
   },
   imageContainer: {
+    width: '100%',
+    height: 200,
     position: 'relative',
-    aspectRatio: 2 / 3,
-    backgroundColor: '#12121A',
   },
   thumbnail: {
     width: '100%',
@@ -297,7 +378,7 @@ const styles = StyleSheet.create({
   },
   playOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -307,16 +388,31 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 8px rgba(229, 9, 20, 0.5)',
+    opacity: 0.9,
+  },
+  categoryBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   heartButton: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -324,9 +420,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     left: 8,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 4,
   },
   badgeText: {
@@ -340,26 +436,25 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: '700',
-    marginBottom: 2,
   },
   cardGenre: {
     fontSize: 12,
+    marginTop: 2,
   },
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: 40,
     alignItems: 'center',
-    padding: 32,
+    justifyContent: 'center',
+    gap: 12,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
-    marginTop: 12,
-    marginBottom: 6,
+    marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     textAlign: 'center',
-    maxWidth: 280,
+    lineHeight: 20,
   },
 });

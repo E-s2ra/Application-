@@ -28,6 +28,7 @@ import {
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
+import { DEFAULT_CATALOG } from './(tabs)/index';
 
 const SPEED_OPTIONS = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0];
 
@@ -68,21 +69,26 @@ export default function WatchScreen() {
     async function loadData() {
       if (!id) return;
       try {
+        const defaultMatch = DEFAULT_CATALOG.find((item) => item.id === id);
+
         const { data } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, episodes, genre, is_featured')
+          .select('id, title, description, image_url, episodes, genre, category, is_featured')
           .eq('id', id)
           .single();
 
         if (data) {
           setAnime(data as AnimeItem);
+        } else if (defaultMatch) {
+          setAnime(defaultMatch);
         } else {
           setAnime({
             id: String(id),
-            title: `Anime Series #${String(id).slice(0, 6)}`,
-            description: 'Experience this thrilling anime series in full high definition with original Japanese audio and multiple subtitle tracks.',
+            title: `Title #${String(id).slice(0, 6)}`,
+            description: 'Experience this thrilling title in full high definition with original audio and multiple subtitle tracks.',
             episodes: 24,
-            genre: 'Action, Shonen, Adventure',
+            genre: 'Action, Drama',
+            category: 'Movies',
             image_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
             is_featured: false,
           });
@@ -90,12 +96,14 @@ export default function WatchScreen() {
 
         const { data: recs } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, episodes, genre, is_featured')
+          .select('id, title, description, image_url, episodes, genre, category, is_featured')
           .neq('id', id)
           .limit(6);
 
         if (recs && recs.length > 0) {
           setRecommendations(recs as AnimeItem[]);
+        } else {
+          setRecommendations(DEFAULT_CATALOG.filter((item) => item.id !== id).slice(0, 6));
         }
       } catch (err) {
         console.warn('Error loading watch anime:', err);
@@ -334,8 +342,15 @@ export default function WatchScreen() {
       {/* 📋 Anime Info & Meta */}
       <View style={styles.infoSection}>
         <View style={styles.badgeRow}>
+          {anime?.category && (
+            <View style={[styles.badge, { backgroundColor: '#7C4DFF' }]}>
+              <Text style={styles.badgeText}>{anime.category.toUpperCase()}</Text>
+            </View>
+          )}
           <View style={[styles.badge, { backgroundColor: themeColors.primary }]}>
-            <Text style={styles.badgeText}>EPISODE {selectedEpisode}</Text>
+            <Text style={styles.badgeText}>
+              {(anime?.episodes ?? 1) > 1 ? `EPISODE ${selectedEpisode}` : 'MOVIE'}
+            </Text>
           </View>
           <View style={styles.badgeGlass}>
             <Text style={styles.badgeGlassText}>{aspectRatio}</Text>

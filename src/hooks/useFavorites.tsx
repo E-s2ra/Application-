@@ -4,12 +4,15 @@ import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 
+export type MediaCategory = 'Movies' | 'Anime Movies' | 'K-Drama' | 'Drama' | 'Anime Series';
+
 export type AnimeItem = {
   id: string;
   title: string;
   image_url: string | null;
   episodes: number;
   genre: string | null;
+  category?: MediaCategory | string;
   is_featured: boolean;
   description?: string | null;
 };

@@ -19,6 +19,7 @@ type Anime = {
   title: string;
   episodes: number;
   genre: string | null;
+  category?: string | null;
   is_featured: boolean;
 };
 
@@ -33,7 +34,7 @@ export default function AdminPanelScreen() {
   const fetchAnime = async () => {
     const { data, error } = await supabase
       .from('anime')
-      .select('id, title, episodes, genre, is_featured')
+      .select('id, title, episodes, genre, category, is_featured')
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -89,11 +90,18 @@ export default function AdminPanelScreen() {
   const renderItem = ({ item }: { item: Anime }) => (
     <View style={[styles.card, { backgroundColor: themeColors.backgroundElement }]}>
       <View style={styles.cardInfo}>
-        <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
-          {item.title}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          {item.category && (
+            <View style={{ backgroundColor: themeColors.primary, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>{item.category.toUpperCase()}</Text>
+            </View>
+          )}
+          <Text style={[styles.cardTitle, { color: themeColors.text, flex: 1 }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+        </View>
         <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]}>
-          {item.genre ?? 'No genre'} · {item.episodes} eps
+          {item.genre ?? 'No genre'} · {item.episodes > 1 ? `${item.episodes} eps` : 'Movie'}
         </Text>
       </View>
       <View style={styles.cardActions}>
