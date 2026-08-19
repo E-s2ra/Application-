@@ -21,9 +21,12 @@ import {
   Trash2,
   X,
   Check,
+  UserPlus,
+  UserCheck,
 } from 'lucide-react-native';
 import { useReviews, Review } from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
+import { useSocial } from '@/hooks/useSocial';
 
 interface ReviewsSectionProps {
   mediaId: string;
@@ -52,6 +55,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     deleteReview,
     toggleHelpful,
   } = useReviews();
+  const { isFollowing, toggleFollow } = useSocial();
 
   const reviews = getReviewsForMedia(mediaId);
   const stats = getStatsForMedia(mediaId);
@@ -354,8 +358,31 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                         {rev.isVerified && (
                           <View style={styles.verifiedBadge}>
                             <CheckCircle size={11} color="#00D2FF" />
-                            <Text style={styles.verifiedText}>Verified Viewer</Text>
+                            <Text style={styles.verifiedText}>Verified</Text>
                           </View>
+                        )}
+                        {!isUserAuthor && rev.userId && !rev.userId.startsWith('guest-') && (
+                          <Pressable
+                            style={[
+                              styles.followBtn,
+                              isFollowing(rev.userId) && styles.followingBtn,
+                            ]}
+                            onPress={() => toggleFollow(rev.userId)}
+                          >
+                            {isFollowing(rev.userId) ? (
+                              <UserCheck size={10} color="#00E676" />
+                            ) : (
+                              <UserPlus size={10} color="#00D2FF" />
+                            )}
+                            <Text
+                              style={[
+                                styles.followBtnText,
+                                isFollowing(rev.userId) && styles.followingBtnText,
+                              ]}
+                            >
+                              {isFollowing(rev.userId) ? 'Following' : 'Follow'}
+                            </Text>
+                          </Pressable>
                         )}
                       </View>
                       <Text style={styles.reviewDate}>{rev.createdAt}</Text>
@@ -783,6 +810,30 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#00D2FF',
     fontWeight: '600',
+  },
+  followBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(0, 210, 255, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.3)',
+    marginLeft: 4,
+  },
+  followingBtn: {
+    backgroundColor: 'rgba(0, 230, 118, 0.1)',
+    borderColor: 'rgba(0, 230, 118, 0.3)',
+  },
+  followBtnText: {
+    fontSize: 10,
+    color: '#00D2FF',
+    fontWeight: '700',
+  },
+  followingBtnText: {
+    color: '#00E676',
   },
   reviewDate: {
     fontSize: 11,

@@ -22,11 +22,15 @@ import {
   Trophy,
   Palette,
   Award,
+  Users,
+  PlayCircle,
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useGamification } from '@/hooks/useGamification';
+import { useSocial } from '@/hooks/useSocial';
+import { useAdMob } from '@/hooks/useAdMob';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 
 export default function ProfileScreen() {
@@ -48,6 +52,8 @@ export default function ProfileScreen() {
     badges,
     activeTheme,
   } = useGamification();
+  const { followingCount, followersCount } = useSocial();
+  const { showRewardedAd } = useAdMob();
 
   const [showRewardsModal, setShowRewardsModal] = useState(false);
 
@@ -138,16 +144,16 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {/* 📊 Gamification Stats Row */}
+        {/* 📊 Gamification & Social Stats Row */}
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
             <Text style={[styles.statNumber, { color: '#FFD700' }]}>💰 {coins}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>AniFlix Coins</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Coins</Text>
           </View>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
             <Text style={[styles.statNumber, { color: '#FF5722' }]}>🔥 {streakDays}d</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Day Streak</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Streak</Text>
           </View>
 
           <Pressable
@@ -159,6 +165,11 @@ export default function ProfileScreen() {
             </Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Favorites</Text>
           </Pressable>
+
+          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
+            <Text style={[styles.statNumber, { color: '#00D2FF' }]}>👥 {followingCount}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Following</Text>
+          </View>
         </View>
 
         {/* 🎁 Rewards & Missions Banner */}
@@ -229,6 +240,25 @@ export default function ProfileScreen() {
               <ChevronRight color="#fff" size={20} />
             </Pressable>
           )}
+
+          {/* Watch Ad to Earn Coins Button */}
+          <Pressable
+            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+            onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
+                <PlayCircle color="#FFB800" size={18} />
+              </View>
+              <View>
+                <Text style={[styles.actionRowText, { color: '#FFD700' }]}>
+                  Watch Ad & Earn 100 Coins
+                </Text>
+                <Text style={styles.actionSubtext}>Get +100 Coins & +150 XP instantly</Text>
+              </View>
+            </View>
+            <ChevronRight color={themeColors.textSecondary} size={18} />
+          </Pressable>
 
           {/* Theme Shop Button */}
           <Pressable
@@ -408,20 +438,21 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    padding: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#242436',
   },
   statNumber: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    marginTop: 3,
+    marginTop: 2,
   },
   rewardsBanner: {
     marginHorizontal: 16,
