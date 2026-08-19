@@ -4,12 +4,14 @@ import { Colors } from '@/constants/theme';
 import { LogOut, User as UserIcon, Shield, Heart, Sparkles, Tv, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const themeColors = Colors.dark;
   const { user, profile, signOut, isLoading } = useAuth();
   const { favorites } = useFavorites();
+  const { isDesktop, isTablet } = useResponsive();
 
   const handleLogout = async () => {
     await signOut();
@@ -31,102 +33,104 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* 👤 Profile Hero Card */}
-      <View style={styles.header}>
-        <View style={[styles.avatarGlow, { borderColor: isAdmin ? themeColors.primary : '#242436' }]}>
-          <View style={[styles.avatar, { backgroundColor: themeColors.backgroundCard }]}>
-            <UserIcon color={isAdmin ? themeColors.primary : '#fff'} size={44} />
+      <View style={[styles.profileCard, (isDesktop || isTablet) && styles.profileCardWide]}>
+        {/* 👤 Profile Hero Card */}
+        <View style={styles.header}>
+          <View style={[styles.avatarGlow, { borderColor: isAdmin ? themeColors.primary : '#242436' }]}>
+            <View style={[styles.avatar, { backgroundColor: themeColors.backgroundCard }]}>
+              <UserIcon color={isAdmin ? themeColors.primary : '#fff'} size={44} />
+            </View>
           </View>
-        </View>
 
-        <Text style={[styles.name, { color: themeColors.text }]}>
-          {profile?.full_name ?? user?.email?.split('@')[0] ?? 'Anime Streamer'}
-        </Text>
-        <Text style={[styles.email, { color: themeColors.textSecondary }]}>
-          {user?.email}
-        </Text>
-
-        <View
-          style={[
-            styles.roleBadge,
-            { backgroundColor: isAdmin ? themeColors.primary : themeColors.backgroundCard },
-          ]}
-        >
-          {isAdmin ? (
-            <Sparkles color="#fff" size={14} />
-          ) : (
-            <Tv color={themeColors.accentCyan} size={14} />
-          )}
-          <Text style={styles.roleText}>
-            {isAdmin ? 'PLATFORM ADMIN' : 'PREMIUM MEMBER'}
+          <Text style={[styles.name, { color: themeColors.text }]}>
+            {profile?.full_name ?? user?.email?.split('@')[0] ?? 'AniFlix Member'}
           </Text>
-        </View>
-      </View>
+          <Text style={[styles.email, { color: themeColors.textSecondary }]}>
+            {user?.email}
+          </Text>
 
-      {/* 📊 User Stats Row */}
-      <View style={styles.statsRow}>
-        <Pressable
-          style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}
-          onPress={() => router.push('/(tabs)/favorites' as any)}
-        >
-          <Text style={[styles.statNumber, { color: themeColors.primary }]}>{favorites.length}</Text>
-          <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>My Favorites</Text>
-        </Pressable>
-        <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
-          <Text style={[styles.statNumber, { color: '#00D2FF' }]}>4K</Text>
-          <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Ultra HD Tier</Text>
-        </View>
-      </View>
-
-      {/* ⚙️ Actions List */}
-      <View style={styles.actionsSection}>
-        {/* Admin Panel Button (Admin only) */}
-        {isAdmin && (
-          <Pressable
-            style={[styles.adminBanner, { backgroundColor: themeColors.primary }]}
-            onPress={handleAdminPanel}
+          <View
+            style={[
+              styles.roleBadge,
+              { backgroundColor: isAdmin ? themeColors.primary : themeColors.backgroundCard },
+            ]}
           >
-            <View style={styles.adminBannerLeft}>
-              <Shield color="#fff" size={24} />
-              <View>
-                <Text style={styles.adminBannerTitle}>Admin Control Center</Text>
-                <Text style={styles.adminBannerSub}>Publish, manage & feature anime</Text>
-              </View>
-            </View>
-            <ChevronRight color="#fff" size={20} />
+            {isAdmin ? (
+              <Sparkles color="#fff" size={14} />
+            ) : (
+              <Tv color={themeColors.accentCyan} size={14} />
+            )}
+            <Text style={styles.roleText}>
+              {isAdmin ? 'PLATFORM ADMIN' : 'ANIFLIX VIP MEMBER'}
+            </Text>
+          </View>
+        </View>
+
+        {/* 📊 User Stats Row */}
+        <View style={styles.statsRow}>
+          <Pressable
+            style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}
+            onPress={() => router.push('/(tabs)/favorites' as any)}
+          >
+            <Text style={[styles.statNumber, { color: themeColors.primary }]}>{favorites.length}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>My Favorites</Text>
           </Pressable>
-        )}
-
-        {/* My Favorites Link */}
-        <Pressable
-          style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
-          onPress={() => router.push('/(tabs)/favorites' as any)}
-        >
-          <View style={styles.actionRowLeft}>
-            <View style={[styles.iconCircle, { backgroundColor: '#33080A' }]}>
-              <Heart color={themeColors.primary} size={18} fill={themeColors.primary} />
-            </View>
-            <Text style={[styles.actionRowText, { color: themeColors.text }]}>My Favorites List</Text>
+          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
+            <Text style={[styles.statNumber, { color: '#00D2FF' }]}>4K</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Ultra HD Tier</Text>
           </View>
-          <ChevronRight color={themeColors.textSecondary} size={18} />
-        </Pressable>
+        </View>
 
-        {/* Sign Out Button */}
-        <Pressable
-          style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
-          onPress={handleLogout}
-        >
-          <View style={styles.actionRowLeft}>
-            <View style={[styles.iconCircle, { backgroundColor: '#20202E' }]}>
-              <LogOut color="#ff4444" size={18} />
+        {/* ⚙️ Actions List */}
+        <View style={styles.actionsSection}>
+          {/* Admin Panel Button (Admin only) */}
+          {isAdmin && (
+            <Pressable
+              style={[styles.adminBanner, { backgroundColor: themeColors.primary }]}
+              onPress={handleAdminPanel}
+            >
+              <View style={styles.adminBannerLeft}>
+                <Shield color="#fff" size={24} />
+                <View>
+                  <Text style={styles.adminBannerTitle}>Admin Control Center</Text>
+                  <Text style={styles.adminBannerSub}>Publish, manage & feature anime</Text>
+                </View>
+              </View>
+              <ChevronRight color="#fff" size={20} />
+            </Pressable>
+          )}
+
+          {/* My Favorites Link */}
+          <Pressable
+            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+            onPress={() => router.push('/(tabs)/favorites' as any)}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: '#33080A' }]}>
+                <Heart color={themeColors.primary} size={18} fill={themeColors.primary} />
+              </View>
+              <Text style={[styles.actionRowText, { color: themeColors.text }]}>My Favorites List</Text>
             </View>
-            <Text style={[styles.actionRowText, { color: '#ff6666' }]}>Sign Out</Text>
-          </View>
-          <ChevronRight color={themeColors.textSecondary} size={18} />
-        </Pressable>
+            <ChevronRight color={themeColors.textSecondary} size={18} />
+          </Pressable>
+
+          {/* Sign Out Button */}
+          <Pressable
+            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+            onPress={handleLogout}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: '#20202E' }]}>
+                <LogOut color="#ff4444" size={18} />
+              </View>
+              <Text style={[styles.actionRowText, { color: '#ff6666' }]}>Sign Out</Text>
+            </View>
+            <ChevronRight color={themeColors.textSecondary} size={18} />
+          </Pressable>
+        </View>
+
+        <View style={{ height: 40 }} />
       </View>
-
-      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -134,6 +138,19 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  profileCard: {
+    width: '100%',
+    alignSelf: 'center',
+  },
+  profileCardWide: {
+    maxWidth: 680,
+    marginTop: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#242436',
+    backgroundColor: 'rgba(18, 18, 26, 0.5)',
+    paddingBottom: 24,
   },
   header: {
     alignItems: 'center',
@@ -210,7 +227,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     marginBottom: 4,
-    boxShadow: '0px 4px 10px rgba(229, 9, 20, 0.4)',
   },
   adminBannerLeft: {
     flexDirection: 'row',

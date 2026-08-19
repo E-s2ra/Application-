@@ -9,17 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
-import { LogIn, AlertCircle } from 'lucide-react-native';
+import { Sparkles, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const themeColors = Colors.dark;
   const { signIn } = useAuth();
+  const { isDesktop, isTablet } = useResponsive();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,69 +54,85 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}
     >
-      <View style={styles.header}>
-        <LogIn color={themeColors.primary} size={48} />
-        <Text style={[styles.title, { color: themeColors.text }]}>Anime Stream</Text>
-        <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Login to watch premium anime</Text>
-      </View>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          (isDesktop || isTablet) && styles.scrollContentCentered,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
+          <View style={styles.header}>
+            <View style={[styles.brandLogoCircle, { backgroundColor: themeColors.primary }]}>
+              <Sparkles color="#fff" size={28} />
+            </View>
+            <Text style={styles.brandTitle}>
+              ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
+            </Text>
+            <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+              Sign in to stream unlimited Anime, Movies & K-Drama in 4K
+            </Text>
+          </View>
 
-      {errorMessage && (
-        <View style={styles.errorBox}>
-          <AlertCircle color="#ff4d4d" size={20} />
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      )}
-
-      <View style={styles.form}>
-        <TextInput
-          style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-          placeholder="Email"
-          placeholderTextColor={themeColors.textSecondary}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={email}
-          onChangeText={(val) => {
-            setEmail(val);
-            if (errorMessage) setErrorMessage(null);
-          }}
-          editable={!loading}
-        />
-        <TextInput
-          style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-          placeholder="Password"
-          secureTextEntry
-          placeholderTextColor={themeColors.textSecondary}
-          value={password}
-          onChangeText={(val) => {
-            setPassword(val);
-            if (errorMessage) setErrorMessage(null);
-          }}
-          editable={!loading}
-        />
-        <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={styles.forgotBtn}>
-          <Text style={[styles.forgotText, { color: themeColors.textSecondary }]}>Forgot Password?</Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+          {errorMessage && (
+            <View style={styles.errorBox}>
+              <AlertCircle color="#ff4d4d" size={20} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
           )}
-        </Pressable>
-      </View>
 
-      <View style={styles.footer}>
-        <Text style={{ color: themeColors.textSecondary }}>{"Don't have an account? "}</Text>
-        <Pressable onPress={() => router.push('/(auth)/signup')}>
-          <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>Sign Up</Text>
-        </Pressable>
-      </View>
+          <View style={styles.form}>
+            <TextInput
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
+              placeholder="Email or Username"
+              placeholderTextColor={themeColors.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={email}
+              onChangeText={(val) => {
+                setEmail(val);
+                if (errorMessage) setErrorMessage(null);
+              }}
+              editable={!loading}
+            />
+            <TextInput
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
+              placeholder="Password"
+              secureTextEntry
+              placeholderTextColor={themeColors.textSecondary}
+              value={password}
+              onChangeText={(val) => {
+                setPassword(val);
+                if (errorMessage) setErrorMessage(null);
+              }}
+              editable={!loading}
+            />
+            <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={styles.forgotBtn}>
+              <Text style={[styles.forgotText, { color: themeColors.textSecondary }]}>Forgot Password?</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Sign In</Text>
+              )}
+            </Pressable>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={{ color: themeColors.textSecondary }}>{"Don't have an account? "}</Text>
+            <Pressable onPress={() => router.push('/(auth)/signup')}>
+              <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>Sign Up</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -121,21 +140,49 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 24,
+    justifyContent: 'center',
+  },
+  scrollContentCentered: {
+    alignItems: 'center',
+  },
+  authCard: {
+    width: '100%',
+  },
+  authCardDesktop: {
+    maxWidth: 440,
+    padding: 32,
+    borderRadius: 20,
+    backgroundColor: 'rgba(18, 18, 26, 0.75)',
+    borderWidth: 1,
+    borderColor: '#242436',
   },
   header: {
     alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  title: {
+  brandLogoCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  brandTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: 16,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: '#fff',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   errorBox: {
     flexDirection: 'row',
@@ -157,32 +204,34 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   input: {
-    height: 50,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: 10,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: '#242436',
   },
   button: {
-    height: 50,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   forgotBtn: {
     alignSelf: 'flex-end',
   },
   forgotText: {
-    fontSize: 14,
+    fontSize: 13,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 28,
   },
 });

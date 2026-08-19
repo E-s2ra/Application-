@@ -11,9 +11,11 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
-import { AlertCircle, CheckCircle } from 'lucide-react-native';
+import { useResponsive } from '@/hooks/useResponsive';
+import { AlertCircle, CheckCircle, Sparkles } from 'lucide-react-native';
 
 const PASSWORD_REQUIREMENTS = [
   'at least 9 characters',
@@ -34,8 +36,10 @@ function validatePassword(password: string): string | null {
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const themeColors = Colors.dark;
   const { signUp } = useAuth();
+  const { isDesktop, isTablet } = useResponsive();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -90,83 +94,103 @@ export default function SignUpScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: themeColors.background }]}
+      style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {errorMessage && (
-          <View style={styles.errorBox}>
-            <AlertCircle color="#ff4d4d" size={20} />
-            <Text style={styles.errorText}>{errorMessage}</Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          (isDesktop || isTablet) && styles.scrollCentered,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
+          <View style={styles.header}>
+            <View style={[styles.brandLogoCircle, { backgroundColor: themeColors.primary }]}>
+              <Sparkles color="#fff" size={28} />
+            </View>
+            <Text style={styles.brandTitle}>
+              ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
+            </Text>
+            <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+              Create your free account & start streaming
+            </Text>
           </View>
-        )}
 
-        {infoMessage && (
-          <View style={styles.infoBox}>
-            <CheckCircle color="#4BB543" size={20} />
-            <Text style={styles.infoText}>{infoMessage}</Text>
+          {errorMessage && (
+            <View style={styles.errorBox}>
+              <AlertCircle color="#ff4d4d" size={20} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
+
+          {infoMessage && (
+            <View style={styles.infoBox}>
+              <CheckCircle color="#4BB543" size={20} />
+              <Text style={styles.infoText}>{infoMessage}</Text>
+            </View>
+          )}
+
+          <View style={styles.form}>
+            <TextInput
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
+              placeholder="Full Name"
+              placeholderTextColor={themeColors.textSecondary}
+              value={fullName}
+              onChangeText={setFullName}
+              editable={!loading}
+            />
+            <TextInput
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
+              placeholder="Email address"
+              placeholderTextColor={themeColors.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={email}
+              onChangeText={setEmail}
+              editable={!loading}
+            />
+            <TextInput
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
+              placeholder="Password (9+ characters)"
+              secureTextEntry
+              placeholderTextColor={themeColors.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              editable={!loading}
+            />
+            <Text style={[styles.passwordHint, { color: themeColors.textSecondary }]}>
+              Password needs {PASSWORD_REQUIREMENTS.join(', ')}.
+            </Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
+              placeholder="Confirm Password"
+              secureTextEntry
+              placeholderTextColor={themeColors.textSecondary}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              editable={!loading}
+            />
+
+            <Pressable
+              style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
+              onPress={handleSignUp}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Create AniFlix Account</Text>
+              )}
+            </Pressable>
           </View>
-        )}
 
-        <View style={styles.form}>
-          <TextInput
-            style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-            placeholder="Full Name"
-            placeholderTextColor={themeColors.textSecondary}
-            value={fullName}
-            onChangeText={setFullName}
-            editable={!loading}
-          />
-          <TextInput
-            style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-            placeholder="Email"
-            placeholderTextColor={themeColors.textSecondary}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={email}
-            onChangeText={setEmail}
-            editable={!loading}
-          />
-          <TextInput
-            style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-            placeholder="Password (9+ characters)"
-            secureTextEntry
-            placeholderTextColor={themeColors.textSecondary}
-            value={password}
-            onChangeText={setPassword}
-            editable={!loading}
-          />
-          <Text style={[styles.passwordHint, { color: themeColors.textSecondary }]}>
-            Password needs {PASSWORD_REQUIREMENTS.join(', ')}.
-          </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-            placeholder="Confirm Password"
-            secureTextEntry
-            placeholderTextColor={themeColors.textSecondary}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            editable={!loading}
-          />
-
-          <Pressable
-            style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
-            onPress={handleSignUp}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
-            )}
-          </Pressable>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={{ color: themeColors.textSecondary }}>Already have an account? </Text>
-          <Pressable onPress={() => router.back()}>
-            <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>Sign In</Text>
-          </Pressable>
+          <View style={styles.footer}>
+            <Text style={{ color: themeColors.textSecondary }}>Already have an account? </Text>
+            <Pressable onPress={() => router.back()}>
+              <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>Sign In</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -181,6 +205,43 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
+  },
+  scrollCentered: {
+    alignItems: 'center',
+  },
+  authCard: {
+    width: '100%',
+  },
+  authCardDesktop: {
+    maxWidth: 480,
+    padding: 32,
+    borderRadius: 20,
+    backgroundColor: 'rgba(18, 18, 26, 0.75)',
+    borderWidth: 1,
+    borderColor: '#242436',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  brandLogoCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  brandTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: '#fff',
+  },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 6,
+    textAlign: 'center',
   },
   errorBox: {
     flexDirection: 'row',
@@ -215,29 +276,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   form: {
-    gap: 16,
+    gap: 14,
   },
   input: {
     height: 50,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: '#242436',
   },
   passwordHint: {
     fontSize: 12,
     lineHeight: 18,
-    marginTop: -8,
+    marginTop: -6,
   },
   button: {
-    height: 50,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   footer: {

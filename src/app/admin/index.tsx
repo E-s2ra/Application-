@@ -12,7 +12,8 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Star } from 'lucide-react-native';
+import { Plus, Trash2, Star, ArrowLeft } from 'lucide-react-native';
+import { useResponsive } from '@/hooks/useResponsive';
 
 type Anime = {
   id: string;
@@ -26,6 +27,7 @@ type Anime = {
 export default function AdminPanelScreen() {
   const router = useRouter();
   const themeColors = Colors.dark;
+  const { maxContentWidth } = useResponsive();
 
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +57,8 @@ export default function AdminPanelScreen() {
 
   const handleDelete = (item: Anime) => {
     Alert.alert(
-      'Delete Anime',
-      `Are you sure you want to delete "${item.title}"? This cannot be undone.`,
+      'Delete Media',
+      `Are you sure you want to delete "${item.title}" from AniFlix? This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -134,50 +136,61 @@ export default function AdminPanelScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <View style={styles.statsRow}>
-        <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
-          <Text style={[styles.statNumber, { color: themeColors.text }]}>{animeList.length}</Text>
-          <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Total Anime</Text>
+      <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 900) }]}>
+        {/* Custom Header Bar */}
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <ArrowLeft color="#fff" size={22} />
+          </Pressable>
+          <Text style={styles.headerTitle}>AniFlix Admin Center</Text>
+          <View style={{ width: 40 }} />
         </View>
-        <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
-          <Text style={[styles.statNumber, { color: themeColors.primary }]}>
-            {animeList.filter((a) => a.is_featured).length}
-          </Text>
-          <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Featured</Text>
-        </View>
-      </View>
 
-      <Text style={[styles.sectionTitle, { color: themeColors.textSecondary }]}>
-        TAP ⭐ TO FEATURE · TAP 🗑 TO DELETE
-      </Text>
-
-      <FlatList
-        data={animeList}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={themeColors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
-              No anime yet. Tap + to add your first one!
-            </Text>
+        <View style={styles.statsRow}>
+          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
+            <Text style={[styles.statNumber, { color: themeColors.text }]}>{animeList.length}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Total Media</Text>
           </View>
-        }
-      />
+          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
+            <Text style={[styles.statNumber, { color: themeColors.primary }]}>
+              {animeList.filter((a) => a.is_featured).length}
+            </Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Hero Featured</Text>
+          </View>
+        </View>
 
-      <Pressable
-        style={[styles.fab, { backgroundColor: themeColors.primary }]}
-        onPress={() => router.push('/admin/add-anime' as any)}
-      >
-        <Plus color="#fff" size={28} />
-      </Pressable>
+        <Text style={[styles.sectionTitle, { color: themeColors.textSecondary }]}>
+          TAP ⭐ TO FEATURE ON HERO · TAP 🗑 TO DELETE
+        </Text>
+
+        <FlatList
+          data={animeList}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={themeColors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+                No titles in catalog. Tap + to add your first title!
+              </Text>
+            </View>
+          }
+        />
+
+        <Pressable
+          style={[styles.fab, { backgroundColor: themeColors.primary }]}
+          onPress={() => router.push('/admin/add-anime' as any)}
+        >
+          <Plus color="#fff" size={28} />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -185,6 +198,33 @@ export default function AdminPanelScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#242436',
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
   },
   center: {
     flex: 1,
@@ -201,6 +241,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#242436',
   },
   statNumber: {
     fontSize: 28,
@@ -229,6 +271,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#242436',
   },
   cardInfo: {
     flex: 1,
@@ -262,7 +306,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.4)',
     elevation: 8,
   },
   empty: {

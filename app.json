@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "AniFlix",
+    "slug": "aniflix",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "app",
+    "scheme": "aniflix",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"

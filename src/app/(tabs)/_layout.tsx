@@ -48,7 +48,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: 'Search',
-          headerTitle: 'Discover Anime',
+          headerTitle: 'Explore AniFlix',
           tabBarIcon: ({ color, focused }) => (
             <Search color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
           ),

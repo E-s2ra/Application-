@@ -6,16 +6,11 @@ import {
   FlatList,
   Pressable,
   Image,
-  Dimensions,
-  Platform,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
+import { useResponsive } from '@/hooks/useResponsive';
 import { Play, Heart, Film } from 'lucide-react-native';
-
-const { width } = Dimensions.get('window');
-const isLargeScreen = Platform.OS === 'web' && width > 768;
-const CARD_WIDTH = isLargeScreen ? (width - 64) / 4 : (width - 48) / 2;
 
 const PLACEHOLDER_IMAGES = [
   'https://picsum.photos/id/1015/800/1200',
@@ -28,6 +23,7 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const themeColors = Colors.dark;
   const { favorites, toggleFavorite } = useFavorites();
+  const { numCols, cardWidth, cardGap, pagePad, maxContentWidth } = useResponsive();
 
   const getImage = (anime: AnimeItem) => {
     if (anime.image_url) return anime.image_url;
@@ -42,10 +38,10 @@ export default function FavoritesScreen() {
   };
 
   const renderCard = ({ item }: { item: AnimeItem }) => (
-    <View style={[styles.card, { backgroundColor: themeColors.backgroundCard, width: CARD_WIDTH }]}>
+    <View style={[styles.card, { backgroundColor: themeColors.backgroundCard, width: cardWidth }]}>
       <Pressable onPress={() => handleWatch(item.id)} style={styles.imageContainer}>
         <Image source={{ uri: getImage(item) }} style={styles.thumbnail} resizeMode="cover" />
-        
+
         {/* Play Overlay Icon */}
         <View style={styles.playOverlay}>
           <View style={[styles.playCircle, { backgroundColor: themeColors.primary }]}>
@@ -64,12 +60,17 @@ export default function FavoritesScreen() {
           <Heart color="#E50914" fill="#E50914" size={18} />
         </Pressable>
 
-        {/* Episode badge */}
-        {item.episodes > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{item.episodes} EPS</Text>
+        {/* Category + episode badge */}
+        {item.category && (
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryBadgeText}>{item.category.toUpperCase()}</Text>
           </View>
         )}
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>
+            {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
+          </Text>
+        </View>
       </Pressable>
 
       <View style={styles.cardInfo}>
@@ -77,7 +78,7 @@ export default function FavoritesScreen() {
           {item.title}
         </Text>
         <Text style={[styles.cardGenre, { color: themeColors.textSecondary }]} numberOfLines={1}>
-          {item.genre ?? 'Anime Series'}
+          {item.genre ?? item.category ?? 'Stream'}
         </Text>
       </View>
     </View>
@@ -85,40 +86,42 @@ export default function FavoritesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {favorites.length > 0 ? (
-        <FlatList
-          data={favorites}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderCard}
-          numColumns={isLargeScreen ? 4 : 2}
-          key={isLargeScreen ? 'grid-4' : 'grid-2'}
-          contentContainerStyle={styles.list}
-          columnWrapperStyle={styles.columnWrapper}
-          ListHeaderComponent={
-            <View style={styles.header}>
-              <Text style={[styles.subCount, { color: themeColors.textSecondary }]}>
-                {favorites.length} {favorites.length === 1 ? 'Title' : 'Titles'} Saved
-              </Text>
+      <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
+        {favorites.length > 0 ? (
+          <FlatList
+            data={favorites}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderCard}
+            numColumns={numCols}
+            key={`fav-grid-${numCols}`}
+            contentContainerStyle={{ padding: pagePad, paddingBottom: 40 }}
+            columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
+            ListHeaderComponent={
+              <View style={styles.header}>
+                <Text style={[styles.subCount, { color: themeColors.textSecondary }]}>
+                  {favorites.length} {favorites.length === 1 ? 'Title' : 'Titles'} Saved
+                </Text>
+              </View>
+            }
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: themeColors.backgroundElement }]}>
+              <Film color={themeColors.primary} size={48} />
             </View>
-          }
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIconCircle, { backgroundColor: themeColors.backgroundElement }]}>
-            <Film color={themeColors.primary} size={48} />
+            <Text style={[styles.emptyTitle, { color: themeColors.text }]}>Your List is Empty</Text>
+            <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
+              Tap the ❤️ heart icon on any anime, movie, or series to save it here for instant access anytime.
+            </Text>
+            <Pressable
+              style={[styles.browseButton, { backgroundColor: themeColors.primary }]}
+              onPress={() => router.push('/(tabs)' as any)}
+            >
+              <Text style={styles.browseButtonText}>Browse AniFlix</Text>
+            </Pressable>
           </View>
-          <Text style={[styles.emptyTitle, { color: themeColors.text }]}>Your List is Empty</Text>
-          <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-            Tap the ❤️ heart icon on any anime to save it here for fast access anytime.
-          </Text>
-          <Pressable
-            style={[styles.browseButton, { backgroundColor: themeColors.primary }]}
-            onPress={() => router.push('/(tabs)' as any)}
-          >
-            <Text style={styles.browseButtonText}>Browse Trending Anime</Text>
-          </Pressable>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 }
@@ -127,13 +130,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  list: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  columnWrapper: {
-    gap: 16,
-    marginBottom: 16,
+  contentWrapper: {
+    flex: 1,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     marginBottom: 12,
@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 8px rgba(229, 9, 20, 0.5)',
   },
   heartButton: {
     position: 'absolute',
@@ -184,6 +183,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  categoryBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   badge: {
     position: 'absolute',
@@ -233,11 +247,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
-    maxWidth: 320,
+    maxWidth: 340,
     marginBottom: 24,
   },
   browseButton: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 24,
   },

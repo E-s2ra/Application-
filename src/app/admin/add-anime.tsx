@@ -15,8 +15,9 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { Sparkles, Film } from 'lucide-react-native';
+import { Sparkles, ArrowLeft } from 'lucide-react-native';
 import { MediaCategory } from '@/hooks/useFavorites';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
   { id: 'Movies', label: 'Movies', icon: '🎬' },
@@ -29,6 +30,7 @@ const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
 export default function AddAnimeScreen() {
   const router = useRouter();
   const themeColors = Colors.dark;
+  const { maxContentWidth } = useResponsive();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -72,7 +74,7 @@ export default function AddAnimeScreen() {
       return;
     }
 
-    Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to the catalog.`, [
+    Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to AniFlix.`, [
       { text: 'Add Another', onPress: () => resetForm() },
       { text: 'Back to Panel', onPress: () => router.back() },
     ]);
@@ -96,163 +98,172 @@ export default function AddAnimeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: themeColors.background }]}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 800) }]}>
+        {/* Custom Header */}
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <ArrowLeft color="#fff" size={22} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Add New Media</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-        {/* 🏷️ Category Selection Group */}
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.textSecondary }]}>MEDIA CATEGORY *</Text>
-          <View style={styles.categoryRow}>
-            {CATEGORY_OPTIONS.map((cat) => {
-              const isSelected = category === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  style={[
-                    styles.categoryChip,
-                    { backgroundColor: isSelected ? themeColors.primary : themeColors.backgroundElement },
-                    isSelected && styles.categoryChipActive,
-                  ]}
-                  onPress={() => {
-                    setCategory(cat.id);
-                    if (cat.id === 'Movies' || cat.id === 'Anime Movies') {
-                      setEpisodes('1');
-                    } else if (episodes === '1') {
-                      setEpisodes('16');
-                    }
-                  }}
-                >
-                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                  <Text
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          {/* 🏷️ Category Selection Group */}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>MEDIA CATEGORY *</Text>
+            <View style={styles.categoryRow}>
+              {CATEGORY_OPTIONS.map((cat) => {
+                const isSelected = category === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id}
                     style={[
-                      styles.categoryChipText,
-                      { color: isSelected ? '#fff' : themeColors.textSecondary },
+                      styles.categoryChip,
+                      { backgroundColor: isSelected ? themeColors.primary : themeColors.backgroundElement },
+                      isSelected && styles.categoryChipActive,
                     ]}
+                    onPress={() => {
+                      setCategory(cat.id);
+                      if (cat.id === 'Movies' || cat.id === 'Anime Movies') {
+                        setEpisodes('1');
+                      } else if (episodes === '1') {
+                        setEpisodes('16');
+                      }
+                    }}
                   >
-                    {cat.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.textSecondary }]}>TITLE *</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="e.g. Inception, Queen of Tears, Suzume"
-            placeholderTextColor={themeColors.textSecondary}
-            value={title}
-            onChangeText={setTitle}
-            editable={!loading}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.textSecondary }]}>DESCRIPTION / SYNOPSIS</Text>
-          <TextInput
-            style={[inputStyle, styles.textArea]}
-            placeholder="Write a brief storyline synopsis..."
-            placeholderTextColor={themeColors.textSecondary}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            editable={!loading}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.textSecondary }]}>POSTER / COVER IMAGE URL</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="https://example.com/poster.jpg"
-            placeholderTextColor={themeColors.textSecondary}
-            value={imageUrl}
-            onChangeText={setImageUrl}
-            keyboardType="url"
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!loading}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.textSecondary }]}>SIGNED VIDEO STREAM URL (HLS / DASH)</Text>
-          <TextInput
-            style={inputStyle}
-            placeholder="Short-lived URL issued by your streaming service"
-            placeholderTextColor={themeColors.textSecondary}
-            value={videoUrl}
-            onChangeText={setVideoUrl}
-            keyboardType="url"
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!loading}
-          />
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.fieldGroup, { flex: 1 }]}>
-            <Text style={[styles.label, { color: themeColors.textSecondary }]}>
-              {category.includes('Movie') ? 'EPISODES (1 FOR MOVIES)' : 'EPISODES'}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              placeholder="1"
-              placeholderTextColor={themeColors.textSecondary}
-              value={episodes}
-              onChangeText={setEpisodes}
-              keyboardType="number-pad"
-              editable={!loading}
-            />
-          </View>
-          <View style={[styles.fieldGroup, { flex: 1 }]}>
-            <Text style={[styles.label, { color: themeColors.textSecondary }]}>GENRES</Text>
-            <TextInput
-              style={inputStyle}
-              placeholder="Sci-Fi, Romance..."
-              placeholderTextColor={themeColors.textSecondary}
-              value={genre}
-              onChangeText={setGenre}
-              editable={!loading}
-            />
-          </View>
-        </View>
-
-        <View style={[styles.switchRow, { backgroundColor: themeColors.backgroundElement }]}>
-          <View style={{ flex: 1, marginRight: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Sparkles color="#FFB800" size={16} />
-              <Text style={[styles.switchLabel, { color: themeColors.text }]}>Featured Hero Banner</Text>
+                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        { color: isSelected ? '#fff' : themeColors.textSecondary },
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-            <Text style={[styles.switchSub, { color: themeColors.textSecondary }]}>
-              Show in the top rotating homepage hero carousel
-            </Text>
           </View>
-          <Switch
-            value={isFeatured}
-            onValueChange={setIsFeatured}
-            trackColor={{ false: themeColors.backgroundSelected, true: themeColors.primary }}
-            thumbColor="#fff"
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>TITLE *</Text>
+            <TextInput
+              style={inputStyle}
+              placeholder="e.g. Inception, Queen of Tears, Suzume"
+              placeholderTextColor={themeColors.textSecondary}
+              value={title}
+              onChangeText={setTitle}
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>DESCRIPTION / SYNOPSIS</Text>
+            <TextInput
+              style={[inputStyle, styles.textArea]}
+              placeholder="Write a brief storyline synopsis..."
+              placeholderTextColor={themeColors.textSecondary}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>POSTER / COVER IMAGE URL</Text>
+            <TextInput
+              style={inputStyle}
+              placeholder="https://images.unsplash.com/..."
+              placeholderTextColor={themeColors.textSecondary}
+              value={imageUrl}
+              onChangeText={setImageUrl}
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>SIGNED VIDEO STREAM URL (HLS / DASH)</Text>
+            <TextInput
+              style={inputStyle}
+              placeholder="Short-lived URL issued by your streaming service"
+              placeholderTextColor={themeColors.textSecondary}
+              value={videoUrl}
+              onChangeText={setVideoUrl}
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.fieldGroup, { flex: 1 }]}>
+              <Text style={[styles.label, { color: themeColors.textSecondary }]}>
+                {category.includes('Movie') ? 'EPISODES (1 FOR MOVIES)' : 'EPISODES'}
+              </Text>
+              <TextInput
+                style={inputStyle}
+                placeholder="1"
+                placeholderTextColor={themeColors.textSecondary}
+                value={episodes}
+                onChangeText={setEpisodes}
+                keyboardType="number-pad"
+                editable={!loading}
+              />
+            </View>
+            <View style={[styles.fieldGroup, { flex: 1 }]}>
+              <Text style={[styles.label, { color: themeColors.textSecondary }]}>GENRES</Text>
+              <TextInput
+                style={inputStyle}
+                placeholder="Sci-Fi, Action, Romance..."
+                placeholderTextColor={themeColors.textSecondary}
+                value={genre}
+                onChangeText={setGenre}
+                editable={!loading}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.switchRow, { backgroundColor: themeColors.backgroundElement }]}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sparkles color="#FFB800" size={16} />
+                <Text style={[styles.switchLabel, { color: themeColors.text }]}>Featured Hero Banner</Text>
+              </View>
+              <Text style={[styles.switchSub, { color: themeColors.textSecondary }]}>
+                Show in the top rotating homepage hero carousel
+              </Text>
+            </View>
+            <Switch
+              value={isFeatured}
+              onValueChange={setIsFeatured}
+              trackColor={{ false: themeColors.backgroundSelected, true: themeColors.primary }}
+              thumbColor="#fff"
+              disabled={loading}
+            />
+          </View>
+
+          <Pressable
+            style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
+            onPress={handleSubmit}
             disabled={loading}
-          />
-        </View>
-
-        <Pressable
-          style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Publish to {category}</Text>
-          )}
-        </Pressable>
-
-      </ScrollView>
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Publish to AniFlix {category}</Text>
+            )}
+          </Pressable>
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -260,6 +271,33 @@ export default function AddAnimeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#242436',
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
   },
   scroll: {
     padding: 20,
@@ -340,7 +378,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
-    boxShadow: '0px 4px 8px rgba(229, 9, 20, 0.4)',
   },
   buttonText: {
     color: '#ffffff',

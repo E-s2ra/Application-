@@ -8,23 +8,15 @@ import {
   FlatList,
   Pressable,
   Image,
-  Dimensions,
   ActivityIndicator,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { Search as SearchIcon, X, Heart, Play, Sparkles } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { DEFAULT_CATALOG, CATEGORIES } from './index';
-
-const { width } = Dimensions.get('window');
-const isLargeScreen = Platform.OS === 'web' && width > 768;
-const NUM_COLS = isLargeScreen ? 4 : 2;
-const CARD_GAP = 12;
-const CARD_PADDING = 16;
-const CARD_WIDTH = Math.floor((width - CARD_PADDING * 2 - CARD_GAP * (NUM_COLS - 1)) / NUM_COLS);
+import { useResponsive } from '@/hooks/useResponsive';
 
 const GENRES = ['All', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
@@ -38,6 +30,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const themeColors = Colors.dark;
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { numCols, cardWidth, cardGap, pagePad, maxContentWidth, isDesktop } = useResponsive();
 
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | MediaCategory>('All');
@@ -96,7 +89,7 @@ export default function SearchScreen() {
   const renderCard = ({ item }: { item: AnimeItem }) => {
     const favorited = isFavorite(item.id);
     return (
-      <View style={[styles.card, { backgroundColor: themeColors.backgroundCard, width: CARD_WIDTH }]}>
+      <View style={[styles.card, { backgroundColor: themeColors.backgroundCard, width: cardWidth }]}>
         <Pressable onPress={() => handleWatch(item.id)} style={styles.imageContainer}>
           <Image
             source={{ uri: item.image_url || PLACEHOLDER_IMAGES[0] }}
@@ -147,125 +140,137 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* 🔍 Search Input Bar */}
-      <View style={styles.searchHeader}>
-        <View style={[styles.searchBar, { backgroundColor: themeColors.backgroundElement }]}>
-          <SearchIcon color={themeColors.textSecondary} size={20} />
-          <TextInput
-            style={[styles.input, { color: themeColors.text }]}
-            placeholder="Search Movies, Anime, K-Drama, Drama..."
-            placeholderTextColor={themeColors.textSecondary}
-            value={query}
-            onChangeText={setQuery}
-            autoCorrect={false}
+      <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
+        {/* 🔍 Search Input Bar */}
+        <View style={styles.searchHeader}>
+          <View
+            style={[
+              styles.searchBar,
+              {
+                backgroundColor: themeColors.backgroundElement,
+                maxWidth: isDesktop ? 680 : undefined,
+                alignSelf: isDesktop ? 'center' : undefined,
+                width: '100%',
+              },
+            ]}
+          >
+            <SearchIcon color={themeColors.textSecondary} size={20} />
+            <TextInput
+              style={[styles.input, { color: themeColors.text }]}
+              placeholder="Search AniFlix (Anime, Movies, K-Drama, Series)..."
+              placeholderTextColor={themeColors.textSecondary}
+              value={query}
+              onChangeText={setQuery}
+              autoCorrect={false}
+            />
+            {query.length > 0 && (
+              <Pressable onPress={() => setQuery('')} style={styles.clearBtn}>
+                <X color={themeColors.textSecondary} size={18} />
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* 🏷️ Category Filter Pills */}
+        <View style={styles.filterSection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            {CATEGORIES.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={[
+                    styles.categoryPill,
+                    isSelected
+                      ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
+                      : { backgroundColor: themeColors.backgroundElement },
+                  ]}
+                  onPress={() => setSelectedCategory(cat.id)}
+                >
+                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  <Text
+                    style={[
+                      styles.categoryPillText,
+                      { color: isSelected ? '#fff' : themeColors.textSecondary },
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          {/* 🏷️ Genre Filter Chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.genreScroll}
+          >
+            {GENRES.map((genre) => {
+              const isSelected = selectedGenre === genre;
+              return (
+                <Pressable
+                  key={genre}
+                  style={[
+                    styles.genreChip,
+                    isSelected
+                      ? [styles.genreChipActive, { backgroundColor: themeColors.accentCyan }]
+                      : { backgroundColor: themeColors.backgroundElement },
+                  ]}
+                  onPress={() => setSelectedGenre(genre)}
+                >
+                  <Text
+                    style={[
+                      styles.genreChipText,
+                      { color: isSelected ? '#000' : themeColors.textSecondary },
+                    ]}
+                  >
+                    {genre}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* 📊 Results Count Header */}
+        <View style={styles.resultsHeader}>
+          <Text style={[styles.resultsCount, { color: themeColors.textSecondary }]}>
+            Showing {filteredList.length} results
+          </Text>
+        </View>
+
+        {/* 🎬 Grid of Results */}
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={themeColors.primary} />
+          </View>
+        ) : (
+          <FlatList
+            data={filteredList}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderCard}
+            numColumns={numCols}
+            key={`search-grid-${numCols}`}
+            columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
+            contentContainerStyle={[styles.grid, { padding: pagePad, paddingTop: 4, paddingBottom: 40 }]}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Sparkles color={themeColors.textSecondary} size={48} />
+                <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No results</Text>
+                <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
+                  Attempt a different search or explore the categories above.
+                </Text>
+              </View>
+            }
           />
-          {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} style={styles.clearBtn}>
-              <X color={themeColors.textSecondary} size={18} />
-            </Pressable>
-          )}
-        </View>
+        )}
       </View>
-
-      {/* 🏷️ Category Filter Pills */}
-      <View style={styles.filterSection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryScroll}
-        >
-          {CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <Pressable
-                key={cat.id}
-                style={[
-                  styles.categoryPill,
-                  isSelected
-                    ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
-                    : { backgroundColor: themeColors.backgroundElement },
-                ]}
-                onPress={() => setSelectedCategory(cat.id)}
-              >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                <Text
-                  style={[
-                    styles.categoryPillText,
-                    { color: isSelected ? '#fff' : themeColors.textSecondary },
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {/* 🏷️ Genre Filter Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.genreScroll}
-        >
-          {GENRES.map((genre) => {
-            const isSelected = selectedGenre === genre;
-            return (
-              <Pressable
-                key={genre}
-                style={[
-                  styles.genreChip,
-                  isSelected
-                    ? [styles.genreChipActive, { backgroundColor: themeColors.accentCyan }]
-                    : { backgroundColor: themeColors.backgroundElement },
-                ]}
-                onPress={() => setSelectedGenre(genre)}
-              >
-                <Text
-                  style={[
-                    styles.genreChipText,
-                    { color: isSelected ? '#000' : themeColors.textSecondary },
-                  ]}
-                >
-                  {genre}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* 📊 Results Count Header */}
-      <View style={styles.resultsHeader}>
-        <Text style={[styles.resultsCount, { color: themeColors.textSecondary }]}>
-          Showing {filteredList.length} results
-        </Text>
-      </View>
-
-      {/* 🎬 Grid of Results */}
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={themeColors.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={filteredList}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderCard}
-          numColumns={NUM_COLS}
-          key={NUM_COLS}
-          columnWrapperStyle={NUM_COLS > 1 ? styles.gridRow : undefined}
-          contentContainerStyle={styles.grid}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Sparkles color={themeColors.textSecondary} size={48} />
-              <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No titles found</Text>
-              <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-                Try searching for a different keyword or switching categories.
-              </Text>
-            </View>
-          }
-        />
-      )}
     </View>
   );
 }
@@ -273,6 +278,11 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    width: '100%',
+    alignSelf: 'center',
   },
   center: {
     flex: 1,
@@ -357,13 +367,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   grid: {
-    padding: CARD_PADDING,
-    paddingTop: 4,
-    paddingBottom: 40,
-  },
-  gridRow: {
-    gap: CARD_GAP,
-    marginBottom: CARD_GAP,
+    flexGrow: 1,
   },
   card: {
     borderRadius: 12,
@@ -373,8 +377,9 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 200,
+    aspectRatio: 2 / 3,
     position: 'relative',
+    backgroundColor: '#12121A',
   },
   thumbnail: {
     width: '100%',
