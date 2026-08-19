@@ -187,6 +187,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.tabsScrollView}
             contentContainerStyle={styles.tabsRow}
           >
             <Pressable
@@ -264,8 +265,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
           {/* Tab Content */}
           <ScrollView
+            style={styles.contentScrollView}
             contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
           >
             {/* 🎯 MISSIONS TAB */}
             {activeTab === 'missions' && (
@@ -649,18 +651,21 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 620,
-    maxHeight: '92%',
+    height: '90%',
+    maxHeight: 740,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#262638',
     overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#1E1E2C',
   },
@@ -684,9 +689,9 @@ const styles = StyleSheet.create({
   },
   userStatusBanner: {
     backgroundColor: '#12121D',
-    padding: 16,
+    padding: 14,
     marginHorizontal: 16,
-    marginTop: 14,
+    marginTop: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#222234',
@@ -695,7 +700,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   levelBadge: {
     flexDirection: 'row',
@@ -784,9 +789,9 @@ const styles = StyleSheet.create({
   admobRewardedBtn: {
     backgroundColor: '#16140D',
     marginHorizontal: 16,
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 12,
-    padding: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#3D3418',
     flexDirection: 'row',
@@ -801,9 +806,9 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   admobIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#262010',
     justifyContent: 'center',
     alignItems: 'center',
@@ -811,7 +816,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFB800',
   },
   admobBtnTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: '#FFF',
   },
@@ -822,8 +827,8 @@ const styles = StyleSheet.create({
   },
   admobRewardPill: {
     backgroundColor: '#262010',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FFB800',
@@ -831,12 +836,18 @@ const styles = StyleSheet.create({
   admobRewardPillText: {
     color: '#FFD700',
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 11,
+  },
+  tabsScrollView: {
+    flexGrow: 0,
+    height: 52,
+    marginVertical: 4,
   },
   tabsRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
     gap: 8,
   },
   tabBtn: {
@@ -844,7 +855,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    paddingVertical: 8,
+    paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 10,
     backgroundColor: '#13131C',
@@ -863,9 +874,13 @@ const styles = StyleSheet.create({
   tabBtnTextActive: {
     color: '#FFF',
   },
+  contentScrollView: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 48,
+    flexGrow: 1,
   },
   sectionHeading: {
     fontSize: 16,
