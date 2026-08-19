@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Animated, Easing, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { Film, Sparkles, Flame } from 'lucide-react-native';
 
 const TOTAL_DURATION = 4000; // Exactly 4 seconds
+const isNativeDriver = Platform.OS !== 'web';
 
 interface AniFlixSplashScreenProps {
   onFinish: () => void;
@@ -27,12 +28,12 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
         toValue: 1,
         duration: 900,
         easing: Easing.out(Easing.back(1.5)),
-        useNativeDriver: true,
+        useNativeDriver: isNativeDriver,
       }),
       Animated.timing(logoOpacityAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
+        useNativeDriver: isNativeDriver,
       }),
     ]).start();
 
@@ -43,13 +44,13 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
           toValue: 1.2,
           duration: 1000,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: isNativeDriver,
         }),
         Animated.timing(glowPulseAnim, {
           toValue: 0.8,
           duration: 1000,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: isNativeDriver,
         }),
       ])
     ).start();
@@ -90,7 +91,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
       Animated.timing(screenFadeAnim, {
         toValue: 0,
         duration: 400,
-        useNativeDriver: true,
+        useNativeDriver: isNativeDriver,
       }).start(() => {
         onFinish();
       });

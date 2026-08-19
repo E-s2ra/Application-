@@ -10,6 +10,7 @@ import {
   Easing,
   Dimensions,
   Image,
+  Platform,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
 import {
@@ -80,7 +81,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
       toValue: finalDegree,
       duration: 3500,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start(() => {
       setIsSpinning(false);
       setWonReward(targetReward);

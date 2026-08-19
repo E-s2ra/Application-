@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Animated,
+  Platform,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
 import {
@@ -404,17 +405,19 @@ export default function HomeScreen() {
   useEffect(() => {
     if (featured.length <= 1) return;
 
+    const isNativeDriver = Platform.OS !== 'web';
+
     const timer = setInterval(() => {
       Animated.timing(fadeAnim, {
         toValue: 0.2,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: isNativeDriver,
       }).start(() => {
         setCurrentHeroIndex((prev) => (prev + 1) % featured.length);
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 400,
-          useNativeDriver: true,
+          useNativeDriver: isNativeDriver,
         }).start();
       });
     }, 4000);
@@ -423,16 +426,17 @@ export default function HomeScreen() {
   }, [featured, fadeAnim]);
 
   const goToSlide = (newIndex: number) => {
+    const isNativeDriver = Platform.OS !== 'web';
     Animated.timing(fadeAnim, {
       toValue: 0.2,
       duration: 200,
-      useNativeDriver: true,
+      useNativeDriver: isNativeDriver,
     }).start(() => {
       setCurrentHeroIndex(newIndex);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: isNativeDriver,
       }).start();
     });
   };
