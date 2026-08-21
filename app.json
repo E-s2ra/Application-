@@ -2,6 +2,7 @@
   "expo": {
     "name": "AniFlix",
     "slug": "aniflix",
+    "owner": "e2sras-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,6 +12,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.e2sra.aniflix",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -54,6 +56,10 @@
           "bannerId": "ca-app-pub-6508988701499376/5312079535",
           "rewardedId": "ca-app-pub-6508988701499376/3978816560"
         }
+      },
+      "router": {},
+      "eas": {
+        "projectId": "5ed87f19-67d1-44dd-849d-ed39f301ea76"
       }
     }
   }
