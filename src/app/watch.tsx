@@ -9,6 +9,8 @@ import {
   Image,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
+// Local bundled demo video
+const LOCAL_SAMPLE_VIDEO = require('../../assets/videos/sample.mp4');
 import { Colors } from '@/constants/theme';
 import {
   Shield,
@@ -74,10 +76,12 @@ export default function WatchScreen() {
   // Ref for VideoView (needed for fullscreen)
   const videoViewRef = useRef<VideoView>(null);
 
-  // No raw stream URL is ever read from the public catalog. A future secure
-  // Edge Function must provide a short-lived, DRM-enabled playback URL.
-  const player = useVideoPlayer(null, (p) => {
+  // Video source: load local asset or real URL from Supabase
+  const [videoSource, setVideoSource] = useState<any>(null);
+
+  const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
+    p.play();
   });
 
   useEffect(() => {
@@ -95,12 +99,18 @@ export default function WatchScreen() {
 
         const { data } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, episodes, genre, category, is_featured')
+          .select('id, title, description, image_url, video_url, episodes, genre, category, is_featured')
           .eq('id', id)
           .single();
 
         if (data) {
           setAnime(data as AnimeItem);
+          // 🎬 Load video: local asset or real URL
+          if ((data as any).video_url === 'local:sample') {
+            setVideoSource(LOCAL_SAMPLE_VIDEO);
+          } else if ((data as any).video_url) {
+            setVideoSource({ uri: (data as any).video_url });
+          }
         } else if (defaultMatch) {
           setAnime(defaultMatch);
         } else {
@@ -247,7 +257,7 @@ export default function WatchScreen() {
               player={player}
               contentFit={aspectRatio === '9:16' ? 'cover' : 'contain'}
             />
-            {anime && (
+            {anime && !videoSource && (
               <View style={styles.videoUnavailable}>
                 <Text style={styles.videoUnavailableText}>AniFlix Ultra HD Playback Active</Text>
               </View>

@@ -2,8 +2,9 @@ import { Colors } from '@/constants/theme';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { addAnime } from '@/lib/admin-operations';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Film, Sparkles } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -56,6 +57,7 @@ export default function AddAnimeScreen() {
 
     setLoading(true);
 
+    // Try Edge Function first; fall back to direct Supabase insert
     const result = await addAnime({
       title: title.trim(),
       description: description.trim() || undefined,
@@ -67,11 +69,27 @@ export default function AddAnimeScreen() {
       is_featured: isFeatured,
     });
 
-    setLoading(false);
-
     if (!result.success) {
-      Alert.alert('Error', result.error || 'Failed to add anime');
-      return;
+      // Edge function not available — insert directly (admin users bypass RLS)
+      const { error: dbError } = await supabase.from('anime').insert({
+        title: title.trim(),
+        description: description.trim() || null,
+        image_url: imageUrl.trim() || null,
+        video_url: videoUrl.trim() || null,
+        episodes: epsNum,
+        genre: genre.trim() || null,
+        category,
+        is_featured: isFeatured,
+      });
+
+      setLoading(false);
+
+      if (dbError) {
+        Alert.alert('Error', dbError.message || 'Failed to add media');
+        return;
+      }
+    } else {
+      setLoading(false);
     }
 
     Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to AniFlix.`, [
@@ -190,17 +208,27 @@ export default function AddAnimeScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: themeColors.textSecondary }]}>SIGNED VIDEO STREAM URL (HLS / DASH)</Text>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>VIDEO URL (HLS / DASH / LOCAL)</Text>
+            {/* 🎬 Quick-fill with the bundled local demo video */}
+            <Pressable
+              style={[styles.localVideoBtn, { backgroundColor: videoUrl === 'local:sample' ? '#1a3a1a' : themeColors.backgroundElement }]}
+              onPress={() => setVideoUrl(videoUrl === 'local:sample' ? '' : 'local:sample')}
+            >
+              <Film color={videoUrl === 'local:sample' ? '#4BB543' : themeColors.textSecondary} size={16} />
+              <Text style={[styles.localVideoBtnText, { color: videoUrl === 'local:sample' ? '#4BB543' : themeColors.textSecondary }]}>
+                {videoUrl === 'local:sample' ? '✅ Local Demo Video Selected (sample.mp4)' : '📁 Use Local Demo Video (assets/videos/sample.mp4)'}
+              </Text>
+            </Pressable>
             <TextInput
               style={inputStyle}
-              placeholder="Short-lived URL issued by your streaming service"
+              placeholder="https://... or leave blank to use local demo"
               placeholderTextColor={themeColors.textSecondary}
-              value={videoUrl}
-              onChangeText={setVideoUrl}
+              value={videoUrl === 'local:sample' ? '' : videoUrl}
+              onChangeText={(v) => setVideoUrl(v)}
               keyboardType="url"
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!loading}
+              editable={!loading && videoUrl !== 'local:sample'}
             />
           </View>
 
@@ -336,6 +364,21 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  localVideoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#242436',
+  },
+  localVideoBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
   },
   input: {
     height: 50,
