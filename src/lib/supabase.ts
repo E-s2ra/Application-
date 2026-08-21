@@ -1,9 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-const SUPABASE_URL = 'https://zkbprmyxwjfznsucyuvi.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
+// Use environment variables instead of hardcoded values
+// This allows different configurations per environment (dev, staging, production)
+const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Supabase URL and Anonymous Key must be configured in app.json extra or environment variables. ' +
+    'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY'
+  );
+}
 
 // Access and refresh tokens must never be kept in general-purpose app storage.
 // Expo SecureStore uses the platform's encrypted credential storage on native.

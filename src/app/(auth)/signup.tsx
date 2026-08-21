@@ -1,22 +1,22 @@
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  Pressable,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  ScrollView,
-  Image,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useRouter } from 'expo-router';
 import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PASSWORD_REQUIREMENTS = [
   'at least 9 characters',
@@ -69,10 +69,8 @@ export default function SignUpScreen() {
       formattedEmail = `${formattedEmail}@gmail.com`;
     }
 
-    const isBypass =
-      formattedEmail.toLowerCase().includes('esra') ||
-      formattedEmail.toLowerCase().startsWith('admin');
-    const passwordError = isBypass ? null : validatePassword(password);
+    // Validate password strength for all users equally - no bypasses allowed
+    const passwordError = validatePassword(password);
     if (passwordError) {
       setErrorMessage(passwordError);
       return;

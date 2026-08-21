@@ -1,19 +1,19 @@
+import { Colors } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'expo-router';
+import { ArrowLeft, Plus, Star, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  FlatList,
-  Pressable,
   ActivityIndicator,
   Alert,
+  FlatList,
+  Pressable,
   RefreshControl,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Star, ArrowLeft } from 'lucide-react-native';
-import { useResponsive } from '@/hooks/useResponsive';
 
 type Anime = {
   id: string;
@@ -65,9 +65,9 @@ export default function AdminPanelScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const { error } = await supabase.from('anime').delete().eq('id', item.id);
-            if (error) {
-              Alert.alert('Error', error.message);
+            const result = await deleteAnime(item.id);
+            if (!result.success) {
+              Alert.alert('Error', result.error || 'Failed to delete anime');
             } else {
               setAnimeList((prev) => prev.filter((a) => a.id !== item.id));
             }
@@ -78,14 +78,13 @@ export default function AdminPanelScreen() {
   };
 
   const handleToggleFeatured = async (item: Anime) => {
-    const { error } = await supabase
-      .from('anime')
-      .update({ is_featured: !item.is_featured })
-      .eq('id', item.id);
-    if (!error) {
+    const result = await updateAnimeFeatured(item.id, !item.is_featured);
+    if (result.success) {
       setAnimeList((prev) =>
         prev.map((a) => (a.id === item.id ? { ...a, is_featured: !a.is_featured } : a)),
       );
+    } else {
+      Alert.alert('Error', result.error || 'Failed to update anime');
     }
   };
 

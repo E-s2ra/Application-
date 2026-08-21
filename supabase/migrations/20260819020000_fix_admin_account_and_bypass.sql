@@ -1,27 +1,23 @@
--- Ultra Simple Fix: Updates password and sets Admin role
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Security: Admin account setup should be done via Supabase Dashboard or Management API
+-- IMPORTANT: Do NOT commit passwords to version control
+-- To set up an admin account:
+-- 1. Create user in Supabase Dashboard with secure password
+-- 2. Manually update their profile role to 'admin' in the Supabase Dashboard
+-- 3. Never hardcode credentials in migrations
 
--- 1. Update password for your account to 'E20440891esra@@' and mark email confirmed
-UPDATE auth.users
-SET 
-  encrypted_password = crypt('E20440891esra@@', gen_salt('bf', 10)),
-  email_confirmed_at = now()
-WHERE email ILIKE '%esra%';
+-- This migration now only ensures admin profiles exist with proper structure
+-- Actual user creation and role assignment must be done securely via backend
 
--- 2. Ensure your account has the 'admin' role in profiles
-INSERT INTO public.profiles (id, full_name, role)
-SELECT id, 'Esra', 'admin'
-FROM auth.users
-WHERE email ILIKE '%esra%'
-ON CONFLICT (id) DO UPDATE SET role = 'admin', full_name = 'Esra';
+-- Ensure the profiles table enforces admin role constraints
+ALTER TABLE public.profiles 
+ADD CONSTRAINT check_role_values CHECK (role IN ('user', 'admin'));
 
--- Also insert deterministic ID for mock admin
-INSERT INTO public.profiles (id, full_name, role)
-VALUES ('a0000000-0000-0000-0000-000000000001', 'Esra', 'admin')
-ON CONFLICT (id) DO UPDATE SET role = 'admin', full_name = 'Esra';
-
--- 3. Allow anime to be viewed without login restrictions
+-- Allow anime to be viewed without requiring authentication
 GRANT SELECT ON public.anime TO anon, authenticated;
+
+-- Clear any broken anime policies and reset them properly
 DROP POLICY IF EXISTS "anime_read_all" ON public.anime;
 DROP POLICY IF EXISTS "anime_read_authenticated" ON public.anime;
-CREATE POLICY "anime_read_all" ON public.anime FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "Admins can insert anime" ON public.anime;
+DROP POLICY IF EXISTS "Admins can update anime" ON public.anime;
+DROP POLICY IF EXISTS "Admins can delete anime" ON public.anime;

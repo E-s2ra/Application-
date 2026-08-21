@@ -1,23 +1,23 @@
-import { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Alert,
-  Switch,
-} from 'react-native';
-import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
-import { Sparkles, ArrowLeft } from 'lucide-react-native';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
+import { addAnime } from '@/lib/admin-operations';
+import { useRouter } from 'expo-router';
+import { ArrowLeft, Sparkles } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
   { id: 'Movies', label: 'Movies', icon: '🎬' },
@@ -56,21 +56,21 @@ export default function AddAnimeScreen() {
 
     setLoading(true);
 
-    const { error } = await supabase.from('anime').insert({
+    const result = await addAnime({
       title: title.trim(),
-      description: description.trim() || null,
-      image_url: imageUrl.trim() || null,
-      video_url: videoUrl.trim() || null,
+      description: description.trim() || undefined,
+      image_url: imageUrl.trim() || undefined,
+      video_url: videoUrl.trim() || undefined,
       episodes: epsNum,
-      genre: genre.trim() || null,
+      genre: genre.trim() || undefined,
       category: category,
       is_featured: isFeatured,
     });
 
     setLoading(false);
 
-    if (error) {
-      Alert.alert('Error', error.message);
+    if (!result.success) {
+      Alert.alert('Error', result.error || 'Failed to add anime');
       return;
     }
 

@@ -48,6 +48,8 @@
       "reactCompiler": true
     },
     "extra": {
+      "supabaseUrl": "https://zkbprmyxwjfznsucyuvi.supabase.co",
+      "supabaseAnonKey": "sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK",
       "admob": {
         "android": {
           "appId": "ca-app-pub-6508988701499376~6377749194",
