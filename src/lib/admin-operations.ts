@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, SUPABASE_URL } from '@/lib/supabase';
 
 export type AdminOperationResult<T> = {
     success: boolean;
@@ -30,7 +30,7 @@ async function callAdminOperation<T>(
 
         // Call the Edge Function
         const response = await fetch(
-            `${supabase.supabaseUrl}/functions/v1/admin-operations`,
+            `${SUPABASE_URL}/functions/v1/admin-operations`,
             {
                 method: 'POST',
                 headers: {
@@ -114,7 +114,7 @@ export async function signOutAllOtherDevices(
         }
 
         const response = await fetch(
-            `${supabase.supabaseUrl}/functions/v1/sign-out-all-devices`,
+            `${SUPABASE_URL}/functions/v1/sign-out-all-devices`,
             {
                 method: 'POST',
                 headers: {

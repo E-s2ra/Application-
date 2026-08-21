@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, Star, Trash2 } from 'lucide-react-native';

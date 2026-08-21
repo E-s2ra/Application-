@@ -34,14 +34,7 @@
         }
       ],
       "expo-video",
-      "expo-secure-store",
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-6508988701499376~6377749194",
-          "iosAppId": "ca-app-pub-6508988701499376~4682307965"
-        }
-      ]
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
