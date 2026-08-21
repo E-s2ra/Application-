@@ -9,8 +9,10 @@ import {
   Image,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-// Local bundled demo video
-const LOCAL_SAMPLE_VIDEO = require('../../assets/videos/sample.mp4');
+// Remote demo video keeps Android builds small; the local source file is intentionally excluded from Git.
+const LOCAL_SAMPLE_VIDEO = {
+  uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+};
 import { Colors } from '@/constants/theme';
 import {
   Shield,
