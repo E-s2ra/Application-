@@ -66,3 +66,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Large local video files (too big for GitHub - keep local only)
+assets/videos/
