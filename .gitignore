@@ -26,6 +26,8 @@ expo-env.d.ts
 .supabase/
 supabase/.env*
 supabase/.temp/
+supabase/.branches/
+supabase/.env.keys
 
 # Native
 .kotlin/
