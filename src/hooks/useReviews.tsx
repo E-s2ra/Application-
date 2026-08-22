@@ -15,6 +15,7 @@ export type Review = {
   createdAt: string;
   helpfulCount: number;
   isVerified?: boolean;
+  parentId?: string | null;
 };
 
 type RatingStats = {
@@ -31,6 +32,8 @@ type ReviewsContextType = {
   addReview: (mediaId: string, rating: number, comment: string) => Promise<void>;
   editReview: (reviewId: string, rating: number, comment: string) => Promise<void>;
   deleteReview: (reviewId: string) => Promise<void>;
+  addReply: (parentId: string, mediaId: string, comment: string) => Promise<void>;
+  getRepliesForReview: (reviewId: string) => Review[];
   toggleHelpful: (reviewId: string) => Promise<void>;
 };
 
@@ -168,7 +171,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
         const fetchCommentsPromise = supabase
           .from('comments')
-          .select('id, movie_id, user_id, content, rating, likes_count, created_at')
+          .select('id, movie_id, user_id, parent_id, content, rating, likes_count, created_at')
           .order('created_at', { ascending: false });
 
         const res = (await Promise.race([fetchCommentsPromise, timeoutPromise])) as any;
@@ -177,6 +180,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
             id: c.id,
             mediaId: c.movie_id,
             userId: c.user_id,
+            parentId: c.parent_id,
             userName: 'Community Streamer',
             rating: c.rating || 5,
             comment: c.content,
@@ -217,7 +221,11 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getReviewsForMedia = (mediaId: string): Review[] => {
-    return reviews.filter((r) => String(r.mediaId) === String(mediaId));
+    return reviews.filter((r) => String(r.mediaId) === String(mediaId) && !r.parentId);
+  };
+
+  const getRepliesForReview = (reviewId: string): Review[] => {
+    return reviews.filter((review) => review.parentId === reviewId);
   };
 
   const getStatsForMedia = (mediaId: string): RatingStats => {
@@ -358,6 +366,41 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addReply = async (parentId: string, mediaId: string, comment: string) => {
+    const authorId = user?.id;
+    if (!authorId) throw new Error('Please sign in before replying.');
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        movie_id: String(mediaId),
+        user_id: authorId,
+        parent_id: parentId,
+        content: comment,
+        rating: 5,
+        likes_count: 0,
+      })
+      .select('id, created_at')
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    const reply: Review = {
+      id: data.id,
+      parentId,
+      mediaId: String(mediaId),
+      userId: authorId,
+      userName: profile?.username || profile?.full_name || user.email?.split('@')[0] || 'AniFlix Streamer',
+      userAvatar: profile?.avatar_url || undefined,
+      rating: 5,
+      comment,
+      createdAt: 'Just now',
+      helpfulCount: 0,
+      isVerified: true,
+    };
+    await saveReviews([reply, ...reviews]);
+  };
+
   const toggleHelpful = async (reviewId: string) => {
     const isAlreadyHelpful = helpfulIds.includes(reviewId);
     const updatedHelpful = isAlreadyHelpful
@@ -418,6 +461,8 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         addReview,
         editReview,
         deleteReview,
+        addReply,
+        getRepliesForReview,
         toggleHelpful,
       }}
     >

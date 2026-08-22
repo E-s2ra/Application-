@@ -15,6 +15,7 @@ import {
   ThumbsUp,
   CheckCircle,
   MessageSquare,
+  Reply,
   Send,
   Sparkles,
   Edit3,
@@ -54,6 +55,8 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     editReview,
     deleteReview,
     toggleHelpful,
+    addReply,
+    getRepliesForReview,
   } = useReviews();
   const { isFollowing, toggleFollow } = useSocial();
 
@@ -73,6 +76,9 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [inlineEditRating, setInlineEditRating] = useState<number>(5);
   const [inlineEditComment, setInlineEditComment] = useState<string>('');
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isReplying, setIsReplying] = useState(false);
 
   // Keep composer in sync when userReview changes
   useEffect(() => {
@@ -147,6 +153,21 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     await editReview(reviewId, inlineEditRating, inlineEditComment.trim());
     setEditingReviewId(null);
     showToast('Comment updated!');
+  };
+
+  const submitReply = async (parentId: string) => {
+    if (!replyText.trim()) return;
+    setIsReplying(true);
+    try {
+      await addReply(parentId, mediaId, replyText.trim());
+      setReplyText('');
+      setReplyingToId(null);
+      showToast('Reply posted!');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to post reply.');
+    } finally {
+      setIsReplying(false);
+    }
   };
 
   const sortedReviews = [...reviews].sort((a, b) => {
@@ -326,6 +347,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
               rev.userId === currentUserId ||
               (rev.userId.startsWith('guest-') && userReview?.id === rev.id);
             const isEditing = editingReviewId === rev.id;
+            const replies = getRepliesForReview(rev.id);
             const avatarInitial = rev.userName?.charAt(0)?.toUpperCase() || 'A';
 
             return (
@@ -460,6 +482,48 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                   </View>
                 ) : (
                   <Text style={styles.reviewComment}>{rev.comment}</Text>
+                )}
+
+                {replies.length > 0 && (
+                  <View style={styles.repliesList}>
+                    {replies.map((reply) => (
+                      <View key={reply.id} style={styles.replyCard}>
+                        <Text style={styles.replyAuthor}>{reply.userName}</Text>
+                        <Text style={styles.replyComment}>{reply.comment}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {replyingToId === rev.id ? (
+                  <View style={styles.replyComposer}>
+                    <TextInput
+                      style={styles.replyInput}
+                      value={replyText}
+                      onChangeText={setReplyText}
+                      placeholder="Write a reply… Use @username to tag someone."
+                      placeholderTextColor="#68687C"
+                      multiline
+                      maxLength={1000}
+                    />
+                    <View style={styles.replyActions}>
+                      <Pressable style={styles.replyCancelButton} onPress={() => { setReplyingToId(null); setReplyText(''); }}>
+                        <Text style={styles.replyCancelText}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.replySubmitButton, (!replyText.trim() || isReplying) && styles.submitBtnDisabled]}
+                        disabled={!replyText.trim() || isReplying}
+                        onPress={() => void submitReply(rev.id)}
+                      >
+                        <Text style={styles.replySubmitText}>{isReplying ? 'Posting…' : 'Reply'}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <Pressable style={styles.replyButton} onPress={() => setReplyingToId(rev.id)}>
+                    <Reply size={13} color="#00D2FF" />
+                    <Text style={styles.replyButtonText}>Reply</Text>
+                  </Pressable>
                 )}
 
                 {/* Footer with Helpful Button & Author Actions (Edit / Delete) */}
@@ -864,6 +928,84 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  repliesList: {
+    marginTop: 10,
+    marginLeft: 20,
+    paddingLeft: 11,
+    borderLeftWidth: 2,
+    borderLeftColor: '#303048',
+    gap: 8,
+  },
+  replyCard: {
+    backgroundColor: '#151520',
+    borderRadius: 8,
+    padding: 10,
+  },
+  replyAuthor: {
+    color: '#00D2FF',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  replyComment: {
+    color: '#D4D4E2',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  replyButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+  replyButtonText: {
+    color: '#00D2FF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  replyComposer: {
+    backgroundColor: '#0A0A10',
+    borderColor: '#262638',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 9,
+    marginTop: 8,
+  },
+  replyInput: {
+    color: '#FFF',
+    fontSize: 13,
+    minHeight: 54,
+    textAlignVertical: 'top',
+  },
+  replyActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  replyCancelButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  replyCancelText: {
+    color: '#A0A0B8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  replySubmitButton: {
+    backgroundColor: '#E50914',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  replySubmitText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
   authorActionsRow: {
     flexDirection: 'row',

@@ -190,6 +190,7 @@ export interface Database {
           movie_id: string;
           user_id: string;
           content: string;
+          parent_id: string | null;
           rating: number;
           likes_count: number;
           created_at: string;
@@ -200,6 +201,7 @@ export interface Database {
           movie_id: string;
           user_id: string;
           content: string;
+          parent_id?: string | null;
           rating?: number;
           likes_count?: number;
           created_at?: string;
@@ -207,6 +209,7 @@ export interface Database {
         };
         Update: {
           content?: string;
+          parent_id?: string | null;
           rating?: number;
           likes_count?: number;
           updated_at?: string;
