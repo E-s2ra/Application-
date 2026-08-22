@@ -1,0 +1,13 @@
+node_modules
+.expo
+.git
+.vscode
+.claude
+*.apk
+*.zip
+platform-tools
+assets/videos/*.mp4
+.env.local
+.env*.local
+dist
+web-build
