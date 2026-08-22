@@ -7,7 +7,7 @@ import {
   Pressable,
   Image,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Play, Heart, Film } from 'lucide-react-native';
@@ -21,7 +21,7 @@ const PLACEHOLDER_IMAGES = [
 
 export default function FavoritesScreen() {
   const router = useRouter();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { favorites, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth } = useResponsive();
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { Sparkles } from 'lucide-react-native';
 
 const TOTAL_DURATION = 4000; // Exactly 4 seconds
@@ -11,7 +11,7 @@ interface AniFlixSplashScreenProps {
 }
 
 export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const progressAnim = useRef(new Animated.Value(0)).current;
   const logoScaleAnim = useRef(new Animated.Value(0.75)).current;
   const logoOpacityAnim = useRef(new Animated.Value(0)).current;

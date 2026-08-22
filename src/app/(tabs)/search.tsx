@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { Search as SearchIcon, X, Heart, Play, Sparkles } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
@@ -28,7 +28,7 @@ const PLACEHOLDER_IMAGES = [
 
 export default function SearchScreen() {
   const router = useRouter();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth, isDesktop } = useResponsive();
 

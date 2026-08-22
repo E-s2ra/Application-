@@ -1,11 +1,11 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 import { ActivityIndicator, View } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function Index() {
   const { session, isLoading } = useAuth();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
 
   if (isLoading) {
     return (

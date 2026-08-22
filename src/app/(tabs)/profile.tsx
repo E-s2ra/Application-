@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { useTheme, useColorMode } from '@/hooks/use-theme';
 import {
   LogOut,
   User as UserIcon,
@@ -31,6 +31,8 @@ import {
   Camera,
   Check,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -51,7 +53,8 @@ const PRESET_AVATARS = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
+  const { mode, isDark, toggleColorMode } = useColorMode();
   const { user, profile, signOut, isLoading, updateProfile } = useAuth();
   const { favorites } = useFavorites();
   const { isDesktop, isTablet } = useResponsive();
@@ -305,20 +308,45 @@ export default function ProfileScreen() {
             <ChevronRight color={themeColors.textSecondary} size={18} />
           </Pressable>
 
+          {/* ☀️ / 🌙 Appearance Mode Toggle */}
+          <Pressable
+            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, borderWidth: 1 }]}
+            onPress={toggleColorMode}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: isDark ? '#2D2013' : '#FEF3C7' }]}>
+                {isDark ? <Moon color="#F59E0B" size={18} /> : <Sun color="#D97706" size={18} />}
+              </View>
+              <View>
+                <Text style={[styles.actionRowText, { color: themeColors.text }]}>
+                  Appearance: {isDark ? 'Dark Mode 🌙' : 'Light Mode ☀️'}
+                </Text>
+                <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>
+                  Tap to switch to {isDark ? 'Light' : 'Dark'} mode
+                </Text>
+              </View>
+            </View>
+            <View style={{ backgroundColor: themeColors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
+                {isDark ? 'DARK' : 'LIGHT'}
+              </Text>
+            </View>
+          </Pressable>
+
           {/* Theme Shop Button */}
           <Pressable
-            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, borderWidth: 1 }]}
             onPress={() => setShowRewardsModal(true)}
           >
             <View style={styles.actionRowLeft}>
               <View style={[styles.iconCircle, { backgroundColor: '#1E1B2C' }]}>
-                <Palette color="#00D2FF" size={18} />
+                <Palette color={primaryColor} size={18} />
               </View>
               <View>
                 <Text style={[styles.actionRowText, { color: themeColors.text }]}>
                   App Theme: {activeTheme.name}
                 </Text>
-                <Text style={styles.actionSubtext}>Customize AniFlix colors with Coins</Text>
+                <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>Customize AniFlix colors with Coins</Text>
               </View>
             </View>
             <ChevronRight color={themeColors.textSecondary} size={18} />

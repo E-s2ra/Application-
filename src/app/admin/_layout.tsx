@@ -1,10 +1,10 @@
 import { Stack, useRouter } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function AdminLayout() {
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { profile, isLoading } = useAuth();
   const router = useRouter();
 

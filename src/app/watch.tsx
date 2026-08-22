@@ -9,7 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   Shield,
   Heart,
@@ -42,7 +42,7 @@ const SPEED_OPTIONS = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0];
 export default function WatchScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getStatsForMedia } = useReviews();
   const { awardWatchTimeReward } = useGamification();

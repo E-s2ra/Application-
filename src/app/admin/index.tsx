@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
@@ -27,7 +27,7 @@ type Anime = {
 
 export default function AdminPanelScreen() {
   const router = useRouter();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { maxContentWidth } = useResponsive();
 
   const [animeList, setAnimeList] = useState<Anime[]>([]);

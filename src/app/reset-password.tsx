@@ -3,14 +3,14 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle, Eye, EyeOff, KeyRound } from 'lucide-react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { session, updatePassword } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

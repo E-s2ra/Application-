@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { addAnime } from '@/lib/admin-operations';
@@ -29,7 +29,7 @@ const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
 
 export default function AddAnimeScreen() {
   const router = useRouter();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { maxContentWidth } = useResponsive();
 
   const [title, setTitle] = useState('');

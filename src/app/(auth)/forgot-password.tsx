@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { ShieldCheck, ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -22,7 +22,7 @@ import { isValidEmail, normalizeEmail } from '@/lib/password';
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { resetPassword } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
 

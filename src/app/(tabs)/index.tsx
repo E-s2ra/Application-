@@ -13,7 +13,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   Play,
   Heart,
@@ -319,7 +319,7 @@ export const DEFAULT_CATALOG: AnimeItem[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const insets = useSafeAreaInsets();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { coins, streakDays, level, activeEvent } = useGamification();

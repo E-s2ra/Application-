@@ -1,6 +1,5 @@
-import { DarkTheme, ThemeProvider, Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { Colors } from '@/constants/theme';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
@@ -9,6 +8,7 @@ import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { FavoritesProvider } from '@/hooks/useFavorites';
 import { ReviewsProvider } from '@/hooks/useReviews';
 import { GamificationProvider } from '@/hooks/useGamification';
+import { AppThemeProvider, useTheme, useColorMode } from '@/hooks/use-theme';
 import { AdMobProvider } from '@/hooks/useAdMob';
 import { SocialProvider } from '@/hooks/useSocial';
 import { NotificationsProvider } from '@/hooks/useNotifications';
@@ -57,8 +57,46 @@ function AuthGuard({ onReady }: { onReady: () => void }) {
   return null;
 }
 
+function RootNavigation({
+  showSplash,
+  onFinishSplash,
+}: {
+  showSplash: boolean;
+  onFinishSplash: () => void;
+}) {
+  const themeColors = useTheme();
+  const { isDark } = useColorMode();
+
+  return (
+    <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+      <AuthGuard onReady={() => {}} />
+      <PrivacyProtection />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: themeColors.backgroundElement,
+          },
+          headerTintColor: themeColors.text,
+          contentStyle: { backgroundColor: themeColors.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+      </Stack>
+
+      {/* Google AdMob Rewarded Ad Modal */}
+      <AdMobRewardedModal />
+
+      {showSplash && <AniFlixSplashScreen onFinish={onFinishSplash} />}
+    </View>
+  );
+}
+
 export default function RootLayout() {
-  const themeColors = Colors.dark;
   const [showSplash, setShowSplash] = useState(true);
 
   return (
@@ -67,38 +105,13 @@ export default function RootLayout() {
         <ReviewsProvider>
           <NotificationsProvider>
             <GamificationProvider>
-              <SocialProvider>
-                <AdMobProvider>
-                  <ThemeProvider value={DarkTheme}>
-                    <View style={{ flex: 1, backgroundColor: themeColors.background }}>
-                      <AuthGuard onReady={() => {}} />
-                      <PrivacyProtection />
-                      <StatusBar style="light" />
-                      <Stack
-                        screenOptions={{
-                          headerStyle: {
-                            backgroundColor: themeColors.backgroundElement,
-                          },
-                          headerTintColor: themeColors.text,
-                          contentStyle: { backgroundColor: themeColors.background },
-                        }}>
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                        <Stack.Screen name="admin" options={{ headerShown: false }} />
-                      <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-                      <Stack.Screen name="reset-password" options={{ headerShown: false }} />
-                      </Stack>
-
-                      {/* Google AdMob Rewarded Ad Modal */}
-                      <AdMobRewardedModal />
-
-                      {showSplash && (
-                        <AniFlixSplashScreen onFinish={() => setShowSplash(false)} />
-                      )}
-                    </View>
-                  </ThemeProvider>
-                </AdMobProvider>
-              </SocialProvider>
+              <AppThemeProvider>
+                <SocialProvider>
+                  <AdMobProvider>
+                    <RootNavigation showSplash={showSplash} onFinishSplash={() => setShowSplash(false)} />
+                  </AdMobProvider>
+                </SocialProvider>
+              </AppThemeProvider>
             </GamificationProvider>
           </NotificationsProvider>
         </ReviewsProvider>
@@ -106,5 +119,3 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
-
-

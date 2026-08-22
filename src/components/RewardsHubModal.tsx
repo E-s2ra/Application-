@@ -12,7 +12,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   X,
   Flame,
@@ -38,7 +38,7 @@ interface RewardsHubModalProps {
 }
 
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { showRewardedAd } = useAdMob();
   const {
     coins,

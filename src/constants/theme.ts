@@ -1,11 +1,12 @@
 /**
- * Modern Anime Streaming Theme Palette
+ * Modern Anime Streaming Theme Palette (Dark & Light Mode)
  */
 import '@/global.css';
 import { Platform } from 'react-native';
 
 export const Colors = {
   dark: {
+    mode: 'dark' as const,
     background: '#07070A',
     backgroundElement: '#12121A',
     backgroundCard: '#181824',
@@ -14,25 +15,7 @@ export const Colors = {
     text: '#FFFFFF',
     textSecondary: '#9A9AA8',
     textMuted: '#636375',
-    primary: '#E50914', // Netflix/Crunchyroll vibrant crimson
-    primaryHover: '#FF1F2E',
-    primaryGlow: 'rgba(229, 9, 20, 0.4)',
-    accent: '#FFB800', // Gold stars
-    accentCyan: '#00D2FF',
-    badgeBackground: 'rgba(0, 0, 0, 0.75)',
-    cardOverlay: 'rgba(7, 7, 10, 0.85)',
-    buttonBackground: '#E50914',
-  },
-  light: {
-    background: '#07070A',
-    backgroundElement: '#12121A',
-    backgroundCard: '#181824',
-    backgroundSelected: '#242436',
-    border: '#2A2A3E',
-    text: '#FFFFFF',
-    textSecondary: '#9A9AA8',
-    textMuted: '#636375',
-    primary: '#E50914',
+    primary: '#E50914', // Default Crimson
     primaryHover: '#FF1F2E',
     primaryGlow: 'rgba(229, 9, 20, 0.4)',
     accent: '#FFB800',
@@ -40,10 +23,58 @@ export const Colors = {
     badgeBackground: 'rgba(0, 0, 0, 0.75)',
     cardOverlay: 'rgba(7, 7, 10, 0.85)',
     buttonBackground: '#E50914',
+    buttonText: '#FFFFFF',
+    inputBackground: '#161622',
+    inputBorder: '#28283C',
+  },
+  light: {
+    mode: 'light' as const,
+    background: '#F3F4F6',
+    backgroundElement: '#FFFFFF',
+    backgroundCard: '#FFFFFF',
+    backgroundSelected: '#E5E7EB',
+    border: '#E5E7EB',
+    text: '#111827',
+    textSecondary: '#4B5563',
+    textMuted: '#9CA3AF',
+    primary: '#E50914', // Default Crimson
+    primaryHover: '#DC2626',
+    primaryGlow: 'rgba(229, 9, 20, 0.18)',
+    accent: '#D97706',
+    accentCyan: '#0284C7',
+    badgeBackground: 'rgba(0, 0, 0, 0.06)',
+    cardOverlay: 'rgba(255, 255, 255, 0.92)',
+    buttonBackground: '#E50914',
+    buttonText: '#FFFFFF',
+    inputBackground: '#F9FAFB',
+    inputBorder: '#D1D5DB',
   },
 } as const;
 
-export type ThemeColor = keyof typeof Colors.dark;
+export type ThemePalette = {
+  mode: 'dark' | 'light';
+  background: string;
+  backgroundElement: string;
+  backgroundCard: string;
+  backgroundSelected: string;
+  border: string;
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  primary: string;
+  primaryHover: string;
+  primaryGlow: string;
+  accent: string;
+  accentCyan: string;
+  badgeBackground: string;
+  cardOverlay: string;
+  buttonBackground: string;
+  buttonText: string;
+  inputBackground: string;
+  inputBorder: string;
+};
+
+export type ThemeColor = keyof ThemePalette;
 
 export const Fonts = Platform.select({
   ios: {

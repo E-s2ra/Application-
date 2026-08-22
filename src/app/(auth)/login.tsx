@@ -13,7 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -21,7 +21,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { signIn } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
 

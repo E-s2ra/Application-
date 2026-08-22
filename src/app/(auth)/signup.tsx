@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useRouter } from 'expo-router';
@@ -22,7 +22,7 @@ import { isKnownDisposableEmail, isValidEmail, normalizeEmail, PASSWORD_REQUIREM
 export default function SignUpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { signUp } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
 
