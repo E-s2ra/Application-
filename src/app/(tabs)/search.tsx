@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { Search as SearchIcon, X, Heart, Play, Sparkles } from 'lucide-react-native';
-import { getDeletedMediaIds } from '@/lib/admin-operations';
+import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { DEFAULT_CATALOG, CATEGORIES } from './index';
@@ -42,7 +42,10 @@ export default function SearchScreen() {
   useEffect(() => {
     async function loadData() {
       try {
-        const deletedIds = await getDeletedMediaIds();
+        const [deletedIds, overrides] = await Promise.all([
+          getDeletedMediaIds(),
+          getEditedMediaOverrides(),
+        ]);
         const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
           setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 1500)
         );
@@ -55,17 +58,20 @@ export default function SearchScreen() {
         const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
         const { data, error } = result || {};
 
+        let combined: AnimeItem[] = [];
         if (!error && data && data.length > 0) {
           const customItems = data
             .filter((item: any) => !deletedIds.includes(item.id))
             .map((item: any) => ({
               ...item,
               category: item.category || 'Anime Series',
+              ...(overrides[item.id] || {}),
             })) as AnimeItem[];
-          setMediaList([...customItems, ...DEFAULT_CATALOG]);
+          combined = [...customItems, ...DEFAULT_CATALOG.filter((d) => !deletedIds.includes(d.id)).map((d) => ({ ...d, ...(overrides[d.id] || {}) }))];
         } else {
-          setMediaList(DEFAULT_CATALOG);
+          combined = DEFAULT_CATALOG.filter((d) => !deletedIds.includes(d.id)).map((d) => ({ ...d, ...(overrides[d.id] || {}) }));
         }
+        setMediaList(combined);
       } catch (err) {
         console.warn('Error loading search data:', err);
         setMediaList(DEFAULT_CATALOG);

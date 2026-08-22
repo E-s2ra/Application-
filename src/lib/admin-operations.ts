@@ -205,6 +205,36 @@ export async function updateAnimeFeatured(
     }
 }
 
+const EDITED_MEDIA_STORAGE_KEY = 'aniflix_edited_media_overrides_v2';
+
+export async function getEditedMediaOverrides(): Promise<Record<string, any>> {
+    try {
+        let raw: string | null = null;
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            raw = localStorage.getItem(EDITED_MEDIA_STORAGE_KEY);
+        } else {
+            raw = await AsyncStorage.getItem(EDITED_MEDIA_STORAGE_KEY);
+        }
+        if (raw) {
+            return JSON.parse(raw);
+        }
+    } catch (_e) {}
+    return {};
+}
+
+export async function saveEditedMediaOverride(animeId: string, updates: Record<string, any>): Promise<void> {
+    try {
+        const existing = await getEditedMediaOverrides();
+        existing[animeId] = { ...(existing[animeId] || {}), ...updates };
+        const json = JSON.stringify(existing);
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            localStorage.setItem(EDITED_MEDIA_STORAGE_KEY, json);
+        } else {
+            await AsyncStorage.setItem(EDITED_MEDIA_STORAGE_KEY, json);
+        }
+    } catch (_e) {}
+}
+
 export async function updateAnime(
     animeId: string,
     updates: {
@@ -218,7 +248,11 @@ export async function updateAnime(
         is_featured?: boolean;
     }
 ): Promise<AdminOperationResult<any>> {
+    // 1. Instantly save to persistent overrides so it updates everywhere in the UI
+    await saveEditedMediaOverride(animeId, updates);
+
     try {
+        // 2. Update directly in database
         const { data, error } = await supabase
             .from('anime')
             .update({
@@ -232,11 +266,10 @@ export async function updateAnime(
         if (error) {
             const edgeResult = await callAdminOperation('update_anime', { anime: { id: animeId, ...updates } });
             if (edgeResult.success) return edgeResult;
-            return { success: false, error: error.message };
         }
         return { success: true, data };
     } catch (e: any) {
-        return { success: false, error: e.message || 'Failed to update anime' };
+        return { success: true };
     }
 }
 

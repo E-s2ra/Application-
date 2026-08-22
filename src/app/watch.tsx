@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { getPlaybackUrl } from '@/lib/playback';
+import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
 import { useReviews } from '@/hooks/useReviews';
 import { useGamification } from '@/hooks/useGamification';
@@ -95,6 +96,17 @@ export default function WatchScreen() {
     async function loadData() {
       if (!id) return;
       try {
+        const [deletedIds, overrides] = await Promise.all([
+          getDeletedMediaIds(),
+          getEditedMediaOverrides(),
+        ]);
+
+        if (deletedIds.includes(String(id))) {
+          setPlaybackError('This media item has been removed by the administrator.');
+          setAnime(null);
+          return;
+        }
+
         const defaultMatch = DEFAULT_CATALOG.find((item) => item.id === id);
 
         const { data } = await supabase
@@ -104,10 +116,12 @@ export default function WatchScreen() {
           .single();
 
         if (data) {
-          setAnime(data as AnimeItem);
+          const itemWithOverrides = { ...(data as AnimeItem), ...(overrides[String(id)] || {}) };
+          setAnime(itemWithOverrides);
           setPlaybackError(null);
         } else if (defaultMatch) {
-          setAnime(defaultMatch);
+          const itemWithOverrides = { ...defaultMatch, ...(overrides[String(id)] || {}) };
+          setAnime(itemWithOverrides);
         } else {
           setAnime({
             id: String(id),
@@ -118,6 +132,7 @@ export default function WatchScreen() {
             category: 'Movies',
             image_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
             is_featured: false,
+            ...(overrides[String(id)] || {}),
           });
         }
 
@@ -128,9 +143,16 @@ export default function WatchScreen() {
           .limit(6);
 
         if (recs && recs.length > 0) {
-          setRecommendations(recs as AnimeItem[]);
+          const filteredRecs = recs
+            .filter((item: any) => !deletedIds.includes(item.id))
+            .map((item: any) => ({ ...(item as AnimeItem), ...(overrides[item.id] || {}) }));
+          setRecommendations(filteredRecs);
         } else {
-          setRecommendations(DEFAULT_CATALOG.filter((item) => item.id !== id).slice(0, 6));
+          const filteredRecs = DEFAULT_CATALOG
+            .filter((item) => item.id !== id && !deletedIds.includes(item.id))
+            .map((item) => ({ ...item, ...(overrides[item.id] || {}) }))
+            .slice(0, 6);
+          setRecommendations(filteredRecs);
         }
       } catch (err) {
         console.warn('Error loading watch anime:', err);

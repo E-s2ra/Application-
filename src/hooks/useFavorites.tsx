@@ -29,6 +29,8 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 
 const STORAGE_KEY = 'user_anime_favorites_v1';
 
+import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
+
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<AnimeItem[]>([]);
@@ -51,6 +53,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function load() {
       try {
+        const [deletedIds, overrides] = await Promise.all([
+          getDeletedMediaIds(),
+          getEditedMediaOverrides(),
+        ]);
+
         let storedItems: AnimeItem[] = [];
         if (Platform.OS === 'web') {
           const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
@@ -59,7 +66,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           const raw = await AsyncStorage.getItem(STORAGE_KEY);
           if (raw) storedItems = JSON.parse(raw);
         }
-        setFavorites(storedItems);
+
+        const validStored = storedItems
+          .filter((item) => !deletedIds.includes(item.id))
+          .map((item) => ({ ...item, ...(overrides[item.id] || {}) }));
+        setFavorites(validStored);
 
         // If user is logged in, try fetching from Supabase favorites table
         if (user) {
@@ -71,7 +82,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           if (!error && data && data.length > 0) {
             const remoteAnime = data
               .map((row: any) => row.anime)
-              .filter(Boolean) as AnimeItem[];
+              .filter(Boolean)
+              .filter((item: any) => !deletedIds.includes(item.id))
+              .map((item: any) => ({ ...item, ...(overrides[item.id] || {}) })) as AnimeItem[];
             if (remoteAnime.length > 0) {
               setFavorites(remoteAnime);
               saveLocal(remoteAnime);

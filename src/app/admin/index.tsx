@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, getDeletedMediaIds, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Lock, Plus, Star, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Lock, Pencil, Plus, Star, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -132,6 +132,12 @@ export default function AdminPanelScreen() {
       </View>
       <View style={styles.cardActions}>
         <Pressable
+          onPress={() => router.push({ pathname: '/admin/edit-anime', params: { id: item.id } })}
+          style={[styles.iconBtn, { backgroundColor: '#1E293B' }]}
+        >
+          <Pencil color="#38BDF8" size={16} />
+        </Pressable>
+        <Pressable
           onPress={() => handleToggleFeatured(item)}
           style={[
             styles.iconBtn,
@@ -203,7 +209,7 @@ export default function AdminPanelScreen() {
         </View>
 
         <Text style={[styles.sectionTitle, { color: themeColors.textSecondary }]}>
-          TAP ⭐ TO FEATURE ON HERO · TAP 🗑 TO DELETE
+          TAP ✏️ TO EDIT · TAP ⭐ TO FEATURE · TAP 🗑 TO DELETE
         </Text>
 
         <FlatList
