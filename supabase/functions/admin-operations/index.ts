@@ -6,6 +6,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, content-type',
 };
+const ADMIN_EMAIL = 'esra99san@gmail.com';
 
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
@@ -54,7 +55,7 @@ serve(async (req) => {
             .eq('id', user.id)
             .single();
 
-        if (profileError || !profile || profile.role !== 'admin') {
+        if (profileError || !profile || profile.role !== 'admin' || user.email?.toLowerCase() !== ADMIN_EMAIL) {
             return new Response(
                 JSON.stringify({ error: 'Access denied. Admin role required.' }),
                 { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -62,7 +63,7 @@ serve(async (req) => {
         }
 
         const body = await req.json();
-        const { action, anime } = body;
+        const { action, anime, comment, user: targetUser } = body;
 
         let result;
         let success = true;
@@ -178,6 +179,98 @@ serve(async (req) => {
                     });
                 }
                 break;
+
+            case 'update_anime': {
+                if (!anime.id || !anime.title || !Number.isInteger(anime.episodes) || anime.episodes < 1) {
+                    throw new Error('A title and a positive number of episodes are required.');
+                }
+
+                const { data: oldAnime } = await supabaseAdmin
+                    .from('anime')
+                    .select('*')
+                    .eq('id', anime.id)
+                    .single();
+
+                const { data: updatedAnime, error: updateAnimeError } = await supabaseAdmin
+                    .from('anime')
+                    .update({
+                        title: anime.title.trim(),
+                        description: anime.description || null,
+                        image_url: anime.image_url || null,
+                        video_url: anime.video_url || null,
+                        episodes: anime.episodes,
+                        genre: anime.genre || null,
+                        category: anime.category || 'Movies',
+                        is_featured: Boolean(anime.is_featured),
+                    })
+                    .eq('id', anime.id)
+                    .select()
+                    .single();
+
+                if (updateAnimeError) {
+                    success = false;
+                    errorMsg = updateAnimeError.message;
+                } else {
+                    result = updatedAnime;
+                    await supabaseAdmin.rpc('log_audit_event', {
+                        p_user_id: user.id,
+                        p_action: 'update_anime',
+                        p_table_name: 'anime',
+                        p_record_id: anime.id,
+                        p_record_identifier: updatedAnime.title,
+                        p_old_values: oldAnime,
+                        p_new_values: updatedAnime,
+                        p_status: 'success',
+                    });
+                }
+                break;
+            }
+
+            case 'delete_comment': {
+                if (!comment?.id) throw new Error('Missing comment id.');
+                const { data: commentToDelete } = await supabaseAdmin
+                    .from('comments').select('*').eq('id', comment.id).single();
+                const { error: commentDeleteError } = await supabaseAdmin
+                    .from('comments').delete().eq('id', comment.id);
+                if (commentDeleteError) {
+                    success = false;
+                    errorMsg = commentDeleteError.message;
+                } else {
+                    result = { id: comment.id, deleted: true };
+                    await supabaseAdmin.rpc('log_audit_event', {
+                        p_user_id: user.id,
+                        p_action: 'delete_comment',
+                        p_table_name: 'comments',
+                        p_record_id: comment.id,
+                        p_old_values: commentToDelete,
+                        p_status: 'success',
+                    });
+                }
+                break;
+            }
+
+            case 'set_user_suspension': {
+                if (!targetUser?.id || targetUser.id === user.id || typeof targetUser.suspended !== 'boolean') {
+                    throw new Error('Invalid user suspension request.');
+                }
+                const { error: suspensionError } = await supabaseAdmin.auth.admin.updateUserById(targetUser.id, {
+                    ban_duration: targetUser.suspended ? '8760h' : 'none',
+                });
+                if (suspensionError) {
+                    success = false;
+                    errorMsg = suspensionError.message;
+                } else {
+                    result = { id: targetUser.id, suspended: targetUser.suspended };
+                    await supabaseAdmin.rpc('log_audit_event', {
+                        p_user_id: user.id,
+                        p_action: targetUser.suspended ? 'suspend_user' : 'unsuspend_user',
+                        p_table_name: 'profiles',
+                        p_record_id: targetUser.id,
+                        p_status: 'success',
+                    });
+                }
+                break;
+            }
 
             default:
                 return new Response(

@@ -94,6 +94,30 @@ export async function updateAnimeFeatured(
     });
 }
 
+export async function updateAnime(
+    animeId: string,
+    updates: {
+        title?: string;
+        description?: string | null;
+        image_url?: string | null;
+        video_url?: string | null;
+        episodes?: number;
+        genre?: string | null;
+        category?: string;
+        is_featured?: boolean;
+    }
+): Promise<AdminOperationResult<any>> {
+    return callAdminOperation('update_anime', { anime: { id: animeId, ...updates } });
+}
+
+export async function deleteCommentAsAdmin(commentId: string): Promise<AdminOperationResult<any>> {
+    return callAdminOperation('delete_comment', { comment: { id: commentId } });
+}
+
+export async function setUserSuspension(userId: string, suspended: boolean): Promise<AdminOperationResult<any>> {
+    return callAdminOperation('set_user_suspension', { user: { id: userId, suspended } });
+}
+
 /**
  * Sign out all other devices for the current user
  */

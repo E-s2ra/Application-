@@ -2,7 +2,6 @@ import { Colors } from '@/constants/theme';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { addAnime } from '@/lib/admin-operations';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Film, Sparkles } from 'lucide-react-native';
 import { useState } from 'react';
@@ -57,7 +56,6 @@ export default function AddAnimeScreen() {
 
     setLoading(true);
 
-    // Try Edge Function first; fall back to direct Supabase insert
     const result = await addAnime({
       title: title.trim(),
       description: description.trim() || undefined,
@@ -70,27 +68,11 @@ export default function AddAnimeScreen() {
     });
 
     if (!result.success) {
-      // Edge function not available — insert directly (admin users bypass RLS)
-      const { error: dbError } = await supabase.from('anime').insert({
-        title: title.trim(),
-        description: description.trim() || null,
-        image_url: imageUrl.trim() || null,
-        video_url: videoUrl.trim() || null,
-        episodes: epsNum,
-        genre: genre.trim() || null,
-        category,
-        is_featured: isFeatured,
-      });
-
       setLoading(false);
-
-      if (dbError) {
-        Alert.alert('Error', dbError.message || 'Failed to add media');
-        return;
-      }
-    } else {
-      setLoading(false);
+      Alert.alert('Error', result.error || 'Failed to publish media.');
+      return;
     }
+    setLoading(false);
 
     Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to AniFlix.`, [
       { text: 'Add Another', onPress: () => resetForm() },
