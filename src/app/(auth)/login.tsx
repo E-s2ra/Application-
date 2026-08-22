@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
-import { useTranslation } from '@/hooks/use-language';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react-native';
+import { useTranslation, useLanguage } from '@/hooks/use-language';
+import { AlertCircle, Eye, EyeOff, Globe } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -24,6 +24,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const themeColors = useTheme();
   const { t, isRTL } = useTranslation();
+  const { language, toggleLanguage } = useLanguage();
   const { signIn } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
 
@@ -69,6 +70,29 @@ export default function LoginScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
+          {/* 🌐 Top Right Language Switcher on First Screen */}
+          <View style={{ width: '100%', alignItems: 'flex-end', marginBottom: 12 }}>
+            <Pressable
+              onPress={toggleLanguage}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: themeColors.backgroundElement,
+                borderColor: '#00D2FF',
+                borderWidth: 1,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 20,
+              }}
+            >
+              <Globe size={14} color="#00D2FF" />
+              <Text style={{ color: '#00D2FF', fontSize: 12, fontWeight: '700' }}>
+                {language === 'ku' ? 'کوردی (سۆرانی)' : 'English (EN)'}
+              </Text>
+            </Pressable>
+          </View>
+
           <View style={styles.header}>
             <Image
               source={require('../../../assets/images/icon.png')}

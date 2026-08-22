@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image } from 'react-native';
+import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image, Pressable } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
-import { Sparkles } from 'lucide-react-native';
+import { useLanguage } from '@/hooks/use-language';
+import { Globe, Sparkles } from 'lucide-react-native';
 
 const TOTAL_DURATION = 4000; // Exactly 4 seconds
 const isNativeDriver = Platform.OS !== 'web';
@@ -12,13 +13,16 @@ interface AniFlixSplashScreenProps {
 
 export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const themeColors = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
   const progressAnim = useRef(new Animated.Value(0)).current;
   const logoScaleAnim = useRef(new Animated.Value(0.75)).current;
   const logoOpacityAnim = useRef(new Animated.Value(0)).current;
   const glowPulseAnim = useRef(new Animated.Value(0.8)).current;
   const screenFadeAnim = useRef(new Animated.Value(1)).current;
 
-  const [loadingText, setLoadingText] = useState('🎬 Initializing AniFlix Universe...');
+  const [loadingText, setLoadingText] = useState(
+    language === 'ku' ? '🎬 دەستپێکردنی جیهانی ئەنیفلیکس...' : '🎬 Initializing AniFlix Universe...'
+  );
   const [percent, setPercent] = useState(0);
 
   useEffect(() => {
@@ -113,6 +117,19 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
   return (
     <Animated.View style={[styles.container, { opacity: screenFadeAnim }]}>
+      {/* 🌐 Top Language Switcher on First Screen */}
+      <View style={styles.topBar}>
+        <Pressable
+          style={styles.langPill}
+          onPress={toggleLanguage}
+        >
+          <Globe size={14} color="#00D2FF" />
+          <Text style={styles.langPillText}>
+            {language === 'ku' ? 'کوردی' : 'English'}
+          </Text>
+        </Pressable>
+      </View>
+
       {/* Background Ambience Glow */}
       <Animated.View
         style={[
@@ -147,7 +164,9 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
         </View>
 
         {/* Subtitle */}
-        <Text style={styles.tagline}>YOUR ULTIMATE CINEMA & ANIME UNIVERSE</Text>
+        <Text style={styles.tagline}>
+          {language === 'ku' ? 'جیهانی تایبەتی سینەما و ئەنیمێی تۆ' : 'YOUR ULTIMATE CINEMA & ANIME UNIVERSE'}
+        </Text>
       </Animated.View>
 
       {/* Bottom 4-second Progress & Loader */}
@@ -293,5 +312,27 @@ const styles = StyleSheet.create({
     marginTop: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
+  },
+  topBar: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 54 : 32,
+    right: 20,
+    zIndex: 10,
+  },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#00D2FF',
+  },
+  langPillText: {
+    color: '#00D2FF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
