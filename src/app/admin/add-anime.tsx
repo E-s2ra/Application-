@@ -69,15 +69,24 @@ export default function AddAnimeScreen() {
 
     if (!result.success) {
       setLoading(false);
-      Alert.alert('Error', result.error || 'Failed to publish media.');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(result.error || 'Failed to publish media.');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to publish media.');
+      }
       return;
     }
     setLoading(false);
 
-    Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to AniFlix.`, [
-      { text: 'Add Another', onPress: () => resetForm() },
-      { text: 'Back to Panel', onPress: () => (router.canGoBack() ? router.back() : router.replace('/admin')) },
-    ]);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.alert(`"${title}" (${category}) has been published to AniFlix! 🎉`);
+      router.replace('/admin');
+    } else {
+      Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to AniFlix.`, [
+        { text: 'Add Another', onPress: () => resetForm() },
+        { text: 'Back to Panel', onPress: () => (router.canGoBack() ? router.back() : router.replace('/admin')) },
+      ]);
+    }
   };
 
   const resetForm = () => {

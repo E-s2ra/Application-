@@ -56,26 +56,35 @@ export default function AdminPanelScreen() {
     fetchAnime();
   };
 
-  const handleDelete = (item: Anime) => {
-    Alert.alert(
-      'Delete Media',
-      `Are you sure you want to delete "${item.title}" from AniFlix? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteAnime(item.id);
-            if (!result.success) {
-              Alert.alert('Error', result.error || 'Failed to delete anime');
-            } else {
-              setAnimeList((prev) => prev.filter((a) => a.id !== item.id));
-            }
-          },
-        },
-      ],
-    );
+  const handleDelete = async (item: Anime) => {
+    let confirmed = false;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      confirmed = window.confirm(`Are you sure you want to delete "${item.title}" from AniFlix? This cannot be undone.`);
+    } else {
+      confirmed = await new Promise((resolve) => {
+        Alert.alert(
+          'Delete Media',
+          `Are you sure you want to delete "${item.title}" from AniFlix? This cannot be undone.`,
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+          ]
+        );
+      });
+    }
+
+    if (!confirmed) return;
+
+    const result = await deleteAnime(item.id);
+    if (!result.success) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(result.error || 'Failed to delete anime');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to delete anime');
+      }
+    } else {
+      setAnimeList((prev) => prev.filter((a) => a.id !== item.id));
+    }
   };
 
   const handleToggleFeatured = async (item: Anime) => {
@@ -85,7 +94,11 @@ export default function AdminPanelScreen() {
         prev.map((a) => (a.id === item.id ? { ...a, is_featured: !a.is_featured } : a)),
       );
     } else {
-      Alert.alert('Error', result.error || 'Failed to update anime');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(result.error || 'Failed to update anime');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to update anime');
+      }
     }
   };
 
