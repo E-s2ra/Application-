@@ -69,3 +69,8 @@ example
 
 # Large local video files (too big for GitHub - keep local only)
 assets/videos/
+
+# Local Android test-install artifacts
+*.apk
+platform-tools/
+platform-tools-latest-windows.zip
