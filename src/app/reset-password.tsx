@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ export default function ResetPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const confirmationInput = useRef<TextInput>(null);
 
   const submit = async () => {
     setMessage(null);
@@ -38,7 +39,7 @@ export default function ResetPasswordScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentInsetAdjustmentBehavior="automatic">
         <View style={styles.card}>
           <View style={[styles.icon, { backgroundColor: themeColors.backgroundElement }]}><KeyRound color={themeColors.primary} size={36} /></View>
           <Text style={[styles.title, { color: themeColors.text }]}>Choose a new password</Text>
@@ -46,10 +47,10 @@ export default function ResetPasswordScreen() {
           {!session && <Text style={styles.recoveryWarning}>Open the reset link from your email in the AniFlix app to continue.</Text>}
           {message && <View style={styles.message}><CheckCircle color={message.startsWith('Password updated') ? '#00E676' : '#FF8A80'} size={18} /><Text style={styles.messageText}>{message}</Text></View>}
           <View style={styles.passwordWrap}>
-            <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} placeholder="New password" placeholderTextColor="#77778C" editable={!loading} />
+            <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} placeholder="New password" placeholderTextColor="#77778C" editable={!loading} returnKeyType="next" onSubmitEditing={() => confirmationInput.current?.focus()} />
             <Pressable style={styles.eye} onPress={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff color="#A0A0B8" size={20} /> : <Eye color="#A0A0B8" size={20} />}</Pressable>
           </View>
-          <TextInput style={styles.confirmInput} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showPassword} placeholder="Confirm new password" placeholderTextColor="#77778C" editable={!loading} onSubmitEditing={submit} />
+          <TextInput ref={confirmationInput} style={styles.confirmInput} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showPassword} placeholder="Confirm new password" placeholderTextColor="#77778C" editable={!loading} returnKeyType="go" onSubmitEditing={submit} />
           <Pressable style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]} onPress={submit} disabled={loading}>{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Update Password</Text>}</Pressable>
         </View>
       </ScrollView>

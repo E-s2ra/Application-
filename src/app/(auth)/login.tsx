@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   StyleSheet,
@@ -30,6 +30,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const passwordInput = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     setErrorMessage(null);
@@ -62,6 +63,8 @@ export default function LoginScreen() {
           (isDesktop || isTablet) && styles.scrollContentCentered,
         ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentInsetAdjustmentBehavior="automatic"
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
           <View style={styles.header}>
@@ -99,9 +102,13 @@ export default function LoginScreen() {
                 if (errorMessage) setErrorMessage(null);
               }}
               editable={!loading}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInput.current?.focus()}
+              blurOnSubmit={false}
             />
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
+                ref={passwordInput}
                 style={[styles.passwordInput, { color: themeColors.text }]}
                 placeholder="Password"
                 secureTextEntry={!showPassword}
@@ -112,6 +119,8 @@ export default function LoginScreen() {
                   if (errorMessage) setErrorMessage(null);
                 }}
                 editable={!loading}
+                returnKeyType="go"
+                onSubmitEditing={() => void handleLogin()}
               />
               <Pressable
                 onPress={() => setShowPassword(!showPassword)}

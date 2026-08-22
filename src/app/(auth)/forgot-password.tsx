@@ -65,6 +65,8 @@ export default function ForgotPasswordScreen() {
           (isDesktop || isTablet) && styles.scrollCentered,
         ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentInsetAdjustmentBehavior="automatic"
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
           <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/login'))} style={styles.backBtn}>
@@ -93,6 +95,8 @@ export default function ForgotPasswordScreen() {
               value={email}
               onChangeText={setEmail}
               editable={!loading}
+              returnKeyType="send"
+              onSubmitEditing={() => void handleReset()}
             />
 
             <Pressable

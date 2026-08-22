@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useRouter } from 'expo-router';
 import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -35,6 +35,9 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const emailInput = useRef<TextInput>(null);
+  const passwordInput = useRef<TextInput>(null);
+  const confirmPasswordInput = useRef<TextInput>(null);
 
   const handleSignUp = async () => {
     setErrorMessage(null);
@@ -92,6 +95,8 @@ export default function SignUpScreen() {
           (isDesktop || isTablet) && styles.scrollCentered,
         ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentInsetAdjustmentBehavior="automatic"
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
           <View style={styles.header}>
@@ -130,8 +135,11 @@ export default function SignUpScreen() {
               value={fullName}
               onChangeText={setFullName}
               editable={!loading}
+              returnKeyType="next"
+              onSubmitEditing={() => emailInput.current?.focus()}
             />
             <TextInput
+              ref={emailInput}
               style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
               placeholder="Email address"
               placeholderTextColor={themeColors.textSecondary}
@@ -141,9 +149,12 @@ export default function SignUpScreen() {
               value={email}
               onChangeText={setEmail}
               editable={!loading}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInput.current?.focus()}
             />
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
+                ref={passwordInput}
                 style={[styles.passwordInput, { color: themeColors.text }]}
                 placeholder="Password (9+ characters)"
                 secureTextEntry={!showPassword}
@@ -151,6 +162,8 @@ export default function SignUpScreen() {
                 value={password}
                 onChangeText={setPassword}
                 editable={!loading}
+                returnKeyType="next"
+                onSubmitEditing={() => confirmPasswordInput.current?.focus()}
               />
               <Pressable
                 onPress={() => setShowPassword(!showPassword)}
@@ -169,6 +182,7 @@ export default function SignUpScreen() {
             </Text>
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
+                ref={confirmPasswordInput}
                 style={[styles.passwordInput, { color: themeColors.text }]}
                 placeholder="Confirm Password"
                 secureTextEntry={!showConfirmPassword}
@@ -176,6 +190,8 @@ export default function SignUpScreen() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 editable={!loading}
+                returnKeyType="go"
+                onSubmitEditing={() => void handleSignUp()}
               />
               <Pressable
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
