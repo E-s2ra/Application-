@@ -17,23 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const PASSWORD_REQUIREMENTS = [
-  'at least 9 characters',
-  'an uppercase letter',
-  'a lowercase letter',
-  'a number',
-  'a symbol',
-];
-
-function validatePassword(password: string): string | null {
-  if (password.length < 9) return 'Password must be at least 9 characters.';
-  if (!/[A-Z]/.test(password)) return 'Password must include an uppercase letter.';
-  if (!/[a-z]/.test(password)) return 'Password must include a lowercase letter.';
-  if (!/\d/.test(password)) return 'Password must include a number.';
-  if (!/[^A-Za-z0-9]/.test(password)) return 'Password must include a symbol.';
-  return null;
-}
+import { PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
 
 export default function SignUpScreen() {
   const router = useRouter();

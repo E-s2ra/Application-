@@ -17,6 +17,7 @@ import { Colors } from '@/constants/theme';
 import { ShieldCheck, ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
+import { isValidEmail, normalizeEmail } from '@/lib/password';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -33,8 +34,12 @@ export default function ForgotPasswordScreen() {
       Alert.alert('Error', 'Please enter your email address.');
       return;
     }
+    if (!isValidEmail(normalizeEmail(email))) {
+      Alert.alert('Check your email', 'Enter a valid email address.');
+      return;
+    }
     setLoading(true);
-    const { error } = await resetPassword(email.trim());
+    const { error } = await resetPassword(normalizeEmail(email));
     setLoading(false);
 
     if (error) {
@@ -44,7 +49,7 @@ export default function ForgotPasswordScreen() {
 
     Alert.alert(
       'Reset Link Sent',
-      'A password reset link has been sent to your email. Check your inbox and follow the instructions.',
+      'If an AniFlix account uses this email, a secure password-reset link will arrive shortly. Check your inbox and spam folder.',
       [{ text: 'OK', onPress: () => (router.canGoBack() ? router.back() : router.replace('/(auth)/login')) }],
     );
   };

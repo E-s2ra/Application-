@@ -1,8 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import * as Linking from 'expo-linking';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { getDeviceId } from '@/lib/device-session';
+import { normalizeEmail } from '@/lib/password';
 
 export type Profile = {
   id: string;
@@ -26,6 +28,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsEmailVerification: boolean }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
   refreshProfile: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: string | null }>;
 };
@@ -154,6 +157,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const restoreRecoverySession = async (url: string | null) => {
+      if (!url) return;
+      const hash = url.includes('#') ? url.slice(url.indexOf('#') + 1) : '';
+      const params = new URLSearchParams(hash || url.split('?')[1] || '');
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const code = params.get('code');
+
+      if (accessToken && refreshToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      } else if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+      }
+    };
+
+    void Linking.getInitialURL().then(restoreRecoverySession);
+    const subscription = Linking.addEventListener('url', ({ url }) => void restoreRecoverySession(url));
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     if (!userId) return;
 
     void getDeviceId().then((deviceId) => {
@@ -173,7 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [userId, verifyCurrentDevice]);
 
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
     if (error) {
       return { error: error.message };
     }
@@ -188,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fullName: string,
   ): Promise<{ error: string | null; needsEmailVerification: boolean }> => {
     const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: normalizeEmail(email),
       password,
       options: { data: { full_name: fullName.trim() } },
     });
@@ -209,9 +233,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
-    if (error) return { error: error.message };
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), {
+      redirectTo: 'aniflix://reset-password',
+    });
+    // A generic result prevents account enumeration. Operational errors are
+    // intentionally not exposed to the person requesting a reset.
+    if (error) return { error: 'Unable to start password recovery. Please try again later.' };
     return { error: null };
+  };
+
+  const updatePassword = async (password: string): Promise<{ error: string | null }> => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error: error?.message ?? null };
   };
 
   const updateProfile = async (updates: Partial<Profile>): Promise<{ error: string | null }> => {
@@ -244,6 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signOut,
         resetPassword,
+        updatePassword,
         refreshProfile,
         updateProfile,
       }}

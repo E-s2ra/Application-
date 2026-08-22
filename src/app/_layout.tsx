@@ -45,8 +45,9 @@ function AuthGuard({ onReady }: { onReady: () => void }) {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const isPasswordRecovery = String(segments[0]) === 'reset-password';
 
-    if (!session && !inAuthGroup) {
+    if (!session && !inAuthGroup && !isPasswordRecovery) {
       router.replace('/(auth)/login');
     } else if (session && inAuthGroup) {
       router.replace('/(tabs)');
@@ -84,7 +85,8 @@ export default function RootLayout() {
                         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                         <Stack.Screen name="admin" options={{ headerShown: false }} />
-                        <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+                      <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+                      <Stack.Screen name="reset-password" options={{ headerShown: false }} />
                       </Stack>
 
                       {/* Google AdMob Rewarded Ad Modal */}
