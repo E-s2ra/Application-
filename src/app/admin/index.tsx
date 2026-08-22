@@ -1,9 +1,10 @@
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Plus, Star, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Lock, Plus, Star, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -29,7 +30,10 @@ type Anime = {
 export default function AdminPanelScreen() {
   const router = useRouter();
   const themeColors = useTheme();
+  const { user, profile } = useAuth();
   const { maxContentWidth } = useResponsive();
+
+  const isAdmin = profile?.role === 'admin' || user?.email === 'esra99san@gmail.com';
 
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,6 +163,25 @@ export default function AdminPanelScreen() {
           <Text style={styles.headerTitle}>AniFlix Admin Center</Text>
           <View style={{ width: 40 }} />
         </View>
+
+        {!isAdmin && (
+          <View style={{ backgroundColor: '#2E1012', borderColor: '#FF4D4D', borderWidth: 1, marginHorizontal: 16, marginTop: 12, padding: 12, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FFB800', fontWeight: '700', fontSize: 13, marginBottom: 2 }}>
+                🔒 Admin Sign-In Required
+              </Text>
+              <Text style={{ color: '#FFD1D1', fontSize: 11, lineHeight: 15 }}>
+                You are currently viewing as Guest. Log in as Administrator (esra99san@gmail.com) to permanently delete or edit media in the database.
+              </Text>
+            </View>
+            <Pressable
+              style={{ backgroundColor: themeColors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 }}
+              onPress={() => router.push('/(auth)/login' as any)}
+            >
+              <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 12 }}>Log In</Text>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>

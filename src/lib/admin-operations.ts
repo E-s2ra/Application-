@@ -126,13 +126,33 @@ export async function deleteAnime(
             await supabase.from('comments').delete().eq('movie_id', String(animeId));
         } catch (_e) {}
 
-        // 3. Direct table delete
-        const { error } = await supabase.from('anime').delete().eq('id', animeId);
+        // 3. Direct table delete with confirmation check
+        const { data, error } = await supabase
+            .from('anime')
+            .delete()
+            .eq('id', animeId)
+            .select('id');
+
         if (error) {
             const edgeResult = await callAdminOperation('delete_anime', { anime: { id: animeId } });
             if (edgeResult.success) return edgeResult;
             return { success: false, error: error.message };
         }
+
+        if (!data || data.length === 0) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                return {
+                    success: false,
+                    error: 'You are not logged in as Admin. Please log in with your admin account (esra99san@gmail.com) on the Login screen to delete items.',
+                };
+            }
+            return {
+                success: false,
+                error: 'Database permission denied: Please verify your account is logged in as the Administrator (esra99san@gmail.com).',
+            };
+        }
+
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message || 'Failed to delete anime' };
