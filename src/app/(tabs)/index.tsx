@@ -55,267 +55,7 @@ const PLACEHOLDER_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
 ];
 
-export const DEFAULT_CATALOG: AnimeItem[] = [
-  // 🎬 MOVIES
-  {
-    id: 'movie-1',
-    title: 'Inception',
-    description: 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
-    image_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&q=80',
-    episodes: 1,
-    genre: 'Sci-Fi, Action, Thriller',
-    category: 'Movies',
-    is_featured: true,
-  },
-  {
-    id: 'movie-2',
-    title: 'Interstellar',
-    description: 'When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft along with a team of researchers to find a new planet for humans.',
-    image_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80',
-    episodes: 1,
-    genre: 'Sci-Fi, Adventure, Drama',
-    category: 'Movies',
-    is_featured: true,
-  },
-  {
-    id: 'movie-3',
-    title: 'Oppenheimer',
-    description: 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb during World War II.',
-    image_url: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=1200&q=80',
-    episodes: 1,
-    genre: 'Biography, Drama, History',
-    category: 'Movies',
-    is_featured: false,
-  },
-  {
-    id: 'movie-4',
-    title: 'Dune: Part Two',
-    description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.',
-    image_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80',
-    episodes: 1,
-    genre: 'Sci-Fi, Adventure, Action',
-    category: 'Movies',
-    is_featured: false,
-  },
-  {
-    id: 'movie-5',
-    title: 'The Dark Knight',
-    description: 'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.',
-    image_url: 'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=1200&q=80',
-    episodes: 1,
-    genre: 'Action, Crime, Drama',
-    category: 'Movies',
-    is_featured: false,
-  },
-
-  // 🎌 ANIME MOVIES
-  {
-    id: 'amovie-1',
-    title: 'Your Name (Kimi no Na wa)',
-    description: 'Two teenagers share a profound, magical connection upon discovering they are swapping bodies. Things manage to become even more complicated when the boy and girl decide to meet in person.',
-    image_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80',
-    episodes: 1,
-    genre: 'Romance, Fantasy, Drama',
-    category: 'Anime Movies',
-    is_featured: true,
-  },
-  {
-    id: 'amovie-2',
-    title: 'Spirited Away',
-    description: 'During her family move to the suburbs, a sullen 10-year-old girl wanders into a world ruled by gods, witches, and spirits, and where humans are changed into beasts.',
-    image_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
-    episodes: 1,
-    genre: 'Fantasy, Adventure',
-    category: 'Anime Movies',
-    is_featured: true,
-  },
-  {
-    id: 'amovie-3',
-    title: 'Suzume',
-    description: 'A modern action adventure road story where a 17-year-old girl named Suzume helps a mysterious young man close doors from the outside that are releasing disasters all over Japan.',
-    image_url: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1200&q=80',
-    episodes: 1,
-    genre: 'Adventure, Fantasy',
-    category: 'Anime Movies',
-    is_featured: false,
-  },
-  {
-    id: 'amovie-4',
-    title: 'Demon Slayer: Mugen Train',
-    description: 'After completing their rehabilitation training, Tanjiro and his comrades arrive at their next mission on the Mugen Train, where over forty people have disappeared in a very short time.',
-    image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
-    episodes: 1,
-    genre: 'Action, Supernatural, Fantasy',
-    category: 'Anime Movies',
-    is_featured: false,
-  },
-  {
-    id: 'amovie-5',
-    title: 'Weathering With You',
-    description: 'A high-school boy who has run away to Tokyo befriends a girl who appears to be able to manipulate the weather.',
-    image_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80',
-    episodes: 1,
-    genre: 'Romance, Fantasy',
-    category: 'Anime Movies',
-    is_featured: false,
-  },
-
-  // 🌸 K-DRAMA
-  {
-    id: 'kdrama-1',
-    title: 'Crash Landing on You',
-    description: 'A paragliding mishap drops a South Korean heiress into North Korea - and into the life of an army officer, who decides he will help her hide.',
-    image_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1200&q=80',
-    episodes: 16,
-    genre: 'Romance, Comedy, Drama',
-    category: 'K-Drama',
-    is_featured: true,
-  },
-  {
-    id: 'kdrama-2',
-    title: 'Queen of Tears',
-    description: 'The queen of department stores and her small-town husband weather a marital crisis - until love miraculously begins to bloom again.',
-    image_url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1200&q=80',
-    episodes: 16,
-    genre: 'Romance, Melodrama, Comedy',
-    category: 'K-Drama',
-    is_featured: true,
-  },
-  {
-    id: 'kdrama-3',
-    title: 'Squid Game',
-    description: 'Hundreds of cash-strapped players accept a strange invitation to compete in children games. Inside, a tempting prize awaits with deadly high stakes.',
-    image_url: 'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=1200&q=80',
-    episodes: 9,
-    genre: 'Thriller, Mystery, Drama',
-    category: 'K-Drama',
-    is_featured: false,
-  },
-  {
-    id: 'kdrama-4',
-    title: 'Vincenzo',
-    description: 'During a visit to his motherland, a Korean-Italian mafia lawyer gives an unrivaled conglomerate a taste of its own medicine with a side of justice.',
-    image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80',
-    episodes: 20,
-    genre: 'Crime, Comedy, Drama',
-    category: 'K-Drama',
-    is_featured: false,
-  },
-  {
-    id: 'kdrama-5',
-    title: 'Goblin (Guardian: The Lonely and Great God)',
-    description: 'In his quest to end his immortal life, an ancient goblin needs a human bride. But his plan turns complicated when he starts falling for her.',
-    image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
-    episodes: 16,
-    genre: 'Fantasy, Romance, Drama',
-    category: 'K-Drama',
-    is_featured: false,
-  },
-
-  // 🎭 DRAMA
-  {
-    id: 'drama-1',
-    title: 'Breaking Bad',
-    description: 'A chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine with a former student in order to secure his family future.',
-    image_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80',
-    episodes: 62,
-    genre: 'Crime, Drama, Thriller',
-    category: 'Drama',
-    is_featured: true,
-  },
-  {
-    id: 'drama-2',
-    title: 'Chernobyl',
-    description: 'In April 1986, an explosion at the Chernobyl nuclear power plant in the Union of Soviet Socialist Republics becomes one of the world worst man-made catastrophes.',
-    image_url: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=1200&q=80',
-    episodes: 5,
-    genre: 'Drama, History, Thriller',
-    category: 'Drama',
-    is_featured: false,
-  },
-  {
-    id: 'drama-3',
-    title: 'Succession',
-    description: 'The Roy family is known for controlling the biggest media and entertainment company in the world. However, their world changes when their aging father steps down from the company.',
-    image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80',
-    episodes: 39,
-    genre: 'Drama',
-    category: 'Drama',
-    is_featured: false,
-  },
-  {
-    id: 'drama-4',
-    title: 'The Crown',
-    description: 'Follows the political rivalries and romance of Queen Elizabeth II reign and the events that shaped the second half of the twentieth century.',
-    image_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&q=80',
-    episodes: 60,
-    genre: 'Biography, Drama, History',
-    category: 'Drama',
-    is_featured: false,
-  },
-  {
-    id: 'drama-5',
-    title: 'Peaky Blinders',
-    description: 'A gangster family epic set in 1900s England, centering on a gang who sew razor blades in the peaks of their caps, and their fierce boss Tommy Shelby.',
-    image_url: 'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=1200&q=80',
-    episodes: 36,
-    genre: 'Crime, Drama',
-    category: 'Drama',
-    is_featured: false,
-  },
-
-  // ⚡ ANIME SERIES
-  {
-    id: 'anime-1',
-    title: 'Attack on Titan',
-    description: 'After his hometown is destroyed and his mother is killed, young Eren Jaeger vows to cleanse the earth of the giant humanoid Titans that have brought humanity to the brink of extinction.',
-    image_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
-    episodes: 87,
-    genre: 'Action, Dark Fantasy, Shounen',
-    category: 'Anime Series',
-    is_featured: true,
-  },
-  {
-    id: 'anime-2',
-    title: 'Demon Slayer: Kimetsu no Yaiba',
-    description: 'A family is attacked by demons and only two members survive - Tanjiro and his sister Nezuko, who is turning into a demon slowly. Tanjiro sets out to become a demon slayer to avenge his family and cure his sister.',
-    image_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80',
-    episodes: 55,
-    genre: 'Action, Supernatural, Fantasy',
-    category: 'Anime Series',
-    is_featured: true,
-  },
-  {
-    id: 'anime-3',
-    title: 'Jujutsu Kaisen',
-    description: 'A boy swallows a cursed talisman - the finger of a demon - and becomes cursed himself. He enters a shaman school to be able to locate the demon other body parts and thus exorcise himself.',
-    image_url: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1200&q=80',
-    episodes: 47,
-    genre: 'Supernatural, Action, Fantasy',
-    category: 'Anime Series',
-    is_featured: true,
-  },
-  {
-    id: 'anime-4',
-    title: 'Solo Leveling',
-    description: 'In a world where hunters, humans who possess magical abilities, battle deadly monsters, a weak hunter named Sung Jinwoo discovers a mysterious quest line that allows him to level up without limit.',
-    image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
-    episodes: 12,
-    genre: 'Action, Fantasy, Adventure',
-    category: 'Anime Series',
-    is_featured: true,
-  },
-  {
-    id: 'anime-5',
-    title: 'Fullmetal Alchemist: Brotherhood',
-    description: 'Two brothers search for a Philosopher Stone after an attempt to revive their deceased mother goes awry and leaves them in damaged physical forms.',
-    image_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80',
-    episodes: 64,
-    genre: 'Adventure, Dark Fantasy, Shounen',
-    category: 'Anime Series',
-    is_featured: false,
-  },
-];
+export const DEFAULT_CATALOG: AnimeItem[] = [];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -1018,6 +758,25 @@ export default function HomeScreen() {
                   contentContainerStyle={styles.standardList}
                 />
               </>
+            )}
+
+            {allMedia.length === 0 && (
+              <View style={{ padding: 32, alignItems: 'center', marginHorizontal: 16, marginTop: 24, borderRadius: 16, backgroundColor: themeColors.backgroundCard, borderWidth: 1, borderColor: themeColors.border }}>
+                <Film size={44} color={themeColors.primary} style={{ marginBottom: 12 }} />
+                <Text style={{ color: themeColors.text, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
+                  No Products Published Yet
+                </Text>
+                <Text style={{ color: themeColors.textSecondary, fontSize: 13, textAlign: 'center', maxWidth: 320, lineHeight: 18, marginBottom: 18 }}>
+                  Your cinema catalog is clean and ready. Add and publish your real anime, movies, and series from the Admin Control Center!
+                </Text>
+                <Pressable
+                  style={{ backgroundColor: themeColors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  onPress={() => router.push('/admin' as any)}
+                >
+                  <Sparkles size={16} color="#FFF" />
+                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>Add First Anime</Text>
+                </Pressable>
+              </View>
             )}
           </>
         )}
