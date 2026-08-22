@@ -1216,9 +1216,17 @@ const styles = StyleSheet.create({
     color: '#2a2a42',
     lineHeight: 52,
     marginRight: -10,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    ...Platform.select({
+      web: {
+        // @ts-ignore
+        textShadow: '0px 2px 4px rgba(0,0,0,0.8)',
+      },
+      default: {
+        textShadowColor: 'rgba(0,0,0,0.8)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
+      },
+    }),
   },
   posterCard: {
     borderRadius: 10,

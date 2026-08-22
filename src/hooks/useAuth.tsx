@@ -49,6 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const claimCurrentDevice = useCallback(async (): Promise<string | null> => {
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.user) return null;
+
       const deviceId = deviceIdRef.current ?? await getDeviceId();
       deviceIdRef.current = deviceId;
       const { error } = await supabase.rpc('claim_device_session', { p_device_id: deviceId });
@@ -61,6 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const verifyCurrentDevice = useCallback(async () => {
     if (!deviceIdRef.current) return;
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.user) return;
+
       const { data, error } = await supabase.rpc('is_current_device', { p_device_id: deviceIdRef.current });
       if (!error && data === false) {
         await signOutLocally();

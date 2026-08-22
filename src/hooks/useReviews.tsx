@@ -179,21 +179,21 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
         const fetchCommentsPromise = supabase
           .from('comments')
-          .select('id, movie_id, user_id, parent_id, content, rating, likes_count, created_at')
+          .select('*')
           .order('created_at', { ascending: false });
 
         const res = (await Promise.race([fetchCommentsPromise, timeoutPromise])) as any;
         if (res && res.data && res.data.length > 0) {
           const dbReviews: Review[] = res.data.map((c: any) => ({
             id: c.id,
-            mediaId: c.movie_id,
+            mediaId: c.movie_id || c.media_id,
             userId: c.user_id,
-            parentId: c.parent_id,
-            userName: 'Community Streamer',
+            parentId: c.parent_id || null,
+            userName: c.user_name || 'Community Streamer',
             rating: c.rating || 5,
-            comment: c.content,
-            createdAt: 'Recently',
-            helpfulCount: c.likes_count || 0,
+            comment: c.content || c.comment || '',
+            createdAt: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Recently',
+            helpfulCount: c.likes_count || c.helpful_count || 0,
             isVerified: true,
           }));
 

@@ -43,19 +43,26 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     }
 
     setIsLoading(true);
-    const { data, error: queryError } = await supabase
-      .from('notifications')
-      .select('id, type, title, body, resource_type, resource_id, metadata, read_at, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    try {
+      const { data, error: queryError } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    if (queryError) {
-      setError(queryError.message);
-    } else {
-      setNotifications((data ?? []) as AppNotification[]);
+      if (queryError) {
+        setNotifications([]);
+        setError(null);
+      } else {
+        setNotifications((data ?? []) as AppNotification[]);
+        setError(null);
+      }
+    } catch {
+      setNotifications([]);
       setError(null);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [user?.id]);
 
   useEffect(() => {
