@@ -237,12 +237,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
+    let redirectTo = 'aniflix://reset-password';
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      redirectTo = `${window.location.origin}/reset-password`;
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), {
-      redirectTo: 'aniflix://reset-password',
+      redirectTo,
     });
-    // A generic result prevents account enumeration. Operational errors are
-    // intentionally not exposed to the person requesting a reset.
-    if (error) return { error: 'Unable to start password recovery. Please try again later.' };
+    if (error) return { error: error.message || 'Unable to start password recovery. Please try again later.' };
     return { error: null };
   };
 

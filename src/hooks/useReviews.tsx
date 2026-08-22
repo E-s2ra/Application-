@@ -377,7 +377,8 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
 
   const deleteReview = async (reviewId: string) => {
     const currentUserId = user?.id || 'guest-user';
-    const target = reviews.find((review) => review.id === reviewId && review.userId === currentUserId);
+    const isAdmin = profile?.role === 'admin' || user?.email === 'esra99san@gmail.com';
+    const target = reviews.find((review) => review.id === reviewId && (review.userId === currentUserId || isAdmin));
     if (!target) throw new Error('You can only delete your own comment.');
 
     if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
