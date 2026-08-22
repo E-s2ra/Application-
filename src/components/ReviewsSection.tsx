@@ -28,6 +28,7 @@ import {
 import { useReviews, Review } from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocial } from '@/hooks/useSocial';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface ReviewsSectionProps {
   mediaId: string;
@@ -59,6 +60,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     getRepliesForReview,
   } = useReviews();
   const { isFollowing, toggleFollow } = useSocial();
+  const { isXS } = useResponsive();
 
   const reviews = getReviewsForMedia(mediaId);
   const stats = getStatsForMedia(mediaId);
@@ -186,10 +188,10 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.backgroundCard }]}>
       {/* Header */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, isXS && styles.headerRowSmall]}>
         <View style={styles.titleRow}>
           <MessageSquare size={20} color={themeColors.primary} />
-          <Text style={styles.sectionTitle}>Ratings & Community Reviews</Text>
+          <Text style={[styles.sectionTitle, isXS && styles.sectionTitleSmall]}>Ratings & Community Reviews</Text>
         </View>
         <View style={styles.countBadge}>
           <Text style={styles.countBadgeText}>{stats.count} reviews</Text>
@@ -197,8 +199,8 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
       </View>
 
       {/* 📊 Score & Breakdown Card */}
-      <View style={styles.summaryCard}>
-        <View style={styles.scoreCol}>
+      <View style={[styles.summaryCard, isXS && styles.summaryCardSmall]}>
+        <View style={[styles.scoreCol, isXS && styles.scoreColSmall]}>
           <Text style={styles.bigScoreText}>{stats.average.toFixed(1)}</Text>
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((star) => (
@@ -214,7 +216,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
         </View>
 
         {/* Breakdown Bars */}
-        <View style={styles.breakdownCol}>
+        <View style={[styles.breakdownCol, isXS && styles.breakdownColSmall]}>
           {[5, 4, 3, 2, 1].map((stars) => {
             const count = stats.breakdown[stars] || 0;
             const percentage = stats.count > 0 ? (count / stats.count) * 100 : 0;
@@ -313,7 +315,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
       </View>
 
       {/* 🏷️ Filter Tabs */}
-      <View style={styles.sortRow}>
+      <View style={[styles.sortRow, isXS && styles.sortRowSmall]}>
         <Text style={styles.communitySubheader}>COMMUNITY REVIEWS</Text>
         <View style={styles.tabPills}>
           <Pressable
@@ -363,8 +365,8 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                 ]}
               >
                 {/* Author Header */}
-                <View style={styles.reviewHeader}>
-                  <View style={styles.authorRow}>
+                <View style={[styles.reviewHeader, isXS && styles.reviewHeaderSmall]}>
+                  <View style={[styles.authorRow, isXS && styles.authorRowSmall]}>
                     {rev.userAvatar ? (
                       <Image source={{ uri: rev.userAvatar }} style={styles.avatarImg} />
                     ) : (
@@ -591,6 +593,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  headerRowSmall: {
+    alignItems: 'flex-start',
+    gap: 8,
+  },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -601,6 +607,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.3,
+  },
+  sectionTitleSmall: {
+    fontSize: 16,
+    flexShrink: 1,
   },
   countBadge: {
     backgroundColor: '#1E1E2C',
@@ -625,12 +635,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1D1D2C',
   },
+  summaryCardSmall: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    padding: 12,
+  },
   scoreCol: {
     alignItems: 'center',
     paddingRight: 20,
     borderRightWidth: 1,
     borderRightColor: '#222234',
     minWidth: 95,
+  },
+  scoreColSmall: {
+    minWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222234',
+    paddingRight: 0,
+    paddingBottom: 12,
+    marginBottom: 12,
   },
   bigScoreText: {
     fontSize: 36,
@@ -651,6 +675,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingLeft: 18,
     gap: 5,
+  },
+  breakdownColSmall: {
+    paddingLeft: 0,
   },
   breakdownRow: {
     flexDirection: 'row',
@@ -787,6 +814,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
+  sortRowSmall: {
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   communitySubheader: {
     fontSize: 11,
     fontWeight: '700',
@@ -842,10 +874,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 8,
   },
+  reviewHeaderSmall: {
+    gap: 8,
+  },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  authorRowSmall: {
+    flex: 1,
+    minWidth: 0,
   },
   avatarImg: {
     width: 34,

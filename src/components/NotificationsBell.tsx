@@ -4,10 +4,12 @@ import { useRouter } from 'expo-router';
 import { Bell, CheckCheck, PackageOpen, X } from 'lucide-react-native';
 import { Colors } from '@/constants/theme';
 import { AppNotification, useNotifications } from '@/hooks/useNotifications';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function NotificationsBell() {
   const router = useRouter();
   const themeColors = Colors.dark;
+  const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
   const { notifications, unreadCount, isLoading, error, refresh, markRead, markAllRead } = useNotifications();
 
@@ -43,7 +45,7 @@ export function NotificationsBell() {
       <Modal visible={visible} animationType="slide" transparent onRequestClose={() => setVisible(false)}>
         <View style={styles.overlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setVisible(false)} />
-          <View style={[styles.sheet, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+          <View style={[styles.sheet, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
             <View style={styles.sheetHeader}>
               <View>
                 <Text style={[styles.title, { color: themeColors.text }]}>Notifications</Text>
@@ -106,7 +108,7 @@ const styles = StyleSheet.create({
   badge: { position: 'absolute', top: 5, right: 2, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center' },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0, 0, 0, 0.55)' },
-  sheet: { width: '100%', maxHeight: '78%', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderTopWidth: 1, paddingBottom: 22 },
+  sheet: { width: '100%', maxHeight: '78%', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderTopWidth: 1 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 },
   title: { fontSize: 20, fontWeight: '800' },
   subtitle: { fontSize: 13, marginTop: 2 },
