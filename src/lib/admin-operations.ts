@@ -108,14 +108,25 @@ export async function deleteAnime(
     animeId: string
 ): Promise<AdminOperationResult<any>> {
     try {
-        // Clean up linked comments/notifications first
+        // 1. Safe RPC delete
         try {
-            await supabase.from('notifications').delete().eq('resource_type', 'anime').eq('resource_id', animeId);
-        } catch (_e) {}
-        try {
-            await supabase.from('comments').delete().eq('movie_id', animeId);
+            const { data: rpcSuccess, error: rpcError } = await supabase.rpc('admin_delete_anime', {
+                target_anime_id: String(animeId),
+            });
+            if (!rpcError && (rpcSuccess === true || rpcSuccess === 1)) {
+                return { success: true };
+            }
         } catch (_e) {}
 
+        // 2. Clean up linked comments/notifications
+        try {
+            await supabase.from('notifications').delete().eq('resource_type', 'anime').eq('resource_id', String(animeId));
+        } catch (_e) {}
+        try {
+            await supabase.from('comments').delete().eq('movie_id', String(animeId));
+        } catch (_e) {}
+
+        // 3. Direct table delete
         const { error } = await supabase.from('anime').delete().eq('id', animeId);
         if (error) {
             const edgeResult = await callAdminOperation('delete_anime', { anime: { id: animeId } });
@@ -133,6 +144,18 @@ export async function updateAnimeFeatured(
     isFeatured: boolean
 ): Promise<AdminOperationResult<any>> {
     try {
+        // 1. Safe RPC update
+        try {
+            const { data: rpcSuccess, error: rpcError } = await supabase.rpc('admin_toggle_featured', {
+                target_anime_id: String(animeId),
+                target_is_featured: isFeatured,
+            });
+            if (!rpcError && (rpcSuccess === true || rpcSuccess === 1)) {
+                return { success: true };
+            }
+        } catch (_e) {}
+
+        // 2. Direct table update
         const { error } = await supabase
             .from('anime')
             .update({ is_featured: isFeatured })
