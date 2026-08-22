@@ -4,7 +4,7 @@ import * as Linking from 'expo-linking';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { getDeviceId } from '@/lib/device-session';
-import { normalizeEmail } from '@/lib/password';
+import { isValidEmail, normalizeEmail } from '@/lib/password';
 
 export type Profile = {
   id: string;
@@ -211,8 +211,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     fullName: string,
   ): Promise<{ error: string | null; needsEmailVerification: boolean }> => {
+    const normalizedEmail = normalizeEmail(email);
+    if (!isValidEmail(normalizedEmail)) {
+      return { error: 'Enter a valid email address.', needsEmailVerification: false };
+    }
     const { data, error } = await supabase.auth.signUp({
-      email: normalizeEmail(email),
+      email: normalizedEmail,
       password,
       options: { data: { full_name: fullName.trim() } },
     });

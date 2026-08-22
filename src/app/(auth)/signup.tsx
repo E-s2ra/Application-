@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
+import { isKnownDisposableEmail, isValidEmail, normalizeEmail, PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -48,9 +48,14 @@ export default function SignUpScreen() {
       setErrorMessage('Passwords do not match.');
       return;
     }
-    let formattedEmail = email.trim();
-    if (!formattedEmail.includes('@')) {
-      formattedEmail = `${formattedEmail}@gmail.com`;
+    const formattedEmail = normalizeEmail(email);
+    if (!isValidEmail(formattedEmail)) {
+      setErrorMessage('Enter a valid email address.');
+      return;
+    }
+    if (isKnownDisposableEmail(formattedEmail)) {
+      setErrorMessage('Disposable email addresses are not allowed. Use a regular email provider.');
+      return;
     }
 
     // Validate password strength for all users equally - no bypasses allowed

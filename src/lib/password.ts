@@ -22,3 +22,12 @@ export function normalizeEmail(email: string): string {
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
+
+const CLIENT_DISPOSABLE_DOMAINS = new Set([
+  '10minutemail.com', 'dispostable.com', 'emailondeck.com', 'guerrillamail.com',
+  'mailinator.com', 'mailnesia.com', 'mohmal.com', 'tempmail.com', 'trashmail.com', 'yopmail.com',
+]);
+
+export function isKnownDisposableEmail(email: string): boolean {
+  return CLIENT_DISPOSABLE_DOMAINS.has(normalizeEmail(email).split('@')[1] || '');
+}
