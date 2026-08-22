@@ -97,6 +97,8 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     try {
       await addReview(mediaId, selectedRating, comment.trim());
       showToast(userReview ? 'Review updated successfully!' : 'Review published!');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to save your review.');
     } finally {
       setIsSubmitting(false);
     }
@@ -249,13 +251,14 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
         {/* Comment Input */}
         <TextInput
           style={styles.commentInput}
-          placeholder="Write your review... What did you like about the story, animation, or characters?"
+          placeholder="Write your review… Use @username to notify someone."
           placeholderTextColor="#68687C"
           multiline
           numberOfLines={3}
           value={comment}
           onChangeText={setComment}
         />
+        <Text style={styles.mentionHint}>Tag a member with @username. Only existing AniFlix usernames can be tagged.</Text>
 
         {/* Action Button */}
         <View style={styles.composerActionRow}>
@@ -677,6 +680,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     gap: 12,
+  },
+  mentionHint: {
+    color: '#7B7B90',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: -5,
+    marginBottom: 12,
   },
   toastSuccess: {
     flexDirection: 'row',

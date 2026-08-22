@@ -272,18 +272,33 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
 
       // Sync to Supabase
       if (user?.id && !user.id.startsWith('guest-') && !existing.id.startsWith('rev-')) {
-        supabase
+        const { error } = await supabase
           .from('comments')
           .update({
             content: comment,
             rating,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', existing.id)
-          .then(() => {});
+          .eq('id', existing.id);
+        if (error) throw new Error(error.message);
       }
     } else {
-      const newId = 'rev-' + Date.now();
+      let newId = 'rev-' + Date.now();
+      if (user?.id && !user.id.startsWith('guest-')) {
+        const { data, error } = await supabase
+          .from('comments')
+          .insert({
+            movie_id: String(mediaId),
+            user_id: user.id,
+            content: comment,
+            rating,
+            likes_count: 0,
+          })
+          .select('id')
+          .single();
+        if (error) throw new Error(error.message);
+        newId = data.id;
+      }
       const newReview: Review = {
         id: newId,
         mediaId: String(mediaId),
@@ -296,20 +311,6 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         isVerified: true,
       };
       updated = [newReview, ...reviews];
-
-      // Sync to Supabase comments
-      if (user?.id && !user.id.startsWith('guest-')) {
-        supabase
-          .from('comments')
-          .insert({
-            movie_id: String(mediaId),
-            user_id: user.id,
-            content: comment,
-            rating,
-            likes_count: 0,
-          })
-          .then(() => {});
-      }
     }
 
     await saveReviews(updated);
