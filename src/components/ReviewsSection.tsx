@@ -9,7 +9,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   Star,
   ThumbsUp,
@@ -43,8 +43,26 @@ const RATING_LABELS: Record<number, string> = {
   5: 'Masterpiece 🤩',
 };
 
+function renderCommentWithMentions(content: string, themePrimary: string, baseStyle: any) {
+  const parts = content.split(/((?:^|[^\w])@[\w]{3,30})/g);
+  return (
+    <Text style={baseStyle}>
+      {parts.map((part, index) => {
+        if (/@[\w]{3,30}/.test(part)) {
+          return (
+            <Text key={index} style={{ color: themePrimary, fontWeight: '700' }}>
+              {part}
+            </Text>
+          );
+        }
+        return <Text key={index}>{part}</Text>;
+      })}
+    </Text>
+  );
+}
+
 export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
-  const themeColors = Colors.dark;
+  const themeColors = useTheme();
   const { user } = useAuth();
   const currentUserId = user?.id || 'guest-user';
 
@@ -487,15 +505,22 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.reviewComment}>{rev.comment}</Text>
+                  renderCommentWithMentions(rev.comment, themeColors.primary, styles.reviewComment)
                 )}
 
                 {replies.length > 0 && (
                   <View style={styles.repliesList}>
                     {replies.map((reply) => (
                       <View key={reply.id} style={styles.replyCard}>
-                        <Text style={styles.replyAuthor}>{reply.userName}</Text>
-                        <Text style={styles.replyComment}>{reply.comment}</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                          <Text style={styles.replyAuthor}>{reply.userName}</Text>
+                          {(reply.userId === currentUserId || user?.email === 'esra99san@gmail.com') && (
+                            <Pressable onPress={() => void handleDeleteReview(reply.id)} style={{ padding: 4 }}>
+                              <Trash2 size={12} color="#FF5252" />
+                            </Pressable>
+                          )}
+                        </View>
+                        {renderCommentWithMentions(reply.comment, themeColors.primary, styles.replyComment)}
                       </View>
                     ))}
                   </View>

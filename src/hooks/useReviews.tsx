@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { useAuth } from './useAuth';
 import { supabase } from '@/lib/supabase';
+import { moderateContent } from '@/lib/moderation';
 
 export type Review = {
   id: string;
@@ -266,6 +267,12 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addReview = async (mediaId: string, rating: number, comment: string) => {
+    const moderation = moderateContent(comment);
+    if (!moderation.isSafe) {
+      throw new Error(moderation.reason || 'Your comment violates community safety rules.');
+    }
+    const cleanComment = moderation.sanitizedText;
+
     const authorName = profile?.full_name || user?.email?.split('@')[0] || 'AniFlix Streamer';
     const authorId = user?.id || 'guest-' + Date.now();
 
@@ -281,7 +288,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
       updated[existingIndex] = {
         ...existing,
         rating,
-        comment,
+        comment: cleanComment,
         createdAt: 'Just now (edited)',
       };
 
@@ -290,7 +297,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         const { error } = await supabase
           .from('comments')
           .update({
-            content: comment,
+            content: cleanComment,
             rating,
             updated_at: new Date().toISOString(),
           })
@@ -305,7 +312,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
           .insert({
             movie_id: String(mediaId),
             user_id: user.id,
-            content: comment,
+            content: cleanComment,
             rating,
             likes_count: 0,
           })
@@ -320,7 +327,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         userId: authorId,
         userName: authorName,
         rating,
-        comment,
+        comment: cleanComment,
         createdAt: 'Just now',
         helpfulCount: 0,
         isVerified: true,
@@ -332,6 +339,12 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const editReview = async (reviewId: string, rating: number, comment: string) => {
+    const moderation = moderateContent(comment);
+    if (!moderation.isSafe) {
+      throw new Error(moderation.reason || 'Your comment violates community safety rules.');
+    }
+    const cleanComment = moderation.sanitizedText;
+
     const currentUserId = user?.id || 'guest-user';
     const target = reviews.find((review) => review.id === reviewId && review.userId === currentUserId);
     if (!target) throw new Error('You can only edit your own comment.');
@@ -340,7 +353,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase
         .from('comments')
         .update({
-          content: comment,
+          content: cleanComment,
           rating,
           updated_at: new Date().toISOString(),
         })
@@ -353,7 +366,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         return {
           ...r,
           rating,
-          comment,
+          comment: cleanComment,
           createdAt: r.createdAt.includes('edited') ? r.createdAt : r.createdAt + ' · edited',
         };
       }
@@ -384,6 +397,12 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addReply = async (parentId: string, mediaId: string, comment: string) => {
+    const moderation = moderateContent(comment);
+    if (!moderation.isSafe) {
+      throw new Error(moderation.reason || 'Your reply violates community safety rules.');
+    }
+    const cleanComment = moderation.sanitizedText;
+
     const authorId = user?.id;
     if (!authorId) throw new Error('Please sign in before replying.');
 
@@ -393,7 +412,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         movie_id: String(mediaId),
         user_id: authorId,
         parent_id: parentId,
-        content: comment,
+        content: cleanComment,
         rating: 5,
         likes_count: 0,
       })
@@ -410,7 +429,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
       userName: profile?.username || profile?.full_name || user.email?.split('@')[0] || 'AniFlix Streamer',
       userAvatar: profile?.avatar_url || undefined,
       rating: 5,
-      comment,
+      comment: cleanComment,
       createdAt: 'Just now',
       helpfulCount: 0,
       isVerified: true,
