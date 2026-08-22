@@ -153,8 +153,15 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
           if (rawH) storedHelpful = JSON.parse(rawH);
         }
 
-        if (storedReviews && storedReviews.length > 0) {
-          const merged = [...storedReviews];
+        // Only demo and guest entries belong in device storage. Database-backed
+        // comments must be reloaded from Supabase so a deleted comment cannot
+        // be resurrected by an old cache on a profile or a product page.
+        const localOnlyReviews = storedReviews.filter(
+          (review) => review.id.startsWith('rev-') || review.userId.startsWith('guest-')
+        );
+
+        if (localOnlyReviews.length > 0) {
+          const merged = [...localOnlyReviews];
           DEFAULT_REVIEWS.forEach((def) => {
             if (!merged.some((r) => r.id === def.id)) {
               merged.push(def);
@@ -326,6 +333,21 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
 
   const editReview = async (reviewId: string, rating: number, comment: string) => {
     const currentUserId = user?.id || 'guest-user';
+    const target = reviews.find((review) => review.id === reviewId && review.userId === currentUserId);
+    if (!target) throw new Error('You can only edit your own comment.');
+
+    if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
+      const { error } = await supabase
+        .from('comments')
+        .update({
+          content: comment,
+          rating,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reviewId);
+      if (error) throw new Error(error.message);
+    }
+
     const updated = reviews.map((r) => {
       if (r.id === reviewId && r.userId === currentUserId) {
         return {
@@ -338,32 +360,27 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
       return r;
     });
     await saveReviews(updated);
-
-    // Sync to Supabase
-    if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
-      supabase
-        .from('comments')
-        .update({
-          content: comment,
-          rating,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', reviewId)
-        .then(() => {});
-    }
   };
 
   const deleteReview = async (reviewId: string) => {
     const currentUserId = user?.id || 'guest-user';
+    const target = reviews.find((review) => review.id === reviewId && review.userId === currentUserId);
+    if (!target) throw new Error('You can only delete your own comment.');
+
+    if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', reviewId);
+      if (error) throw new Error(error.message);
+    }
+
+    // A database parent delete cascades to its replies. Mirror that same
+    // outcome in memory immediately so every screen gets the same state.
     const updated = reviews.filter(
-      (r) => !(r.id === reviewId && r.userId === currentUserId)
+      (review) => review.id !== reviewId && review.parentId !== reviewId
     );
     await saveReviews(updated);
-
-    // Sync to Supabase
-    if (user?.id && !user.id.startsWith('guest-') && !reviewId.startsWith('rev-')) {
-      supabase.from('comments').delete().eq('id', reviewId).then(() => {});
-    }
   };
 
   const addReply = async (parentId: string, mediaId: string, comment: string) => {

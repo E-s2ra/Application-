@@ -112,13 +112,17 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
 
   const handleDeleteReview = async (reviewId: string) => {
     const performDelete = async () => {
-      await deleteReview(reviewId);
-      if (editingReviewId === reviewId) {
-        setEditingReviewId(null);
+      try {
+        await deleteReview(reviewId);
+        if (editingReviewId === reviewId) {
+          setEditingReviewId(null);
+        }
+        setComment('');
+        setSelectedRating(5);
+        showToast('Comment deleted');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Unable to delete the comment.');
       }
-      setComment('');
-      setSelectedRating(5);
-      showToast('Comment deleted');
     };
 
     if (Platform.OS === 'web') {
