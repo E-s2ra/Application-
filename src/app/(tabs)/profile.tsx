@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme, useColorMode } from '@/hooks/use-theme';
+import { useLanguage } from '@/hooks/use-language';
 import {
   LogOut,
   User as UserIcon,
@@ -33,6 +34,7 @@ import {
   X,
   Sun,
   Moon,
+  Globe,
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -54,7 +56,8 @@ const PRESET_AVATARS = [
 export default function ProfileScreen() {
   const router = useRouter();
   const themeColors = useTheme();
-  const { mode, isDark, toggleColorMode } = useColorMode();
+  const { isDark, toggleColorMode } = useColorMode();
+  const { language, toggleLanguage, t } = useLanguage();
   const { user, profile, signOut, isLoading, updateProfile } = useAuth();
   const { favorites } = useFavorites();
   const { isDesktop, isTablet } = useResponsive();
@@ -319,16 +322,41 @@ export default function ProfileScreen() {
               </View>
               <View>
                 <Text style={[styles.actionRowText, { color: themeColors.text }]}>
-                  Appearance: {isDark ? 'Dark Mode 🌙' : 'Light Mode ☀️'}
+                  {language === 'ku' ? `ڕووکار: ${isDark ? 'دۆخی تاریک 🌙' : 'دۆخی ڕووناک ☀️'}` : `Appearance: ${isDark ? 'Dark Mode 🌙' : 'Light Mode ☀️'}`}
                 </Text>
                 <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>
-                  Tap to switch to {isDark ? 'Light' : 'Dark'} mode
+                  {language === 'ku' ? 'دەست لێبدە بۆ گۆڕینی دۆخی ڕووناک/تاریک' : `Tap to switch to ${isDark ? 'Light' : 'Dark'} mode`}
                 </Text>
               </View>
             </View>
             <View style={{ backgroundColor: themeColors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
               <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
                 {isDark ? 'DARK' : 'LIGHT'}
+              </Text>
+            </View>
+          </Pressable>
+
+          {/* 🌐 Language Switcher (English ⇄ کوردی سۆرانی) */}
+          <Pressable
+            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, borderWidth: 1 }]}
+            onPress={toggleLanguage}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: language === 'ku' ? '#1E293B' : '#0F172A' }]}>
+                <Globe color="#00D2FF" size={18} />
+              </View>
+              <View>
+                <Text style={[styles.actionRowText, { color: themeColors.text }]}>
+                  {language === 'ku' ? 'زمان: کوردی (سۆرانی) 🎌' : 'Language: English 🌐'}
+                </Text>
+                <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>
+                  {language === 'ku' ? 'دەست لێبدە بۆ گۆڕین بۆ English' : 'Tap to switch to کوردی سۆرانی (Kurdish)'}
+                </Text>
+              </View>
+            </View>
+            <View style={{ backgroundColor: '#00D2FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+              <Text style={{ color: '#000', fontSize: 11, fontWeight: '700' }}>
+                {language === 'ku' ? 'KU / ک' : 'EN'}
               </Text>
             </View>
           </Pressable>

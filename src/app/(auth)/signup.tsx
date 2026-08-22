@@ -1,4 +1,5 @@
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/hooks/use-language';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useRouter } from 'expo-router';
@@ -24,6 +25,7 @@ export default function SignUpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const themeColors = useTheme();
+  const { t, isRTL } = useTranslation();
   const { signUp } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
 
@@ -110,7 +112,7 @@ export default function SignUpScreen() {
               ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
             </Text>
             <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-              Create your free account & start streaming
+              {t('createFreeAccount', 'Create your free account & start streaming')}
             </Text>
           </View>
 
@@ -130,8 +132,8 @@ export default function SignUpScreen() {
 
           <View style={styles.form}>
             <TextInput
-              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-              placeholder="Full Name"
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }, isRTL && { textAlign: 'right' }]}
+              placeholder={t('fullName', 'Full Name')}
               placeholderTextColor={themeColors.textSecondary}
               value={fullName}
               onChangeText={setFullName}
@@ -141,8 +143,8 @@ export default function SignUpScreen() {
             />
             <TextInput
               ref={emailInput}
-              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-              placeholder="Email address"
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }, isRTL && { textAlign: 'right' }]}
+              placeholder={t('email', 'Email address')}
               placeholderTextColor={themeColors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -156,8 +158,8 @@ export default function SignUpScreen() {
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
                 ref={passwordInput}
-                style={[styles.passwordInput, { color: themeColors.text }]}
-                placeholder="Password (5+ chars, number, symbol)"
+                style={[styles.passwordInput, { color: themeColors.text }, isRTL && { textAlign: 'right' }]}
+                placeholder={`${t('password', 'Password')} (5+ chars, number, symbol)`}
                 secureTextEntry={!showPassword}
                 placeholderTextColor={themeColors.textSecondary}
                 value={password}
@@ -184,8 +186,8 @@ export default function SignUpScreen() {
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
                 ref={confirmPasswordInput}
-                style={[styles.passwordInput, { color: themeColors.text }]}
-                placeholder="Confirm Password"
+                style={[styles.passwordInput, { color: themeColors.text }, isRTL && { textAlign: 'right' }]}
+                placeholder={t('confirmPassword', 'Confirm Password')}
                 secureTextEntry={!showConfirmPassword}
                 placeholderTextColor={themeColors.textSecondary}
                 value={confirmPassword}
@@ -215,15 +217,15 @@ export default function SignUpScreen() {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Create AniFlix Account</Text>
+                <Text style={styles.buttonText}>{t('signUpBtn', 'Create AniFlix Account')}</Text>
               )}
             </Pressable>
           </View>
 
           <View style={styles.footer}>
-            <Text style={{ color: themeColors.textSecondary }}>Already have an account? </Text>
+            <Text style={{ color: themeColors.textSecondary }}>{t('alreadyHaveAccount', 'Already have an account?')}{' '}</Text>
             <Pressable onPress={() => router.replace('/(auth)/login')}>
-              <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>Sign In</Text>
+              <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>{t('signInBtn', 'Sign In')}</Text>
             </Pressable>
           </View>
         </View>

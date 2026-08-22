@@ -1,11 +1,13 @@
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/hooks/use-language';
 import { Home, Search, Heart, User } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { NotificationsBell } from '@/components/NotificationsBell';
 
 export default function TabLayout() {
   const themeColors = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -39,7 +41,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabHome', 'Home'),
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Home color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
@@ -49,8 +51,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
-          headerTitle: 'Explore AniFlix',
+          title: t('tabSearch', 'Search'),
+          headerTitle: t('tabSearch', 'Search'),
           tabBarIcon: ({ color, focused }) => (
             <Search color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
           ),
@@ -59,8 +61,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="favorites"
         options={{
-          title: 'My List',
-          headerTitle: 'My Favorites',
+          title: t('tabFavorites', 'My List'),
+          headerTitle: t('tabFavorites', 'My List'),
           tabBarIcon: ({ color, focused }) => (
             <Heart color={color} size={22} fill={focused ? color : 'none'} strokeWidth={focused ? 2.5 : 2} />
           ),
@@ -69,8 +71,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          headerTitle: 'Account & Settings',
+          title: t('tabProfile', 'Profile'),
+          headerTitle: t('tabProfile', 'Profile'),
           tabBarIcon: ({ color, focused }) => (
             <User color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
           ),

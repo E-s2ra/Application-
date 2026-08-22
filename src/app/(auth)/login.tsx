@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/hooks/use-language';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -22,6 +23,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const themeColors = useTheme();
+  const { t, isRTL } = useTranslation();
   const { signIn } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
 
@@ -35,7 +37,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrorMessage(null);
     if (!email.trim() || !password.trim()) {
-      setErrorMessage('Please enter your email and password.');
+      setErrorMessage(isRTL ? 'تکایە ئیمەیڵ و تێپەڕەوشەکەت بنووسە.' : 'Please enter your email and password.');
       return;
     }
     setLoading(true);
@@ -77,7 +79,7 @@ export default function LoginScreen() {
               ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
             </Text>
             <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-              Sign in to stream unlimited Anime, Movies & K-Drama in 4K
+              {t('signInToAccount', 'Sign in to continue watching')}
             </Text>
           </View>
 
@@ -90,8 +92,8 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             <TextInput
-              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-              placeholder="Email or Username"
+              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }, isRTL && { textAlign: 'right' }]}
+              placeholder={t('email', 'Email or Username')}
               placeholderTextColor={themeColors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -109,8 +111,8 @@ export default function LoginScreen() {
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
                 ref={passwordInput}
-                style={[styles.passwordInput, { color: themeColors.text }]}
-                placeholder="Password"
+                style={[styles.passwordInput, { color: themeColors.text }, isRTL && { textAlign: 'right' }]}
+                placeholder={t('password', 'Password')}
                 secureTextEntry={!showPassword}
                 placeholderTextColor={themeColors.textSecondary}
                 value={password}
@@ -135,7 +137,9 @@ export default function LoginScreen() {
               </Pressable>
             </View>
             <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={styles.forgotBtn}>
-              <Text style={[styles.forgotText, { color: themeColors.textSecondary }]}>Forgot Password?</Text>
+              <Text style={[styles.forgotText, { color: themeColors.textSecondary }]}>
+                {t('forgotPassword', 'Forgot Password?')}
+              </Text>
             </Pressable>
 
             <Pressable
@@ -146,15 +150,19 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={styles.buttonText}>{t('signInBtn', 'Sign In')}</Text>
               )}
             </Pressable>
           </View>
 
           <View style={styles.footer}>
-            <Text style={{ color: themeColors.textSecondary }}>{"Don't have an account? "}</Text>
+            <Text style={{ color: themeColors.textSecondary }}>
+              {t('dontHaveAccount', "Don't have an account?")}{' '}
+            </Text>
             <Pressable onPress={() => router.push('/(auth)/signup')}>
-              <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>Sign Up</Text>
+              <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>
+                {t('createAccount', 'Sign Up')}
+              </Text>
             </Pressable>
           </View>
         </View>

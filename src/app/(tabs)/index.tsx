@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation, useLanguage } from '@/hooks/use-language';
 import {
   Play,
   Heart,
@@ -27,6 +28,7 @@ import {
   Clapperboard,
   Tv,
   Flame,
+  Globe,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
@@ -60,6 +62,7 @@ export const DEFAULT_CATALOG: AnimeItem[] = [];
 export default function HomeScreen() {
   const router = useRouter();
   const themeColors = useTheme();
+  const { t, language, toggleLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { coins, streakDays, level, activeEvent } = useGamification();
@@ -82,6 +85,16 @@ export default function HomeScreen() {
   const [fadeAnim] = useState(new Animated.Value(1));
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const getCategoryLabel = (id: string, defaultLabel: string) => {
+    if (id === 'All') return t('catAll', defaultLabel);
+    if (id === 'Movies') return t('catMovies', defaultLabel);
+    if (id === 'Anime Movies') return t('catAnimeMovies', defaultLabel);
+    if (id === 'K-Drama') return t('catKDrama', defaultLabel);
+    if (id === 'Drama') return t('catDrama', defaultLabel);
+    if (id === 'Anime Series') return t('catAnimeSeries', defaultLabel);
+    return defaultLabel;
+  };
 
   const fetchMedia = async () => {
     try {
@@ -364,6 +377,17 @@ export default function HomeScreen() {
 
           <View style={styles.homeActions}>
             <NotificationsBell />
+            {/* 🌐 Quick Language Switcher Button */}
+            <Pressable
+              style={[styles.rewardsHeaderBtn, { borderColor: '#00D2FF', borderWidth: 1 }]}
+              onPress={toggleLanguage}
+            >
+              <Globe size={14} color="#00D2FF" />
+              <Text style={[styles.coinsBadgeText, { color: '#00D2FF', fontWeight: '700' }]}>
+                {language === 'ku' ? 'کوردی' : 'EN'}
+              </Text>
+            </Pressable>
+
             {/* 🎁 Rewards & Streak Hub Header Button */}
             <Pressable
               style={styles.rewardsHeaderBtn}
@@ -409,7 +433,7 @@ export default function HomeScreen() {
                     { color: isSelected ? '#fff' : themeColors.textSecondary },
                   ]}
                 >
-                  {cat.label}
+                  {getCategoryLabel(cat.id, cat.label)}
                 </Text>
               </Pressable>
             );
@@ -495,7 +519,7 @@ export default function HomeScreen() {
                     onPress={() => handleWatch(activeHeroItem.id)}
                   >
                     <Play color="#fff" size={18} fill="#fff" />
-                    <Text style={styles.playBtnText}>Play Now</Text>
+                    <Text style={styles.playBtnText}>{t('watchNow', 'Watch Now')}</Text>
                   </Pressable>
 
                   <Pressable
@@ -516,7 +540,7 @@ export default function HomeScreen() {
                         { color: activeHeroFavorited ? themeColors.primary : '#fff' },
                       ]}
                     >
-                      {activeHeroFavorited ? 'In My List' : '+ My List'}
+                      {activeHeroFavorited ? t('inList', 'In My List') : `+ ${t('addToList', 'My List')}`}
                     </Text>
                   </Pressable>
                 </View>
@@ -764,17 +788,19 @@ export default function HomeScreen() {
               <View style={{ padding: 32, alignItems: 'center', marginHorizontal: 16, marginTop: 24, borderRadius: 16, backgroundColor: themeColors.backgroundCard, borderWidth: 1, borderColor: themeColors.border }}>
                 <Film size={44} color={themeColors.primary} style={{ marginBottom: 12 }} />
                 <Text style={{ color: themeColors.text, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
-                  No Products Published Yet
+                  {t('noMediaTitle', 'No Products Published Yet')}
                 </Text>
                 <Text style={{ color: themeColors.textSecondary, fontSize: 13, textAlign: 'center', maxWidth: 320, lineHeight: 18, marginBottom: 18 }}>
-                  Your cinema catalog is clean and ready. Add and publish your real anime, movies, and series from the Admin Control Center!
+                  {t('noMediaSub', 'Your cinema catalog is clean and ready. Add and publish your real anime, movies, and series from the Admin Control Center!')}
                 </Text>
                 <Pressable
                   style={{ backgroundColor: themeColors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}
                   onPress={() => router.push('/admin' as any)}
                 >
                   <Sparkles size={16} color="#FFF" />
-                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>Add First Anime</Text>
+                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
+                    {t('addFirstAnime', 'Add First Anime')}
+                  </Text>
                 </Pressable>
               </View>
             )}

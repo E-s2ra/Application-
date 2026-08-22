@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Check, Circle } from 'lucide-react-native';
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/hooks/use-language';
 import { evaluatePasswordStrength, getPasswordRuleChecks } from '@/lib/password';
 
 interface PasswordStrengthIndicatorProps {
@@ -10,18 +11,33 @@ interface PasswordStrengthIndicatorProps {
 
 export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
   const themeColors = useTheme();
+  const { t, isRTL } = useTranslation();
   const strengthInfo = evaluatePasswordStrength(password);
   const ruleChecks = getPasswordRuleChecks(password);
+
+  const getTranslatedRuleLabel = (id: string, fallback: string) => {
+    if (id === 'length') return t('reqLength', fallback);
+    if (id === 'number') return t('reqNumber', fallback);
+    if (id === 'symbol') return t('reqSymbol', fallback);
+    return fallback;
+  };
+
+  const getTranslatedStrengthLabel = (strength: string, defaultLabel: string) => {
+    if (strength === 'low') return t('passwordStrengthLow', defaultLabel);
+    if (strength === 'good') return t('passwordStrengthGood', defaultLabel);
+    if (strength === 'strong') return t('passwordStrengthStrong', defaultLabel);
+    return defaultLabel;
+  };
 
   if (!password) {
     return (
       <View style={styles.container}>
         <View style={styles.rulesList}>
           {ruleChecks.map((rule) => (
-            <View key={rule.id} style={styles.ruleRow}>
+            <View key={rule.id} style={[styles.ruleRow, isRTL && styles.ruleRowRTL]}>
               <Circle size={13} color={themeColors.textMuted} />
-              <Text style={[styles.ruleText, { color: themeColors.textSecondary }]}>
-                {rule.label}
+              <Text style={[styles.ruleText, { color: themeColors.textSecondary }, isRTL && { textAlign: 'right' }]}>
+                {getTranslatedRuleLabel(rule.id, rule.label)}
               </Text>
             </View>
           ))}
@@ -30,12 +46,13 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
     );
   }
 
-  const { score, label, emoji, color, badgeBg } = strengthInfo;
+  const { score, strength, label, emoji, color, badgeBg } = strengthInfo;
+  const translatedLabel = getTranslatedStrengthLabel(strength, label);
 
   return (
     <View style={styles.container}>
       {/* 🌸 Cute Strength Meter Bar & Pill */}
-      <View style={styles.meterHeader}>
+      <View style={[styles.meterHeader, isRTL && styles.meterHeaderRTL]}>
         <View style={styles.meterBars}>
           {[1, 2, 3].map((step) => {
             const isFilled = score >= step;
@@ -55,7 +72,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 
         <View style={[styles.badgePill, { backgroundColor: badgeBg, borderColor: color }]}>
           <Text style={[styles.badgeText, { color }]}>
-            {label} {emoji}
+            {translatedLabel} {emoji}
           </Text>
         </View>
       </View>
@@ -65,7 +82,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         {ruleChecks.map((rule) => {
           const isPassed = rule.passed;
           return (
-            <View key={rule.id} style={styles.ruleRow}>
+            <View key={rule.id} style={[styles.ruleRow, isRTL && styles.ruleRowRTL]}>
               {isPassed ? (
                 <View style={styles.checkCircle}>
                   <Check size={11} color="#10B981" strokeWidth={3} />
@@ -80,9 +97,10 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
                     color: isPassed ? '#10B981' : themeColors.textSecondary,
                     fontWeight: isPassed ? '600' : '400',
                   },
+                  isRTL && { textAlign: 'right' },
                 ]}
               >
-                {rule.label}
+                {getTranslatedRuleLabel(rule.id, rule.label)}
               </Text>
             </View>
           );
@@ -105,6 +123,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
     gap: 12,
+  },
+  meterHeaderRTL: {
+    flexDirection: 'row-reverse',
   },
   meterBars: {
     flex: 1,
@@ -135,6 +156,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  ruleRowRTL: {
+    flexDirection: 'row-reverse',
   },
   checkCircle: {
     width: 14,

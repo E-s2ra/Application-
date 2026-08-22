@@ -96,6 +96,8 @@ function RootNavigation({
   );
 }
 
+import { LanguageProvider } from '@/hooks/use-language';
+
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
 
@@ -106,11 +108,13 @@ export default function RootLayout() {
           <NotificationsProvider>
             <GamificationProvider>
               <AppThemeProvider>
-                <SocialProvider>
-                  <AdMobProvider>
-                    <RootNavigation showSplash={showSplash} onFinishSplash={() => setShowSplash(false)} />
-                  </AdMobProvider>
-                </SocialProvider>
+                <LanguageProvider>
+                  <SocialProvider>
+                    <AdMobProvider>
+                      <RootNavigation showSplash={showSplash} onFinishSplash={() => setShowSplash(false)} />
+                    </AdMobProvider>
+                  </SocialProvider>
+                </LanguageProvider>
               </AppThemeProvider>
             </GamificationProvider>
           </NotificationsProvider>
