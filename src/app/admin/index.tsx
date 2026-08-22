@@ -1,7 +1,7 @@
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
-import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
+import { deleteAnime, getDeletedMediaIds, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Lock, Plus, Star, Trash2 } from 'lucide-react-native';
@@ -40,16 +40,22 @@ export default function AdminPanelScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchAnime = async () => {
-    const { data, error } = await supabase
-      .from('anime')
-      .select('id, title, episodes, genre, category, is_featured')
-      .order('created_at', { ascending: false });
+    try {
+      const deletedIds = await getDeletedMediaIds();
+      const { data, error } = await supabase
+        .from('anime')
+        .select('id, title, episodes, genre, category, is_featured')
+        .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setAnimeList(data);
+      if (!error && data) {
+        const filtered = data.filter((a) => !deletedIds.includes(a.id));
+        setAnimeList(filtered);
+      }
+    } catch (_e) {
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    setLoading(false);
-    setRefreshing(false);
   };
 
   useEffect(() => {

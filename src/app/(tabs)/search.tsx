@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { Search as SearchIcon, X, Heart, Play, Sparkles } from 'lucide-react-native';
+import { getDeletedMediaIds } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { DEFAULT_CATALOG, CATEGORIES } from './index';
@@ -41,6 +42,7 @@ export default function SearchScreen() {
   useEffect(() => {
     async function loadData() {
       try {
+        const deletedIds = await getDeletedMediaIds();
         const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
           setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 1500)
         );
@@ -54,10 +56,12 @@ export default function SearchScreen() {
         const { data, error } = result || {};
 
         if (!error && data && data.length > 0) {
-          const customItems = data.map((item: any) => ({
-            ...item,
-            category: item.category || 'Anime Series',
-          })) as AnimeItem[];
+          const customItems = data
+            .filter((item: any) => !deletedIds.includes(item.id))
+            .map((item: any) => ({
+              ...item,
+              category: item.category || 'Anime Series',
+            })) as AnimeItem[];
           setMediaList([...customItems, ...DEFAULT_CATALOG]);
         } else {
           setMediaList(DEFAULT_CATALOG);

@@ -30,6 +30,7 @@ import {
   Flame,
   Globe,
 } from 'lucide-react-native';
+import { getDeletedMediaIds } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { useGamification } from '@/hooks/useGamification';
@@ -98,6 +99,7 @@ export default function HomeScreen() {
 
   const fetchMedia = async () => {
     try {
+      const deletedIds = await getDeletedMediaIds();
       const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
         setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 1500)
       );
@@ -111,10 +113,12 @@ export default function HomeScreen() {
       const { data, error } = result || {};
 
       if (!error && data && data.length > 0) {
-        const customItems = data.map((item: any) => ({
-          ...item,
-          category: item.category || 'Anime Series',
-        })) as AnimeItem[];
+        const customItems = data
+          .filter((item: any) => !deletedIds.includes(item.id))
+          .map((item: any) => ({
+            ...item,
+            category: item.category || 'Anime Series',
+          })) as AnimeItem[];
         setAllMedia([...customItems, ...DEFAULT_CATALOG]);
       } else {
         setAllMedia(DEFAULT_CATALOG);
