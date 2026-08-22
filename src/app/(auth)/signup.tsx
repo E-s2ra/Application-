@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isKnownDisposableEmail, isValidEmail, normalizeEmail, PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
+import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -156,7 +157,7 @@ export default function SignUpScreen() {
               <TextInput
                 ref={passwordInput}
                 style={[styles.passwordInput, { color: themeColors.text }]}
-                placeholder="Password (9+ characters)"
+                placeholder="Password (5+ chars, number, symbol)"
                 secureTextEntry={!showPassword}
                 placeholderTextColor={themeColors.textSecondary}
                 value={password}
@@ -177,9 +178,9 @@ export default function SignUpScreen() {
                 )}
               </Pressable>
             </View>
-            <Text style={[styles.passwordHint, { color: themeColors.textSecondary }]}>
-              Password needs {PASSWORD_REQUIREMENTS.join(', ')}.
-            </Text>
+
+            {/* 🌸 Cute Password Strength & Condition Checklist */}
+            <PasswordStrengthIndicator password={password} />
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
                 ref={confirmPasswordInput}

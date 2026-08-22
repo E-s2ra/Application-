@@ -6,6 +6,7 @@ import { CheckCircle, Eye, EyeOff, KeyRound } from 'lucide-react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
+import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -43,13 +44,14 @@ export default function ResetPasswordScreen() {
         <View style={styles.card}>
           <View style={[styles.icon, { backgroundColor: themeColors.backgroundElement }]}><KeyRound color={themeColors.primary} size={36} /></View>
           <Text style={[styles.title, { color: themeColors.text }]}>Choose a new password</Text>
-          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Use a password with {PASSWORD_REQUIREMENTS.join(', ')}.</Text>
+          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Enter your new password below.</Text>
           {!session && <Text style={styles.recoveryWarning}>Open the reset link from your email in the AniFlix app to continue.</Text>}
           {message && <View style={styles.message}><CheckCircle color={message.startsWith('Password updated') ? '#00E676' : '#FF8A80'} size={18} /><Text style={styles.messageText}>{message}</Text></View>}
           <View style={styles.passwordWrap}>
-            <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} placeholder="New password" placeholderTextColor="#77778C" editable={!loading} returnKeyType="next" onSubmitEditing={() => confirmationInput.current?.focus()} />
+            <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} placeholder="New password (5+ chars, number, symbol)" placeholderTextColor="#77778C" editable={!loading} returnKeyType="next" onSubmitEditing={() => confirmationInput.current?.focus()} />
             <Pressable style={styles.eye} onPress={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff color="#A0A0B8" size={20} /> : <Eye color="#A0A0B8" size={20} />}</Pressable>
           </View>
+          <PasswordStrengthIndicator password={password} />
           <TextInput ref={confirmationInput} style={styles.confirmInput} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showPassword} placeholder="Confirm new password" placeholderTextColor="#77778C" editable={!loading} returnKeyType="go" onSubmitEditing={submit} />
           <Pressable style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]} onPress={submit} disabled={loading}>{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Update Password</Text>}</Pressable>
         </View>
