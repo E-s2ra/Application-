@@ -351,7 +351,7 @@ export default function HomeScreen() {
 
       const fetchPromise = supabase
         .from('anime')
-        .select('id, title, description, image_url, episodes, genre, category, is_featured')
+        .select('id, title, description, image_url, episodes, genre, category, is_featured, published_at')
         .order('created_at', { ascending: false });
 
       const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
@@ -402,6 +402,15 @@ export default function HomeScreen() {
   const kdramaRail = allMedia.filter((item) => item.category === 'K-Drama');
   const dramaRail = allMedia.filter((item) => item.category === 'Drama');
   const animeSeriesRail = allMedia.filter((item) => item.category === 'Anime Series');
+  const newProducts = allMedia
+    .filter((item) => {
+      if (!item.published_at) return false;
+      const publishedAt = new Date(item.published_at).getTime();
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      return Number.isFinite(publishedAt) && publishedAt >= thirtyDaysAgo;
+    })
+    .sort((a, b) => new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime())
+    .slice(0, 12);
 
   // Auto-sliding Hero timer: 4 seconds
   useEffect(() => {
@@ -858,6 +867,28 @@ export default function HomeScreen() {
         ) : (
           /* When "All" is chosen, show organized categorized sections */
           <>
+            {/* ✨ Automatically populated from anime.published_at */}
+            {newProducts.length > 0 && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Sparkles color="#00D2FF" size={20} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>New Products</Text>
+                  </View>
+                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+                    Added this month
+                  </Text>
+                </View>
+                <FlatList
+                  data={newProducts}
+                  keyExtractor={(item) => `new-${item.id}`}
+                  renderItem={renderStandardCard}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.standardList}
+                />
+              </>
+            )}
             {/* 🔥 TOP 10 Ranked Row */}
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>

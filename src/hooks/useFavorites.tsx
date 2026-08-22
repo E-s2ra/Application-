@@ -15,6 +15,7 @@ export type AnimeItem = {
   category?: MediaCategory | string;
   is_featured: boolean;
   description?: string | null;
+  published_at?: string | null;
 };
 
 type FavoritesContextType = {
