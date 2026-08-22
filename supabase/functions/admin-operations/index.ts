@@ -65,6 +65,16 @@ serve(async (req) => {
         const body = await req.json();
         const { action, anime, comment, user: targetUser } = body;
 
+        const normalizeVideoAssetKey = (value: unknown): string | null => {
+            if (value === null || value === undefined || value === '') return null;
+            if (typeof value !== 'string') throw new Error('Invalid private video key.');
+            const key = value.trim();
+            if (!key || key.length > 500 || key.includes('..') || key.includes('://') || key.startsWith('/')) {
+                throw new Error('Invalid private video key. Use a relative path inside the private video bucket.');
+            }
+            return key;
+        };
+
         let result;
         let success = true;
         let errorMsg = null;
@@ -76,13 +86,15 @@ serve(async (req) => {
                     throw new Error('Missing required fields: title, episodes');
                 }
 
+                const videoAssetKey = normalizeVideoAssetKey(anime.video_asset_key);
+
                 const { data: newAnime, error: addError } = await supabaseAdmin
                     .from('anime')
                     .insert([{
                         title: anime.title,
                         description: anime.description || null,
                         image_url: anime.image_url || null,
-                        video_url: anime.video_url || null,
+                        video_asset_key: videoAssetKey,
                         episodes: anime.episodes,
                         genre: anime.genre || null,
                         category: anime.category || 'Movies',
@@ -197,7 +209,7 @@ serve(async (req) => {
                         title: anime.title.trim(),
                         description: anime.description || null,
                         image_url: anime.image_url || null,
-                        video_url: anime.video_url || null,
+                        video_asset_key: normalizeVideoAssetKey(anime.video_asset_key),
                         episodes: anime.episodes,
                         genre: anime.genre || null,
                         category: anime.category || 'Movies',

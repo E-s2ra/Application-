@@ -3,7 +3,7 @@ import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { addAnime } from '@/lib/admin-operations';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Film, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Sparkles } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -35,7 +35,7 @@ export default function AddAnimeScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoAssetKey, setVideoAssetKey] = useState('');
   const [episodes, setEpisodes] = useState('1');
   const [genre, setGenre] = useState('');
   const [category, setCategory] = useState<MediaCategory>('Movies');
@@ -60,7 +60,7 @@ export default function AddAnimeScreen() {
       title: title.trim(),
       description: description.trim() || undefined,
       image_url: imageUrl.trim() || undefined,
-      video_url: videoUrl.trim() || undefined,
+      video_asset_key: videoAssetKey.trim() || undefined,
       episodes: epsNum,
       genre: genre.trim() || undefined,
       category: category,
@@ -84,7 +84,7 @@ export default function AddAnimeScreen() {
     setTitle('');
     setDescription('');
     setImageUrl('');
-    setVideoUrl('');
+    setVideoAssetKey('');
     setEpisodes('1');
     setGenre('');
     setCategory('Movies');
@@ -190,27 +190,16 @@ export default function AddAnimeScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: themeColors.textSecondary }]}>VIDEO URL (HLS / DASH / LOCAL)</Text>
-            {/* 🎬 Quick-fill with the bundled local demo video */}
-            <Pressable
-              style={[styles.localVideoBtn, { backgroundColor: videoUrl === 'local:sample' ? '#1a3a1a' : themeColors.backgroundElement }]}
-              onPress={() => setVideoUrl(videoUrl === 'local:sample' ? '' : 'local:sample')}
-            >
-              <Film color={videoUrl === 'local:sample' ? '#4BB543' : themeColors.textSecondary} size={16} />
-              <Text style={[styles.localVideoBtnText, { color: videoUrl === 'local:sample' ? '#4BB543' : themeColors.textSecondary }]}>
-                {videoUrl === 'local:sample' ? '✅ Local Demo Video Selected (sample.mp4)' : '📁 Use Local Demo Video (assets/videos/sample.mp4)'}
-              </Text>
-            </Pressable>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>PRIVATE CLOUD VIDEO KEY</Text>
             <TextInput
               style={inputStyle}
-              placeholder="https://... or leave blank to use local demo"
+              placeholder="folder/title/master.m3u8"
               placeholderTextColor={themeColors.textSecondary}
-              value={videoUrl === 'local:sample' ? '' : videoUrl}
-              onChangeText={(v) => setVideoUrl(v)}
-              keyboardType="url"
+              value={videoAssetKey}
+              onChangeText={setVideoAssetKey}
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!loading && videoUrl !== 'local:sample'}
+              editable={!loading}
             />
           </View>
 

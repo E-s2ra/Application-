@@ -70,7 +70,7 @@ export async function addAnime(anime: {
     title: string;
     description?: string;
     image_url?: string;
-    video_url?: string;
+    video_asset_key?: string;
     episodes: number;
     genre?: string;
     category?: string;
@@ -100,7 +100,7 @@ export async function updateAnime(
         title?: string;
         description?: string | null;
         image_url?: string | null;
-        video_url?: string | null;
+        video_asset_key?: string | null;
         episodes?: number;
         genre?: string | null;
         category?: string;

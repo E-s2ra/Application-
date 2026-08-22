@@ -9,10 +9,6 @@ import {
   Image,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-// Remote demo video keeps Android builds small; the local source file is intentionally excluded from Git.
-const LOCAL_SAMPLE_VIDEO = {
-  uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-};
 import { Colors } from '@/constants/theme';
 import {
   Shield,
@@ -32,6 +28,7 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { getPlaybackUrl } from '@/lib/playback';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
 import { useReviews } from '@/hooks/useReviews';
 import { useGamification } from '@/hooks/useGamification';
@@ -78,8 +75,9 @@ export default function WatchScreen() {
   // Ref for VideoView (needed for fullscreen)
   const videoViewRef = useRef<VideoView>(null);
 
-  // Video source: load local asset or real URL from Supabase
+  // The player receives only a short-lived URL from the secure Edge API.
   const [videoSource, setVideoSource] = useState<any>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
@@ -101,18 +99,13 @@ export default function WatchScreen() {
 
         const { data } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, video_url, episodes, genre, category, is_featured')
+          .select('id, title, description, image_url, episodes, genre, category, is_featured')
           .eq('id', id)
           .single();
 
         if (data) {
           setAnime(data as AnimeItem);
-          // 🎬 Load video: local asset or real URL
-          if ((data as any).video_url === 'local:sample') {
-            setVideoSource(LOCAL_SAMPLE_VIDEO);
-          } else if ((data as any).video_url) {
-            setVideoSource({ uri: (data as any).video_url });
-          }
+          setPlaybackError(null);
         } else if (defaultMatch) {
           setAnime(defaultMatch);
         } else {
@@ -145,6 +138,21 @@ export default function WatchScreen() {
     }
     loadData();
   }, [id]);
+
+  useEffect(() => {
+    if (!anime?.id) return;
+    let cancelled = false;
+
+    void getPlaybackUrl(anime.id)
+      .then(({ url }) => {
+        if (!cancelled) setVideoSource({ uri: url });
+      })
+      .catch(() => {
+        if (!cancelled) setPlaybackError('Secure playback is unavailable for this title.');
+      });
+
+    return () => { cancelled = true; };
+  }, [anime?.id]);
 
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.8, count: 14 };
@@ -259,9 +267,9 @@ export default function WatchScreen() {
               player={player}
               contentFit={aspectRatio === '9:16' ? 'cover' : 'contain'}
             />
-            {anime && !videoSource && (
+            {playbackError && (
               <View style={styles.videoUnavailable}>
-                <Text style={styles.videoUnavailableText}>AniFlix Ultra HD Playback Active</Text>
+                <Text style={styles.videoUnavailableText}>{playbackError}</Text>
               </View>
             )}
 
