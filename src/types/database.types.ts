@@ -212,6 +212,37 @@ export interface Database {
           updated_at?: string;
         };
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          actor_id: string | null;
+          type: 'product_published' | 'user_mention' | 'comment_reply';
+          title: string;
+          body: string;
+          resource_type: 'anime' | 'comment';
+          resource_id: string;
+          metadata: Json;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          actor_id?: string | null;
+          type: 'product_published' | 'user_mention' | 'comment_reply';
+          title: string;
+          body: string;
+          resource_type: 'anime' | 'comment';
+          resource_id: string;
+          metadata?: Json;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          read_at?: string | null;
+        };
+      };
       comment_likes: {
         Row: {
           id: string;

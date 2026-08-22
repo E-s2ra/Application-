@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Home, Search, Heart, User } from 'lucide-react-native';
 import { Platform } from 'react-native';
+import { NotificationsBell } from '@/components/NotificationsBell';
 
 export default function TabLayout() {
   const themeColors = Colors.dark;
@@ -19,6 +20,7 @@ export default function TabLayout() {
           fontWeight: '700',
           fontSize: 18,
         },
+        headerRight: () => <NotificationsBell />,
         tabBarStyle: {
           backgroundColor: themeColors.backgroundElement,
           borderTopColor: themeColors.border,

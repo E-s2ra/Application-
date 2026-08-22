@@ -35,6 +35,7 @@ import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { AdMobBanner } from '@/components/AdMobBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
+import { NotificationsBell } from '@/components/NotificationsBell';
 
 export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: string }[] = [
   { id: 'All', label: 'All', icon: '🌟' },
@@ -612,19 +613,22 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* 🎁 Rewards & Streak Hub Header Button */}
-          <Pressable
-            style={styles.rewardsHeaderBtn}
-            onPress={() => setShowRewardsModal(true)}
-          >
-            <Flame size={14} color="#FF5722" />
-            <Text style={styles.streakBadgeText}>{streakDays}d</Text>
-            <Text style={styles.headerDivider}>·</Text>
-            <Text style={styles.coinsBadgeText}>💰 {coins}</Text>
-            <View style={styles.levelPill}>
-              <Text style={styles.levelPillText}>LVL {level}</Text>
-            </View>
-          </Pressable>
+          <View style={styles.homeActions}>
+            <NotificationsBell />
+            {/* 🎁 Rewards & Streak Hub Header Button */}
+            <Pressable
+              style={styles.rewardsHeaderBtn}
+              onPress={() => setShowRewardsModal(true)}
+            >
+              <Flame size={14} color="#FF5722" />
+              <Text style={styles.streakBadgeText}>{streakDays}d</Text>
+              <Text style={styles.headerDivider}>·</Text>
+              <Text style={styles.coinsBadgeText}>💰 {coins}</Text>
+              <View style={styles.levelPill}>
+                <Text style={styles.levelPillText}>LVL {level}</Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
 
         {/* 🚀 Main Category Switcher Pills */}
@@ -1045,6 +1049,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
+  },
+  homeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   rewardsHeaderBtn: {
     flexDirection: 'row',
