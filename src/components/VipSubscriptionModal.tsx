@@ -396,6 +396,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#242436',
     position: 'relative',
+    ...(Platform.OS === 'web' ? { cursor: 'pointer', userSelect: 'none' } : {}),
   },
   planCardSelected: {
     borderColor: '#FFB800',
@@ -477,6 +478,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 6,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer', userSelect: 'none' } : {}),
   },
   payBtnContent: {
     flexDirection: 'row',

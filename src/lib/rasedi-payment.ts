@@ -72,6 +72,12 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
 
     // 1. Record pending payment directly into Docker PostgreSQL
     try {
+      await dockerDb.from('profiles').upsert({
+        id: session.user.id,
+        full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+        role: session.user.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
+      });
+
       await dockerDb.from('payments').insert({
         user_id: session.user.id,
         rasedi_order_id: orderId,
