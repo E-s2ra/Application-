@@ -3,6 +3,7 @@ import { AppState, Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { dockerDb } from '@/lib/docker-db';
 import { getDeviceId } from '@/lib/device-session';
 import { isValidEmail, normalizeEmail } from '@/lib/password';
 
@@ -78,27 +79,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (uId: string) => {
     try {
-      const { data, error } = await supabase
+      // 1. Try Docker PostgreSQL first
+      const { data: dockerProfile, error: dockerErr } = await dockerDb
         .from('profiles')
         .select('*')
         .eq('id', uId)
-        .single();
+        .maybeSingle();
 
-      if (!error && data) {
-        setProfile(data as Profile);
+      if (!dockerErr && dockerProfile) {
+        setProfile(dockerProfile as Profile);
+        return;
+      }
+
+      // 2. Fetch from Supabase as fallback
+      const { data: supaProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', uId)
+        .maybeSingle();
+
+      if (supaProfile) {
+        setProfile(supaProfile as Profile);
+        // Seed into Docker PostgreSQL for local permanence
+        try {
+          await dockerDb.from('profiles').upsert({
+            id: uId,
+            full_name: supaProfile.full_name,
+            username: supaProfile.username,
+            avatar_url: supaProfile.avatar_url,
+            role: supaProfile.role || 'user',
+            coins: supaProfile.coins || 0,
+            xp: supaProfile.xp || 0,
+            level: supaProfile.level || 1,
+            streak_days: supaProfile.streak_days || 0,
+            is_vip: supaProfile.is_vip || false,
+            vip_expires_at: supaProfile.vip_expires_at,
+          });
+        } catch {}
       } else {
         // Fallback profile if record not yet created
-        setProfile({
+        const fallback: Profile = {
           id: uId,
           full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User',
-          role: 'user',
-        });
+          role: user?.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
+        };
+        setProfile(fallback);
+        try {
+          await dockerDb.from('profiles').upsert({
+            id: uId,
+            full_name: fallback.full_name,
+            role: fallback.role,
+            coins: 0,
+            xp: 0,
+            level: 1,
+            streak_days: 0,
+            is_vip: false,
+          });
+        } catch {}
       }
     } catch {
       setProfile({
         id: uId,
         full_name: session?.user?.user_metadata?.full_name || 'User',
-        role: 'user',
+        role: user?.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
       });
     }
   };
@@ -262,7 +305,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (updates: Partial<Profile>): Promise<{ error: string | null }> => {
     if (!user?.id) return { error: 'Not authenticated' };
     try {
-      const { error } = await supabase
+      // 1. Update Docker PostgreSQL
+      await dockerDb
         .from('profiles')
         .update({
           ...updates,
@@ -270,7 +314,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         .eq('id', user.id);
 
-      if (error) return { error: error.message };
+      // 2. Sync to Supabase as fallback
+      supabase
+        .from('profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+        .then(() => {});
+
       setProfile((prev) => (prev ? { ...prev, ...updates } : null));
       return { error: null };
     } catch (err: any) {

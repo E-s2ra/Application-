@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { supabase } from '@/lib/supabase';
+import { dockerDb } from '@/lib/docker-db';
 import { useAuth } from './useAuth';
 
 export type Mission = {
@@ -461,12 +461,12 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           if (parsed.badges) setBadges(parsed.badges);
         }
 
-        // Live Supabase Sync
+        // Live Docker Postgres Sync
         if (user?.id && !user.id.startsWith('guest-')) {
           const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
           const syncPromise = (async () => {
-            // 1. Fetch Profile
-            const { data: profile } = await supabase
+            // 1. Fetch Profile from local Docker Postgres
+            const { data: profile } = await dockerDb
               .from('profiles')
               .select('coins, xp, level, streak_days, is_vip, vip_expires_at')
               .eq('id', user.id)
@@ -489,7 +489,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
             // 2. Check Daily Logins for today
             const todayStr = new Date().toISOString().split('T')[0];
-            const { data: loginData } = await supabase
+            const { data: loginData } = await dockerDb
               .from('daily_logins')
               .select('id, reward_claimed')
               .eq('user_id', user.id)
@@ -532,7 +532,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         await AsyncStorage.setItem(GAMIFICATION_STORAGE_KEY, json);
       }
 
-      // Sync to Supabase profiles in background
+      // Sync to Docker Postgres profiles in background
       if (user?.id && !user.id.startsWith('guest-')) {
         const payload: any = { updated_at: new Date().toISOString() };
         if (updates.coins !== undefined) payload.coins = updates.coins;
@@ -549,7 +549,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
             payload.vip_expires_at = exp.toISOString();
           }
         }
-        await supabase.from('profiles').update(payload).eq('id', user.id);
+        await dockerDb.from('profiles').update(payload).eq('id', user.id);
       }
     } catch {}
   };
@@ -587,11 +587,12 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     // Call secure RPC 'claim_daily_login_reward'
     if (user?.id && !user.id.startsWith('guest-')) {
-      supabase.rpc('claim_daily_login_reward').then(({ data, error }) => {
-        if (!error && data && data.success) {
-          if (data.new_coins !== undefined) setCoins(data.new_coins);
-          if (data.new_xp !== undefined) setXp(data.new_xp);
-          if (data.streak_days !== undefined) setStreakDays(data.streak_days);
+      dockerDb.rpc('claim_daily_login_reward').then(({ data, error }) => {
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          if (res.new_coins !== undefined) setCoins(res.new_coins);
+          if (res.new_xp !== undefined) setXp(res.new_xp);
+          if (res.streak_days !== undefined) setStreakDays(res.streak_days);
         }
       });
     }
@@ -625,10 +626,11 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     // Call secure RPC 'spin_lucky_wheel'
     if (user?.id && !user.id.startsWith('guest-')) {
-      supabase.rpc('spin_lucky_wheel').then(({ data, error }) => {
-        if (!error && data && data.success) {
-          if (data.new_coins !== undefined) setCoins(data.new_coins);
-          if (data.new_xp !== undefined) setXp(data.new_xp);
+      dockerDb.rpc('spin_lucky_wheel').then(({ data, error }) => {
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          if (res.new_coins !== undefined) setCoins(res.new_coins);
+          if (res.new_xp !== undefined) setXp(res.new_xp);
         }
       });
     }
@@ -656,17 +658,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       missions: updatedMissions,
     });
 
-    // Sync to Supabase user_missions
+    // Sync to Docker Postgres user_missions
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
-        const { data: mData } = await supabase
+        const { data: mData } = await dockerDb
           .from('missions')
           .select('id')
           .eq('code', missionId)
           .maybeSingle();
 
         if (mData?.id) {
-          await supabase.from('user_missions').upsert({
+          await dockerDb.from('user_missions').upsert({
             user_id: user.id,
             mission_id: mData.id,
             progress: mission.target,
@@ -699,11 +701,12 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     // Call secure RPC 'unlock_theme_with_coins'
     if (user?.id && !user.id.startsWith('guest-')) {
-      supabase
+      dockerDb
         .rpc('unlock_theme_with_coins', { p_theme_code: themeId })
         .then(({ data, error }) => {
-          if (!error && data && data.success) {
-            if (data.remaining_coins !== undefined) setCoins(data.remaining_coins);
+          if (!error && data && (data as any).success) {
+            const res = data as any;
+            if (res.remaining_coins !== undefined) setCoins(res.remaining_coins);
           }
         });
     }
@@ -722,9 +725,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     setVipDaysRemaining(newVip);
     persist({ vipDaysRemaining: newVip });
 
-    // Record in Supabase vip_transactions
+    // Record in Docker Postgres vip_transactions
     if (user?.id && !user.id.startsWith('guest-')) {
-      supabase
+      dockerDb
         .from('vip_transactions')
         .insert({
           user_id: user.id,

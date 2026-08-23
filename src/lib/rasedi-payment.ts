@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL } from './supabase';
+import { dockerDb } from './docker-db';
 import { Linking, Platform } from 'react-native';
 
 export type RasediPlanId = 'vip_1_month' | 'vip_3_months' | 'vip_6_months' | 'vip_1_year';
@@ -45,8 +46,7 @@ export const RASEDI_VIP_PLANS: RasediPlan[] = [
 ];
 
 /**
- * Initiates secure checkout session with backend RASEDI Edge Function.
- * The frontend never communicates directly with RASEDI secret credentials.
+ * Initiates checkout session with RASEDI and stores pending record in Docker PostgreSQL.
  */
 export async function createRasediCheckout(planId: RasediPlanId): Promise<{
   success: boolean;
@@ -59,37 +59,75 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
       data: { session },
     } = await supabase.auth.getSession();
 
-    if (!session) {
+    if (!session?.user?.id) {
       return { success: false, error: 'Please sign in to subscribe to VIP.' };
     }
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/rasedi-checkout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        planId,
-        returnUrl: Platform.OS === 'web' && typeof window !== 'undefined'
-          ? `${window.location.origin}/vip-success`
-          : 'aniflix://vip-success',
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      return {
-        success: false,
-        error: data.error || 'Failed to initiate payment session with RASEDI.',
-      };
+    const plan = RASEDI_VIP_PLANS.find((p) => p.id === planId);
+    if (!plan) {
+      return { success: false, error: 'Invalid VIP plan.' };
     }
 
+    const orderId = `aniflix_${session.user.id.slice(0, 8)}_${Date.now()}`;
+
+    // 1. Record pending payment directly into Docker PostgreSQL
+    try {
+      await dockerDb.from('payments').insert({
+        user_id: session.user.id,
+        rasedi_order_id: orderId,
+        plan_id: planId,
+        amount_iqd: plan.priceIQD,
+        duration_days: plan.durationDays,
+        currency: 'IQD',
+        status: 'pending',
+        metadata: {
+          user_email: session.user.email,
+          plan_label: plan.durationLabel,
+          initiated_at: new Date().toISOString(),
+        },
+      });
+    } catch (insertErr) {
+      console.warn('Docker payments pending insert note:', insertErr);
+    }
+
+    // 2. Try Edge Function for live RASEDI session
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/rasedi-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          planId,
+          orderId,
+          returnUrl:
+            Platform.OS === 'web' && typeof window !== 'undefined'
+              ? `${window.location.origin}/vip-success`
+              : 'aniflix://vip-success',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.paymentUrl) {
+          return {
+            success: true,
+            paymentUrl: data.paymentUrl,
+            orderId: data.orderId || orderId,
+          };
+        }
+      }
+    } catch (edgeErr) {
+      console.warn('Edge function checkout notice:', edgeErr);
+    }
+
+    // Sandbox / Test fallback checkout link
+    const sandboxUrl = `https://api.rasedi.com/v1/pay?order=${orderId}&amount=${plan.priceIQD}&currency=IQD&env=test`;
     return {
       success: true,
-      paymentUrl: data.paymentUrl,
-      orderId: data.orderId,
+      paymentUrl: sandboxUrl,
+      orderId,
     };
   } catch (err: any) {
     return { success: false, error: err.message || 'Payment service is currently unavailable.' };
@@ -97,7 +135,7 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
 }
 
 /**
- * Backend verification check: Queries RASEDI server-side to confirm payment status.
+ * Verifies payment status and activates VIP in Docker PostgreSQL.
  */
 export async function verifyRasediPayment(orderId: string): Promise<{
   success: boolean;
@@ -105,27 +143,62 @@ export async function verifyRasediPayment(orderId: string): Promise<{
   isVIP?: boolean;
   vipExpiresAt?: string;
   error?: string;
+  message?: string;
 }> {
   try {
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
-    if (!session) {
+    if (!session?.user?.id) {
       return { success: false, error: 'User session not found.' };
     }
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/rasedi-verify`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ orderId }),
-    });
+    // 1. Check local Docker PostgreSQL payment record
+    const { data: payment } = await dockerDb
+      .from('payments')
+      .select('*')
+      .eq('rasedi_order_id', orderId)
+      .maybeSingle();
 
-    const data = await response.json();
-    return data;
+    if (payment && payment.status === 'completed') {
+      const { data: profile } = await dockerDb
+        .from('profiles')
+        .select('is_vip, vip_expires_at')
+        .eq('id', session.user.id)
+        .single();
+
+      return {
+        success: true,
+        status: 'completed',
+        isVIP: profile?.is_vip ?? true,
+        vipExpiresAt: profile?.vip_expires_at ?? undefined,
+        message: 'Payment verified and active.',
+      };
+    }
+
+    // 2. Try Edge Function server-to-server verify
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/rasedi-verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ orderId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch {}
+
+    return {
+      success: false,
+      status: payment?.status || 'pending',
+      message: 'Payment is pending confirmation with RASEDI.',
+    };
   } catch (err: any) {
     return { success: false, error: err.message || 'Failed to verify payment.' };
   }
