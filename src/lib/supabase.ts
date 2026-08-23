@@ -4,19 +4,13 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { DOCKER_ANON_KEY, DOCKER_POSTGREST_URL } from '@/lib/docker-db';
 
-const isLocalDevWeb =
-  Platform.OS === 'web' &&
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+// Always use the hosted Supabase cloud URL for auth — the local Docker URL
+// is only for the separate dockerDb client (payments/VIP/points data).
+export const SUPABASE_URL =
+  Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || DOCKER_POSTGREST_URL;
 
-// Use local Docker PostgREST (backed by Nginx CORS gateway on 54324) in local web testing for 0 CORS errors
-export const SUPABASE_URL = isLocalDevWeb
-  ? DOCKER_POSTGREST_URL
-  : Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || DOCKER_POSTGREST_URL;
-
-export const SUPABASE_ANON_KEY = isLocalDevWeb
-  ? DOCKER_ANON_KEY
-  : Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || DOCKER_ANON_KEY;
+export const SUPABASE_ANON_KEY =
+  Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || DOCKER_ANON_KEY;
 
 // Access and refresh tokens must never be kept in general-purpose app storage.
 // Expo SecureStore uses the platform's encrypted credential storage on native.
