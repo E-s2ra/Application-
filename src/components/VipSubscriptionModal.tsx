@@ -15,6 +15,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useGamification } from '@/hooks/useGamification';
+import { useLanguage } from '@/hooks/use-language';
 import {
   Crown,
   X,
@@ -50,6 +51,8 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
   const themeColors = useTheme();
   const { user } = useAuth();
   const { isVIP, vipDaysRemaining } = useGamification();
+  const { language, isRTL } = useLanguage();
+  const isKu = language === 'ku';
 
   const [selectedPlanId, setSelectedPlanId] = useState<RasediPlanId>('vip_3_months');
   const [paymentTab, setPaymentTab] = useState<'manual' | 'automated'>('manual');
@@ -65,6 +68,19 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
   const selectedPlan = RASEDI_VIP_PLANS.find((p) => p.id === selectedPlanId) || RASEDI_VIP_PLANS[1];
   const activeMethod = IRAQI_PAYMENT_METHODS.find((m) => m.id === selectedMethodId) || IRAQI_PAYMENT_METHODS[0];
+
+  const getPlanDurationLabel = (id: RasediPlanId) => {
+    if (!isKu) {
+      if (id === 'vip_1_month') return '1 Month';
+      if (id === 'vip_3_months') return '3 Months';
+      if (id === 'vip_6_months') return '6 Months';
+      return '1 Year';
+    }
+    if (id === 'vip_1_month') return '١ مانگ';
+    if (id === 'vip_3_months') return '٣ مانگ';
+    if (id === 'vip_6_months') return '٦ مانگ';
+    return '١ ساڵ';
+  };
 
   const handleCopyAccount = () => {
     if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -186,8 +202,12 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                 <Crown size={22} color="#FFB800" />
               </View>
               <View>
-                <Text style={styles.modalTitle}>AniFlix VIP Sovereign</Text>
-                <Text style={styles.modalSubtitle}>Ultra HD 4K, Ad-Free & Exclusive Series</Text>
+                <Text style={styles.modalTitle}>
+                  {isKu ? 'ئابوونەی AniFlix VIP Sovereign' : 'AniFlix VIP Sovereign'}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  {isKu ? 'کوالیتی 4K، بە تەواوی بێ ڕیکلام و ئەڵقەی تایبەت' : 'Ultra HD 4K, Ad-Free & Exclusive Series'}
+                </Text>
               </View>
             </View>
             <Pressable style={styles.closeBtn} onPress={onClose}>
@@ -206,9 +226,13 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               <View style={styles.activeVipBanner}>
                 <Sparkles color="#FFB800" size={18} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.activeVipTitle}>Active VIP Subscription</Text>
+                  <Text style={styles.activeVipTitle}>
+                    {isKu ? 'ئابوونەی چالاکی VIP' : 'Active VIP Subscription'}
+                  </Text>
                   <Text style={styles.activeVipSub}>
-                    You currently have {vipDaysRemaining} days remaining. Subscribing will extend your active time!
+                    {isKu
+                      ? `${vipDaysRemaining} ڕۆژت ماوە. نوێکردنەوە کاتەکەت زیاتر درێژ دەکاتەوە!`
+                      : `You currently have ${vipDaysRemaining} days remaining. Subscribing will extend your active time!`}
                   </Text>
                 </View>
               </View>
@@ -216,23 +240,33 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
             {/* VIP Benefits List */}
             <View style={styles.benefitsCard}>
-              <Text style={styles.benefitsHeading}>👑 VIP MEMBERSHIP BENEFITS</Text>
+              <Text style={styles.benefitsHeading}>
+                {isKu ? '👑 تایبەتمەندییەکانی ئەندامێتی VIP' : '👑 VIP MEMBERSHIP BENEFITS'}
+              </Text>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
-                <Text style={styles.benefitText}>100% Commercial-Free & Ad-Free Streaming</Text>
+                <Text style={styles.benefitText}>
+                  {isKu ? '١٠٠٪ بێ هیچ ڕیکلامێک و پەخشی ڕاستەوخۆ' : '100% Commercial-Free & Ad-Free Streaming'}
+                </Text>
               </View>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
-                <Text style={styles.benefitText}>Ultra HD 4K & Uncapped Master Bitrate</Text>
+                <Text style={styles.benefitText}>
+                  {isKu ? 'کوالیتی بێ وێنەی Ultra HD 4K بە بەرزترین خێرایی' : 'Ultra HD 4K & Uncapped Master Bitrate'}
+                </Text>
               </View>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
-                <Text style={styles.benefitText}>Early Access to New Releases & Exclusive Series</Text>
+                <Text style={styles.benefitText}>
+                  {isKu ? 'بینینی زووتری ئەڵقە نوێیەکان و فیلمە تایبەتەکان' : 'Early Access to New Releases & Exclusive Series'}
+                </Text>
               </View>
             </View>
 
             {/* Plan Cards */}
-            <Text style={styles.plansSectionTitle}>1. SELECT YOUR VIP PLAN</Text>
+            <Text style={styles.plansSectionTitle}>
+              {isKu ? '١. هەڵبژاردنی پلانی VIP' : '1. SELECT YOUR VIP PLAN'}
+            </Text>
             <View style={styles.plansGrid}>
               {RASEDI_VIP_PLANS.map((plan) => {
                 const isSelected = selectedPlanId === plan.id;
@@ -253,21 +287,28 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                           plan.popular ? styles.planBadgePopular : styles.planBadgeStandard,
                         ]}
                       >
-                        <Text style={styles.planBadgeText}>{plan.badge.toUpperCase()}</Text>
+                        <Text style={styles.planBadgeText}>
+                          {isKu && plan.popular ? 'باوترین' : plan.badge.toUpperCase()}
+                        </Text>
                       </View>
                     )}
-                    <Text style={styles.planDuration}>{plan.durationLabel}</Text>
+                    <Text style={styles.planDuration}>{getPlanDurationLabel(plan.id)}</Text>
                     <Text style={styles.planPrice}>
-                      {plan.priceIQD.toLocaleString()} <Text style={styles.planCurrency}>IQD</Text>
+                      {plan.priceIQD.toLocaleString()}{' '}
+                      <Text style={styles.planCurrency}>{isKu ? 'د.ع' : 'IQD'}</Text>
                     </Text>
-                    <Text style={styles.planDays}>{plan.durationDays} Days VIP</Text>
+                    <Text style={styles.planDays}>
+                      {isKu ? `${plan.durationDays} ڕۆژ VIP` : `${plan.durationDays} Days VIP`}
+                    </Text>
                   </Pressable>
                 );
               })}
             </View>
 
             {/* Payment Method Tabs */}
-            <Text style={styles.plansSectionTitle}>2. CHOOSE PAYMENT METHOD</Text>
+            <Text style={styles.plansSectionTitle}>
+              {isKu ? '٢. ڕێگای پارەدان هەڵبژێرە' : '2. CHOOSE PAYMENT METHOD'}
+            </Text>
             <View style={styles.tabContainer}>
               <Pressable
                 style={[styles.tabButton, paymentTab === 'manual' && styles.tabButtonActive]}
@@ -275,7 +316,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               >
                 <Smartphone size={16} color={paymentTab === 'manual' ? '#FFF' : '#8E8EA4'} />
                 <Text style={[styles.tabText, paymentTab === 'manual' && styles.tabTextActive]}>
-                  Direct Wallet Transfer (FIB / ZainCash)
+                  {isKu ? 'حەواڵەی ڕاستەوخۆ (FIB / کارت)' : 'Direct Wallet Transfer (FIB / Cards)'}
                 </Text>
               </Pressable>
 
@@ -285,7 +326,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               >
                 <CreditCard size={16} color={paymentTab === 'automated' ? '#FFF' : '#8E8EA4'} />
                 <Text style={[styles.tabText, paymentTab === 'automated' && styles.tabTextActive]}>
-                  RASEDI Gateway (Online)
+                  {isKu ? 'دەروازەی ئەلیکترۆنی (RASEDI)' : 'RASEDI Gateway (Online)'}
                 </Text>
               </Pressable>
             </View>
@@ -311,7 +352,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                         }}
                       >
                         <Text style={[styles.methodPillText, isMSelected && { color: m.badgeColor, fontWeight: '800' }]}>
-                          {m.name}
+                          {isKu ? m.nameKu : m.name}
                         </Text>
                       </Pressable>
                     );
@@ -320,27 +361,36 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
                 {/* Transfer Info Box */}
                 <View style={styles.transferInfoBox}>
-                  <Text style={styles.transferTitle}>{activeMethod.nameAr}</Text>
-                  <Text style={styles.transferInstructions}>{activeMethod.instructionsAr}</Text>
+                  <Text style={styles.transferTitle}>{isKu ? activeMethod.nameKu : activeMethod.name}</Text>
+                  <Text style={styles.transferInstructions}>
+                    {isKu ? activeMethod.instructionsKu : activeMethod.instructions}
+                  </Text>
 
                   {selectedMethodId !== 'asiacell' && (
                     <View style={styles.accountRow}>
                       <View>
-                        <Text style={styles.accountLabel}>Transfer to Account / Number:</Text>
+                        <Text style={styles.accountLabel}>
+                          {isKu ? 'ژمارەی ئەژمێر / مۆبایل:' : 'Transfer to Account / Number:'}
+                        </Text>
                         <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
                         <Text style={styles.accountHolder}>{activeMethod.accountName}</Text>
                       </View>
 
                       <Pressable style={styles.copyBtn} onPress={handleCopyAccount}>
                         <Copy size={16} color="#FFF" />
-                        <Text style={styles.copyBtnText}>{copied ? 'Copied!' : 'Copy'}</Text>
+                        <Text style={styles.copyBtnText}>
+                          {copied ? (isKu ? 'کۆپیکرا!' : 'Copied!') : isKu ? 'کۆپیکردن' : 'Copy'}
+                        </Text>
                       </Pressable>
                     </View>
                   )}
 
                   <View style={styles.amountBadge}>
                     <Text style={styles.amountBadgeText}>
-                      Required Amount: <Text style={{ color: '#FFB800', fontWeight: '900' }}>{selectedPlan.priceIQD.toLocaleString()} IQD</Text>
+                      {isKu ? 'بڕی پێویست: ' : 'Required Amount: '}
+                      <Text style={{ color: '#FFB800', fontWeight: '900' }}>
+                        {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دیناری عێراقی' : 'IQD'}
+                      </Text>
                     </Text>
                   </View>
                 </View>
@@ -349,19 +399,33 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                 {submittedOrderId ? (
                   <View style={styles.successBox}>
                     <CheckCircle2 size={32} color="#00E676" />
-                    <Text style={styles.successTitle}>Payment Proof Submitted! 🎉</Text>
+                    <Text style={styles.successTitle}>
+                      {isKu ? 'بەڵگەی پارەدان نێردرا! 🎉' : 'Payment Proof Submitted! 🎉'}
+                    </Text>
                     <Text style={styles.successSub}>
-                      Your order <Text style={{ color: '#FFB800' }}>#{submittedOrderId.slice(0, 18)}</Text> has been sent to the admin. Your VIP Sovereign access will be activated within a few minutes!
+                      {isKu
+                        ? `داواکاریەکەت #${submittedOrderId.slice(0, 18)} بۆ بەڕێوەبەر نێردرا. ئەندامێتی VIP لە ماوەی چەند خولەکێکدا چالاک دەکرێت!`
+                        : `Your order #${submittedOrderId.slice(0, 18)} has been sent to the admin. Your VIP Sovereign access will be activated within a few minutes!`}
                     </Text>
                   </View>
                 ) : (
                   <View style={styles.formBox}>
                     <Text style={styles.formLabel}>
-                      {selectedMethodId === 'asiacell' ? 'Enter 14-Digit Card PIN (كود كارت الرصيد):' : 'Enter Transfer Number / Transaction ID (رقم الحوالة أو العملية):'}
+                      {selectedMethodId === 'asiacell'
+                        ? isKu
+                          ? 'کۆدی ١٤ ژمارەیی کارتی باڵانس:'
+                          : 'Enter 14-Digit Card PIN:'
+                        : isKu
+                        ? 'ژمارەی حەواڵە یان ژمارەی مۆبایلەکەت:'
+                        : 'Enter Transfer Number / Transaction ID:'}
                     </Text>
                     <TextInput
                       style={styles.textInput}
-                      placeholder={selectedMethodId === 'asiacell' ? 'e.g. 12345678901234' : 'e.g. TX-987654321 / 0770XXXXXXX'}
+                      placeholder={
+                        selectedMethodId === 'asiacell'
+                          ? 'e.g. 12345678901234'
+                          : 'e.g. TX-987654321 / 0782XXXXXXX'
+                      }
                       placeholderTextColor="#666680"
                       value={transactionProof}
                       onChangeText={setTransactionProof}
@@ -369,10 +433,12 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
                     {selectedMethodId !== 'asiacell' && (
                       <>
-                        <Text style={[styles.formLabel, { marginTop: 10 }]}>Your Sender Phone Number (رقم هاتفك):</Text>
+                        <Text style={[styles.formLabel, { marginTop: 10 }]}>
+                          {isKu ? 'ژمارەی مۆبایلەکەت (ئارەزوومەندانە):' : 'Your Sender Phone Number (Optional):'}
+                        </Text>
                         <TextInput
                           style={styles.textInput}
-                          placeholder="e.g. 0770XXXXXXX / 0780XXXXXXX"
+                          placeholder="e.g. 0782XXXXXXX / 0770XXXXXXX"
                           placeholderTextColor="#666680"
                           keyboardType="phone-pad"
                           value={senderPhone}
@@ -391,7 +457,9 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                       ) : (
                         <View style={styles.payBtnContent}>
                           <Send size={16} color="#FFF" />
-                          <Text style={styles.submitProofText}>Submit Payment Proof (إرسال إشعار الدفع)</Text>
+                          <Text style={styles.submitProofText}>
+                            {isKu ? 'ناردنی بەڵگەی پارەدان' : 'Submit Payment Proof'}
+                          </Text>
                         </View>
                       )}
                     </Pressable>
@@ -408,9 +476,13 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                     <CreditCard size={18} color="#38BDF8" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.methodTitle}>Secured by RASEDI · FIB & Iraqi E-Wallets</Text>
+                    <Text style={styles.methodTitle}>
+                      {isKu ? 'پارێزراوە لەلایەن ڕاسیدی و FIB' : 'Secured by RASEDI · FIB & Iraqi E-Wallets'}
+                    </Text>
                     <Text style={styles.methodSub}>
-                      Automated checkout via First Iraqi Bank (FIB), RASEDI Wallet, and Visa/Mastercard.
+                      {isKu
+                        ? 'پارەدانی ئۆتۆماتیکی لە ڕێگەی FIB، جزدانی ڕاسیدی، و کارتی ماستەرکارت.'
+                        : 'Automated checkout via First Iraqi Bank (FIB), RASEDI Wallet, and Visa/Mastercard.'}
                     </Text>
                   </View>
                 </View>
@@ -425,7 +497,9 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                   ) : (
                     <View style={styles.payBtnContent}>
                       <Text style={styles.payButtonText}>
-                        Subscribe for {selectedPlan.priceIQD.toLocaleString()} IQD
+                        {isKu
+                          ? `ئابوونە بە ${selectedPlan.priceIQD.toLocaleString()} دینار`
+                          : `Subscribe for ${selectedPlan.priceIQD.toLocaleString()} IQD`}
                       </Text>
                       <ArrowRight size={18} color="#FFF" />
                     </View>
@@ -443,7 +517,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                         <ActivityIndicator color="#FFF" size="small" />
                       ) : (
                         <Text style={styles.simulateButtonText}>
-                          ⚡ Confirm Test Payment (Sandbox Activation)
+                          {isKu ? '⚡ چالاککردنی تاقیکاری (Sandbox)' : '⚡ Confirm Test Payment (Sandbox Activation)'}
                         </Text>
                       )}
                     </Pressable>
@@ -455,7 +529,9 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
             <View style={styles.securityFooter}>
               <ShieldCheck size={14} color="#8E8EA4" />
               <Text style={styles.securityText}>
-                End-to-end encrypted · Local Iraqi payments protected by AniFlix
+                {isKu
+                  ? 'پارێزراوە بە تەواوی · هەموو پارەدانەکان لەلایەن AniFlix دەپارێزرێن'
+                  : 'End-to-end encrypted · Local Iraqi payments protected by AniFlix'}
               </Text>
             </View>
           </ScrollView>
