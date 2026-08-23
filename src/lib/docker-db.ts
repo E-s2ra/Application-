@@ -10,12 +10,30 @@ export const DOCKER_POSTGREST_URL =
 export const DOCKER_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNjcwMDAwMDAwLCJleHAiOjIwODcwMDAwMDB9.jjx2F-4f4MyPHfE435brkahvEse6WQZVAQexGnboLIw';
 
+// Hosted Supabase fallback — used when Docker is not running (web / dev without Docker Desktop)
+const SUPABASE_CLOUD_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://zkbprmyxwjfznsucyuvi.supabase.co';
+const SUPABASE_CLOUD_ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
+
 /**
- * Direct Client connection to local Docker PostgreSQL (backed by Nginx CORS Gateway on 54324)
+ * On native (Android/iOS) we target the local Docker PostgREST when available.
+ * On web (localhost / production) Docker is never reachable, so we fall back
+ * directly to the hosted Supabase project — this eliminates ERR_CONNECTION_REFUSED.
  */
-export const dockerDb = createClient(DOCKER_POSTGREST_URL, DOCKER_ANON_KEY, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
+const useLocalDocker = Platform.OS !== 'web';
+
+export const dockerDb = useLocalDocker
+  ? createClient(DOCKER_POSTGREST_URL, DOCKER_ANON_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    })
+  : createClient(SUPABASE_CLOUD_URL, SUPABASE_CLOUD_ANON_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
