@@ -26,7 +26,7 @@ services:
       - aniflix-network
 
   # -------------------------------------------------------------
-  # PostgREST Data API Layer
+  # PostgREST Data API Layer (Internal)
   # -------------------------------------------------------------
   postgrest:
     image: public.ecr.aws/supabase/postgrest:v16.1
@@ -41,33 +41,25 @@ services:
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       PGRST_SERVER_PORT: 3000
-      PGRST_SERVER_CORS_ALLOWED_ORIGINS: "*"
-    ports:
-      - "${POSTGREST_PORT:-54324}:3000"
+    expose:
+      - "3000"
     networks:
       - aniflix-network
 
   # -------------------------------------------------------------
-  # Frontend Web Application Container
+  # CORS Gateway Proxy (Port 54324 -> PostgREST 3000)
+  # Resolves all CORS preflight, Authorization headers, and /rest/v1 routes
   # -------------------------------------------------------------
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: aniflix-web-app
+  proxy:
+    image: nginx:alpine
+    container_name: aniflix-cors-proxy
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      NODE_ENV: development
-      EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:-http://127.0.0.1:54321}
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY:-local-anon-key}
-    ports:
-      - "8081:8081"
+      - postgrest
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "54324:54324"
     networks:
       - aniflix-network
 

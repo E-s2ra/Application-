@@ -9,7 +9,7 @@ const isLocalDevWeb =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-// Use local Docker PostgREST Proxy in local web testing for 0 CORS errors and 100% reliability
+// Use local Docker PostgREST (backed by Nginx CORS gateway on 54324) in local web testing for 0 CORS errors
 export const SUPABASE_URL = isLocalDevWeb
   ? DOCKER_POSTGREST_URL
   : Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || DOCKER_POSTGREST_URL;

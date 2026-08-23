@@ -44,8 +44,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "node ./scripts/cors-proxy.js & expo start",
-    "proxy": "node ./scripts/cors-proxy.js",
+    "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
