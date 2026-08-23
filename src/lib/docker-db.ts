@@ -16,7 +16,7 @@ export const DOCKER_ANON_KEY =
  * Direct Client connection to local Docker PostgreSQL (aniflix-postgres-db / aniflix-postgrest-api)
  * Exclusively handles Payments, VIP subscriptions, Coins, XP, and Gamification.
  */
-export const dockerDb = createClient<Database>(DOCKER_POSTGREST_URL, DOCKER_ANON_KEY, {
+export const dockerDb = createClient(DOCKER_POSTGREST_URL, DOCKER_ANON_KEY, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
