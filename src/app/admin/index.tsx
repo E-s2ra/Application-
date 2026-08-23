@@ -1,7 +1,7 @@
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
-import { deleteAnime, getDeletedMediaIds, updateAnimeFeatured } from '@/lib/admin-operations';
+import { deleteAnime, getDeletedMediaIds, markMediaAsDeletedLocally, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import {
   getPendingManualPayments,
@@ -187,6 +187,23 @@ export default function AdminPanelScreen() {
 
     if (!confirmed) return;
 
+    // Try the secure RPC first (bypasses RLS, admin-only)
+    const { error: rpcErr } = await supabase.rpc('admin_delete_all_anime');
+    if (!rpcErr) {
+      // Mark all as deleted locally too
+      for (const item of animeList) {
+        await markMediaAsDeletedLocally(item.id);
+      }
+      setAnimeList([]);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(`All ${animeList.length} test media items have been deleted! 🎉`);
+      } else {
+        Alert.alert('Done', 'All media items deleted successfully.');
+      }
+      return;
+    }
+
+    // Fallback: delete one by one
     for (const item of animeList) {
       await deleteAnime(item.id);
     }
@@ -264,7 +281,7 @@ export default function AdminPanelScreen() {
     );
   }
 
-  // Strict Admin Gate: Only esra99san@gmail.com or role=admin
+  // Strict Admin Gate: Only admin@aniflix.com or role=admin
   if (!isAdmin) {
     return (
       <View style={[styles.container, { backgroundColor: themeColors.background }]}>
