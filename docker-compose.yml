@@ -47,6 +47,34 @@ services:
       - aniflix-network
 
   # -------------------------------------------------------------
+  # GoTrue Auth API Layer (Internal)
+  # -------------------------------------------------------------
+  gotrue:
+    image: supabase/gotrue:v2.132.3
+    container_name: aniflix-gotrue-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://127.0.0.1:54324
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-postgres}
+      GOTRUE_SITE_URL: http://localhost:8081
+      GOTRUE_URI_ALLOW_LIST: http://localhost:8081/*,http://127.0.0.1:8081/*,http://localhost:8081,http://127.0.0.1:8081
+      GOTRUE_JWT_SECRET: ${PGRST_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
+      GOTRUE_SMTP_HOST: ""
+    expose:
+      - "9999"
+    networks:
+      - aniflix-network
+
+  # -------------------------------------------------------------
   # CORS Gateway Proxy (Port 54324 -> PostgREST 3000)
   # Resolves all CORS preflight, Authorization headers, and /rest/v1 routes
   # -------------------------------------------------------------
