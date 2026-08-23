@@ -59,7 +59,7 @@ export default function EditAnimeScreen() {
           setTitle(data.title || '');
           setDescription(data.description || '');
           setImageUrl(data.image_url || '');
-          setVideoAssetKey(data.video_asset_key || '');
+          setVideoAssetKey(data.video_asset_key || data.video_url || '');
           setEpisodes(String(data.episodes || 1));
           setGenre(data.genre || '');
           setCategory((data.category as MediaCategory) || 'Movies');
