@@ -255,3 +255,142 @@ export async function simulateTestPaymentSuccess(orderId: string): Promise<{
     return { success: false, message: err.message || 'Simulation error.' };
   }
 }
+
+/**
+ * Submits proof of a direct manual transfer (FIB, ZainCash, FastPay, AsiaCell Voucher)
+ * for admin review and approval.
+ */
+export async function submitManualPaymentProof(params: {
+  planId: RasediPlanId;
+  method: string;
+  transactionRef: string;
+  senderPhone?: string;
+  senderName?: string;
+  voucherPin?: string;
+}): Promise<{ success: boolean; orderId?: string; error?: string }> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user?.id) {
+      return { success: false, error: 'Please sign in to submit payment proof.' };
+    }
+
+    const plan = RASEDI_VIP_PLANS.find((p) => p.id === params.planId);
+    if (!plan) {
+      return { success: false, error: 'Invalid VIP plan.' };
+    }
+
+    const orderId = `manual_${params.method}_${session.user.id.slice(0, 8)}_${Date.now()}`;
+
+    // Ensure user profile exists in Docker PostgreSQL
+    try {
+      await dockerDb.from('profiles').upsert({
+        id: session.user.id,
+        full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+        role: session.user.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
+      });
+    } catch {}
+
+    // Record pending manual payment in Docker PostgreSQL
+    const { error: insertErr } = await dockerDb.from('payments').insert({
+      user_id: session.user.id,
+      rasedi_order_id: orderId,
+      plan_id: params.planId,
+      amount_iqd: plan.priceIQD,
+      duration_days: plan.durationDays,
+      currency: 'IQD',
+      status: 'pending_approval',
+      metadata: {
+        payment_type: 'manual_transfer',
+        method: params.method,
+        transaction_ref: params.transactionRef,
+        sender_phone: params.senderPhone || '',
+        sender_name: params.senderName || '',
+        voucher_pin: params.voucherPin || '',
+        user_email: session.user.email,
+        plan_title: plan.durationLabel,
+        submitted_at: new Date().toISOString(),
+      },
+    });
+
+    if (insertErr) {
+      return { success: false, error: insertErr.message || 'Failed to submit payment record.' };
+    }
+
+    return { success: true, orderId };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to submit payment proof.' };
+  }
+}
+
+/**
+ * Admin function: Fetches all pending manual payments awaiting approval.
+ */
+export async function getPendingManualPayments(): Promise<any[]> {
+  try {
+    const { data, error } = await dockerDb
+      .from('payments')
+      .select('*, profiles:user_id(id, full_name, username, role, is_vip, vip_expires_at)')
+      .eq('status', 'pending_approval')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return data;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Admin function: Approves a manual payment and activates VIP for the user in Docker PostgreSQL.
+ */
+export async function approveManualPayment(paymentId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: payment } = await dockerDb
+      .from('payments')
+      .select('*')
+      .eq('id', paymentId)
+      .maybeSingle();
+
+    if (!payment) {
+      return { success: false, error: 'Payment not found.' };
+    }
+
+    const { error } = await dockerDb.rpc('process_verified_rasedi_payment', {
+      p_user_id: payment.user_id,
+      p_order_id: payment.rasedi_order_id,
+      p_transaction_id: `approved_manual_${payment.rasedi_order_id}`,
+      p_plan_id: payment.plan_id,
+      p_amount_iqd: payment.amount_iqd,
+      p_duration_days: payment.duration_days,
+      p_rasedi_response: { approved_by_admin: true, approved_at: new Date().toISOString() },
+    });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to approve payment.' };
+  }
+}
+
+/**
+ * Admin function: Rejects a manual payment.
+ */
+export async function rejectManualPayment(paymentId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await dockerDb
+      .from('payments')
+      .update({
+        status: 'rejected',
+        metadata: { rejection_reason: reason || 'Rejected by Admin', rejected_at: new Date().toISOString() },
+      })
+      .eq('id', paymentId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to reject payment.' };
+  }
+}

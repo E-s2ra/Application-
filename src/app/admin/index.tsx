@@ -3,8 +3,27 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, getDeletedMediaIds, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
+import {
+  getPendingManualPayments,
+  approveManualPayment,
+  rejectManualPayment,
+} from '@/lib/rasedi-payment';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Lock, Pencil, Plus, Star, Trash2 } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Lock,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Smartphone,
+  ShieldAlert,
+  Film,
+  Crown,
+} from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -35,22 +54,26 @@ export default function AdminPanelScreen() {
 
   const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'esra99san@gmail.com';
 
+  const [activeTab, setActiveTab] = useState<'media' | 'payments'>('media');
   const [animeList, setAnimeList] = useState<Anime[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [vipCount, setVipCount] = useState(0);
   const [paymentsCount, setPaymentsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const fetchAnime = async () => {
     try {
       const deletedIds = await getDeletedMediaIds();
-      const [{ data, error }, { count: vips }, { count: payments }] = await Promise.all([
+      const [{ data, error }, { count: vips }, { count: payments }, pending] = await Promise.all([
         supabase
           .from('anime')
           .select('id, title, episodes, genre, category, is_featured')
           .order('created_at', { ascending: false }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
         supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+        getPendingManualPayments(),
       ]);
 
       if (!error && data) {
@@ -59,10 +82,48 @@ export default function AdminPanelScreen() {
       }
       if (typeof vips === 'number') setVipCount(vips);
       if (typeof payments === 'number') setPaymentsCount(payments);
+      setPendingPayments(pending || []);
     } catch (_e) {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleApprovePayment = async (item: any) => {
+    setActionLoadingId(item.id);
+    const res = await approveManualPayment(item.id);
+    setActionLoadingId(null);
+
+    if (res.success) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(`VIP Approved successfully for ${item.metadata?.user_email || 'User'}!`);
+      } else {
+        Alert.alert('Success', `VIP Approved successfully!`);
+      }
+      fetchAnime();
+    } else {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(res.error || 'Failed to approve payment.');
+      } else {
+        Alert.alert('Error', res.error || 'Failed to approve payment.');
+      }
+    }
+  };
+
+  const handleRejectPayment = async (item: any) => {
+    setActionLoadingId(item.id);
+    const res = await rejectManualPayment(item.id);
+    setActionLoadingId(null);
+
+    if (res.success) {
+      fetchAnime();
+    } else {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(res.error || 'Failed to reject payment.');
+      } else {
+        Alert.alert('Error', res.error || 'Failed to reject payment.');
+      }
     }
   };
 
@@ -262,50 +323,167 @@ export default function AdminPanelScreen() {
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>VIP Active</Text>
           </View>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
-            <Text style={[styles.statNumber, { color: '#00E676' }]}>{paymentsCount}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Payments</Text>
+            <Text style={[styles.statNumber, { color: pendingPayments.length > 0 ? '#EC4899' : '#00E676' }]}>
+              {pendingPayments.length > 0 ? `${pendingPayments.length} Pending` : paymentsCount}
+            </Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
+              {pendingPayments.length > 0 ? 'Approvals' : 'Payments'}
+            </Text>
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 8 }}>
-          <Text style={[styles.sectionTitle, { color: themeColors.textSecondary, marginHorizontal: 0, marginBottom: 0 }]}>
-            TAP ✏️ TO EDIT · TAP ⭐ TO FEATURE · TAP 🗑 TO DELETE
-          </Text>
-          {animeList.length > 0 && (
-            <Pressable onPress={handleClearAll} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Trash2 color="#ff4444" size={13} />
-              <Text style={{ color: '#ff4444', fontSize: 11, fontWeight: '700' }}>CLEAR ALL</Text>
-            </Pressable>
-          )}
+        {/* Tab Selector */}
+        <View style={styles.adminTabRow}>
+          <Pressable
+            style={[styles.adminTab, activeTab === 'media' && styles.adminTabActive]}
+            onPress={() => setActiveTab('media')}
+          >
+            <Film size={16} color={activeTab === 'media' ? '#FFF' : '#8E8EA4'} />
+            <Text style={[styles.adminTabText, activeTab === 'media' && styles.adminTabTextActive]}>
+              Media Catalog ({animeList.length})
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.adminTab, activeTab === 'payments' && styles.adminTabActive]}
+            onPress={() => setActiveTab('payments')}
+          >
+            <Crown size={16} color={activeTab === 'payments' ? '#FFB800' : '#8E8EA4'} />
+            <Text style={[styles.adminTabText, activeTab === 'payments' && styles.adminTabTextActive]}>
+              VIP Approvals {pendingPayments.length > 0 ? `(${pendingPayments.length})` : ''}
+            </Text>
+            {pendingPayments.length > 0 && <View style={styles.pendingBadgeDot} />}
+          </Pressable>
         </View>
 
-        <FlatList
-          data={animeList}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={themeColors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
-                No titles in catalog. Tap + to add your first title!
+        {activeTab === 'media' ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 8 }}>
+              <Text style={[styles.sectionTitle, { color: themeColors.textSecondary, marginHorizontal: 0, marginBottom: 0 }]}>
+                TAP ✏️ TO EDIT · TAP ⭐ TO FEATURE · TAP 🗑 TO DELETE
               </Text>
+              {animeList.length > 0 && (
+                <Pressable onPress={handleClearAll} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Trash2 color="#ff4444" size={13} />
+                  <Text style={{ color: '#ff4444', fontSize: 11, fontWeight: '700' }}>CLEAR ALL</Text>
+                </Pressable>
+              )}
             </View>
-          }
-        />
 
-        <Pressable
-          style={[styles.fab, { backgroundColor: themeColors.primary }]}
-          onPress={() => router.push('/admin/add-anime' as any)}
-        >
-          <Plus color="#fff" size={28} />
-        </Pressable>
+            <FlatList
+              data={animeList}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+              contentContainerStyle={styles.list}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  tintColor={themeColors.primary}
+                />
+              }
+              ListEmptyComponent={
+                <View style={styles.empty}>
+                  <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+                    No titles in catalog. Tap + to add your first title!
+                  </Text>
+                </View>
+              }
+            />
+
+            <Pressable
+              style={[styles.fab, { backgroundColor: themeColors.primary }]}
+              onPress={() => router.push('/admin/add-anime' as any)}
+            >
+              <Plus color="#fff" size={28} />
+            </Pressable>
+          </>
+        ) : (
+          <FlatList
+            data={pendingPayments}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={themeColors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <CheckCircle2 size={40} color="#00E676" style={{ marginBottom: 12 }} />
+                <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '800', marginBottom: 4 }}>
+                  No Pending Approvals!
+                </Text>
+                <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+                  All VIP transfers and voucher submissions are up to date.
+                </Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.approvalCard}>
+                <View style={styles.approvalHeader}>
+                  <View>
+                    <Text style={styles.approvalUserEmail}>{item.metadata?.user_email || 'User'}</Text>
+                    <Text style={styles.approvalPlanTitle}>
+                      Plan: <Text style={{ color: '#FFB800', fontWeight: '800' }}>{item.metadata?.plan_title || item.plan_id}</Text> · {item.amount_iqd.toLocaleString()} IQD
+                    </Text>
+                  </View>
+
+                  <View style={styles.approvalMethodBadge}>
+                    <Text style={styles.approvalMethodText}>
+                      {(item.metadata?.method || 'Transfer').toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.approvalDetailsBox}>
+                  <Text style={styles.approvalDetailRow}>
+                    <Text style={styles.detailLabel}>Reference / PIN: </Text>
+                    <Text style={styles.detailValue}>{item.metadata?.transaction_ref || item.metadata?.voucher_pin || item.rasedi_order_id}</Text>
+                  </Text>
+                  {item.metadata?.sender_phone && (
+                    <Text style={styles.approvalDetailRow}>
+                      <Text style={styles.detailLabel}>Sender Phone: </Text>
+                      <Text style={styles.detailValue}>{item.metadata?.sender_phone}</Text>
+                    </Text>
+                  )}
+                  <Text style={styles.approvalDetailRow}>
+                    <Text style={styles.detailLabel}>Date: </Text>
+                    <Text style={styles.detailValue}>{new Date(item.created_at).toLocaleString()}</Text>
+                  </Text>
+                </View>
+
+                <View style={styles.approvalActionRow}>
+                  <Pressable
+                    style={[styles.approveBtn, actionLoadingId === item.id && { opacity: 0.6 }]}
+                    onPress={() => handleApprovePayment(item)}
+                    disabled={actionLoadingId === item.id}
+                  >
+                    {actionLoadingId === item.id ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <>
+                        <CheckCircle2 size={16} color="#FFF" />
+                        <Text style={styles.approveBtnText}>Approve VIP (+{item.duration_days} Days)</Text>
+                      </>
+                    )}
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.rejectBtn, actionLoadingId === item.id && { opacity: 0.6 }]}
+                    onPress={() => handleRejectPayment(item)}
+                    disabled={actionLoadingId === item.id}
+                  >
+                    <XCircle size={16} color="#FF4D4D" />
+                    <Text style={styles.rejectBtnText}>Reject</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+          />
+        )}
       </View>
     </View>
   );
@@ -431,5 +609,143 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     fontSize: 15,
+  },
+  adminTabRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: '#141420',
+    borderRadius: 12,
+    padding: 4,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#242436',
+  },
+  adminTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 8,
+    position: 'relative',
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+  },
+  adminTabActive: {
+    backgroundColor: '#1E1E2C',
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+  },
+  adminTabText: {
+    color: '#8E8EA4',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  adminTabTextActive: {
+    color: '#FFF',
+    fontWeight: '800',
+  },
+  pendingBadgeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EC4899',
+  },
+  approvalCard: {
+    backgroundColor: '#141420',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#242436',
+    gap: 12,
+  },
+  approvalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  approvalUserEmail: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  approvalPlanTitle: {
+    color: '#8E8EA4',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  approvalMethodBadge: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+  },
+  approvalMethodText: {
+    color: '#38BDF8',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  approvalDetailsBox: {
+    backgroundColor: '#0D0D15',
+    padding: 12,
+    borderRadius: 8,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#1E1E2C',
+  },
+  approvalDetailRow: {
+    fontSize: 12,
+  },
+  detailLabel: {
+    color: '#8E8EA4',
+    fontWeight: '700',
+  },
+  detailValue: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  approvalActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  approveBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    borderRadius: 8,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+  },
+  approveBtnText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  rejectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#3E1012',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FF4D4D',
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+  },
+  rejectBtnText: {
+    color: '#FF4D4D',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
