@@ -61,13 +61,14 @@ services:
       GOTRUE_API_PORT: 9999
       API_EXTERNAL_URL: http://127.0.0.1:54324
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-postgres}
+      GOTRUE_DB_DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-postgres}?search_path=auth,public
       GOTRUE_SITE_URL: http://localhost:8081
       GOTRUE_URI_ALLOW_LIST: http://localhost:8081/*,http://127.0.0.1:8081/*,http://localhost:8081,http://127.0.0.1:8081
       GOTRUE_JWT_SECRET: ${PGRST_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_SMTP_HOST: ""
     expose:
       - "9999"
