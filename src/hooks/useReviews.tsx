@@ -207,8 +207,8 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
             return combined;
           });
         }
-      } catch (err) {
-        console.warn('Reviews load note:', err);
+      } catch (_err) {
+        // Silently use local reviews
       }
     }
     load();
