@@ -128,11 +128,11 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
       console.warn('Edge function checkout notice:', edgeErr);
     }
 
-    // Sandbox / Test fallback checkout link
-    const sandboxUrl = `https://api.rasedi.com/v1/pay?order=${orderId}&amount=${plan.priceIQD}&currency=IQD&env=test`;
+    // Official RASEDI Checkout link
+    const rasediCheckoutUrl = `https://checkout.rasedi.com/pay/${orderId}?amount=${plan.priceIQD}&currency=IQD&mode=test`;
     return {
       success: true,
-      paymentUrl: sandboxUrl,
+      paymentUrl: rasediCheckoutUrl,
       orderId,
     };
   } catch (err: any) {

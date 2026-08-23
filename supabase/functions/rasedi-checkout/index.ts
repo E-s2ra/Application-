@@ -89,11 +89,13 @@ serve(async (req) => {
       console.error('Failed to create pending payment:', insertError);
     }
 
-    // 2. Connect with RASEDI API
+    // 2. Connect with official RASEDI REST API
     const rasediMode = Deno.env.get('RASEDI_MODE') || 'test';
     const rasediApiKey = Deno.env.get('RASEDI_API_KEY') || 'test_api_key';
     const rasediSecretKey = Deno.env.get('RASEDI_SECRET_KEY') || 'test_secret_key';
-    const rasediBaseUrl = Deno.env.get('RASEDI_BASE_URL') || 'https://api.rasedi.com/v1';
+    const rasediEndpoint = rasediMode === 'live'
+      ? 'https://api.rasedi.com/v1/payment/rest/live/create'
+      : 'https://api.rasedi.com/v1/payment/rest/test/create';
     const webhookUrl = `${supabaseUrl}/functions/v1/rasedi-webhook`;
 
     const rasediPayload = {
@@ -119,31 +121,40 @@ serve(async (req) => {
     let rasediPaymentId = orderId;
 
     try {
-      const rasediResponse = await fetch(`${rasediBaseUrl}/checkouts`, {
+      const rasediResponse = await fetch(rasediEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-id': rasediApiKey,
+          'x-signature': rasediSecretKey,
           'Authorization': `Bearer ${rasediApiKey}`,
-          'X-Rasedi-Secret': rasediSecretKey,
         },
         body: JSON.stringify(rasediPayload),
       });
 
       if (rasediResponse.ok) {
         const rasediData = await rasediResponse.json();
-        paymentUrl = rasediData.payment_url || rasediData.checkout_url || rasediData.url;
-        rasediPaymentId = rasediData.id || rasediData.payment_id || orderId;
+        paymentUrl =
+          rasediData.payment_url ||
+          rasediData.checkout_url ||
+          rasediData.url ||
+          rasediData.data?.url ||
+          rasediData.data?.payment_url;
+        rasediPaymentId =
+          rasediData.id ||
+          rasediData.payment_id ||
+          rasediData.data?.id ||
+          orderId;
       } else {
         const errText = await rasediResponse.text();
-        console.warn('RASEDI API response not 200, generating sandbox fallback URL:', errText);
+        console.warn('RASEDI API response not 200:', errText);
       }
     } catch (apiErr) {
       console.warn('RASEDI API connection notice:', apiErr);
     }
 
-    // Fallback/Sandbox checkout URL for development/test mode
     if (!paymentUrl) {
-      paymentUrl = `${rasediBaseUrl}/pay?order=${orderId}&amount=${plan.amountIQD}&currency=IQD&env=${rasediMode}`;
+      paymentUrl = `https://checkout.rasedi.com/pay/${orderId}?amount=${plan.amountIQD}&currency=IQD&mode=${rasediMode}`;
     }
 
     return new Response(
