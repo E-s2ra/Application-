@@ -30,7 +30,7 @@ import {
   RasediPlanId,
   submitManualPaymentProof,
 } from '@/lib/rasedi-payment';
-import { IRAQI_PAYMENT_METHODS, ManualPaymentMethod } from '@/constants/payment-methods';
+import { IRAQI_PAYMENT_METHODS } from '@/constants/payment-methods';
 
 interface VipSubscriptionModalProps {
   visible: boolean;
@@ -45,7 +45,6 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
   const isKu = language === 'ku';
 
   const [selectedPlanId, setSelectedPlanId] = useState<RasediPlanId>('vip_3_months');
-  const [selectedMethodId, setSelectedMethodId] = useState<ManualPaymentMethod>('fib');
   const [transactionProof, setTransactionProof] = useState('');
   const [senderPhone, setSenderPhone] = useState('');
   const [copied, setCopied] = useState(false);
@@ -53,7 +52,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
   const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
 
   const selectedPlan = RASEDI_VIP_PLANS.find((p) => p.id === selectedPlanId) || RASEDI_VIP_PLANS[1];
-  const activeMethod = IRAQI_PAYMENT_METHODS.find((m) => m.id === selectedMethodId) || IRAQI_PAYMENT_METHODS[0];
+  const activeMethod = IRAQI_PAYMENT_METHODS[0];
 
   const getPlanDurationLabel = (id: RasediPlanId) => {
     if (!isKu) {
@@ -88,9 +87,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
     }
 
     if (!transactionProof.trim()) {
-      const err = selectedMethodId === 'asiacell'
-        ? (isKu ? 'تکایە کۆدی ١٤ ژمارەیی کارتەکە بنووسە.' : 'Please enter the 14-digit Card PIN.')
-        : (isKu ? 'تکایە ژمارەی حەواڵە یان مۆبایلەکەت بنووسە.' : 'Please enter the Transaction ID or Sender Phone Number.');
+      const err = isKu ? 'تکایە ژمارەی حەواڵەی FIB بنووسە.' : 'Please enter your FIB Transaction Number.';
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert(err);
       } else {
@@ -102,10 +99,9 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
     setSubmittingManual(true);
     const res = await submitManualPaymentProof({
       planId: selectedPlanId,
-      method: selectedMethodId,
+      method: 'fib',
       transactionRef: transactionProof.trim(),
       senderPhone: senderPhone.trim(),
-      voucherPin: selectedMethodId === 'asiacell' ? transactionProof.trim() : undefined,
     });
     setSubmittingManual(false);
 
@@ -237,34 +233,10 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               })}
             </View>
 
-            {/* Payment Method Selector */}
+            {/* FIB Transfer Section */}
             <Text style={styles.plansSectionTitle}>
-              {isKu ? '٢. ڕێگای پارەدان هەڵبژێرە' : '2. CHOOSE PAYMENT METHOD'}
+              {isKu ? '٢. پارەدان لە ڕێگەی FIB' : '2. FIRST IRAQI BANK (FIB) TRANSFER'}
             </Text>
-
-            <View style={styles.methodsRow}>
-              {IRAQI_PAYMENT_METHODS.map((m) => {
-                const isMSelected = selectedMethodId === m.id;
-                return (
-                  <Pressable
-                    key={m.id}
-                    style={[
-                      styles.methodPill,
-                      isMSelected && { borderColor: m.badgeColor, backgroundColor: '#1A1A2E' },
-                      Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
-                    ]}
-                    onPress={() => {
-                      setSelectedMethodId(m.id);
-                      setSubmittedOrderId(null);
-                    }}
-                  >
-                    <Text style={[styles.methodPillText, isMSelected && { color: m.badgeColor, fontWeight: '800' }]}>
-                      {isKu ? m.nameKu : m.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
 
             {/* Transfer Info Box */}
             <View style={styles.transferInfoBox}>
@@ -273,24 +245,22 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                 {isKu ? activeMethod.instructionsKu : activeMethod.instructions}
               </Text>
 
-              {selectedMethodId !== 'asiacell' && (
-                <View style={styles.accountRow}>
-                  <View>
-                    <Text style={styles.accountLabel}>
-                      {isKu ? 'ژمارەی ئەژمێر / مۆبایل:' : 'Transfer to Account / Number:'}
-                    </Text>
-                    <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
-                    <Text style={styles.accountHolder}>{activeMethod.accountName}</Text>
-                  </View>
-
-                  <Pressable style={styles.copyBtn} onPress={handleCopyAccount}>
-                    <Copy size={16} color="#FFF" />
-                    <Text style={styles.copyBtnText}>
-                      {copied ? (isKu ? 'کۆپیکرا!' : 'Copied!') : isKu ? 'کۆپیکردن' : 'Copy'}
-                    </Text>
-                  </Pressable>
+              <View style={styles.accountRow}>
+                <View>
+                  <Text style={styles.accountLabel}>
+                    {isKu ? 'ژمارەی ئەژمێری FIB:' : 'FIB Account / Phone Number:'}
+                  </Text>
+                  <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
+                  <Text style={styles.accountHolder}>{activeMethod.accountName}</Text>
                 </View>
-              )}
+
+                <Pressable style={styles.copyBtn} onPress={handleCopyAccount}>
+                  <Copy size={16} color="#FFF" />
+                  <Text style={styles.copyBtnText}>
+                    {copied ? (isKu ? 'کۆپیکرا!' : 'Copied!') : isKu ? 'کۆپیکردن' : 'Copy'}
+                  </Text>
+                </Pressable>
+              </View>
 
               <View style={styles.amountBadge}>
                 <Text style={styles.amountBadgeText}>
@@ -318,41 +288,29 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
             ) : (
               <View style={styles.formBox}>
                 <Text style={styles.formLabel}>
-                  {selectedMethodId === 'asiacell'
-                    ? isKu
-                      ? 'کۆدی ١٤ ژمارەیی کارتی باڵانس:'
-                      : 'Enter 14-Digit Card PIN:'
-                    : isKu
-                    ? 'ژمارەی حەواڵە یان ژمارەی مۆبایلەکەت:'
-                    : 'Enter Transfer Number / Transaction ID:'}
+                  {isKu
+                    ? 'ژمارەی حەواڵەی FIB یان ژمارەی مۆبایلەکەت:'
+                    : 'FIB Transaction Number / Sender Phone:'}
                 </Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder={
-                    selectedMethodId === 'asiacell'
-                      ? 'e.g. 12345678901234'
-                      : 'e.g. TX-987654321 / 0782XXXXXXX'
-                  }
+                  placeholder="e.g. TX-987654321 / 0782XXXXXXX"
                   placeholderTextColor="#666680"
                   value={transactionProof}
                   onChangeText={setTransactionProof}
                 />
 
-                {selectedMethodId !== 'asiacell' && (
-                  <>
-                    <Text style={[styles.formLabel, { marginTop: 10 }]}>
-                      {isKu ? 'ژمارەی مۆبایلەکەت (ئارەزوومەندانە):' : 'Your Sender Phone Number (Optional):'}
-                    </Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="e.g. 0782XXXXXXX / 0770XXXXXXX"
-                      placeholderTextColor="#666680"
-                      keyboardType="phone-pad"
-                      value={senderPhone}
-                      onChangeText={setSenderPhone}
-                    />
-                  </>
-                )}
+                <Text style={[styles.formLabel, { marginTop: 10 }]}>
+                  {isKu ? 'ژمارەی مۆبایلەکەت (ئارەزوومەندانە):' : 'Your Contact Phone (Optional):'}
+                </Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g. 0782XXXXXXX / 0770XXXXXXX"
+                  placeholderTextColor="#666680"
+                  keyboardType="phone-pad"
+                  value={senderPhone}
+                  onChangeText={setSenderPhone}
+                />
 
                 <Pressable
                   style={[styles.submitProofBtn, { opacity: submittingManual ? 0.7 : 1 }]}
@@ -365,7 +323,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                     <View style={styles.payBtnContent}>
                       <Send size={16} color="#FFF" />
                       <Text style={styles.submitProofText}>
-                        {isKu ? 'ناردنی بەڵگەی پارەدان' : 'Submit Payment Proof'}
+                        {isKu ? 'ناردنی بەڵگەی پارەدانی FIB' : 'Submit FIB Payment Proof'}
                       </Text>
                     </View>
                   )}
@@ -576,24 +534,6 @@ const styles = StyleSheet.create({
     color: '#8E8EA4',
     fontSize: 10,
     marginTop: 2,
-  },
-  methodsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  methodPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#262638',
-    backgroundColor: '#141420',
-  },
-  methodPillText: {
-    color: '#8E8EA4',
-    fontSize: 11,
-    fontWeight: '600',
   },
   transferInfoBox: {
     backgroundColor: '#141420',
