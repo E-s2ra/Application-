@@ -1,9 +1,10 @@
+import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { addAnime } from '@/lib/admin-operations';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Lock, Sparkles } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -30,7 +31,10 @@ const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
 export default function AddAnimeScreen() {
   const router = useRouter();
   const themeColors = useTheme();
+  const { user, profile } = useAuth();
   const { maxContentWidth } = useResponsive();
+
+  const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'esra99san@gmail.com';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -101,6 +105,30 @@ export default function AddAnimeScreen() {
   };
 
   const inputStyle = [styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }];
+
+  if (!isAdmin) {
+    return (
+      <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.contentWrapper, { maxWidth: 600, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#2E1012', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+            <Lock color="#FF4D4D" size={38} />
+          </View>
+          <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 8 }}>
+            Access Restricted
+          </Text>
+          <Text style={{ color: themeColors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 }}>
+            Only the administrator account (<Text style={{ color: '#38BDF8', fontWeight: '700' }}>esra99san@gmail.com</Text>) has permission to publish new media to AniFlix.
+          </Text>
+          <Pressable
+            style={{ backgroundColor: themeColors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 10 }}
+            onPress={() => router.push('/(auth)/login' as any)}
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Log In as Administrator</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView

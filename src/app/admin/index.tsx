@@ -33,7 +33,7 @@ export default function AdminPanelScreen() {
   const { user, profile } = useAuth();
   const { maxContentWidth } = useResponsive();
 
-  const isAdmin = profile?.role === 'admin' || user?.email === 'esra99san@gmail.com';
+  const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'esra99san@gmail.com';
 
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,12 +70,12 @@ export default function AdminPanelScreen() {
   const handleDelete = async (item: Anime) => {
     let confirmed = false;
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      confirmed = window.confirm(`Are you sure you want to delete "${item.title}" from AniFlix? This cannot be undone.`);
+      confirmed = window.confirm(`Are you sure you want to permanently delete "${item.title}" from AniFlix? This cannot be undone.`);
     } else {
       confirmed = await new Promise((resolve) => {
         Alert.alert(
           'Delete Media',
-          `Are you sure you want to delete "${item.title}" from AniFlix? This cannot be undone.`,
+          `Are you sure you want to permanently delete "${item.title}" from AniFlix? This cannot be undone.`,
           [
             { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
             { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
@@ -95,6 +95,37 @@ export default function AdminPanelScreen() {
       }
     } else {
       setAnimeList((prev) => prev.filter((a) => a.id !== item.id));
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (animeList.length === 0) return;
+    let confirmed = false;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      confirmed = window.confirm(`Are you sure you want to permanently delete all ${animeList.length} media items? This cannot be undone.`);
+    } else {
+      confirmed = await new Promise((resolve) => {
+        Alert.alert(
+          'Delete All Media',
+          `Are you sure you want to permanently delete all ${animeList.length} media items? This cannot be undone.`,
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Delete All', style: 'destructive', onPress: () => resolve(true) },
+          ]
+        );
+      });
+    }
+
+    if (!confirmed) return;
+
+    for (const item of animeList) {
+      await deleteAnime(item.id);
+    }
+    setAnimeList([]);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.alert('All test media items have been deleted! 🎉');
+    } else {
+      Alert.alert('Deleted', 'All test media items have been deleted.');
     }
   };
 
@@ -164,6 +195,37 @@ export default function AdminPanelScreen() {
     );
   }
 
+  // Strict Admin Gate: Only esra99san@gmail.com or role=admin
+  if (!isAdmin) {
+    return (
+      <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.contentWrapper, { maxWidth: 600, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#2E1012', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+            <Lock color="#FF4D4D" size={38} />
+          </View>
+          <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 8 }}>
+            Access Restricted
+          </Text>
+          <Text style={{ color: themeColors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 }}>
+            Only the administrator account (<Text style={{ color: '#38BDF8', fontWeight: '700' }}>esra99san@gmail.com</Text>) has permission to manage, edit, and delete titles on AniFlix.
+          </Text>
+          <Pressable
+            style={{ backgroundColor: themeColors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 10 }}
+            onPress={() => router.push('/(auth)/login' as any)}
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Log In as Administrator</Text>
+          </Pressable>
+          <Pressable
+            style={{ marginTop: 16 }}
+            onPress={() => router.replace('/(tabs)')}
+          >
+            <Text style={{ color: themeColors.textSecondary, fontSize: 13 }}>Return to Home</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 900) }]}>
@@ -175,25 +237,6 @@ export default function AdminPanelScreen() {
           <Text style={styles.headerTitle}>AniFlix Admin Center</Text>
           <View style={{ width: 40 }} />
         </View>
-
-        {!isAdmin && (
-          <View style={{ backgroundColor: '#2E1012', borderColor: '#FF4D4D', borderWidth: 1, marginHorizontal: 16, marginTop: 12, padding: 12, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#FFB800', fontWeight: '700', fontSize: 13, marginBottom: 2 }}>
-                🔒 Admin Sign-In Required
-              </Text>
-              <Text style={{ color: '#FFD1D1', fontSize: 11, lineHeight: 15 }}>
-                You are currently viewing as Guest. Log in as Administrator (esra99san@gmail.com) to permanently delete or edit media in the database.
-              </Text>
-            </View>
-            <Pressable
-              style={{ backgroundColor: themeColors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 }}
-              onPress={() => router.push('/(auth)/login' as any)}
-            >
-              <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 12 }}>Log In</Text>
-            </Pressable>
-          </View>
-        )}
 
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
@@ -208,9 +251,17 @@ export default function AdminPanelScreen() {
           </View>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: themeColors.textSecondary }]}>
-          TAP ✏️ TO EDIT · TAP ⭐ TO FEATURE · TAP 🗑 TO DELETE
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 8 }}>
+          <Text style={[styles.sectionTitle, { color: themeColors.textSecondary, marginHorizontal: 0, marginBottom: 0 }]}>
+            TAP ✏️ TO EDIT · TAP ⭐ TO FEATURE · TAP 🗑 TO DELETE
+          </Text>
+          {animeList.length > 0 && (
+            <Pressable onPress={handleClearAll} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Trash2 color="#ff4444" size={13} />
+              <Text style={{ color: '#ff4444', fontSize: 11, fontWeight: '700' }}>CLEAR ALL</Text>
+            </Pressable>
+          )}
+        </View>
 
         <FlatList
           data={animeList}
