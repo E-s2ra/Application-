@@ -7,7 +7,6 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Linking,
   Platform,
   Alert,
   TextInput,
@@ -22,22 +21,13 @@ import {
   Check,
   Sparkles,
   ShieldCheck,
-  CreditCard,
-  Zap,
-  ExternalLink,
-  ArrowRight,
-  Smartphone,
   Copy,
   Send,
   CheckCircle2,
-  Ticket,
 } from 'lucide-react-native';
 import {
   RASEDI_VIP_PLANS,
   RasediPlanId,
-  createRasediCheckout,
-  verifyRasediPayment,
-  simulateTestPaymentSuccess,
   submitManualPaymentProof,
 } from '@/lib/rasedi-payment';
 import { IRAQI_PAYMENT_METHODS, ManualPaymentMethod } from '@/constants/payment-methods';
@@ -51,20 +41,16 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
   const themeColors = useTheme();
   const { user } = useAuth();
   const { isVIP, vipDaysRemaining } = useGamification();
-  const { language, isRTL } = useLanguage();
+  const { language } = useLanguage();
   const isKu = language === 'ku';
 
   const [selectedPlanId, setSelectedPlanId] = useState<RasediPlanId>('vip_3_months');
-  const [paymentTab, setPaymentTab] = useState<'manual' | 'automated'>('manual');
   const [selectedMethodId, setSelectedMethodId] = useState<ManualPaymentMethod>('fib');
   const [transactionProof, setTransactionProof] = useState('');
   const [senderPhone, setSenderPhone] = useState('');
   const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [submittingManual, setSubmittingManual] = useState(false);
   const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
-  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   const selectedPlan = RASEDI_VIP_PLANS.find((p) => p.id === selectedPlanId) || RASEDI_VIP_PLANS[1];
   const activeMethod = IRAQI_PAYMENT_METHODS.find((m) => m.id === selectedMethodId) || IRAQI_PAYMENT_METHODS[0];
@@ -92,16 +78,19 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
   const handleManualSubmit = async () => {
     if (!user) {
+      const msg = isKu ? 'تکایە سەرەتا بچۆ ژوورەوە بۆ ئەژمێرەکەت.' : 'Please sign in to your account first.';
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert('Please sign in to your account first.');
+        window.alert(msg);
       } else {
-        Alert.alert('Sign In Required', 'Please sign in to your account first.');
+        Alert.alert('Sign In Required', msg);
       }
       return;
     }
 
     if (!transactionProof.trim()) {
-      const err = selectedMethodId === 'asiacell' ? 'Please enter the 14-digit Card PIN.' : 'Please enter the Transaction ID or Sender Phone Number.';
+      const err = selectedMethodId === 'asiacell'
+        ? (isKu ? 'تکایە کۆدی ١٤ ژمارەیی کارتەکە بنووسە.' : 'Please enter the 14-digit Card PIN.')
+        : (isKu ? 'تکایە ژمارەی حەواڵە یان مۆبایلەکەت بنووسە.' : 'Please enter the Transaction ID or Sender Phone Number.');
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert(err);
       } else {
@@ -125,68 +114,11 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
       setTransactionProof('');
       setSenderPhone('');
     } else {
-      const err = res.error || 'Failed to submit payment proof.';
+      const err = res.error || (isKu ? 'ناردنی داواکاری سەرکەوتوو نەبوو.' : 'Failed to submit payment proof.');
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert(err);
       } else {
         Alert.alert('Error', err);
-      }
-    }
-  };
-
-  const handleSubscribeAutomated = async () => {
-    if (!user) {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert('Please sign in to your account first to subscribe to VIP.');
-      } else {
-        Alert.alert('Sign In Required', 'Please sign in to your account first to subscribe to VIP.');
-      }
-      return;
-    }
-
-    setLoading(true);
-    const result = await createRasediCheckout(selectedPlanId);
-    setLoading(false);
-
-    if (!result.success || !result.paymentUrl) {
-      const err = result.error || 'Failed to start payment session with RASEDI.';
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(err);
-      } else {
-        Alert.alert('Payment Error', err);
-      }
-      return;
-    }
-
-    if (result.orderId) {
-      setLastOrderId(result.orderId);
-    }
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.open(result.paymentUrl, '_blank');
-    } else {
-      await Linking.openURL(result.paymentUrl);
-    }
-  };
-
-  const handleSimulatePayment = async () => {
-    if (!lastOrderId) return;
-    setVerifying(true);
-    const res = await simulateTestPaymentSuccess(lastOrderId);
-    setVerifying(false);
-
-    if (res.success) {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert('🎉 Test Payment Verified! Your VIP subscription has been activated in Docker PostgreSQL.');
-      } else {
-        Alert.alert('🎉 Test Success', 'Your VIP subscription has been activated in Docker PostgreSQL.');
-      }
-      onClose();
-    } else {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(res.message || 'Failed to simulate test payment.');
-      } else {
-        Alert.alert('Simulation Error', res.message || 'Failed to simulate test payment.');
       }
     }
   };
@@ -305,224 +237,139 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               })}
             </View>
 
-            {/* Payment Method Tabs */}
+            {/* Payment Method Selector */}
             <Text style={styles.plansSectionTitle}>
               {isKu ? '٢. ڕێگای پارەدان هەڵبژێرە' : '2. CHOOSE PAYMENT METHOD'}
             </Text>
-            <View style={styles.tabContainer}>
-              <Pressable
-                style={[styles.tabButton, paymentTab === 'manual' && styles.tabButtonActive]}
-                onPress={() => setPaymentTab('manual')}
-              >
-                <Smartphone size={16} color={paymentTab === 'manual' ? '#FFF' : '#8E8EA4'} />
-                <Text style={[styles.tabText, paymentTab === 'manual' && styles.tabTextActive]}>
-                  {isKu ? 'حەواڵەی ڕاستەوخۆ (FIB / کارت)' : 'Direct Wallet Transfer (FIB / Cards)'}
-                </Text>
-              </Pressable>
 
-              <Pressable
-                style={[styles.tabButton, paymentTab === 'automated' && styles.tabButtonActive]}
-                onPress={() => setPaymentTab('automated')}
-              >
-                <CreditCard size={16} color={paymentTab === 'automated' ? '#FFF' : '#8E8EA4'} />
-                <Text style={[styles.tabText, paymentTab === 'automated' && styles.tabTextActive]}>
-                  {isKu ? 'دەروازەی ئەلیکترۆنی (RASEDI)' : 'RASEDI Gateway (Online)'}
-                </Text>
-              </Pressable>
+            <View style={styles.methodsRow}>
+              {IRAQI_PAYMENT_METHODS.map((m) => {
+                const isMSelected = selectedMethodId === m.id;
+                return (
+                  <Pressable
+                    key={m.id}
+                    style={[
+                      styles.methodPill,
+                      isMSelected && { borderColor: m.badgeColor, backgroundColor: '#1A1A2E' },
+                      Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+                    ]}
+                    onPress={() => {
+                      setSelectedMethodId(m.id);
+                      setSubmittedOrderId(null);
+                    }}
+                  >
+                    <Text style={[styles.methodPillText, isMSelected && { color: m.badgeColor, fontWeight: '800' }]}>
+                      {isKu ? m.nameKu : m.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
-            {/* Tab A: Direct Iraqi Wallet Transfer */}
-            {paymentTab === 'manual' && (
-              <View style={styles.manualContainer}>
-                {/* Method selector pills */}
-                <View style={styles.methodsRow}>
-                  {IRAQI_PAYMENT_METHODS.map((m) => {
-                    const isMSelected = selectedMethodId === m.id;
-                    return (
-                      <Pressable
-                        key={m.id}
-                        style={[
-                          styles.methodPill,
-                          isMSelected && { borderColor: m.badgeColor, backgroundColor: '#1A1A2E' },
-                          Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
-                        ]}
-                        onPress={() => {
-                          setSelectedMethodId(m.id);
-                          setSubmittedOrderId(null);
-                        }}
-                      >
-                        <Text style={[styles.methodPillText, isMSelected && { color: m.badgeColor, fontWeight: '800' }]}>
-                          {isKu ? m.nameKu : m.name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+            {/* Transfer Info Box */}
+            <View style={styles.transferInfoBox}>
+              <Text style={styles.transferTitle}>{isKu ? activeMethod.nameKu : activeMethod.name}</Text>
+              <Text style={styles.transferInstructions}>
+                {isKu ? activeMethod.instructionsKu : activeMethod.instructions}
+              </Text>
 
-                {/* Transfer Info Box */}
-                <View style={styles.transferInfoBox}>
-                  <Text style={styles.transferTitle}>{isKu ? activeMethod.nameKu : activeMethod.name}</Text>
-                  <Text style={styles.transferInstructions}>
-                    {isKu ? activeMethod.instructionsKu : activeMethod.instructions}
+              {selectedMethodId !== 'asiacell' && (
+                <View style={styles.accountRow}>
+                  <View>
+                    <Text style={styles.accountLabel}>
+                      {isKu ? 'ژمارەی ئەژمێر / مۆبایل:' : 'Transfer to Account / Number:'}
+                    </Text>
+                    <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
+                    <Text style={styles.accountHolder}>{activeMethod.accountName}</Text>
+                  </View>
+
+                  <Pressable style={styles.copyBtn} onPress={handleCopyAccount}>
+                    <Copy size={16} color="#FFF" />
+                    <Text style={styles.copyBtnText}>
+                      {copied ? (isKu ? 'کۆپیکرا!' : 'Copied!') : isKu ? 'کۆپیکردن' : 'Copy'}
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+
+              <View style={styles.amountBadge}>
+                <Text style={styles.amountBadgeText}>
+                  {isKu ? 'بڕی پێویست: ' : 'Required Amount: '}
+                  <Text style={{ color: '#FFB800', fontWeight: '900' }}>
+                    {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دیناری عێراقی' : 'IQD'}
                   </Text>
+                </Text>
+              </View>
+            </View>
 
-                  {selectedMethodId !== 'asiacell' && (
-                    <View style={styles.accountRow}>
-                      <View>
-                        <Text style={styles.accountLabel}>
-                          {isKu ? 'ژمارەی ئەژمێر / مۆبایل:' : 'Transfer to Account / Number:'}
-                        </Text>
-                        <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
-                        <Text style={styles.accountHolder}>{activeMethod.accountName}</Text>
-                      </View>
+            {/* Submission Form */}
+            {submittedOrderId ? (
+              <View style={styles.successBox}>
+                <CheckCircle2 size={32} color="#00E676" />
+                <Text style={styles.successTitle}>
+                  {isKu ? 'بەڵگەی پارەدان نێردرا! 🎉' : 'Payment Proof Submitted! 🎉'}
+                </Text>
+                <Text style={styles.successSub}>
+                  {isKu
+                    ? `داواکاریەکەت #${submittedOrderId.slice(0, 18)} بۆ بەڕێوەبەر نێردرا. ئەندامێتی VIP لە ماوەی چەند خولەکێکدا چالاک دەکرێت!`
+                    : `Your order #${submittedOrderId.slice(0, 18)} has been sent to the admin. Your VIP Sovereign access will be activated within a few minutes!`}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.formBox}>
+                <Text style={styles.formLabel}>
+                  {selectedMethodId === 'asiacell'
+                    ? isKu
+                      ? 'کۆدی ١٤ ژمارەیی کارتی باڵانس:'
+                      : 'Enter 14-Digit Card PIN:'
+                    : isKu
+                    ? 'ژمارەی حەواڵە یان ژمارەی مۆبایلەکەت:'
+                    : 'Enter Transfer Number / Transaction ID:'}
+                </Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder={
+                    selectedMethodId === 'asiacell'
+                      ? 'e.g. 12345678901234'
+                      : 'e.g. TX-987654321 / 0782XXXXXXX'
+                  }
+                  placeholderTextColor="#666680"
+                  value={transactionProof}
+                  onChangeText={setTransactionProof}
+                />
 
-                      <Pressable style={styles.copyBtn} onPress={handleCopyAccount}>
-                        <Copy size={16} color="#FFF" />
-                        <Text style={styles.copyBtnText}>
-                          {copied ? (isKu ? 'کۆپیکرا!' : 'Copied!') : isKu ? 'کۆپیکردن' : 'Copy'}
-                        </Text>
-                      </Pressable>
-                    </View>
-                  )}
-
-                  <View style={styles.amountBadge}>
-                    <Text style={styles.amountBadgeText}>
-                      {isKu ? 'بڕی پێویست: ' : 'Required Amount: '}
-                      <Text style={{ color: '#FFB800', fontWeight: '900' }}>
-                        {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دیناری عێراقی' : 'IQD'}
-                      </Text>
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Submission Form */}
-                {submittedOrderId ? (
-                  <View style={styles.successBox}>
-                    <CheckCircle2 size={32} color="#00E676" />
-                    <Text style={styles.successTitle}>
-                      {isKu ? 'بەڵگەی پارەدان نێردرا! 🎉' : 'Payment Proof Submitted! 🎉'}
-                    </Text>
-                    <Text style={styles.successSub}>
-                      {isKu
-                        ? `داواکاریەکەت #${submittedOrderId.slice(0, 18)} بۆ بەڕێوەبەر نێردرا. ئەندامێتی VIP لە ماوەی چەند خولەکێکدا چالاک دەکرێت!`
-                        : `Your order #${submittedOrderId.slice(0, 18)} has been sent to the admin. Your VIP Sovereign access will be activated within a few minutes!`}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.formBox}>
-                    <Text style={styles.formLabel}>
-                      {selectedMethodId === 'asiacell'
-                        ? isKu
-                          ? 'کۆدی ١٤ ژمارەیی کارتی باڵانس:'
-                          : 'Enter 14-Digit Card PIN:'
-                        : isKu
-                        ? 'ژمارەی حەواڵە یان ژمارەی مۆبایلەکەت:'
-                        : 'Enter Transfer Number / Transaction ID:'}
+                {selectedMethodId !== 'asiacell' && (
+                  <>
+                    <Text style={[styles.formLabel, { marginTop: 10 }]}>
+                      {isKu ? 'ژمارەی مۆبایلەکەت (ئارەزوومەندانە):' : 'Your Sender Phone Number (Optional):'}
                     </Text>
                     <TextInput
                       style={styles.textInput}
-                      placeholder={
-                        selectedMethodId === 'asiacell'
-                          ? 'e.g. 12345678901234'
-                          : 'e.g. TX-987654321 / 0782XXXXXXX'
-                      }
+                      placeholder="e.g. 0782XXXXXXX / 0770XXXXXXX"
                       placeholderTextColor="#666680"
-                      value={transactionProof}
-                      onChangeText={setTransactionProof}
+                      keyboardType="phone-pad"
+                      value={senderPhone}
+                      onChangeText={setSenderPhone}
                     />
-
-                    {selectedMethodId !== 'asiacell' && (
-                      <>
-                        <Text style={[styles.formLabel, { marginTop: 10 }]}>
-                          {isKu ? 'ژمارەی مۆبایلەکەت (ئارەزوومەندانە):' : 'Your Sender Phone Number (Optional):'}
-                        </Text>
-                        <TextInput
-                          style={styles.textInput}
-                          placeholder="e.g. 0782XXXXXXX / 0770XXXXXXX"
-                          placeholderTextColor="#666680"
-                          keyboardType="phone-pad"
-                          value={senderPhone}
-                          onChangeText={setSenderPhone}
-                        />
-                      </>
-                    )}
-
-                    <Pressable
-                      style={[styles.submitProofBtn, { opacity: submittingManual ? 0.7 : 1 }]}
-                      onPress={handleManualSubmit}
-                      disabled={submittingManual}
-                    >
-                      {submittingManual ? (
-                        <ActivityIndicator color="#FFF" />
-                      ) : (
-                        <View style={styles.payBtnContent}>
-                          <Send size={16} color="#FFF" />
-                          <Text style={styles.submitProofText}>
-                            {isKu ? 'ناردنی بەڵگەی پارەدان' : 'Submit Payment Proof'}
-                          </Text>
-                        </View>
-                      )}
-                    </Pressable>
-                  </View>
+                  </>
                 )}
-              </View>
-            )}
-
-            {/* Tab B: Automated RASEDI Gateway */}
-            {paymentTab === 'automated' && (
-              <View style={{ gap: 12 }}>
-                <View style={styles.paymentMethodNotice}>
-                  <View style={styles.methodIconBox}>
-                    <CreditCard size={18} color="#38BDF8" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.methodTitle}>
-                      {isKu ? 'پارێزراوە لەلایەن ڕاسیدی و FIB' : 'Secured by RASEDI · FIB & Iraqi E-Wallets'}
-                    </Text>
-                    <Text style={styles.methodSub}>
-                      {isKu
-                        ? 'پارەدانی ئۆتۆماتیکی لە ڕێگەی FIB، جزدانی ڕاسیدی، و کارتی ماستەرکارت.'
-                        : 'Automated checkout via First Iraqi Bank (FIB), RASEDI Wallet, and Visa/Mastercard.'}
-                    </Text>
-                  </View>
-                </View>
 
                 <Pressable
-                  style={[styles.payButton, { opacity: loading ? 0.7 : 1 }]}
-                  onPress={handleSubscribeAutomated}
-                  disabled={loading}
+                  style={[styles.submitProofBtn, { opacity: submittingManual ? 0.7 : 1 }]}
+                  onPress={handleManualSubmit}
+                  disabled={submittingManual}
                 >
-                  {loading ? (
+                  {submittingManual ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
                     <View style={styles.payBtnContent}>
-                      <Text style={styles.payButtonText}>
-                        {isKu
-                          ? `ئابوونە بە ${selectedPlan.priceIQD.toLocaleString()} دینار`
-                          : `Subscribe for ${selectedPlan.priceIQD.toLocaleString()} IQD`}
+                      <Send size={16} color="#FFF" />
+                      <Text style={styles.submitProofText}>
+                        {isKu ? 'ناردنی بەڵگەی پارەدان' : 'Submit Payment Proof'}
                       </Text>
-                      <ArrowRight size={18} color="#FFF" />
                     </View>
                   )}
                 </Pressable>
-
-                {lastOrderId && (
-                  <View style={{ gap: 8, marginTop: 4 }}>
-                    <Pressable
-                      style={[styles.simulateButton, Platform.OS === 'web' && ({ cursor: 'pointer', userSelect: 'none' } as any)]}
-                      onPress={handleSimulatePayment}
-                      disabled={verifying}
-                    >
-                      {verifying ? (
-                        <ActivityIndicator color="#FFF" size="small" />
-                      ) : (
-                        <Text style={styles.simulateButtonText}>
-                          {isKu ? '⚡ چالاککردنی تاقیکاری (Sandbox)' : '⚡ Confirm Test Payment (Sandbox Activation)'}
-                        </Text>
-                      )}
-                    </Pressable>
-                  </View>
-                )}
               </View>
             )}
 
@@ -531,7 +378,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               <Text style={styles.securityText}>
                 {isKu
                   ? 'پارێزراوە بە تەواوی · هەموو پارەدانەکان لەلایەن AniFlix دەپارێزرێن'
-                  : 'End-to-end encrypted · Local Iraqi payments protected by AniFlix'}
+                  : 'End-to-end encrypted · Direct FIB payments protected by AniFlix'}
               </Text>
             </View>
           </ScrollView>
@@ -730,41 +577,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#141420',
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: '#242436',
-  },
-  tabButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    gap: 6,
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
-  },
-  tabButtonActive: {
-    backgroundColor: '#E50914',
-  },
-  tabText: {
-    color: '#8E8EA4',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  tabTextActive: {
-    color: '#FFF',
-    fontWeight: '800',
-  },
-  manualContainer: {
-    gap: 12,
-  },
   methodsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -891,6 +703,11 @@ const styles = StyleSheet.create({
     marginTop: 14,
     ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
   },
+  payBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   submitProofText: {
     color: '#FFF',
     fontSize: 13,
@@ -915,67 +732,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
-  },
-  paymentMethodNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#0F1622',
-    borderWidth: 1,
-    borderColor: '#1E3A5F',
-    borderRadius: 12,
-    padding: 14,
-  },
-  methodIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#162840',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  methodTitle: {
-    color: '#38BDF8',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  methodSub: {
-    color: '#94A3B8',
-    fontSize: 11,
-    marginTop: 2,
-    lineHeight: 15,
-  },
-  payButton: {
-    backgroundColor: '#E50914',
-    borderRadius: 12,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
-    ...(Platform.OS === 'web' ? { cursor: 'pointer', userSelect: 'none' } : {}),
-  },
-  payBtnContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  payButtonText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  simulateButton: {
-    backgroundColor: '#059669',
-    borderRadius: 10,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  simulateButtonText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '800',
   },
   securityFooter: {
     flexDirection: 'row',
