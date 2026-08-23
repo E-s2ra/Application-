@@ -10,6 +10,8 @@ export type AnimeItem = {
   id: string;
   title: string;
   image_url: string | null;
+  video_url?: string | null;
+  video_asset_key?: string | null;
   episodes: number;
   genre: string | null;
   category?: MediaCategory | string;

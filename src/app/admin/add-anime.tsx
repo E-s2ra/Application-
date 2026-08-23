@@ -199,10 +199,10 @@ export default function AddAnimeScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: themeColors.textSecondary }]}>PRIVATE CLOUD VIDEO KEY</Text>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>VIDEO STREAM URL / CLOUDFLARE R2 LINK</Text>
             <TextInput
               style={inputStyle}
-              placeholder="folder/title/master.m3u8"
+              placeholder="https://pub-...r2.dev/videos/episode1.mp4"
               placeholderTextColor={themeColors.textSecondary}
               value={videoAssetKey}
               onChangeText={setVideoAssetKey}

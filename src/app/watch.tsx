@@ -111,7 +111,7 @@ export default function WatchScreen() {
 
         const { data } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, episodes, genre, category, is_featured')
+          .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
           .eq('id', id)
           .single();
 
@@ -138,7 +138,7 @@ export default function WatchScreen() {
 
         const { data: recs } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, episodes, genre, category, is_featured')
+          .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
           .neq('id', id)
           .limit(6);
 
@@ -165,16 +165,40 @@ export default function WatchScreen() {
     if (!anime?.id) return;
     let cancelled = false;
 
+    // Check if anime already has a direct HTTP/HTTPS link (e.g. Cloudflare R2 or CDN URL)
+    const directUrl =
+      (anime.video_url && anime.video_url.startsWith('http'))
+        ? anime.video_url
+        : (anime.video_asset_key && anime.video_asset_key.startsWith('http'))
+        ? anime.video_asset_key
+        : null;
+
+    if (directUrl) {
+      setVideoSource({ uri: directUrl });
+      setPlaybackError(null);
+      return;
+    }
+
     void getPlaybackUrl(anime.id)
       .then(({ url }) => {
-        if (!cancelled) setVideoSource({ uri: url });
+        if (!cancelled) {
+          setVideoSource({ uri: url });
+          setPlaybackError(null);
+        }
       })
       .catch(() => {
-        if (!cancelled) setPlaybackError('Secure playback is unavailable for this title.');
+        if (!cancelled) {
+          if (directUrl) {
+            setVideoSource({ uri: directUrl });
+            setPlaybackError(null);
+          } else {
+            setPlaybackError('Secure playback is unavailable for this title.');
+          }
+        }
       });
 
     return () => { cancelled = true; };
-  }, [anime?.id]);
+  }, [anime?.id, anime?.video_url, anime?.video_asset_key]);
 
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.8, count: 14 };

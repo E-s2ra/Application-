@@ -259,9 +259,9 @@ export default function EditAnimeScreen() {
           />
         </View>
 
-        {/* Video Key */}
+        {/* Video URL or Key */}
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.text }]}>Video Key</Text>
+          <Text style={[styles.label, { color: themeColors.text }]}>Video Stream URL / Cloudflare R2 Link</Text>
           <TextInput
             style={[
               styles.input,
@@ -271,7 +271,7 @@ export default function EditAnimeScreen() {
                 borderColor: themeColors.border,
               },
             ]}
-            placeholder="e.g. solo-leveling-ep1.mp4"
+            placeholder="https://pub-...r2.dev/videos/episode1.mp4"
             placeholderTextColor={themeColors.textSecondary}
             value={videoAssetKey}
             onChangeText={setVideoAssetKey}
