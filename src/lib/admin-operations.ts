@@ -122,7 +122,6 @@ export async function addAnime(anime: {
                 genre: anime.genre || null,
                 category: anime.category || 'Anime Series',
                 is_featured: anime.is_featured ?? false,
-                published_at: new Date().toISOString(),
             })
             .select()
             .single();

@@ -110,7 +110,7 @@ export default function HomeScreen() {
 
       const fetchPromise = supabase
         .from('anime')
-        .select('id, title, description, image_url, episodes, genre, category, is_featured, published_at')
+        .select('id, title, description, image_url, episodes, genre, category, is_featured, created_at')
         .order('created_at', { ascending: false });
 
       const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
@@ -123,6 +123,7 @@ export default function HomeScreen() {
           .map((item: any) => ({
             ...item,
             category: item.category || 'Anime Series',
+            published_at: item.published_at || item.created_at || null,
             ...(overrides[item.id] || {}),
           })) as AnimeItem[];
         combined = [...customItems, ...DEFAULT_CATALOG.filter((d) => !deletedIds.includes(d.id)).map((d) => ({ ...d, ...(overrides[d.id] || {}) }))];
@@ -169,12 +170,17 @@ export default function HomeScreen() {
   const animeSeriesRail = allMedia.filter((item) => item.category === 'Anime Series');
   const newProducts = allMedia
     .filter((item) => {
-      if (!item.published_at) return false;
-      const publishedAt = new Date(item.published_at).getTime();
+      const pubDate = item.published_at || (item as any).created_at;
+      if (!pubDate) return false;
+      const publishedAt = new Date(pubDate).getTime();
       const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
       return Number.isFinite(publishedAt) && publishedAt >= thirtyDaysAgo;
     })
-    .sort((a, b) => new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime())
+    .sort((a, b) => {
+      const dateA = new Date(a.published_at || (a as any).created_at || 0).getTime();
+      const dateB = new Date(b.published_at || (b as any).created_at || 0).getTime();
+      return dateB - dateA;
+    })
     .slice(0, 12);
 
   // Auto-sliding Hero timer: 4 seconds
