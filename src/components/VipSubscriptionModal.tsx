@@ -159,7 +159,12 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+          >
             {/* Active VIP Status Banner */}
             {isVIP && (
               <View style={styles.activeVipBanner}>
@@ -367,9 +372,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+    ...(Platform.OS === 'web'
+      ? ({
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        } as any)
+      : {}),
+  },
   scroll: {
     padding: 20,
-    paddingBottom: 30,
+    paddingBottom: 40,
     gap: 16,
   },
   activeVipBanner: {
