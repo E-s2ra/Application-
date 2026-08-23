@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL } from '@/lib/supabase';
+import { dockerDb } from '@/lib/docker-db';
 
 export type AdminOperationResult<T> = {
     success: boolean;
@@ -113,7 +114,20 @@ export async function addAnime(anime: {
     try {
         const videoValue = anime.video_asset_key || null;
 
-        // Attempt 1: Standard video_url field
+        // Also insert into local Docker PostgreSQL database
+        try {
+            await dockerDb.from('anime').insert({
+                title: anime.title,
+                description: anime.description || null,
+                image_url: anime.image_url || null,
+                episodes: anime.episodes || 1,
+                genre: anime.genre || null,
+                category: anime.category || 'Anime Series',
+                is_featured: anime.is_featured ?? false,
+            });
+        } catch {}
+
+        // Attempt 1: Standard video_url field in Supabase
         let { data, error } = await supabase
             .from('anime')
             .insert({
@@ -197,7 +211,11 @@ export async function deleteAnime(
         // 1. Mark as permanently deleted in local persistent storage so it NEVER returns on reload
         await markMediaAsDeletedLocally(animeId);
 
-        // 2. Perform direct database delete
+        // 2. Perform direct database delete on both Supabase and Docker PostgreSQL
+        try {
+            await dockerDb.from('anime').delete().eq('id', animeId);
+        } catch {}
+
         const { error } = await supabase.from('anime').delete().eq('id', animeId);
         if (error) {
             const edgeResult = await callAdminOperation('delete_anime', { anime: { id: animeId } });
