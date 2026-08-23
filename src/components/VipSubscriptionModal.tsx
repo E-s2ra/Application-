@@ -25,7 +25,13 @@ import {
   ExternalLink,
   ArrowRight,
 } from 'lucide-react-native';
-import { RASEDI_VIP_PLANS, RasediPlanId, createRasediCheckout, verifyRasediPayment } from '@/lib/rasedi-payment';
+import {
+  RASEDI_VIP_PLANS,
+  RasediPlanId,
+  createRasediCheckout,
+  verifyRasediPayment,
+  simulateTestPaymentSuccess,
+} from '@/lib/rasedi-payment';
 
 interface VipSubscriptionModalProps {
   visible: boolean;
@@ -77,6 +83,28 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
       window.open(result.paymentUrl, '_blank');
     } else {
       await Linking.openURL(result.paymentUrl);
+    }
+  };
+
+  const handleSimulatePayment = async () => {
+    if (!lastOrderId) return;
+    setVerifying(true);
+    const res = await simulateTestPaymentSuccess(lastOrderId);
+    setVerifying(false);
+
+    if (res.success) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('🎉 Test Payment Verified! Your VIP subscription has been activated in Docker PostgreSQL.');
+      } else {
+        Alert.alert('🎉 Test Success', 'Your VIP subscription has been activated in Docker PostgreSQL.');
+      }
+      onClose();
+    } else {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(res.message || 'Failed to simulate test payment.');
+      } else {
+        Alert.alert('Simulation Error', res.message || 'Failed to simulate test payment.');
+      }
     }
   };
 
@@ -235,19 +263,35 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
             </Pressable>
 
             {lastOrderId && (
-              <Pressable
-                style={styles.verifyButton}
-                onPress={handleCheckPaymentStatus}
-                disabled={verifying}
-              >
-                {verifying ? (
-                  <ActivityIndicator color="#38BDF8" size="small" />
-                ) : (
-                  <Text style={styles.verifyButtonText}>
-                    🔄 Check Payment Status with RASEDI
-                  </Text>
-                )}
-              </Pressable>
+              <View style={{ gap: 8, marginTop: 4 }}>
+                <Pressable
+                  style={[styles.simulateButton, Platform.OS === 'web' && ({ cursor: 'pointer', userSelect: 'none' } as any)]}
+                  onPress={handleSimulatePayment}
+                  disabled={verifying}
+                >
+                  {verifying ? (
+                    <ActivityIndicator color="#FFF" size="small" />
+                  ) : (
+                    <Text style={styles.simulateButtonText}>
+                      ⚡ Confirm Test Payment (Sandbox Activation)
+                    </Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  style={[styles.verifyButton, Platform.OS === 'web' && ({ cursor: 'pointer', userSelect: 'none' } as any)]}
+                  onPress={handleCheckPaymentStatus}
+                  disabled={verifying}
+                >
+                  {verifying ? (
+                    <ActivityIndicator color="#38BDF8" size="small" />
+                  ) : (
+                    <Text style={styles.verifyButtonText}>
+                      🔄 Check Live Payment Status with RASEDI
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             )}
 
             <View style={styles.securityFooter}>
@@ -488,6 +532,19 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: '#FFF',
     fontSize: 16,
+    fontWeight: '800',
+  },
+  simulateButton: {
+    backgroundColor: '#059669',
+    borderRadius: 10,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  simulateButtonText: {
+    color: '#FFF',
+    fontSize: 13,
     fontWeight: '800',
   },
   verifyButton: {

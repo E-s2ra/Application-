@@ -209,3 +209,49 @@ export async function verifyRasediPayment(orderId: string): Promise<{
     return { success: false, error: err.message || 'Failed to verify payment.' };
   }
 }
+
+/**
+ * Test/Sandbox Helper: Simulates receiving a verified RASEDI webhook
+ * to test VIP activation locally in Docker PostgreSQL.
+ */
+export async function simulateTestPaymentSuccess(orderId: string): Promise<{
+  success: boolean;
+  message?: string;
+  isVIP?: boolean;
+  vipExpiresAt?: string;
+}> {
+  try {
+    const { data: payment } = await dockerDb
+      .from('payments')
+      .select('*')
+      .eq('rasedi_order_id', orderId)
+      .maybeSingle();
+
+    if (!payment) {
+      return { success: false, message: 'Payment order not found in database.' };
+    }
+
+    const { data, error } = await dockerDb.rpc('process_verified_rasedi_payment', {
+      p_user_id: payment.user_id,
+      p_order_id: payment.rasedi_order_id,
+      p_transaction_id: `tx_sandbox_${Date.now()}`,
+      p_plan_id: payment.plan_id,
+      p_amount_iqd: payment.amount_iqd,
+      p_duration_days: payment.duration_days,
+      p_rasedi_response: { verified_by: 'sandbox_simulator', simulated_at: new Date().toISOString() },
+    });
+
+    if (error) {
+      return { success: false, message: error.message };
+    }
+
+    return {
+      success: true,
+      message: 'Test payment verified! VIP active in Docker PostgreSQL.',
+      isVIP: (data as any)?.is_vip ?? true,
+      vipExpiresAt: (data as any)?.vip_expires_at,
+    };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Simulation error.' };
+  }
+}
