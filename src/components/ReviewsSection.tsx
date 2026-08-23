@@ -514,7 +514,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                       <View key={reply.id} style={styles.replyCard}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                           <Text style={styles.replyAuthor}>{reply.userName}</Text>
-                          {(reply.userId === currentUserId || user?.email === 'esra99san@gmail.com') && (
+                          {(reply.userId === currentUserId || user?.email === 'admin@aniflix.com') && (
                             <Pressable onPress={() => void handleDeleteReview(reply.id)} style={{ padding: 4 }}>
                               <Trash2 size={12} color="#FF5252" />
                             </Pressable>

@@ -43,9 +43,6 @@ export default function LoginScreen() {
     }
     setLoading(true);
     let formattedEmail = email.trim();
-    if (!formattedEmail.includes('@')) {
-      formattedEmail = `${formattedEmail}@gmail.com`;
-    }
     const { error } = await signIn(formattedEmail, password);
     setLoading(false);
     if (error) {

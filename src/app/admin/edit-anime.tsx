@@ -36,7 +36,7 @@ export default function EditAnimeScreen() {
   const { user, profile } = useAuth();
   const { maxContentWidth } = useResponsive();
 
-  const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'esra99san@gmail.com';
+  const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'admin@aniflix.com';
 
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [title, setTitle] = useState('');
@@ -135,7 +135,7 @@ export default function EditAnimeScreen() {
             Access Restricted
           </Text>
           <Text style={{ color: themeColors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 }}>
-            Only the administrator account (<Text style={{ color: '#38BDF8', fontWeight: '700' }}>esra99san@gmail.com</Text>) has permission to edit titles on AniFlix.
+            Only the administrator account (<Text style={{ color: '#38BDF8', fontWeight: '700' }}>admin@aniflix.com</Text>) has permission to edit titles on AniFlix.
           </Text>
           <Pressable
             style={{ backgroundColor: themeColors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 10 }}

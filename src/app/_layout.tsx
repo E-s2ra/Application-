@@ -18,14 +18,23 @@ import { AdMobRewardedModal } from '@/components/AdMobRewardedModal';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function PrivacyProtection() {
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
+  const { user, isLoading } = useAuth();
 
-    void ScreenCapture.preventScreenCaptureAsync('app-security');
-    if (Platform.OS === 'ios') {
-      void ScreenCapture.enableAppSwitcherProtectionAsync(1);
+  useEffect(() => {
+    if (Platform.OS === 'web' || isLoading) return;
+
+    const isAdmin = user?.email?.toLowerCase() === 'esra99san@gmail.com';
+
+    if (isAdmin) {
+      void ScreenCapture.allowScreenCaptureAsync('app-security');
+    } else {
+      void ScreenCapture.preventScreenCaptureAsync('app-security');
+      if (Platform.OS === 'ios') {
+        // @ts-ignore
+        if (ScreenCapture.enableAppSwitcherProtectionAsync) void ScreenCapture.enableAppSwitcherProtectionAsync(1);
+      }
     }
-  }, []);
+  }, [user, isLoading]);
 
   return null;
 }

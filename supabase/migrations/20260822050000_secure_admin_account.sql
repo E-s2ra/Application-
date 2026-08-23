@@ -10,7 +10,7 @@ as $$
 begin
   if new.role = 'admin' and not exists (
     select 1 from auth.users
-    where id = new.id and lower(email) = 'esra99san@gmail.com'
+    where id = new.id and lower(email) = 'admin@aniflix.com'
   ) then
     new.role := 'user';
   end if;
@@ -29,7 +29,7 @@ update public.profiles
 set role = case when exists (
   select 1 from auth.users
   where auth.users.id = public.profiles.id
-    and lower(auth.users.email) = 'esra99san@gmail.com'
+    and lower(auth.users.email) = 'admin@aniflix.com'
 ) then 'admin' else 'user' end;
 
 create or replace function public.is_admin()
@@ -45,7 +45,7 @@ as $$
     join auth.users on auth.users.id = profiles.id
     where profiles.id = auth.uid()
       and profiles.role = 'admin'
-      and lower(auth.users.email) = 'esra99san@gmail.com'
+      and lower(auth.users.email) = 'admin@aniflix.com'
   );
 $$;
 

@@ -75,7 +75,7 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
       await dockerDb.from('profiles').upsert({
         id: session.user.id,
         full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-        role: session.user.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
+        role: session.user.email?.toLowerCase() === 'admin@aniflix.com' ? 'admin' : 'user',
       });
 
       await dockerDb.from('payments').insert({
@@ -289,7 +289,7 @@ export async function submitManualPaymentProof(params: {
       await dockerDb.from('profiles').upsert({
         id: session.user.id,
         full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-        role: session.user.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
+        role: session.user.email?.toLowerCase() === 'admin@aniflix.com' ? 'admin' : 'user',
       });
     } catch {}
 

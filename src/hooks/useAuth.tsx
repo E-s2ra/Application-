@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [signOutLocally]);
 
-  const fetchProfile = async (uId: string) => {
+  const fetchProfile = async (uId: string, providedEmail?: string) => {
     try {
       // 1. Try Docker PostgreSQL first
       const { data: dockerProfile, error: dockerErr } = await dockerDb
@@ -87,7 +87,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (!dockerErr && dockerProfile) {
-        setProfile(dockerProfile as Profile);
+        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
+        const currentEmail = providedEmail || user?.email;
+        const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
+        
+        console.log('--- AUTH DEBUG ---');
+        console.log('adminEmail from env:', adminEmail);
+        console.log('currentEmail:', currentEmail);
+        console.log('isAppAdmin:', isAppAdmin);
+        console.log('------------------');
+
+        setProfile({
+          ...(dockerProfile as Profile),
+          role: isAppAdmin ? 'admin' : (dockerProfile.role || 'user')
+        });
         return;
       }
 
@@ -97,9 +110,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('id', uId)
         .maybeSingle();
-
       if (supaProfile) {
-        setProfile(supaProfile as Profile);
+        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
+        const currentEmail = providedEmail || user?.email;
+        const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
+
+        console.log('--- SUPABASE DEBUG ---');
+        console.log('adminEmail from env:', adminEmail);
+        console.log('currentEmail:', currentEmail);
+        console.log('isAppAdmin:', isAppAdmin);
+        console.log('----------------------');
+
+        setProfile({
+          ...(supaProfile as Profile),
+          role: isAppAdmin ? 'admin' : (supaProfile.role || 'user')
+        });
         // Seed into Docker PostgreSQL for local permanence
         try {
           await dockerDb.from('profiles').upsert({
@@ -107,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             full_name: supaProfile.full_name,
             username: supaProfile.username,
             avatar_url: supaProfile.avatar_url,
-            role: supaProfile.role || 'user',
+            role: isAppAdmin ? 'admin' : (supaProfile.role || 'user'),
             coins: supaProfile.coins || 0,
             xp: supaProfile.xp || 0,
             level: supaProfile.level || 1,
@@ -117,11 +142,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         } catch {}
       } else {
+        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
+        const currentEmail = providedEmail || user?.email;
+        const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
+        
         // Fallback profile if record not yet created
         const fallback: Profile = {
           id: uId,
           full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User',
-          role: user?.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
+          role: isAppAdmin ? 'admin' : 'user',
         };
         setProfile(fallback);
         try {
@@ -138,10 +167,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch {}
       }
     } catch {
+      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
+      const currentEmail = providedEmail || user?.email;
+      const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
+      
       setProfile({
         id: uId,
         full_name: session?.user?.user_metadata?.full_name || 'User',
-        role: user?.email?.toLowerCase() === 'esra99san@gmail.com' ? 'admin' : 'user',
+        role: isAppAdmin ? 'admin' : 'user',
       });
     }
   };
@@ -172,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(sbSession);
           setUser(sbSession?.user ?? null);
           if (sbSession?.user) {
-            fetchProfile(sbSession.user.id).finally(() => {
+            fetchProfile(sbSession.user.id, sbSession.user.email).finally(() => {
               if (isMounted) setIsLoading(false);
             });
           } else {
@@ -192,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
-          fetchProfile(newSession.user.id);
+          fetchProfile(newSession.user.id, newSession.user.email);
         } else {
           setProfile(null);
         }
@@ -250,32 +283,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: sbData, error } = await supabase.auth.signInWithPassword({ email: normalized, password });
 
     if (error) {
-      // Admin Dev Fallback: Ensure esra99san@gmail.com always has full admin access
-      if (normalized === 'esra99san@gmail.com') {
-        const adminUser: User = {
-          id: '33333333-4444-5555-6666-777777777777',
-          app_metadata: { provider: 'email', providers: ['email'] },
-          user_metadata: { full_name: 'Esra Admin' },
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-          email: 'esra99san@gmail.com',
-          role: 'authenticated',
-        } as User;
-
-        const adminSession: Session = {
-          access_token: 'local-admin-dev-token',
-          token_type: 'bearer',
-          expires_in: 3600 * 24 * 30,
-          refresh_token: 'local-admin-dev-refresh',
-          user: adminUser,
-        };
-
-        setSession(adminSession);
-        setUser(adminUser);
-        await fetchProfile(adminUser.id);
-        return { error: null };
-      }
-
       return { error: error.message };
     }
 

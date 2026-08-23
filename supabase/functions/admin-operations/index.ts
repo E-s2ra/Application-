@@ -6,7 +6,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, content-type',
 };
-const ADMIN_EMAIL = 'esra99san@gmail.com';
+const ADMIN_EMAIL = 'admin@aniflix.com';
 
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
