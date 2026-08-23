@@ -36,21 +36,29 @@ export default function AdminPanelScreen() {
   const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'esra99san@gmail.com';
 
   const [animeList, setAnimeList] = useState<Anime[]>([]);
+  const [vipCount, setVipCount] = useState(0);
+  const [paymentsCount, setPaymentsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchAnime = async () => {
     try {
       const deletedIds = await getDeletedMediaIds();
-      const { data, error } = await supabase
-        .from('anime')
-        .select('id, title, episodes, genre, category, is_featured')
-        .order('created_at', { ascending: false });
+      const [{ data, error }, { count: vips }, { count: payments }] = await Promise.all([
+        supabase
+          .from('anime')
+          .select('id, title, episodes, genre, category, is_featured')
+          .order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
+        supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+      ]);
 
       if (!error && data) {
         const filtered = data.filter((a) => !deletedIds.includes(a.id));
         setAnimeList(filtered);
       }
+      if (typeof vips === 'number') setVipCount(vips);
+      if (typeof payments === 'number') setPaymentsCount(payments);
     } catch (_e) {
     } finally {
       setLoading(false);
@@ -247,7 +255,15 @@ export default function AdminPanelScreen() {
             <Text style={[styles.statNumber, { color: themeColors.primary }]}>
               {animeList.filter((a) => a.is_featured).length}
             </Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Hero Featured</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Featured</Text>
+          </View>
+          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
+            <Text style={[styles.statNumber, { color: '#FFB800' }]}>{vipCount}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>VIP Active</Text>
+          </View>
+          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
+            <Text style={[styles.statNumber, { color: '#00E676' }]}>{paymentsCount}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Payments</Text>
           </View>
         </View>
 

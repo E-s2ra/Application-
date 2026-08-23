@@ -391,6 +391,48 @@ export interface Database {
           type?: 'ad_reward' | 'coins_purchase' | 'spin_reward' | 'event_bonus' | 'subscription';
         };
       };
+      payments: {
+        Row: {
+          id: string;
+          user_id: string;
+          rasedi_order_id: string | null;
+          rasedi_transaction_id: string | null;
+          plan_id: 'vip_1_month' | 'vip_3_months' | 'vip_6_months' | 'vip_1_year';
+          amount_iqd: number;
+          duration_days: number;
+          currency: string;
+          payment_method: string | null;
+          status: 'pending' | 'completed' | 'failed' | 'refunded';
+          metadata: Record<string, any> | null;
+          created_at: string;
+          completed_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          rasedi_order_id?: string | null;
+          rasedi_transaction_id?: string | null;
+          plan_id: 'vip_1_month' | 'vip_3_months' | 'vip_6_months' | 'vip_1_year';
+          amount_iqd: number;
+          duration_days: number;
+          currency?: string;
+          payment_method?: string | null;
+          status?: 'pending' | 'completed' | 'failed' | 'refunded';
+          metadata?: Record<string, any> | null;
+          created_at?: string;
+          completed_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          rasedi_order_id?: string | null;
+          rasedi_transaction_id?: string | null;
+          status?: 'pending' | 'completed' | 'failed' | 'refunded';
+          metadata?: Record<string, any> | null;
+          completed_at?: string | null;
+          updated_at?: string;
+        };
+      };
     };
     Functions: {
       claim_daily_login_reward: {

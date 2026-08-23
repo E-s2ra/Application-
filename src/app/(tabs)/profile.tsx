@@ -43,6 +43,7 @@ import { useGamification } from '@/hooks/useGamification';
 import { useSocial } from '@/hooks/useSocial';
 import { useAdMob } from '@/hooks/useAdMob';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
+import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 
 const PRESET_AVATARS = [
   { id: '1', name: 'Original Hero', url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=300&q=80' },
@@ -78,6 +79,7 @@ export default function ProfileScreen() {
   const { showRewardedAd } = useAdMob();
 
   const [showRewardsModal, setShowRewardsModal] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
@@ -161,11 +163,12 @@ export default function ProfileScreen() {
             {user?.email}
           </Text>
 
-          <View
+          <Pressable
             style={[
               styles.roleBadge,
               { backgroundColor: isAdmin ? primaryColor : themeColors.backgroundCard },
             ]}
+            onPress={() => (isAdmin ? handleAdminPanel() : setShowVipModal(true))}
           >
             {isAdmin ? (
               <Sparkles color="#fff" size={14} />
@@ -173,9 +176,9 @@ export default function ProfileScreen() {
               <Tv color={themeColors.accentCyan} size={14} />
             )}
             <Text style={styles.roleText}>
-              {isAdmin ? 'PLATFORM ADMIN' : isVIP ? `VIP MEMBER (${vipDaysRemaining}d)` : 'STANDARD STREAMER'}
+              {isAdmin ? 'PLATFORM ADMIN' : isVIP ? `VIP MEMBER (${vipDaysRemaining}d)` : 'STANDARD STREAMER · GET VIP'}
             </Text>
-          </View>
+          </Pressable>
         </View>
 
         {/* 🏆 User Level & XP Progress Card */}
@@ -493,6 +496,9 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <RewardsHubModal visible={showRewardsModal} onClose={() => setShowRewardsModal(false)} />
+      <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </ScrollView>
   );
 }

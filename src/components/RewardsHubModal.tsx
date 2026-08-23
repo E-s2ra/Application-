@@ -31,6 +31,7 @@ import {
 } from 'lucide-react-native';
 import { useGamification, SPIN_REWARDS, SpinReward } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
+import { VipSubscriptionModal } from './VipSubscriptionModal';
 
 interface RewardsHubModalProps {
   visible: boolean;
@@ -40,6 +41,7 @@ interface RewardsHubModalProps {
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
   const { showRewardedAd } = useAdMob();
+  const [showVipModal, setShowVipModal] = useState(false);
   const {
     coins,
     xp,
@@ -139,11 +141,11 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Text style={styles.levelTitleText}>{levelTitle}</Text>
 
               {isVIP ? (
-                <View style={styles.vipBadge}>
+                <Pressable style={styles.vipBadge} onPress={() => setShowVipModal(true)}>
                   <Text style={styles.vipBadgeText}>👑 VIP ({vipDaysRemaining}d)</Text>
-                </View>
+                </Pressable>
               ) : (
-                <Pressable style={styles.getVipBtn} onPress={() => activateVIP(7)}>
+                <Pressable style={styles.getVipBtn} onPress={() => setShowVipModal(true)}>
                   <Text style={styles.getVipBtnText}>+ Get VIP</Text>
                 </Pressable>
               )}
@@ -634,6 +636,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           </ScrollView>
         </View>
       </View>
+
+      <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </Modal>
   );
 }

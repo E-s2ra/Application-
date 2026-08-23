@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, Platform, Image, Pressable, Linking } from 'react-native';
 import { ADMOB_IDS, ANDROID_BANNER_ID, IOS_BANNER_ID } from '@/constants/admob';
 import { Sparkles, ExternalLink } from 'lucide-react-native';
+import { useGamification } from '@/hooks/useGamification';
+import { VipSubscriptionModal } from './VipSubscriptionModal';
 
 interface AdMobBannerProps {
   placement?: 'home_bottom' | 'watch_bottom' | 'search_bottom';
@@ -11,6 +13,11 @@ interface AdMobBannerProps {
 export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(true);
+  const [showVipModal, setShowVipModal] = useState(false);
+  const { isVIP } = useGamification();
+
+  // Commercial-Free Experience for Active VIP Members
+  if (isVIP) return null;
 
   // Automatically select correct platform Ad Unit ID
   const adUnitId = Platform.select({
@@ -36,9 +43,7 @@ export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerPro
       {/* Banner Creative Display */}
       <Pressable
         style={styles.bannerCreative}
-        onPress={() => {
-          // Open sponsor link or info
-        }}
+        onPress={() => setShowVipModal(true)}
       >
         <View style={styles.bannerContent}>
           <View style={styles.iconBox}>
@@ -55,10 +60,12 @@ export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerPro
         </View>
 
         <View style={styles.ctaBtn}>
-          <Text style={styles.ctaBtnText}>Explore</Text>
+          <Text style={styles.ctaBtnText}>Get VIP</Text>
           <ExternalLink size={12} color="#FFF" />
         </View>
       </Pressable>
+
+      <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </View>
   );
 }
