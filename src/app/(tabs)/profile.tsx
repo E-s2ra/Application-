@@ -11,6 +11,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme, useColorMode } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -57,6 +58,7 @@ const PRESET_AVATARS = [
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const themeColors = useTheme();
   const { isDark, toggleColorMode } = useColorMode();
   const { language, toggleLanguage, t } = useLanguage();
@@ -130,7 +132,10 @@ export default function ProfileScreen() {
   const primaryColor = activeTheme?.primary || themeColors.primary;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 80, 100) }}
+    >
       <View style={[styles.profileCard, (isDesktop || isTablet) && styles.profileCardWide]}>
         {/* 👤 Profile Hero Card */}
         <View style={styles.header}>

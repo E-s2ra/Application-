@@ -123,10 +123,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('isAppAdmin:', isAppAdmin);
         console.log('----------------------');
 
+        const expectedRole = isAppAdmin ? 'admin' : (supaProfile.role || 'user');
+
         setProfile({
           ...(supaProfile as Profile),
-          role: isAppAdmin ? 'admin' : (supaProfile.role || 'user')
+          role: expectedRole
         });
+        
+        // Sync role to Supabase if it's incorrect (crucial for RLS policies)
+        if (supaProfile.role !== expectedRole) {
+          try {
+            await supabase.from('profiles').update({ role: expectedRole }).eq('id', uId);
+          } catch (e) {
+            console.error('Failed to update Supabase role:', e);
+          }
+        }
+
         // Seed into Docker PostgreSQL for local permanence
         try {
           await dockerDb.from('profiles').upsert({
@@ -134,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             full_name: supaProfile.full_name,
             username: supaProfile.username,
             avatar_url: supaProfile.avatar_url,
-            role: isAppAdmin ? 'admin' : (supaProfile.role || 'user'),
+            role: expectedRole,
             coins: supaProfile.coins || 0,
             xp: supaProfile.xp || 0,
             level: supaProfile.level || 1,
@@ -155,6 +167,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: isAppAdmin ? 'admin' : 'user',
         };
         setProfile(fallback);
+        
+        // Ensure it's created in Supabase with correct role
+        try {
+          await supabase.from('profiles').upsert({
+            id: fallback.id,
+            full_name: fallback.full_name,
+            role: fallback.role,
+          });
+        } catch (e) {
+          console.error('Failed to insert fallback into Supabase:', e);
+        }
+
         try {
           await dockerDb.from('profiles').upsert({
             id: uId,

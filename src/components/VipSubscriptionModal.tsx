@@ -129,11 +129,11 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               <View style={styles.crownCircle}>
                 <Crown size={22} color="#FFB800" />
               </View>
-              <View>
-                <Text style={styles.modalTitle}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle} numberOfLines={1}>
                   {isKu ? 'ئابوونەی AniFlix VIP Sovereign' : 'AniFlix VIP Sovereign'}
                 </Text>
-                <Text style={styles.modalSubtitle}>
+                <Text style={styles.modalSubtitle} numberOfLines={2}>
                   {isKu ? 'کوالیتی 4K، بە تەواوی بێ ڕیکلام و ئەڵقەی تایبەت' : 'Ultra HD 4K, Ad-Free & Exclusive Series'}
                 </Text>
               </View>
