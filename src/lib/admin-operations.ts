@@ -83,7 +83,9 @@ export async function getDeletedMediaIds(): Promise<string[]> {
         if (raw) {
             return JSON.parse(raw) as string[];
         }
-    } catch (_e) {}
+    } catch (_e) {
+      console.warn('getDeletedMediaIds error:', _e);
+    }
     return [];
 }
 
@@ -98,7 +100,9 @@ export async function markMediaAsDeletedLocally(animeId: string): Promise<void> 
                 await AsyncStorage.setItem(DELETED_MEDIA_STORAGE_KEY, JSON.stringify(updated));
             }
         }
-    } catch (_e) {}
+    } catch (_e) {
+      console.warn('markMediaAsDeletedLocally error:', _e);
+    }
 }
 
 export async function addAnime(anime: {
@@ -125,7 +129,9 @@ export async function addAnime(anime: {
                 category: anime.category || 'Anime Series',
                 is_featured: anime.is_featured ?? false,
             });
-        } catch {}
+        } catch (dockerInsertErr) {
+          console.warn('Docker anime insert failed:', dockerInsertErr);
+        }
 
         // Attempt 1: Standard video_url field in Supabase
         let { data, error } = await supabase
@@ -235,12 +241,16 @@ export async function deleteAnime(
         // 2. Delete related records that reference this anime (comments, favorites handled by CASCADE)
         try {
             await supabase.from('comments').delete().eq('movie_id', animeId);
-        } catch {}
+        } catch (commentDeleteErr) {
+            console.warn('Comment cleanup failed:', commentDeleteErr);
+        }
 
         // 3. Perform direct database delete on both Supabase and Docker PostgreSQL
         try {
             await dockerDb.from('anime').delete().eq('id', animeId);
-        } catch {}
+        } catch (dockerDeleteErr) {
+            console.warn('Docker anime delete failed:', dockerDeleteErr);
+        }
 
         const { error } = await supabase.from('anime').delete().eq('id', animeId);
         if (error) {
@@ -281,7 +291,8 @@ export async function updateAnimeFeatured(
         }
         return { success: true, data };
     } catch (e: any) {
-        return { success: true };
+        console.warn('updateAnimeFeatured error:', e);
+        return { success: false, error: e.message || 'Failed to update featured status' };
     }
 }
 
@@ -311,7 +322,9 @@ export async function saveEditedMediaOverride(animeId: string, updates: Record<s
         } else {
             await AsyncStorage.setItem(EDITED_MEDIA_STORAGE_KEY, json);
         }
-    } catch (_e) {}
+    } catch (_e) {
+      console.warn('saveEditedMediaOverride error:', _e);
+    }
 }
 
 export async function updateAnime(
@@ -369,7 +382,8 @@ export async function updateAnime(
         }
         return { success: true, data };
     } catch (e: any) {
-        return { success: true };
+        console.warn('updateAnime error:', e);
+        return { success: false, error: e.message || 'Failed to update media' };
     }
 }
 

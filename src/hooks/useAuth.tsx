@@ -93,11 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentEmail = providedEmail || user?.email;
         const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
         
-        console.log('--- AUTH DEBUG ---');
-        console.log('adminEmail from env:', adminEmail);
-        console.log('currentEmail:', currentEmail);
-        console.log('isAppAdmin:', isAppAdmin);
-        console.log('------------------');
 
         setProfile({
           ...(dockerProfile as Profile),
@@ -117,11 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentEmail = providedEmail || user?.email;
         const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
 
-        console.log('--- SUPABASE DEBUG ---');
-        console.log('adminEmail from env:', adminEmail);
-        console.log('currentEmail:', currentEmail);
-        console.log('isAppAdmin:', isAppAdmin);
-        console.log('----------------------');
 
         const expectedRole = isAppAdmin ? 'admin' : (supaProfile.role || 'user');
 

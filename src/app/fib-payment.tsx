@@ -11,7 +11,8 @@ import { IRAQI_PAYMENT_METHODS } from '@/constants/payment-methods';
 export default function FibPaymentScreen() {
   const router = useRouter();
   const themeColors = useTheme();
-  const { isKu } = useTranslation();
+  const { language } = useTranslation();
+  const isKu = language === 'ku';
 
   const activeMethod = IRAQI_PAYMENT_METHODS[0]; // FIB is at index 0
   const [selectedPlanId, setSelectedPlanId] = useState<RasediPlanId>('vip_3_months');
