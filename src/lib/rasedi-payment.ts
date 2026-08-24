@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL } from './supabase';
 import { dockerDb } from './docker-db';
-import { Linking, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 export type RasediPlanId = 'vip_1_month' | 'vip_3_months' | 'vip_6_months' | 'vip_1_year';
 

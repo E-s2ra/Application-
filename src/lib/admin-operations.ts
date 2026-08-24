@@ -1,5 +1,7 @@
 import { supabase, SUPABASE_URL } from '@/lib/supabase';
 import { dockerDb } from '@/lib/docker-db';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type AdminOperationResult<T> = {
     success: boolean;
@@ -29,35 +31,22 @@ async function callAdminOperation<T>(
             };
         }
 
-        // Call the Edge Function
-        const response = await fetch(
-            `${SUPABASE_URL}/functions/v1/admin-operations`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({
-                    action,
-                    ...payload,
-                }),
-            }
-        );
+        // Call the Edge Function using Supabase client to automatically handle CORS and API keys
+        const { data, error: invokeError } = await supabase.functions.invoke('admin-operations', {
+            body: { action, ...payload },
+        });
 
-        if (!response.ok) {
-            const errorData = await response.json();
+        if (invokeError) {
             return {
                 success: false,
-                error: errorData.error || 'Operation failed',
+                error: invokeError.message || 'Operation failed',
             };
         }
 
-        const result = await response.json();
         return {
-            success: result.success,
-            data: result.data,
-            error: result.error,
+            success: data?.success ?? false,
+            data: data?.data,
+            error: data?.error,
         };
     } catch (error) {
         return {
@@ -67,8 +56,7 @@ async function callAdminOperation<T>(
     }
 }
 
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const DELETED_MEDIA_STORAGE_KEY = 'aniflix_deleted_media_ids_v3';
 
@@ -100,8 +88,8 @@ export async function markMediaAsDeletedLocally(animeId: string): Promise<void> 
                 await AsyncStorage.setItem(DELETED_MEDIA_STORAGE_KEY, JSON.stringify(updated));
             }
         }
-    } catch (_e) {
-      console.warn('markMediaAsDeletedLocally error:', _e);
+    } catch (_e: any) {
+      throw new Error(`Failed to mark media as deleted locally: ${_e.message || _e}`);
     }
 }
 
@@ -129,8 +117,8 @@ export async function addAnime(anime: {
                 category: anime.category || 'Anime Series',
                 is_featured: anime.is_featured ?? false,
             });
-        } catch (dockerInsertErr) {
-          console.warn('Docker anime insert failed:', dockerInsertErr);
+        } catch (dockerInsertErr: any) {
+            console.warn(`Docker anime insert failed:`, dockerInsertErr);
         }
 
         // Attempt 1: Standard video_url field in Supabase
@@ -166,7 +154,8 @@ export async function addAnime(anime: {
                 .select()
                 .single();
 
-            if (!retryAssetKey.error) {
+            if (!retryAssetKey.error && retryAssetKey.data) {
+                await saveEditedMediaOverride(retryAssetKey.data.id, retryAssetKey.data);
                 return { success: true, data: retryAssetKey.data };
             }
             error = retryAssetKey.error;
@@ -189,19 +178,25 @@ export async function addAnime(anime: {
                 .single();
 
             if (!coreRetry.error && coreRetry.data) {
+                const overrideData = { ...coreRetry.data };
                 if (videoValue) {
-                    await saveEditedMediaOverride(coreRetry.data.id, {
-                        video_asset_key: videoValue,
-                        video_url: videoValue,
-                    });
+                    overrideData.video_asset_key = videoValue;
+                    overrideData.video_url = videoValue;
                 }
-                return { success: true, data: coreRetry.data };
+                await saveEditedMediaOverride(coreRetry.data.id, overrideData);
+                return { success: true, data: overrideData };
             }
         }
 
         if (error) {
             const edgeResult = await callAdminOperation('add_anime', { anime });
-            if (edgeResult.success) return edgeResult;
+            if (edgeResult.success && edgeResult.data) {
+                const dataId = (edgeResult.data as any).id;
+                await saveEditedMediaOverride(dataId, edgeResult.data);
+                return edgeResult;
+            } else if (edgeResult.success) {
+                return edgeResult; // Fallback if data is missing
+            }
             
             // FINAL FALLBACK: If the user hasn't run the SQL migration and hasn't deployed the edge function,
             // we will simulate success by saving it to local AsyncStorage overrides so they can see it working!
@@ -221,9 +216,16 @@ export async function addAnime(anime: {
                 };
                 await saveEditedMediaOverride(fakeId, localData);
                 return { success: true, data: localData };
-            } catch (fallbackErr) {}
+            } catch {
+                // Ignore fallback error
+            }
 
             return { success: false, error: error.message };
+        }
+        
+        // If standard Supabase insert succeeded, save it locally to ensure it bypasses any RLS SELECT restrictions
+        if (data && data.id) {
+            await saveEditedMediaOverride(data.id, data);
         }
         return { success: true, data };
     } catch (e: any) {
@@ -238,31 +240,40 @@ export async function deleteAnime(
         // 1. Mark as permanently deleted in local persistent storage so it NEVER returns on reload
         await markMediaAsDeletedLocally(animeId);
 
+        // If this is a local-only item, we are done! It doesn't exist in Supabase so don't try to delete it there.
+        if (String(animeId).startsWith('local_') || String(animeId).startsWith('debug_')) {
+            return { success: true, data: null };
+        }
+
         // 2. Delete related records that reference this anime (comments, favorites handled by CASCADE)
         try {
             await supabase.from('comments').delete().eq('movie_id', animeId);
-        } catch (commentDeleteErr) {
-            console.warn('Comment cleanup failed:', commentDeleteErr);
+        } catch (commentDeleteErr: any) {
+            console.warn(`Comment cleanup failed:`, commentDeleteErr);
         }
 
         // 3. Perform direct database delete on both Supabase and Docker PostgreSQL
         try {
             await dockerDb.from('anime').delete().eq('id', animeId);
-        } catch (dockerDeleteErr) {
-            console.warn('Docker anime delete failed:', dockerDeleteErr);
+        } catch (dockerDelErr: any) {
+            console.warn(`Docker anime delete failed:`, dockerDelErr);
         }
 
-        const { error } = await supabase.from('anime').delete().eq('id', animeId);
+        const { error } = await supabase
+            .from('anime')
+            .delete()
+            .eq('id', animeId);
+
         if (error) {
-            // Fallback: try Edge Function for admin-verified delete
-            const edgeResult = await callAdminOperation('delete_anime', { anime: { id: animeId } });
+            const edgeResult = await callAdminOperation('delete_anime', { id: animeId });
             if (edgeResult.success) return edgeResult;
-            return { success: false, error: error.message || 'Failed to delete anime from database' };
+
+            return { success: false, error: error.message };
         }
 
-        return { success: true };
+        return { success: true, data: null };
     } catch (e: any) {
-        return { success: false, error: e.message || 'Failed to delete anime' };
+        return { success: false, error: e.message || 'Failed to delete media' };
     }
 }
 
@@ -272,6 +283,11 @@ export async function updateAnimeFeatured(
 ): Promise<AdminOperationResult<any>> {
     // 1. Instantly save to persistent overrides so it updates everywhere in the UI
     await saveEditedMediaOverride(animeId, { is_featured: isFeatured });
+
+    // If this is a local-only item, we are done! It doesn't exist in Supabase so don't try to update it there.
+    if (String(animeId).startsWith('local_') || String(animeId).startsWith('debug_')) {
+        return { success: true, data: { id: animeId, is_featured: isFeatured } };
+    }
 
     try {
         // 2. Update directly in database
@@ -307,7 +323,7 @@ export async function getEditedMediaOverrides(): Promise<Record<string, any>> {
             json = await AsyncStorage.getItem(EDITED_MEDIA_STORAGE_KEY);
         }
         return json ? JSON.parse(json) : {};
-    } catch (_e) {
+    } catch {
         return {};
     }
 }
@@ -322,8 +338,8 @@ export async function saveEditedMediaOverride(animeId: string, updates: Record<s
         } else {
             await AsyncStorage.setItem(EDITED_MEDIA_STORAGE_KEY, json);
         }
-    } catch (_e) {
-      console.warn('saveEditedMediaOverride error:', _e);
+    } catch (_e: any) {
+      throw new Error(`saveEditedMediaOverride failed: ${_e.message || _e}`);
     }
 }
 
@@ -343,6 +359,11 @@ export async function updateAnime(
 ): Promise<AdminOperationResult<any>> {
     // 1. Instantly save to persistent overrides so it updates everywhere in the UI
     await saveEditedMediaOverride(animeId, updates);
+
+    // If this is a local-only item, we are done! It doesn't exist in Supabase so don't try to update it there.
+    if (String(animeId).startsWith('local_') || String(animeId).startsWith('debug_')) {
+        return { success: true, data: { id: animeId, ...updates } };
+    }
 
     try {
         const videoVal = updates.video_asset_key ?? updates.video_url;
@@ -424,33 +445,21 @@ export async function signOutAllOtherDevices(
             };
         }
 
-        const response = await fetch(
-            `${SUPABASE_URL}/functions/v1/sign-out-all-devices`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({
-                    current_device_id: currentDeviceId,
-                }),
-            }
-        );
+        const { data, error: invokeError } = await supabase.functions.invoke('sign-out-all-devices', {
+            body: { current_device_id: currentDeviceId },
+        });
 
-        if (!response.ok) {
-            const errorData = await response.json();
+        if (invokeError) {
             return {
                 success: false,
-                error: errorData.error || 'Operation failed',
+                error: invokeError.message || 'Operation failed',
             };
         }
 
-        const result = await response.json();
         return {
-            success: result.success,
-            data: result,
-            error: result.error,
+            success: data?.success ?? false,
+            data: data,
+            error: data?.error,
         };
     } catch (error) {
         return {

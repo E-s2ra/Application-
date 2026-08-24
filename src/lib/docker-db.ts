@@ -22,6 +22,8 @@ const SUPABASE_CLOUD_ANON_KEY =
  * On web (localhost / production) Docker is never reachable, so we fall back
  * directly to the hosted Supabase project — this eliminates ERR_CONNECTION_REFUSED.
  */
+import { supabase } from './supabase';
+
 const useLocalDocker = Platform.OS !== 'web';
 
 export const dockerDb = useLocalDocker
@@ -29,11 +31,7 @@ export const dockerDb = useLocalDocker
       auth: {
         persistSession: false,
         autoRefreshToken: false,
+        storageKey: 'docker-db-auth-local',
       },
     })
-  : createClient(SUPABASE_CLOUD_URL, SUPABASE_CLOUD_ANON_KEY, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+  : supabase;

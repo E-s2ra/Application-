@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import {
   StyleSheet,
   View,
@@ -115,21 +115,27 @@ export default function HomeScreen() {
 
       const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
       const { data, error } = result || {};
-
       let combined: AnimeItem[] = [];
-      if (!error && data && data.length > 0) {
-        const customItems = data
-          .filter((item: any) => !deletedIds.includes(item.id))
-          .map((item: any) => ({
-            ...item,
-            category: item.category || 'Anime Series',
-            published_at: item.published_at || item.created_at || null,
-            ...(overrides[item.id] || {}),
-          })) as AnimeItem[];
-        combined = [...customItems, ...DEFAULT_CATALOG.filter((d) => !deletedIds.includes(d.id)).map((d) => ({ ...d, ...(overrides[d.id] || {}) }))];
-      } else {
-        combined = DEFAULT_CATALOG.filter((d) => !deletedIds.includes(d.id)).map((d) => ({ ...d, ...(overrides[d.id] || {}) }));
-      }
+      const deleted = deletedIds.map(String);
+      const safeData = (!error && data) ? data : [];
+      
+      const customItems = safeData
+        .filter((item: any) => !deleted.includes(String(item.id)))
+        .map((item: any) => ({
+          ...item,
+          category: item.category || 'Anime Series',
+          published_at: item.published_at || item.created_at || null,
+          ...(overrides[String(item.id)] || {}),
+        })) as AnimeItem[];
+        
+      const defaultItems = DEFAULT_CATALOG
+        .filter((d) => !deleted.includes(String(d.id)))
+        .map((d) => ({ ...d, ...(overrides[String(d.id)] || {}) }));
+        
+      const newLocalItems = Object.values(overrides)
+        .filter((override: any) => !deleted.includes(String(override.id)) && !safeData.some((d: any) => String(d.id) === String(override.id)) && !DEFAULT_CATALOG.some(d => String(d.id) === String(override.id))) as AnimeItem[];
+
+      combined = [...newLocalItems, ...customItems, ...defaultItems];
 
       setAllMedia(combined);
     } catch (err) {
@@ -141,9 +147,11 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchMedia();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMedia();
+    }, [])
+  );
 
   // Filter media by Category
   const categoryFiltered =
@@ -173,7 +181,8 @@ export default function HomeScreen() {
       const pubDate = item.published_at || (item as any).created_at;
       if (!pubDate) return false;
       const publishedAt = new Date(pubDate).getTime();
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const now = new Date().getTime();
+      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
       return Number.isFinite(publishedAt) && publishedAt >= thirtyDaysAgo;
     })
     .sort((a, b) => {

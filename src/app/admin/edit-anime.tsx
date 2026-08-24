@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
-import { updateAnime } from '@/lib/admin-operations';
+import { updateAnime, getEditedMediaOverrides, getDeletedMediaIds } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, Lock, Sparkles, Trash2 } from 'lucide-react-native';
@@ -53,21 +53,33 @@ export default function EditAnimeScreen() {
     async function loadItem() {
       if (!id) return;
       try {
+        const [overrides, defaultIds] = await Promise.all([
+          getEditedMediaOverrides(),
+          getDeletedMediaIds()
+        ]);
+
         const { data, error } = await supabase
           .from('anime')
-          .select('*')
+          .select('id, title, description, image_url, video_asset_key, video_url, episodes, genre, category, is_featured')
           .eq('id', id)
           .single();
 
+        let animeData: any = null;
         if (!error && data) {
-          setTitle(data.title || '');
-          setDescription(data.description || '');
-          setImageUrl(data.image_url || '');
-          setVideoAssetKey(data.video_asset_key || data.video_url || '');
-          setEpisodes(String(data.episodes || 1));
-          setGenre(data.genre || '');
-          setCategory((data.category as MediaCategory) || 'Movies');
-          setIsFeatured(data.is_featured ?? false);
+          animeData = { ...data, ...(overrides[String(id)] || {}) };
+        } else if (overrides[String(id)]) {
+          animeData = overrides[String(id)];
+        }
+
+        if (animeData) {
+          setTitle(animeData.title || '');
+          setDescription(animeData.description || '');
+          setImageUrl(animeData.image_url || '');
+          setVideoAssetKey(animeData.video_asset_key || animeData.video_url || '');
+          setEpisodes(String(animeData.episodes || 1));
+          setGenre(animeData.genre || '');
+          setCategory((animeData.category as MediaCategory) || 'Movies');
+          setIsFeatured(animeData.is_featured ?? false);
         }
       } catch (_e) {
       } finally {
@@ -171,7 +183,7 @@ export default function EditAnimeScreen() {
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={[styles.screenTitle, { color: themeColors.text }]}>Edit Media</Text>
             <Text style={[styles.screenSubtitle, { color: themeColors.textSecondary }]}>
-              Changes will immediately update on all users' screens
+              Changes will immediately update on all users&apos; screens
             </Text>
           </View>
         </View>

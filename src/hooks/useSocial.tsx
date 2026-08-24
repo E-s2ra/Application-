@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
@@ -12,17 +12,17 @@ type SocialContextType = {
   toggleFollow: (targetUserId: string) => Promise<boolean>;
 };
 
-const SocialContext = createContext<SocialContextType | undefined>(undefined);
+const SocialContext = React.createContext<SocialContextType | undefined>(undefined);
 const SOCIAL_STORAGE_KEY = 'aniflix_social_follows_v1';
 
 export function SocialProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [followingIds, setFollowingIds] = useState<string[]>([]);
-  const [followersCount, setFollowersCount] = useState(128);
-  const [followingCount, setFollowingCount] = useState(42);
+  const [followingIds, setFollowingIds] = React.useState<string[]>([]);
+  const [followersCount] = React.useState(128);
+  const [followingCount, setFollowingCount] = React.useState(42);
 
   // Load follows on startup & sync with Supabase
-  useEffect(() => {
+  React.useEffect(() => {
     async function loadFollows() {
       try {
         let raw: string | null = null;
@@ -69,12 +69,12 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   };
 
-  const isFollowing = useCallback(
+  const isFollowing = React.useCallback(
     (targetUserId: string) => followingIds.includes(targetUserId),
     [followingIds]
   );
 
-  const toggleFollow = useCallback(
+  const toggleFollow = React.useCallback(
     async (targetUserId: string): Promise<boolean> => {
       const already = followingIds.includes(targetUserId);
       const updated = already
@@ -119,7 +119,7 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useSocial() {
-  const context = useContext(SocialContext);
+  const context = React.useContext(SocialContext);
   if (!context) {
     throw new Error('useSocial must be used within a SocialProvider');
   }

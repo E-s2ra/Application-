@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { dockerDb } from '@/lib/docker-db';
@@ -67,7 +67,7 @@ export const SPIN_REWARDS: SpinReward[] = [
   { id: '3', label: '1-Day VIP Pass', icon: '👑', type: 'vip', amount: 1, color: '#9C27B0' },
   { id: '4', label: '150 Coins', icon: '💰', type: 'coins', amount: 150, color: '#FF9800' },
   { id: '5', label: '250 XP', icon: '⚡', type: 'xp', amount: 250, color: '#00E676' },
-  { id: '6', label: '500 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 500, color: '#E50914' },
+  { id: '6', label: '500 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 500, color: '#8B0000' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -202,8 +202,8 @@ export const THEMES_LIST: AppTheme[] = [
     id: 'theme-crimson',
     name: 'AniFlix Crimson (Default)',
     description: 'Classic cinema red with deep OLED obsidian background.',
-    primary: '#E50914',
-    glow: 'rgba(229, 9, 20, 0.4)',
+    primary: '#8B0000',
+    glow: 'rgba(139, 0, 0, 0.4)',
     accent: '#FFB800',
     badgeBg: '#1A0E10',
     costCoins: 0,
@@ -261,7 +261,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     title: 'First Stream',
     description: 'Streamed your first title on AniFlix',
     icon: '🎬',
-    color: '#E50914',
+    color: '#8B0000',
     isUnlocked: true,
     unlockedAt: 'Aug 19, 2026',
   },
@@ -462,7 +462,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         }
 
         // Live Docker Postgres Sync
-        if (user?.id && !user.id.startsWith('guest-')) {
+        if (user?.id && !user.id.startsWith('guest-') && Platform.OS !== 'web') {
           const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
           const syncPromise = (async () => {
             // 1. Fetch Profile from local Docker Postgres

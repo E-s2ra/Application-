@@ -3,12 +3,13 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
+import { dockerDb } from '@/lib/docker-db';
 import {
   getPendingManualPayments,
   approveManualPayment,
   rejectManualPayment,
 } from '@/lib/rasedi-payment';
-import { useRouter } from 'expo-router';
+import { router, useRouter, useFocusEffect } from 'expo-router';
 import {
   ArrowLeft,
   Lock,
@@ -24,7 +25,7 @@ import {
   Film,
   Crown,
 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -65,19 +66,60 @@ export default function AdminPanelScreen() {
 
   const fetchAnime = async () => {
     try {
-      const [{ data, error }, { count: vips }, { count: payments }, pending] = await Promise.all([
+      const isWeb = Platform.OS === 'web';
+      
+      const promises: any[] = [
         supabase
           .from('anime')
           .select('id, title, episodes, genre, category, is_featured')
           .order('created_at', { ascending: false }),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
-        supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-        getPendingManualPayments(),
-      ]);
+      ];
 
-      if (!error && data) {
-        setAnimeList(data);
+      if (!isWeb) {
+        promises.push(
+          dockerDb.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
+          dockerDb.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+          getPendingManualPayments()
+        );
+      } else {
+        promises.push(
+          Promise.resolve({ count: 0 }),
+          Promise.resolve({ count: 0 }),
+          Promise.resolve([])
+        );
       }
+
+      promises.push(
+        import('@/lib/admin-operations').then(m => m.getEditedMediaOverrides()),
+        import('@/lib/admin-operations').then(m => m.getDeletedMediaIds())
+      );
+
+      const [
+        { data, error }, 
+        { count: vips }, 
+        { count: payments }, 
+        pending, 
+        overrides, 
+        deletedIds
+      ] = await Promise.all(promises);
+
+      let combined: Anime[] = [];
+      const safeData = (!error && data) ? data : [];
+      
+      const deletedStrings = deletedIds.map(String);
+
+      // Merge Cloud Supabase data with Local Overrides
+      const cloudItems = safeData
+        .filter((item: any) => !deletedStrings.includes(String(item.id)))
+        .map((item: any) => ({ ...item, ...(overrides[String(item.id)] || {}) }));
+        
+      // Add any newly added items that only exist in local overrides
+      const newLocalItems = Object.values(overrides)
+        .filter((override: any) => !deletedStrings.includes(String(override.id)) && !safeData.some((d: any) => String(d.id) === String(override.id))) as Anime[];
+
+      combined = [...newLocalItems, ...cloudItems];
+
+      setAnimeList(combined);
       if (typeof vips === 'number') setVipCount(vips);
       if (typeof payments === 'number') setPaymentsCount(payments);
       setPendingPayments(pending || []);
@@ -125,9 +167,11 @@ export default function AdminPanelScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchAnime();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAnime();
+    }, [])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);

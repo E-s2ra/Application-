@@ -59,18 +59,24 @@ export default function SearchScreen() {
         const { data, error } = result || {};
 
         let combined: AnimeItem[] = [];
-        if (!error && data && data.length > 0) {
-          const customItems = data
-            .filter((item: any) => !deletedIds.includes(item.id))
-            .map((item: any) => ({
-              ...item,
-              category: item.category || 'Anime Series',
-              ...(overrides[item.id] || {}),
-            })) as AnimeItem[];
-          combined = [...customItems, ...DEFAULT_CATALOG.filter((d) => !deletedIds.includes(d.id)).map((d) => ({ ...d, ...(overrides[d.id] || {}) }))];
-        } else {
-          combined = DEFAULT_CATALOG.filter((d) => !deletedIds.includes(d.id)).map((d) => ({ ...d, ...(overrides[d.id] || {}) }));
-        }
+        const safeData = (!error && data) ? data : [];
+        
+        const customItems = safeData
+          .filter((item: any) => !deletedIds.includes(item.id))
+          .map((item: any) => ({
+            ...item,
+            category: item.category || 'Anime Series',
+            ...(overrides[item.id] || {}),
+          })) as AnimeItem[];
+          
+        const defaultItems = DEFAULT_CATALOG
+          .filter((d) => !deletedIds.includes(d.id))
+          .map((d) => ({ ...d, ...(overrides[d.id] || {}) }));
+          
+        const newLocalItems = Object.values(overrides)
+          .filter((override: any) => !deletedIds.includes(override.id) && !safeData.some((d: any) => d.id === override.id) && !DEFAULT_CATALOG.some(d => d.id === override.id)) as AnimeItem[];
+
+        combined = [...newLocalItems, ...customItems, ...defaultItems];
         setMediaList(combined);
       } catch (err) {
         console.warn('Error loading search data:', err);

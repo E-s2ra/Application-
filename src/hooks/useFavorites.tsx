@@ -4,6 +4,8 @@ import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 
+import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
+
 export type MediaCategory = 'Movies' | 'Anime Movies' | 'K-Drama' | 'Drama' | 'Anime Series';
 
 export type AnimeItem = {
@@ -31,8 +33,6 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 
 const STORAGE_KEY = 'user_anime_favorites_v1';
 
-import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
-
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<AnimeItem[]>([]);
@@ -46,8 +46,8 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       } else {
         await AsyncStorage.setItem(STORAGE_KEY, json);
       }
-    } catch (err) {
-      console.warn('Error saving local favorites:', err);
+    } catch (err: any) {
+      throw new Error(`Failed to save local favorites: ${err.message || err}`);
     }
   };
 
@@ -93,8 +93,8 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
             }
           }
         }
-      } catch (err) {
-        console.warn('Error loading favorites:', err);
+      } catch (err: any) {
+        throw new Error(`Failed to load favorites: ${err.message || err}`);
       } finally {
         setIsLoading(false);
       }
@@ -133,8 +133,8 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
             .from('favorites')
             .insert({ user_id: user.id, anime_id: anime.id });
         }
-      } catch {
-        // Silently fail if table isn't created yet; local state handles the UI seamlessly
+      } catch (err: any) {
+        throw new Error(`Failed to sync favorite to cloud: ${err.message || err}`);
       }
     }
   };

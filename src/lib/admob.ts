@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+
 import { dockerDb } from './docker-db';
 import {
   ADMOB_IDS,

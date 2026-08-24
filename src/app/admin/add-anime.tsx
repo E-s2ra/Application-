@@ -71,6 +71,7 @@ export default function AddAnimeScreen() {
       is_featured: isFeatured,
     });
 
+
     if (!result.success) {
       setLoading(false);
       if (Platform.OS === 'web' && typeof window !== 'undefined') {

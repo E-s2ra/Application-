@@ -40,7 +40,7 @@ export function AdMobRewardedModal() {
   const [secondsRemaining, setSecondsRemaining] = useState(AD_TOTAL_SECONDS);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [progressAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!isAdModalVisible) {

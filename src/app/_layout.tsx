@@ -15,6 +15,8 @@ import { NotificationsProvider } from '@/hooks/useNotifications';
 import { AniFlixSplashScreen } from '@/components/AniFlixSplashScreen';
 import { AdMobRewardedModal } from '@/components/AdMobRewardedModal';
 
+import { LanguageProvider } from '@/hooks/use-language';
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function PrivacyProtection() {
@@ -106,8 +108,6 @@ function RootNavigation({
     </View>
   );
 }
-
-import { LanguageProvider } from '@/hooks/use-language';
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);

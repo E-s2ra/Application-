@@ -207,8 +207,8 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
             return combined;
           });
         }
-      } catch (_err) {
-        // Silently use local reviews
+      } catch {
+        // Background cache failure shouldn't crash applocal reviews
       }
     }
     load();

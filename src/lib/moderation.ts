@@ -5,7 +5,7 @@
  */
 
 // Category-based keyword patterns (case-insensitive)
-const INAPPROPRIATE_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
+const INAPPROPRIATE_PATTERNS: { pattern: RegExp; reason: string }[] = [
   {
     pattern: /\b(porn|pornography|pornhub|xvideos|xnxx|hentai|nsfw|erotic|xxx|sex video|camgirl|onlyfans)\b/i,
     reason: 'Explicit sexual or pornographic content is not permitted.',
@@ -27,6 +27,7 @@ const INAPPROPRIATE_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
 export type ModerationResult = {
   isSafe: boolean;
   reason?: string;
+  matches?: string[];
   sanitizedText: string;
 };
 

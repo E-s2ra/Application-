@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image, Pressable } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -14,11 +14,11 @@ interface AniFlixSplashScreenProps {
 export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const themeColors = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const logoScaleAnim = useRef(new Animated.Value(0.75)).current;
-  const logoOpacityAnim = useRef(new Animated.Value(0)).current;
-  const glowPulseAnim = useRef(new Animated.Value(0.8)).current;
-  const screenFadeAnim = useRef(new Animated.Value(1)).current;
+  const [progressAnim] = useState(() => new Animated.Value(0));
+  const [logoScaleAnim] = useState(() => new Animated.Value(0.75));
+  const [logoOpacityAnim] = useState(() => new Animated.Value(0));
+  const [glowPulseAnim] = useState(() => new Animated.Value(0.8));
+  const [screenFadeAnim] = useState(() => new Animated.Value(1));
 
   const [loadingText, setLoadingText] = useState(
     language === 'ku' ? '🎬 دەستپێکردنی جیهانی ئەنیفلیکس...' : '🎬 Initializing AniFlix Universe...'

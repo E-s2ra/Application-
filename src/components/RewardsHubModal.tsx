@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -28,10 +28,13 @@ import {
   ShieldCheck,
   CheckCircle,
   Film,
+  Clock,
+  LogOut,
 } from 'lucide-react-native';
 import { useGamification, SPIN_REWARDS, SpinReward } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
 import { VipSubscriptionModal } from './VipSubscriptionModal';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RewardsHubModalProps {
   visible: boolean;
@@ -40,6 +43,7 @@ interface RewardsHubModalProps {
 
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
+  const { user } = useAuth();
   const { showRewardedAd } = useAdMob();
   const [showVipModal, setShowVipModal] = useState(false);
   const {
@@ -66,7 +70,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     claimMission,
     unlockTheme,
     equipTheme,
-    activateVIP,
   } = useGamification();
 
   const [activeTab, setActiveTab] = useState<
@@ -74,12 +77,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   >('missions');
   const [missionFilter, setMissionFilter] = useState<'all' | 'daily' | 'weekly' | 'event'>('all');
 
-  // Spin Wheel Animation
-  const spinAnim = useRef(new Animated.Value(0)).current;
+  const [spinAnim] = useState(() => new Animated.Value(0));
   const [isSpinning, setIsSpinning] = useState(false);
   const [wonReward, setWonReward] = useState<SpinReward | null>(null);
 
-  // Level XP Progress
   const levelXPProgress = xp - currentLevelBaseXP;
   const levelXPTarget = nextLevelXP - currentLevelBaseXP;
   const xpPercent = Math.min(100, Math.max(0, (levelXPProgress / levelXPTarget) * 100));
@@ -641,8 +642,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     </Modal>
   );
 }
-
-const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   modalOverlay: {

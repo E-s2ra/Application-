@@ -142,20 +142,25 @@ export default function WatchScreen() {
           .neq('id', id)
           .limit(6);
 
-        if (recs && recs.length > 0) {
-          const filteredRecs = recs
-            .filter((item: any) => !deletedIds.includes(item.id))
-            .map((item: any) => ({ ...(item as AnimeItem), ...(overrides[item.id] || {}) }));
-          setRecommendations(filteredRecs);
-        } else {
-          const filteredRecs = DEFAULT_CATALOG
-            .filter((item) => item.id !== id && !deletedIds.includes(item.id))
-            .map((item) => ({ ...item, ...(overrides[item.id] || {}) }))
-            .slice(0, 6);
-          setRecommendations(filteredRecs);
-        }
-      } catch (err) {
-        console.warn('Error loading watch anime:', err);
+        let finalRecs: AnimeItem[] = [];
+        const safeRecs = (recs && recs.length > 0) ? recs : [];
+
+        const customRecs = safeRecs
+          .filter((item: any) => !deletedIds.includes(item.id))
+          .map((item: any) => ({ ...(item as AnimeItem), ...(overrides[item.id] || {}) }));
+          
+        const defaultRecs = DEFAULT_CATALOG
+          .filter((item) => !deletedIds.includes(item.id))
+          .map((item) => ({ ...item, ...(overrides[item.id] || {}) }));
+          
+        const localRecs = Object.values(overrides)
+          .filter((override: any) => !deletedIds.includes(override.id) && override.id !== id && !safeRecs.some((r: any) => r.id === override.id) && !DEFAULT_CATALOG.some(d => d.id === override.id)) as AnimeItem[];
+
+        finalRecs = [...localRecs, ...customRecs, ...defaultRecs].slice(0, 6);
+        setRecommendations(finalRecs);
+
+      } catch (err: any) {
+        setPlaybackError('Failed to load anime details. Please try again.');
       }
     }
     loadData();
@@ -213,8 +218,8 @@ export default function WatchScreen() {
       } else if (typeof player.currentTime === 'number') {
         player.currentTime = Math.max(0, player.currentTime - 10);
       }
-    } catch (e) {
-      console.warn('Seek error:', e);
+    } catch (e: any) {
+      setPlaybackError('Seek operation failed.');
     }
   };
 
@@ -226,8 +231,8 @@ export default function WatchScreen() {
       } else if (typeof player.currentTime === 'number') {
         player.currentTime = player.currentTime + 10;
       }
-    } catch (e) {
-      console.warn('Seek error:', e);
+    } catch (e: any) {
+      setPlaybackError('Seek operation failed.');
     }
   };
 
@@ -257,8 +262,8 @@ export default function WatchScreen() {
     setShowSpeedMenu(false);
     try {
       player.playbackRate = speed;
-    } catch (e) {
-      console.warn('Playback speed error:', e);
+    } catch (e: any) {
+      setPlaybackError('Failed to adjust playback speed.');
     }
   };
 
@@ -268,8 +273,8 @@ export default function WatchScreen() {
     setIsMuted(nextMuted);
     try {
       player.muted = nextMuted;
-    } catch (e) {
-      console.warn('Mute error:', e);
+    } catch (e: any) {
+      setPlaybackError('Failed to mute audio.');
     }
   };
 
@@ -279,8 +284,8 @@ export default function WatchScreen() {
       if (videoViewRef.current?.enterFullscreen) {
         await videoViewRef.current.enterFullscreen();
       }
-    } catch (e) {
-      console.warn('Fullscreen error:', e);
+    } catch (e: any) {
+      setPlaybackError('Failed to toggle fullscreen.');
     }
   };
 
