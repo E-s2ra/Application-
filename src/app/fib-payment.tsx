@@ -1,36 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/hooks/use-language';
-import { ArrowLeft, Check, CheckCircle2, ChevronRight, Copy, CreditCard, Loader2, Sparkles, XCircle } from 'lucide-react-native';
-import * as Clipboard from 'expo-clipboard';
-import { RASEDI_VIP_PLANS, RasediPlanId, submitManualPaymentProof } from '@/lib/rasedi-payment';
-import { IRAQI_PAYMENT_METHODS } from '@/constants/payment-methods';
+import { useAuth } from '@/hooks/useAuth';
+import { ArrowLeft, Check, Crown, ExternalLink, MessageSquare, Send, ShieldCheck, Sparkles } from 'lucide-react-native';
+import { RASEDI_VIP_PLANS, RasediPlanId } from '@/lib/rasedi-payment';
+import { OFFICIAL_CONTACT_CHANNELS, createWhatsAppVipMessage, createTelegramVipMessage } from '@/constants/payment-methods';
 
 export default function FibPaymentScreen() {
   const router = useRouter();
   const themeColors = useTheme();
+  const { user } = useAuth();
   const { language } = useTranslation();
   const isKu = language === 'ku';
 
-  const activeMethod = IRAQI_PAYMENT_METHODS[0]; // FIB is at index 0
   const [selectedPlanId, setSelectedPlanId] = useState<RasediPlanId>('vip_3_months');
-  const [transactionRef, setTransactionRef] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'failed'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
 
   const selectedPlan = RASEDI_VIP_PLANS.find((p) => p.id === selectedPlanId)!;
-
-  const handleCopy = async (text: string, label: string) => {
-    await Clipboard.setStringAsync(text);
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert(`${label} copied to clipboard!`);
-    } else {
-      Alert.alert('Copied', `${label} copied to clipboard!`);
-    }
-  };
 
   const getPlanDurationLabel = (id: string) => {
     switch (id) {
@@ -42,88 +29,49 @@ export default function FibPaymentScreen() {
     }
   };
 
-  const handleSubmitProof = async () => {
-    if (!transactionRef.trim()) {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(isKu ? 'تکایە ژمارەی حەواڵە بنووسە' : 'Please enter the transaction reference number.');
+  const handleContactWhatsApp = async () => {
+    const url = createWhatsAppVipMessage(
+      getPlanDurationLabel(selectedPlan.id),
+      selectedPlan.priceIQD,
+      user?.email
+    );
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
       } else {
-        Alert.alert('Required', isKu ? 'تکایە ژمارەی حەواڵە بنووسە' : 'Please enter the transaction reference number.');
+        await Linking.openURL(`https://wa.me/${OFFICIAL_CONTACT_CHANNELS.whatsappNumber}`);
       }
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitStatus('idle');
-
-    const result = await submitManualPaymentProof({
-      planId: selectedPlanId,
-      method: activeMethod.id,
-      transactionRef: transactionRef.trim(),
-    });
-
-    setIsSubmitting(false);
-
-    if (result.success) {
-      setSubmitStatus('success');
-    } else {
-      setSubmitStatus('failed');
-      setErrorMessage(result.error || 'Failed to submit payment proof.');
+    } catch (_err) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.open(url, '_blank');
+      } else {
+        Alert.alert('Contact Support', `WhatsApp: ${OFFICIAL_CONTACT_CHANNELS.whatsappDisplay}`);
+      }
     }
   };
 
-  if (submitStatus === 'success') {
-    return (
-      <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <ArrowLeft color={themeColors.text} size={24} />
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: themeColors.text }]}>
-            {isKu ? 'پارەدان سەرکەوتوو بوو' : 'Payment Submitted'}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        <View style={styles.successContainer}>
-          <View style={styles.successIconWrapper}>
-            <CheckCircle2 color="#00E676" size={80} />
-          </View>
-          <Text style={[styles.successTitle, { color: themeColors.text }]}>
-            {isKu ? 'داواکارییەکەت نێردرا!' : 'Request Sent!'}
-          </Text>
-          <Text style={[styles.successSubtitle, { color: themeColors.textSecondary }]}>
-            {isKu
-              ? 'سوپاس بۆ ناردنی پارە. ئەدمینەکانمان بە زووترین کات پێداچوونەوەی بۆ دەکەن و ئەکاونتەکەت چالاک دەکەن.'
-              : 'Thank you for your payment. Our admins will verify the transaction and activate your VIP shortly.'}
-          </Text>
-          
-          <View style={styles.successDetailsCard}>
-            <View style={styles.successRow}>
-              <Text style={styles.successLabel}>{isKu ? 'پلان:' : 'Plan:'}</Text>
-              <Text style={styles.successValue}>{getPlanDurationLabel(selectedPlanId)}</Text>
-            </View>
-            <View style={styles.successRow}>
-              <Text style={styles.successLabel}>{isKu ? 'بڕی پارە:' : 'Amount:'}</Text>
-              <Text style={styles.successValue}>{selectedPlan.priceIQD.toLocaleString()} IQD</Text>
-            </View>
-            <View style={styles.successRow}>
-              <Text style={styles.successLabel}>{isKu ? 'ژمارەی حەواڵە:' : 'Reference:'}</Text>
-              <Text style={styles.successValue}>{transactionRef}</Text>
-            </View>
-          </View>
-
-          <Pressable
-            style={[styles.primaryBtn, { backgroundColor: themeColors.primary, marginTop: 40 }]}
-            onPress={() => router.replace('/(tabs)/profile')}
-          >
-            <Text style={styles.primaryBtnText}>
-              {isKu ? 'گەڕانەوە بۆ پرۆفایل' : 'Back to Profile'}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+  const handleContactTelegram = async () => {
+    const url = createTelegramVipMessage(
+      getPlanDurationLabel(selectedPlan.id),
+      selectedPlan.priceIQD,
+      user?.email
     );
-  }
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        await Linking.openURL(`https://t.me/${OFFICIAL_CONTACT_CHANNELS.telegramUsername}`);
+      }
+    } catch (_err) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.open(url, '_blank');
+      } else {
+        Alert.alert('Contact Support', `Telegram: ${OFFICIAL_CONTACT_CHANNELS.telegramDisplay}`);
+      }
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
@@ -132,7 +80,7 @@ export default function FibPaymentScreen() {
           <ArrowLeft color={themeColors.text} size={24} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: themeColors.text }]}>
-          {isKu ? 'پارەدان لە ڕێگەی FIB' : 'FIB Payment'}
+          {isKu ? 'کڕینی ئەندامێتی VIP' : 'VIP Subscription Payment'}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -145,7 +93,7 @@ export default function FibPaymentScreen() {
             <Text style={styles.stepNum}>1</Text>
           </View>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-            {isKu ? 'هەڵبژاردنی پلان' : 'Select Plan'}
+            {isKu ? 'هەڵبژاردنی پلانی VIP' : 'Select VIP Plan'}
           </Text>
         </View>
 
@@ -178,56 +126,67 @@ export default function FibPaymentScreen() {
           })}
         </View>
 
-        {/* Step 2: Transfer Details */}
+        {/* Step 2: Contact Support */}
         <View style={[styles.sectionHeader, { marginTop: 32 }]}>
           <View style={[styles.stepCircle, { backgroundColor: themeColors.primary }]}>
             <Text style={styles.stepNum}>2</Text>
           </View>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-            {isKu ? 'زانیارییەکانی حەواڵە' : 'Transfer Details'}
+            {isKu ? 'پەیوەندیکردن بۆ چالاککردن' : 'Contact Support to Activate'}
           </Text>
         </View>
 
-        <View style={styles.transferBox}>
-          <View style={styles.transferHeader}>
-            <CreditCard color="#38BDF8" size={24} />
-            <Text style={styles.transferTitle}>{isKu ? activeMethod.nameKu : activeMethod.name}</Text>
-          </View>
-          <Text style={styles.transferInstructions}>
-            {isKu ? activeMethod.instructionsKu : activeMethod.instructions}
+        <View style={styles.contactContainer}>
+          <Text style={styles.contactInstructions}>
+            {isKu
+              ? 'بۆ چالاککردنی خێرای VIP، دەتوانیت ڕاستەوخۆ لە ڕێگەی واتسئاپ یان تێلیگرام پەیوەندی بە بەڕێوەبەران بوبکەیت:'
+              : 'To activate your VIP plan immediately, contact our official support team via WhatsApp or Telegram:'}
           </Text>
-          
-          <View style={styles.amountBanner}>
-            <Text style={styles.amountLabel}>{isKu ? 'بڕی حەواڵە دەکرێت' : 'Amount to send'}</Text>
-            <Text style={styles.amountValue}>{selectedPlan.priceIQD.toLocaleString()} IQD</Text>
+
+          <View style={styles.selectedPlanSummary}>
+            <Text style={styles.summaryLabel}>{isKu ? 'پلانی هەڵبژێردراو:' : 'Selected Plan:'}</Text>
+            <Text style={styles.summaryValue}>
+              {getPlanDurationLabel(selectedPlan.id)} — {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دینار' : 'IQD'}
+            </Text>
           </View>
 
-          <View style={styles.accountCard}>
-            <View>
-              <Text style={styles.accountLabel}>{isKu ? 'ژمارەی هەژمار' : 'Account Number'}</Text>
-              <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
-              <Text style={styles.accountName}>{activeMethod.accountName}</Text>
+          {/* WhatsApp Button */}
+          <Pressable style={styles.whatsappBtn} onPress={handleContactWhatsApp}>
+            <View style={styles.btnLeftContent}>
+              <View style={styles.whatsappIconCircle}>
+                <MessageSquare size={20} color="#FFF" />
+              </View>
+              <View>
+                <Text style={styles.btnTitle}>
+                  {isKu ? 'پەیوەندی لە ڕێگەی WhatsApp' : 'Contact via WhatsApp'}
+                </Text>
+                <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.whatsappDisplay}</Text>
+              </View>
             </View>
-            <Pressable 
-              style={styles.copyBtn}
-              onPress={() => handleCopy(activeMethod.accountNumber, 'Account Number')}
-            >
-              <Copy color="#38BDF8" size={16} />
-              <Text style={styles.copyText}>{isKu ? 'کۆپی' : 'Copy'}</Text>
-            </Pressable>
-          </View>
+            <ExternalLink size={18} color="#25D366" />
+          </Pressable>
+
+          {/* Telegram Button */}
+          <Pressable style={styles.telegramBtn} onPress={handleContactTelegram}>
+            <View style={styles.btnLeftContent}>
+              <View style={styles.telegramIconCircle}>
+                <Send size={20} color="#FFF" />
+              </View>
+              <View>
+                <Text style={styles.btnTitle}>
+                  {isKu ? 'پەیوەندی لە ڕێگەی Telegram' : 'Contact via Telegram'}
+                </Text>
+                <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.telegramDisplay}</Text>
+              </View>
+            </View>
+            <ExternalLink size={18} color="#0088CC" />
+          </Pressable>
         </View>
 
-        {/* Step 3: Enter Proof */}
-        <View style={[styles.sectionHeader, { marginTop: 32 }]}>
-          <View style={[styles.stepCircle, { backgroundColor: themeColors.primary }]}>
-            <Text style={styles.stepNum}>3</Text>
-          </View>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-            {isKu ? 'دڵنیابوونەوەی پارەدان' : 'Confirm Payment'}
-          </Text>
-        </View>
-
+        /*
+        ================================================================================
+        ARCHIVED MANUAL FIB SUBMISSION FORM (KEEP FOR FUTURE RESTORATION)
+        ================================================================================
         <View style={styles.proofBox}>
           <Text style={styles.inputLabel}>
             {isKu ? 'ژمارەی حەواڵە (Transaction Number)' : 'Transaction Reference Number'}
@@ -238,40 +197,20 @@ export default function FibPaymentScreen() {
             placeholderTextColor="#8E8EA4"
             value={transactionRef}
             onChangeText={setTransactionRef}
-            editable={!isSubmitting}
-            keyboardType="default"
           />
-
-          {submitStatus === 'failed' && (
-            <View style={styles.errorBox}>
-              <XCircle color="#FF3B30" size={16} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
-            </View>
-          )}
-
-          <Pressable
-            style={[
-              styles.submitBtn, 
-              (!transactionRef.trim() || isSubmitting) && styles.submitBtnDisabled
-            ]}
-            onPress={handleSubmitProof}
-            disabled={!transactionRef.trim() || isSubmitting}
-          >
-            {isSubmitting ? (
-              <Loader2 color="#FFF" size={20} />
-            ) : (
-              <>
-                <Text style={styles.submitBtnText}>
-                  {isKu ? 'ناردنی دڵنیایی پارەدان' : 'Submit Payment Proof'}
-                </Text>
-                <ChevronRight color="#FFF" size={20} />
-              </>
-            )}
+          <Pressable style={styles.submitBtn} onPress={handleSubmitProof}>
+            <Text style={styles.submitBtnText}>{isKu ? 'ناردنی دڵنیایی پارەدان' : 'Submit Payment Proof'}</Text>
           </Pressable>
-          <Text style={styles.disclaimerText}>
-            {isKu 
-              ? 'تێبینی: ئەکاونتەکەت چالاک دەکرێت دوای ئەوەی ئەدمینەکانمان بەدواداچوون بۆ حەواڵەکەت دەکەن.'
-              : 'Note: Your VIP will be activated once our admins verify your transaction.'}
+        </View>
+        ================================================================================
+        */
+
+        <View style={styles.securityFooter}>
+          <ShieldCheck size={16} color="#8E8EA4" />
+          <Text style={styles.securityText}>
+            {isKu
+              ? 'پشتیوانی خێرا 24/7 · بە تەواوی پارێزراوە لەلایەن AniFlix'
+              : 'Fast 24/7 Support · Direct assistance from AniFlix'}
           </Text>
         </View>
 
@@ -380,211 +319,102 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FFF',
   },
-  transferBox: {
+  contactContainer: {
     backgroundColor: '#141420',
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
     borderColor: '#242436',
+    gap: 14,
   },
-  transferHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  transferTitle: {
-    color: '#38BDF8',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  transferInstructions: {
+  contactInstructions: {
     color: '#E0E0F0',
     fontSize: 14,
     lineHeight: 22,
-    marginBottom: 20,
   },
-  amountBanner: {
-    backgroundColor: '#1E1E2C',
-    borderRadius: 12,
-    padding: 16,
+  selectedPlanSummary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    backgroundColor: '#1A1810',
+    borderWidth: 1,
+    borderColor: '#3D3010',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  amountLabel: {
+  summaryLabel: {
     color: '#8E8EA4',
     fontSize: 14,
     fontWeight: '600',
   },
-  amountValue: {
+  summaryValue: {
     color: '#FFB800',
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '800',
   },
-  accountCard: {
+  whatsappBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0D0D15',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: '#0F291E',
     borderWidth: 1,
-    borderColor: '#262638',
+    borderColor: '#25D366',
+    borderRadius: 14,
+    padding: 16,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
-  accountLabel: {
+  whatsappIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#25D366',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  telegramBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0E2433',
+    borderWidth: 1,
+    borderColor: '#0088CC',
+    borderRadius: 14,
+    padding: 16,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+  },
+  telegramIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0088CC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnLeftContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  btnTitle: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  btnSubtitle: {
     color: '#8E8EA4',
     fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 4,
+    marginTop: 2,
   },
-  accountNumber: {
-    color: '#FFF',
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  accountName: {
-    color: '#FFB800',
-    fontSize: 13,
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  copyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#1E1E2C',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#38BDF8',
-  },
-  copyText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  proofBox: {
-    backgroundColor: '#141420',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#242436',
-  },
-  inputLabel: {
-    color: '#E0E0F0',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  input: {
-    backgroundColor: '#0D0D15',
-    borderWidth: 1,
-    borderColor: '#262638',
-    borderRadius: 12,
-    padding: 16,
-    color: '#FFF',
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  submitBtn: {
-    backgroundColor: '#E50914',
-    paddingVertical: 16,
-    borderRadius: 12,
+  securityFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    marginTop: 24,
   },
-  submitBtnDisabled: {
-    opacity: 0.5,
-  },
-  submitBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  disclaimerText: {
+  securityText: {
     color: '#8E8EA4',
     fontSize: 12,
-    textAlign: 'center',
-    marginTop: 16,
-    lineHeight: 18,
-  },
-  successContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  successIconWrapper: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(0, 230, 118, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    marginBottom: 12,
-  },
-  successSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  successDetailsCard: {
-    backgroundColor: '#1E1E2C',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    gap: 16,
-  },
-  successRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  successLabel: {
-    color: '#8E8EA4',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  successValue: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  primaryBtn: {
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
   },
 });
