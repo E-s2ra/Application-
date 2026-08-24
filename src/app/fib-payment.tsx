@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/hooks/use-language';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, Check, Crown, ExternalLink, MessageSquare, Send, ShieldCheck, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, ExternalLink, MessageSquare, Send, ShieldCheck } from 'lucide-react-native';
 import { RASEDI_VIP_PLANS, RasediPlanId } from '@/lib/rasedi-payment';
 import { OFFICIAL_CONTACT_CHANNELS, createWhatsAppVipMessage, createTelegramVipMessage } from '@/constants/payment-methods';
 
@@ -183,7 +183,7 @@ export default function FibPaymentScreen() {
           </Pressable>
         </View>
 
-        /*
+        {/*
         ================================================================================
         ARCHIVED MANUAL FIB SUBMISSION FORM (KEEP FOR FUTURE RESTORATION)
         ================================================================================
@@ -195,15 +195,12 @@ export default function FibPaymentScreen() {
             style={styles.input}
             placeholder={isKu ? 'نموونە: 123456789' : 'e.g. 123456789'}
             placeholderTextColor="#8E8EA4"
-            value={transactionRef}
-            onChangeText={setTransactionRef}
+            value=""
+            onChangeText={() => {}}
           />
-          <Pressable style={styles.submitBtn} onPress={handleSubmitProof}>
-            <Text style={styles.submitBtnText}>{isKu ? 'ناردنی دڵنیایی پارەدان' : 'Submit Payment Proof'}</Text>
-          </Pressable>
         </View>
         ================================================================================
-        */
+        */}
 
         <View style={styles.securityFooter}>
           <ShieldCheck size={16} color="#8E8EA4" />

@@ -273,7 +273,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               </Pressable>
             </View>
 
-            /*
+            {/*
             ================================================================================
             ARCHIVED MANUAL FIB TRANSACTION FORM (KEEP FOR FUTURE RESTORATION)
             ================================================================================
@@ -295,7 +295,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               </View>
             </View>
             ================================================================================
-            */
+            */}
 
             <View style={styles.securityFooter}>
               <ShieldCheck size={14} color="#8E8EA4" />
