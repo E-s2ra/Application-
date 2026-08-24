@@ -35,6 +35,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -63,6 +64,50 @@ export default function AdminPanelScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [instantEmail, setInstantEmail] = useState('');
+  const [instantDays, setInstantDays] = useState(90);
+  const [grantingVip, setGrantingVip] = useState(false);
+
+  const handleInstantGrantVip = async () => {
+    if (!instantEmail.trim()) {
+      const msg = 'Please enter a user email address.';
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(msg);
+      else Alert.alert('Required', msg);
+      return;
+    }
+    setGrantingVip(true);
+    const email = instantEmail.trim().toLowerCase();
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + instantDays);
+    const isoExpiry = expiryDate.toISOString();
+
+    try {
+      try {
+        await dockerDb.from('profiles').update({
+          is_vip: true,
+          vip_expires_at: isoExpiry,
+        }).ilike('email', email);
+      } catch (_e) {}
+
+      await supabase.from('profiles').update({
+        is_vip: true,
+        vip_expires_at: isoExpiry,
+      }).ilike('email', email);
+
+      const successMsg = `VIP activated for ${email} (${instantDays} days)! 🎉`;
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(successMsg);
+      else Alert.alert('VIP Activated', successMsg);
+
+      setInstantEmail('');
+      fetchAnime();
+    } catch (err: any) {
+      const errMs = err.message || 'Failed to grant VIP.';
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(errMs);
+      else Alert.alert('Error', errMs);
+    } finally {
+      setGrantingVip(false);
+    }
+  };
 
   const fetchAnime = async () => {
     try {
@@ -366,24 +411,24 @@ export default function AdminPanelScreen() {
 
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
-            <Text style={[styles.statNumber, { color: themeColors.text }]}>{animeList.length}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Total Media</Text>
+            <Text style={[styles.statNumber, { color: themeColors.text }]} numberOfLines={1} adjustsFontSizeToFit>{animeList.length}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>Total Media</Text>
           </View>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
-            <Text style={[styles.statNumber, { color: themeColors.primary }]}>
+            <Text style={[styles.statNumber, { color: themeColors.primary }]} numberOfLines={1} adjustsFontSizeToFit>
               {animeList.filter((a) => a.is_featured).length}
             </Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Featured</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>Featured</Text>
           </View>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
-            <Text style={[styles.statNumber, { color: '#FFB800' }]}>{vipCount}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>VIP Active</Text>
+            <Text style={[styles.statNumber, { color: '#FFB800' }]} numberOfLines={1} adjustsFontSizeToFit>{vipCount}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>VIP Active</Text>
           </View>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundElement }]}>
-            <Text style={[styles.statNumber, { color: pendingPayments.length > 0 ? '#EC4899' : '#00E676' }]}>
+            <Text style={[styles.statNumber, { color: pendingPayments.length > 0 ? '#EC4899' : '#00E676' }]} numberOfLines={1} adjustsFontSizeToFit>
               {pendingPayments.length > 0 ? `${pendingPayments.length} Pending` : paymentsCount}
             </Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>
               {pendingPayments.length > 0 ? 'Approvals' : 'Payments'}
             </Text>
           </View>
@@ -466,6 +511,68 @@ export default function AdminPanelScreen() {
                 onRefresh={handleRefresh}
                 tintColor={themeColors.primary}
               />
+            }
+            ListHeaderComponent={
+              <View style={styles.instantVipCard}>
+                <View style={styles.instantVipHeader}>
+                  <Crown size={20} color="#FFB800" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.instantVipTitle}>Instant VIP Activation Tool</Text>
+                    <Text style={styles.instantVipSub}>
+                      Official Contact Number: <Text style={{ color: '#25D366', fontWeight: '800' }}>07824076461</Text> (WhatsApp / Support)
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.instantVipInputLabel}>User Account Email:</Text>
+                <TextInput
+                  style={styles.instantVipInput}
+                  placeholder="e.g. user@gmail.com"
+                  placeholderTextColor="#666680"
+                  value={instantEmail}
+                  onChangeText={setInstantEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+
+                <Text style={[styles.instantVipInputLabel, { marginTop: 10 }]}>Select Plan Duration:</Text>
+                <View style={styles.daysChipRow}>
+                  {[
+                    { label: '1 Month (30d)', days: 30 },
+                    { label: '3 Months (90d)', days: 90 },
+                    { label: '6 Months (180d)', days: 180 },
+                    { label: '1 Year (365d)', days: 365 },
+                  ].map((chip) => (
+                    <Pressable
+                      key={chip.days}
+                      style={[
+                        styles.daysChip,
+                        instantDays === chip.days && styles.daysChipSelected,
+                      ]}
+                      onPress={() => setInstantDays(chip.days)}
+                    >
+                      <Text style={[styles.daysChipText, instantDays === chip.days && styles.daysChipTextSelected]}>
+                        {chip.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Pressable
+                  style={[styles.grantVipBtn, grantingVip && { opacity: 0.6 }]}
+                  onPress={handleInstantGrantVip}
+                  disabled={grantingVip}
+                >
+                  {grantingVip ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <View style={styles.grantBtnContent}>
+                      <Crown size={16} color="#FFF" />
+                      <Text style={styles.grantBtnText}>Approve & Activate VIP Access</Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
             }
             ListEmptyComponent={
               <View style={styles.empty}>
@@ -802,6 +909,90 @@ const styles = StyleSheet.create({
   },
   rejectBtnText: {
     color: '#FF4D4D',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  instantVipCard: {
+    backgroundColor: '#141420',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFB800',
+    gap: 10,
+  },
+  instantVipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  instantVipTitle: {
+    color: '#FFB800',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  instantVipSub: {
+    color: '#8E8EA4',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  instantVipInputLabel: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  instantVipInput: {
+    backgroundColor: '#0D0D15',
+    borderWidth: 1,
+    borderColor: '#262638',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#FFF',
+    fontSize: 13,
+  },
+  daysChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  daysChip: {
+    backgroundColor: '#0D0D15',
+    borderWidth: 1,
+    borderColor: '#262638',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  daysChipSelected: {
+    backgroundColor: '#261F0E',
+    borderColor: '#FFB800',
+  },
+  daysChipText: {
+    color: '#8E8EA4',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  daysChipTextSelected: {
+    color: '#FFB800',
+    fontWeight: '800',
+  },
+  grantVipBtn: {
+    backgroundColor: '#059669',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 6,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+  },
+  grantBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  grantBtnText: {
+    color: '#FFF',
     fontSize: 13,
     fontWeight: '800',
   },

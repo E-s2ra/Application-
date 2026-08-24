@@ -139,7 +139,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 <Crown size={14} color="#FFB800" />
                 <Text style={styles.levelText}>LVL {level}</Text>
               </View>
-              <Text style={styles.levelTitleText}>{levelTitle}</Text>
+              <Text style={styles.levelTitleText} numberOfLines={1} adjustsFontSizeToFit>{levelTitle}</Text>
 
               {isVIP ? (
                 <Pressable style={styles.vipBadge} onPress={() => setShowVipModal(true)}>

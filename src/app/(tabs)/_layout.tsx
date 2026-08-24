@@ -11,10 +11,10 @@ export default function TabLayout() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  // Dynamically compute tab bar dimensions from device safe area
+  // Dynamically compute tab bar dimensions from device safe area with comfortable mobile clearance
   const bottomInset = Math.max(insets.bottom, 0);
-  const tabBarPaddingBottom = bottomInset > 0 ? bottomInset : (Platform.OS === 'ios' ? 28 : 10);
-  const tabBarHeight = 56 + tabBarPaddingBottom;
+  const tabBarPaddingBottom = Math.max(bottomInset + 4, Platform.OS === 'ios' ? 24 : 14);
+  const tabBarHeight = 52 + tabBarPaddingBottom;
 
   return (
     <Tabs

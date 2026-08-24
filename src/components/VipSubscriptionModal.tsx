@@ -24,6 +24,7 @@ import {
   MessageSquare,
   ExternalLink,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   RASEDI_VIP_PLANS,
   RasediPlanId,
@@ -41,6 +42,7 @@ interface VipSubscriptionModalProps {
 
 export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalProps) {
   const themeColors = useTheme();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { isVIP, vipDaysRemaining } = useGamification();
   const { language } = useLanguage();
@@ -109,7 +111,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { paddingTop: Math.max(insets.top + 8, 20), paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
         <View style={[styles.card, { backgroundColor: '#0D0D15' }]}>
           {/* Header */}
           <View style={styles.header}>
@@ -321,13 +323,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    width: '100%',
-    maxWidth: 560,
+    width: '94%',
+    maxWidth: 520,
+    height: '88%',
     maxHeight: '92%',
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#262638',
     overflow: 'hidden',
+    flexDirection: 'column',
   },
   header: {
     flexDirection: 'row',
