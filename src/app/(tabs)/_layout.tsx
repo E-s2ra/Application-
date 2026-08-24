@@ -3,11 +3,18 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/hooks/use-language';
 import { Home, Search, Heart, User } from 'lucide-react-native';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationsBell } from '@/components/NotificationsBell';
 
 export default function TabLayout() {
   const themeColors = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+
+  // Dynamically compute tab bar dimensions from device safe area
+  const bottomInset = Math.max(insets.bottom, 0);
+  const tabBarPaddingBottom = bottomInset > 0 ? bottomInset : (Platform.OS === 'ios' ? 28 : 10);
+  const tabBarHeight = 56 + tabBarPaddingBottom;
 
   return (
     <Tabs
@@ -27,8 +34,8 @@ export default function TabLayout() {
           backgroundColor: themeColors.backgroundElement,
           borderTopColor: themeColors.border,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+          height: tabBarHeight,
+          paddingBottom: tabBarPaddingBottom,
           paddingTop: 8,
         },
         tabBarActiveTintColor: themeColors.primary,
@@ -81,3 +88,4 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+

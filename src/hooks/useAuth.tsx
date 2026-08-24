@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { dockerDb } from '@/lib/docker-db';
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const deviceIdRef = useRef<string | null>(null);
+  const router = useRouter();
   const userId = session?.user?.id;
 
   const signOutLocally = useCallback(async () => {
@@ -221,6 +223,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for real-time auth changes from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (_event === 'PASSWORD_RECOVERY') {
+        router.replace('/reset-password');
+      }
       if (isMounted) {
         setSession(newSession);
         setUser(newSession?.user ?? null);
@@ -302,7 +307,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,
-      options: { data: { full_name: fullName.trim() } },
+      options: { 
+        data: { full_name: fullName.trim() },
+        emailRedirectTo: Platform.OS === 'web' && typeof window !== 'undefined' 
+          ? `${window.location.origin}/verified` 
+          : 'aniflix://verified'
+      },
     });
     if (error) return { error: error.message, needsEmailVerification: false };
     

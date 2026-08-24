@@ -211,20 +211,27 @@ export async function deleteAnime(
         // 1. Mark as permanently deleted in local persistent storage so it NEVER returns on reload
         await markMediaAsDeletedLocally(animeId);
 
-        // 2. Perform direct database delete on both Supabase and Docker PostgreSQL
+        // 2. Delete related records that reference this anime (comments, favorites handled by CASCADE)
+        try {
+            await supabase.from('comments').delete().eq('movie_id', animeId);
+        } catch {}
+
+        // 3. Perform direct database delete on both Supabase and Docker PostgreSQL
         try {
             await dockerDb.from('anime').delete().eq('id', animeId);
         } catch {}
 
         const { error } = await supabase.from('anime').delete().eq('id', animeId);
         if (error) {
+            // Fallback: try Edge Function for admin-verified delete
             const edgeResult = await callAdminOperation('delete_anime', { anime: { id: animeId } });
             if (edgeResult.success) return edgeResult;
+            return { success: false, error: error.message || 'Failed to delete anime from database' };
         }
 
         return { success: true };
     } catch (e: any) {
-        return { success: true };
+        return { success: false, error: e.message || 'Failed to delete anime' };
     }
 }
 

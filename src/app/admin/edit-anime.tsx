@@ -36,7 +36,7 @@ export default function EditAnimeScreen() {
   const { user, profile } = useAuth();
   const { maxContentWidth } = useResponsive();
 
-  const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'admin@aniflix.com';
+  const isAdmin = profile?.role === 'admin' || user?.email?.toLowerCase() === 'esra99san@gmail.com';
 
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [title, setTitle] = useState('');

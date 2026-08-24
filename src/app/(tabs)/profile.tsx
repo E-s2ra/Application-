@@ -35,6 +35,7 @@ import {
   Sun,
   Moon,
   Globe,
+  CreditCard,
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -292,6 +293,29 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <ChevronRight color="#fff" size={20} />
+            </Pressable>
+          )}
+
+          {/* Dedicated FIB Payment Screen Link */}
+          {!isVIP && (
+            <Pressable
+              style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+              onPress={() => router.push('/fib-payment' as any)}
+            >
+              <View style={styles.actionRowLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+                  <CreditCard color="#38BDF8" size={18} />
+                </View>
+                <View>
+                  <Text style={[styles.actionRowText, { color: '#38BDF8' }]}>
+                    {language === 'ku' ? 'پارەدان لە ڕێگەی FIB' : 'VIP Subscription (FIB)'}
+                  </Text>
+                  <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>
+                    {language === 'ku' ? 'پارەدان بۆ VIP لە ڕێگەی بانکی یەکەمی عێراقی' : 'Upgrade to VIP using First Iraqi Bank'}
+                  </Text>
+                </View>
+              </View>
+              <ChevronRight color={themeColors.textSecondary} size={18} />
             </Pressable>
           )}
 

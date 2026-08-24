@@ -1,7 +1,7 @@
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
-import { deleteAnime, getDeletedMediaIds, markMediaAsDeletedLocally, updateAnimeFeatured } from '@/lib/admin-operations';
+import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import {
   getPendingManualPayments,
@@ -65,7 +65,6 @@ export default function AdminPanelScreen() {
 
   const fetchAnime = async () => {
     try {
-      const deletedIds = await getDeletedMediaIds();
       const [{ data, error }, { count: vips }, { count: payments }, pending] = await Promise.all([
         supabase
           .from('anime')
@@ -77,8 +76,7 @@ export default function AdminPanelScreen() {
       ]);
 
       if (!error && data) {
-        const filtered = data.filter((a) => !deletedIds.includes(a.id));
-        setAnimeList(filtered);
+        setAnimeList(data);
       }
       if (typeof vips === 'number') setVipCount(vips);
       if (typeof payments === 'number') setPaymentsCount(payments);
@@ -163,7 +161,8 @@ export default function AdminPanelScreen() {
         Alert.alert('Error', result.error || 'Failed to delete anime');
       }
     } else {
-      setAnimeList((prev) => prev.filter((a) => a.id !== item.id));
+      // Re-fetch from database to confirm deletion persisted
+      await fetchAnime();
     }
   };
 
@@ -190,16 +189,13 @@ export default function AdminPanelScreen() {
     // Try the secure RPC first (bypasses RLS, admin-only)
     const { error: rpcErr } = await supabase.rpc('admin_delete_all_anime');
     if (!rpcErr) {
-      // Mark all as deleted locally too
-      for (const item of animeList) {
-        await markMediaAsDeletedLocally(item.id);
-      }
       setAnimeList([]);
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert(`All ${animeList.length} test media items have been deleted! 🎉`);
       } else {
         Alert.alert('Done', 'All media items deleted successfully.');
       }
+      await fetchAnime();
       return;
     }
 
