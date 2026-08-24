@@ -29,12 +29,14 @@ import {
   Tv,
   Flame,
   Globe,
+  Crown,
 } from 'lucide-react-native';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { useGamification } from '@/hooks/useGamification';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
+import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 import { AdMobBanner } from '@/components/AdMobBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -66,8 +68,9 @@ export default function HomeScreen() {
   const { t, language, toggleLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { coins, streakDays, level, activeEvent } = useGamification();
+  const { coins, streakDays, level, activeEvent, isVIP, vipDaysRemaining } = useGamification();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
   const {
     heroHeight,
     railCardWidth,
@@ -403,6 +406,17 @@ export default function HomeScreen() {
           )}
 
           <View style={styles.homeActions}>
+            {/* 👑 VIP Sovereign Subscription Button */}
+            <Pressable
+              style={styles.vipHeaderBtn}
+              onPress={() => setShowVipModal(true)}
+            >
+              <Crown size={15} color="#FFB800" />
+              <Text style={styles.vipHeaderBtnText}>
+                {isVIP ? `VIP (${vipDaysRemaining}d)` : 'VIP'}
+              </Text>
+            </Pressable>
+
             <NotificationsBell />
             {/* 🌐 Quick Language Switcher Button */}
             <Pressable
@@ -844,6 +858,9 @@ export default function HomeScreen() {
 
       {/* 🎁 AniFlix Gamification & Rewards Hub Modal */}
       <RewardsHubModal visible={showRewardsModal} onClose={() => setShowRewardsModal(false)} />
+
+      {/* 👑 VIP Sovereign Subscription Modal */}
+      <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </ScrollView>
   );
 }
@@ -1331,5 +1348,22 @@ const styles = StyleSheet.create({
   },
   standardCardInfo: {
     padding: 8,
+  },
+  vipHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#261F0E',
+    borderWidth: 1,
+    borderColor: '#FFB800',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+  },
+  vipHeaderBtnText: {
+    color: '#FFB800',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });
