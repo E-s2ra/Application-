@@ -44,7 +44,7 @@ export default function TabLayout() {
         ) : null,
         headerRight: () => <NotificationsBell />,
         tabBarStyle: {
-          display: isDesktop ? 'none' : 'flex',
+          display: 'none',
           backgroundColor: themeColors.background,
           borderTopWidth: 0,
           elevation: 0,
