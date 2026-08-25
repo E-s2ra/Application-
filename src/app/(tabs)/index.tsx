@@ -962,6 +962,10 @@ const styles = StyleSheet.create({
   categoryIcon: {
     fontSize: 20,
   },
+  categoryContainer: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
   categoryPillText: {
     fontSize: 11,
     fontWeight: '700',
@@ -1050,6 +1054,16 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.8)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+  heroDesc: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  heroActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
   playBtn: {
     flex: 1,

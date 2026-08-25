@@ -60,8 +60,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: t('tabBrowse', 'Browse'),
-          headerTitle: t('tabBrowse', 'Browse'),
+          title: t('tabSearch', 'Browse'),
+          headerTitle: t('tabSearch', 'Browse'),
           tabBarIcon: ({ color, focused }) => (
             <LayoutGrid color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
           ),
