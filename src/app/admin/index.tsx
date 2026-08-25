@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/use-theme';
+﻿import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
@@ -94,7 +94,7 @@ export default function AdminPanelScreen() {
         vip_expires_at: isoExpiry,
       }).ilike('email', email);
 
-      const successMsg = `VIP activated for ${email} (${instantDays} days)! 🎉`;
+      const successMsg = `VIP activated for ${email} (${instantDays} days)! ðŸŽ‰`;
       if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(successMsg);
       else Alert.alert('VIP Activated', successMsg);
 
@@ -280,7 +280,7 @@ export default function AdminPanelScreen() {
     if (!rpcErr) {
       setAnimeList([]);
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(`All ${animeList.length} test media items have been deleted! 🎉`);
+        window.alert(`All ${animeList.length} test media items have been deleted! ðŸŽ‰`);
       } else {
         Alert.alert('Done', 'All media items deleted successfully.');
       }
@@ -294,7 +294,7 @@ export default function AdminPanelScreen() {
     }
     setAnimeList([]);
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert('All test media items have been deleted! 🎉');
+      window.alert('All test media items have been deleted! ðŸŽ‰');
     } else {
       Alert.alert('Deleted', 'All test media items have been deleted.');
     }
@@ -329,7 +329,7 @@ export default function AdminPanelScreen() {
           </Text>
         </View>
         <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]}>
-          {item.genre ?? 'No genre'} · {item.episodes > 1 ? `${item.episodes} eps` : 'Movie'}
+          {item.genre ?? 'No genre'} Â· {item.episodes > 1 ? `${item.episodes} eps` : 'Movie'}
         </Text>
       </View>
       <View style={styles.cardActions}>
@@ -462,7 +462,7 @@ export default function AdminPanelScreen() {
           <>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 8 }}>
               <Text style={[styles.sectionTitle, { color: themeColors.textSecondary, marginHorizontal: 0, marginBottom: 0 }]}>
-                TAP ✏️ TO EDIT · TAP ⭐ TO FEATURE · TAP 🗑 TO DELETE
+                TAP âœï¸ TO EDIT Â· TAP â­ TO FEATURE Â· TAP ðŸ—‘ TO DELETE
               </Text>
               {animeList.length > 0 && (
                 <Pressable onPress={handleClearAll} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -591,7 +591,7 @@ export default function AdminPanelScreen() {
                   <View>
                     <Text style={styles.approvalUserEmail}>{item.metadata?.user_email || 'User'}</Text>
                     <Text style={styles.approvalPlanTitle}>
-                      Plan: <Text style={{ color: '#FFB800', fontWeight: '800' }}>{item.metadata?.plan_title || item.plan_id}</Text> · {item.amount_iqd.toLocaleString()} IQD
+                      Plan: <Text style={{ color: '#FFB800', fontWeight: '800' }}>{item.metadata?.plan_title || item.plan_id}</Text> Â· {item.amount_iqd.toLocaleString()} IQD
                     </Text>
                   </View>
 

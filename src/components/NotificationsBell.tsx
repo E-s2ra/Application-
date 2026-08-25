@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Bell, CheckCheck, PackageOpen, MessageSquare, AtSign, X } from 'lucide-react-native';
@@ -120,7 +120,7 @@ export function NotificationsBell() {
 
             <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
               {isLoading && notifications.length === 0 ? (
-                <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>Loading notifications…</Text>
+                <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>Loading notificationsâ€¦</Text>
               ) : error && notifications.length === 0 ? (
                 <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
                   Notifications are temporarily unavailable. Pull down and try again later.

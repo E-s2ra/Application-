@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/use-theme';
+﻿import { useTheme } from '@/hooks/use-theme';
 import { useTranslation, useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -104,7 +104,7 @@ export default function SignUpScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
-          {/* 🌐 Top Right Language Switcher on First Screen */}
+          {/* ðŸŒ Top Right Language Switcher on First Screen */}
           <View style={{ width: '100%', alignItems: 'flex-end', marginBottom: 12 }}>
             <Pressable
               onPress={toggleLanguage}
@@ -122,7 +122,7 @@ export default function SignUpScreen() {
             >
               <Globe size={14} color="#00D2FF" />
               <Text style={{ color: '#00D2FF', fontSize: 12, fontWeight: '700' }}>
-                {language === 'ku' ? 'کوردی (سۆرانی)' : 'English (EN)'}
+                {language === 'ku' ? 'Ú©ÙˆØ±Ø¯ÛŒ (Ø³Û†Ø±Ø§Ù†ÛŒ)' : 'English (EN)'}
               </Text>
             </Pressable>
           </View>
@@ -206,7 +206,7 @@ export default function SignUpScreen() {
               </Pressable>
             </View>
 
-            {/* 🌸 Cute Password Strength & Condition Checklist */}
+            {/* ðŸŒ¸ Cute Password Strength & Condition Checklist */}
             <PasswordStrengthIndicator password={password} />
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+﻿import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { ADMOB_REWARDS } from '@/constants/admob';
 import { recordRewardedAdToSupabase } from '@/lib/admob';

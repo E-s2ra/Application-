@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useAuth';
+﻿import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -21,11 +21,11 @@ import {
 } from 'react-native';
 
 const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
-  { id: 'Movies', label: 'Movies', icon: '🎬' },
-  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
-  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
-  { id: 'Drama', label: 'Drama', icon: '🎭' },
-  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
+  { id: 'Movies', label: 'Movies', icon: 'ðŸŽ¬' },
+  { id: 'Anime Movies', label: 'Anime Movies', icon: 'ðŸŽŒ' },
+  { id: 'K-Drama', label: 'K-Drama', icon: 'ðŸŒ¸' },
+  { id: 'Drama', label: 'Drama', icon: 'ðŸŽ­' },
+  { id: 'Anime Series', label: 'Anime Series', icon: 'âš¡' },
 ];
 
 export default function AddAnimeScreen() {
@@ -120,10 +120,10 @@ export default function AddAnimeScreen() {
     setLoading(false);
 
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert(`"${title}" (${category}) has been published to AniFlix! 🎉`);
+      window.alert(`"${title}" (${category}) has been published to AniFlix! ðŸŽ‰`);
       router.replace('/admin');
     } else {
-      Alert.alert('Success! 🎉', `"${title}" (${category}) has been published to AniFlix.`, [
+      Alert.alert('Success! ðŸŽ‰', `"${title}" (${category}) has been published to AniFlix.`, [
         { text: 'Add Another', onPress: () => resetForm() },
         { text: 'Back to Panel', onPress: () => (router.canGoBack() ? router.back() : router.replace('/admin')) },
       ]);
@@ -183,7 +183,7 @@ export default function AddAnimeScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          {/* 🏷️ Category Selection Group */}
+          {/* ðŸ·ï¸ Category Selection Group */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: themeColors.textSecondary }]}>MEDIA CATEGORY *</Text>
             <View style={styles.categoryRow}>
@@ -311,7 +311,7 @@ export default function AddAnimeScreen() {
                     <View key={link.episode} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#242436', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
                       <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', marginRight: 6 }}>Ep {link.episode}</Text>
                       <Pressable onPress={() => handleRemoveLink(link.episode)}>
-                        <Text style={{ color: '#FF4D4D', fontSize: 16, fontWeight: '900', lineHeight: 16 }}>×</Text>
+                        <Text style={{ color: '#FF4D4D', fontSize: 16, fontWeight: '900', lineHeight: 16 }}>Ã—</Text>
                       </Pressable>
                     </View>
                   ))}

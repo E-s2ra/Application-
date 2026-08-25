@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -139,7 +139,7 @@ export default function ProfileScreen() {
       contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 80, 100) }}
     >
       <View style={[styles.profileCard, (isDesktop || isTablet) && styles.profileCardWide]}>
-        {/* 👤 Profile Hero Card */}
+        {/* ðŸ‘¤ Profile Hero Card */}
         <View style={styles.header}>
           <Pressable
             onPress={() => setShowAvatarModal(true)}
@@ -189,7 +189,7 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* 🏆 User Level & XP Progress Card */}
+        {/* ðŸ† User Level & XP Progress Card */}
         <View style={styles.levelCard}>
           <View style={styles.levelCardHeader}>
             <View style={styles.levelLeft}>
@@ -206,15 +206,15 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {/* 📊 Gamification & Social Stats Row */}
+        {/* ðŸ“Š Gamification & Social Stats Row */}
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
-            <Text style={[styles.statNumber, { color: '#FFD700' }]}>💰 {coins}</Text>
+            <Text style={[styles.statNumber, { color: '#FFD700' }]}>ðŸ’° {coins}</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('coins', 'Coins')}</Text>
           </View>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
-            <Text style={[styles.statNumber, { color: '#FF5722' }]}>🔥 {streakDays}d</Text>
+            <Text style={[styles.statNumber, { color: '#FF5722' }]}>ðŸ”¥ {streakDays}d</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('streak', 'Streak')}</Text>
           </View>
 
@@ -229,12 +229,12 @@ export default function ProfileScreen() {
           </Pressable>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
-            <Text style={[styles.statNumber, { color: '#00D2FF' }]}>👥 {followingCount}</Text>
+            <Text style={[styles.statNumber, { color: '#00D2FF' }]}>ðŸ‘¥ {followingCount}</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('following')}</Text>
           </View>
         </View>
 
-        {/* 🎁 Rewards & Missions Banner */}
+        {/* ðŸŽ Rewards & Missions Banner */}
         <Pressable 
             style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
             onPress={() => setShowRewardsModal(true)}
@@ -283,7 +283,7 @@ export default function ProfileScreen() {
             </ScrollView>
           </View>
 
-        {/* ⚙️ Actions List */}
+        {/* âš™ï¸ Actions List */}
         <View style={styles.actionsSection}>
           {/* Admin Panel Button (Admin only) */}
           {isAdmin && (
@@ -311,10 +311,10 @@ export default function ProfileScreen() {
               <ChevronRight color={themeColors.textSecondary} size={20} />
               <View style={styles.menuItemContent}>
                 <Text style={[styles.menuItemTitle, { color: themeColors.text }]}>
-                  {language === 'ku' ? 'پارەدان لە ڕێگەی FIB' : 'VIP Subscription (FIB)'}
+                  {language === 'ku' ? 'Ù¾Ø§Ø±Û•Ø¯Ø§Ù† Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ FIB' : 'VIP Subscription (FIB)'}
                 </Text>
                 <Text style={styles.menuItemSub}>
-                  {language === 'ku' ? 'پارەدان بۆ VIP لە ڕێگەی بانکی یەکەمی عێراقی' : 'Upgrade to VIP using First Iraqi Bank'}
+                  {language === 'ku' ? 'Ù¾Ø§Ø±Û•Ø¯Ø§Ù† Ø¨Û† VIP Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ Ø¨Ø§Ù†Ú©ÛŒ ÛŒÛ•Ú©Û•Ù…ÛŒ Ø¹ÛŽØ±Ø§Ù‚ÛŒ' : 'Upgrade to VIP using First Iraqi Bank'}
                 </Text>
               </View>
               <View style={[styles.menuIconBox, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
@@ -323,7 +323,7 @@ export default function ProfileScreen() {
             </Pressable>
           )}
 
-          {/* 📺 Watch Ad for Coins */}
+          {/* ðŸ“º Watch Ad for Coins */}
           <Pressable 
             style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
             onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
@@ -338,7 +338,7 @@ export default function ProfileScreen() {
             </View>
           </Pressable>
 
-          {/* 🎨 Theme Shop */}
+          {/* ðŸŽ¨ Theme Shop */}
           <Pressable 
             style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
             onPress={() => setShowThemeShop(true)}
@@ -353,14 +353,14 @@ export default function ProfileScreen() {
             </View>
           </Pressable>
 
-          {/* 🌐 Language Switcher (English ⇄ کوردی سۆرانی) */}
+          {/* ðŸŒ Language Switcher (English â‡„ Ú©ÙˆØ±Ø¯ÛŒ Ø³Û†Ø±Ø§Ù†ÛŒ) */}
           <Pressable 
             style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
             onPress={toggleLanguage}
           >
             <View style={{ backgroundColor: '#00D2FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
               <Text style={{ color: '#000', fontSize: 11, fontWeight: '700' }}>
-                {language === 'ku' ? 'KU / ک' : 'EN'}
+                {language === 'ku' ? 'KU / Ú©' : 'EN'}
               </Text>
             </View>
             <View style={styles.menuItemContent}>
@@ -381,7 +381,7 @@ export default function ProfileScreen() {
             style={styles.logoutBtn}
             onPress={handleLogout}
           >
-            <LogOut color="#E50914" size={20} />
+            <LogOut color="#0356C5" size={20} />
             <Text style={styles.logoutText}>{t('signOut')}</Text>
           </Pressable>
         </View>
@@ -392,7 +392,7 @@ export default function ProfileScreen() {
       {/* Rewards & Quests Modal */}
       <RewardsHubModal visible={showRewardsModal} onClose={() => setShowRewardsModal(false)} />
 
-      {/* 🖼️ Avatar Selection Modal */}
+      {/* ðŸ–¼ï¸ Avatar Selection Modal */}
       <Modal
         visible={showAvatarModal}
         animationType="slide"
@@ -804,13 +804,13 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     marginTop: 20,
-    backgroundColor: 'rgba(229, 9, 20, 0.1)',
+    backgroundColor: 'rgba(3, 86, 197, 0.1)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(229, 9, 20, 0.3)',
+    borderColor: 'rgba(3, 86, 197, 0.3)',
   },
   logoutText: {
-    color: '#E50914',
+    color: '#0356C5',
     fontSize: 15,
     fontWeight: '700',
   },

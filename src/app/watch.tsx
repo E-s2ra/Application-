@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   StyleSheet,
@@ -57,7 +57,7 @@ export default function WatchScreen() {
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
 
-  // 🎬 Video Player Custom Controls State
+  // ðŸŽ¬ Video Player Custom Controls State
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
@@ -66,12 +66,12 @@ export default function WatchScreen() {
   const [earnedNotification, setEarnedNotification] = useState<string | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
 
-  // 🍿 Watch-to-Earn: Award Coins & XP during active playback
+  // ðŸ¿ Watch-to-Earn: Award Coins & XP during active playback
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       const reward = awardWatchTimeReward(1);
-      setEarnedNotification(`🍿 Watching AniFlix: +${reward.coins} Coins & +${reward.xp} XP!`);
+      setEarnedNotification(`ðŸ¿ Watching AniFlix: +${reward.coins} Coins & +${reward.xp} XP!`);
       setTimeout(() => setEarnedNotification(null), 4000);
     }, 45000);
 
@@ -234,7 +234,7 @@ export default function WatchScreen() {
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.8, count: 14 };
 
-  // ⏪ Rewind 10 Seconds
+  // âª Rewind 10 Seconds
   const handleSeekBackward10 = () => {
     try {
       if (typeof player.seekBy === 'function') {
@@ -247,7 +247,7 @@ export default function WatchScreen() {
     }
   };
 
-  // ⏩ Fast Forward 10 Seconds
+  // â© Fast Forward 10 Seconds
   const handleSeekForward10 = () => {
     try {
       if (typeof player.seekBy === 'function') {
@@ -260,7 +260,7 @@ export default function WatchScreen() {
     }
   };
 
-  // ⏯ Play / Pause Toggle
+  // â¯ Play / Pause Toggle
   const handlePlayPause = () => {
     try {
       if (isPlaying) {
@@ -275,12 +275,12 @@ export default function WatchScreen() {
     }
   };
 
-  // 🔄 Aspect Ratio Toggle (16:9 Landscape ↔ 9:16 Vertical Reel)
+  // ðŸ”„ Aspect Ratio Toggle (16:9 Landscape â†” 9:16 Vertical Reel)
   const toggleAspectRatio = () => {
     setAspectRatio((prev) => (prev === '16:9' ? '9:16' : '16:9'));
   };
 
-  // ⚡ Change Playback Speed
+  // âš¡ Change Playback Speed
   const handleSelectSpeed = (speed: number) => {
     setPlaybackSpeed(speed);
     setShowSpeedMenu(false);
@@ -291,7 +291,7 @@ export default function WatchScreen() {
     }
   };
 
-  // 🔇 Mute / Unmute Toggle
+  // ðŸ”‡ Mute / Unmute Toggle
   const handleToggleMute = () => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
@@ -302,7 +302,7 @@ export default function WatchScreen() {
     }
   };
 
-  // 🖥️ Enter Fullscreen (Cross-platform)
+  // ðŸ–¥ï¸ Enter Fullscreen (Cross-platform)
   const handleFullscreen = async () => {
     try {
       if (videoViewRef.current?.enterFullscreen) {
@@ -316,7 +316,7 @@ export default function WatchScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        {/* 🔙 Custom Top Navigation Bar */}
+        {/* ðŸ”™ Custom Top Navigation Bar */}
         <View style={[styles.customNav, { backgroundColor: themeColors.backgroundElement }]}>
           <Pressable style={styles.backButton} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}>
             <ArrowLeft color="#fff" size={22} />
@@ -327,7 +327,7 @@ export default function WatchScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        {/* 🎬 Video Player Container with Dynamic Aspect Ratio (16:9 or 9:16) */}
+        {/* ðŸŽ¬ Video Player Container with Dynamic Aspect Ratio (16:9 or 9:16) */}
         <View style={styles.playerWrapper}>
           <View
             style={[
@@ -353,7 +353,7 @@ export default function WatchScreen() {
               <Text style={styles.ratioBadgeText}>{aspectRatio}</Text>
             </View>
 
-            {/* 🍿 Live Watch-to-Earn Rewards Floating Toast */}
+            {/* ðŸ¿ Live Watch-to-Earn Rewards Floating Toast */}
             {earnedNotification && (
               <View style={styles.watchRewardToast}>
                 <Sparkles size={14} color="#FFD700" />
@@ -363,15 +363,15 @@ export default function WatchScreen() {
           </View>
         </View>
 
-        {/* 🎛️ Cinema Player Controls Bar */}
+        {/* ðŸŽ›ï¸ Cinema Player Controls Bar */}
         <View style={[styles.controlsBar, { backgroundColor: themeColors.backgroundCard }]}>
-          {/* ⏪ -10s Rewind */}
+          {/* âª -10s Rewind */}
           <Pressable style={styles.controlBtn} onPress={handleSeekBackward10}>
             <RotateCcw color="#fff" size={20} />
             <Text style={styles.controlBtnLabel}>-10s</Text>
           </Pressable>
 
-          {/* ⏯ Play/Pause */}
+          {/* â¯ Play/Pause */}
           <Pressable
             style={[styles.playPauseCircle, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}
             onPress={handlePlayPause}
@@ -384,13 +384,13 @@ export default function WatchScreen() {
             )}
           </Pressable>
 
-          {/* ⏩ +10s Forward */}
+          {/* â© +10s Forward */}
           <Pressable style={styles.controlBtn} onPress={handleSeekForward10}>
             <RotateCw color="#fff" size={20} />
             <Text style={styles.controlBtnLabel}>+10s</Text>
           </Pressable>
 
-          {/* 🔄 Aspect Ratio Toggle Button (16:9 ↔ 9:16) */}
+          {/* ðŸ”„ Aspect Ratio Toggle Button (16:9 â†” 9:16) */}
           <Pressable style={[styles.controlBtn, styles.aspectToggleBtn]} onPress={toggleAspectRatio}>
             {aspectRatio === '16:9' ? (
               <Smartphone color="#00D2FF" size={20} />
@@ -402,7 +402,7 @@ export default function WatchScreen() {
             </Text>
           </Pressable>
 
-          {/* ⚡ Speed Selector Button */}
+          {/* âš¡ Speed Selector Button */}
           <Pressable
             style={[
               styles.controlBtn,
@@ -417,7 +417,7 @@ export default function WatchScreen() {
             </Text>
           </Pressable>
 
-          {/* 🔇 Volume / Mute Toggle */}
+          {/* ðŸ”‡ Volume / Mute Toggle */}
           <Pressable style={[styles.controlBtn, styles.volumeBtn]} onPress={handleToggleMute}>
             {isMuted ? (
               <VolumeX color="#ff6666" size={20} />
@@ -429,14 +429,14 @@ export default function WatchScreen() {
             </Text>
           </Pressable>
 
-          {/* 🖥️ Fullscreen Button */}
+          {/* ðŸ–¥ï¸ Fullscreen Button */}
           <Pressable style={[styles.controlBtn, styles.fullscreenBtn]} onPress={handleFullscreen}>
             <Maximize2 color="#B388FF" size={20} />
             <Text style={[styles.controlBtnLabel, { color: '#B388FF' }]}>Fullscreen</Text>
           </Pressable>
         </View>
 
-        {/* 🚀 Playback Speed Options Menu */}
+        {/* ðŸš€ Playback Speed Options Menu */}
         {showSpeedMenu && (
           <View style={[styles.speedMenu, { backgroundColor: themeColors.backgroundElement }]}>
             <Text style={[styles.speedMenuTitle, { color: themeColors.textSecondary }]}>
@@ -470,11 +470,11 @@ export default function WatchScreen() {
         <View style={styles.drmBanner}>
           <Shield color={themeColors.primary} size={16} />
           <Text style={styles.drmText}>
-            AniFlix Protected 4K Stream · Screen Recording & Screenshots Disabled
+            AniFlix Protected 4K Stream Â· Screen Recording & Screenshots Disabled
           </Text>
         </View>
 
-        {/* 📋 Anime Info & Meta */}
+        {/* ðŸ“‹ Anime Info & Meta */}
         <View style={styles.infoSection}>
           <View style={styles.badgeRow}>
             {anime?.category && (
@@ -511,7 +511,7 @@ export default function WatchScreen() {
               : (anime?.description || 'Follow the epic journey as new powers awaken and fierce battles decide the fate of both worlds.')}
           </Text>
 
-          {/* ⚡ Quick Actions Row */}
+          {/* âš¡ Quick Actions Row */}
           <View style={styles.actionRow}>
             <Pressable
               style={[
@@ -532,7 +532,7 @@ export default function WatchScreen() {
           </View>
         </View>
 
-        {/* 📑 Episodes List Picker */}
+        {/* ðŸ“‘ Episodes List Picker */}
         <View style={styles.episodesSection}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Episodes</Text>
           <ScrollView
@@ -569,7 +569,7 @@ export default function WatchScreen() {
           </ScrollView>
         </View>
 
-        {/* 🌟 More Like This Carousel */}
+        {/* ðŸŒŸ More Like This Carousel */}
         {recommendations.length > 0 && (
           <View style={styles.recsSection}>
             <Text style={[styles.sectionTitle, { color: themeColors.text }]}>You Might Also Like</Text>
@@ -607,12 +607,12 @@ export default function WatchScreen() {
           </View>
         )}
 
-        {/* ⭐ Ratings & Community Reviews Section */}
+        {/* â­ Ratings & Community Reviews Section */}
         {anime && (
           <ReviewsSection mediaId={anime.id} mediaTitle={anime.title} />
         )}
 
-        {/* 📢 Google AdMob Banner */}
+        {/* ðŸ“¢ Google AdMob Banner */}
         <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
           <AdMobBanner placement="watch_bottom" />
         </View>
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
     borderColor: '#242436',
   },
   speedOptionChipActive: {
-    borderColor: '#E50914',
+    borderColor: '#0356C5',
   },
   speedOptionText: {
     fontSize: 13,
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     borderColor: '#242436',
   },
   epCardActive: {
-    borderColor: '#E50914',
+    borderColor: '#0356C5',
   },
   epCardText: {
     color: '#fff',

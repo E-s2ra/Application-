@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,10 +21,10 @@ export default function FibPaymentScreen() {
 
   const getPlanDurationLabel = (id: string) => {
     switch (id) {
-      case 'vip_1_month': return isKu ? '١ مانگ' : '1 Month';
-      case 'vip_3_months': return isKu ? '٣ مانگ' : '3 Months';
-      case 'vip_6_months': return isKu ? '٦ مانگ' : '6 Months';
-      case 'vip_1_year': return isKu ? '١ ساڵ' : '1 Year';
+      case 'vip_1_month': return isKu ? 'Ù¡ Ù…Ø§Ù†Ú¯' : '1 Month';
+      case 'vip_3_months': return isKu ? 'Ù£ Ù…Ø§Ù†Ú¯' : '3 Months';
+      case 'vip_6_months': return isKu ? 'Ù¦ Ù…Ø§Ù†Ú¯' : '6 Months';
+      case 'vip_1_year': return isKu ? 'Ù¡ Ø³Ø§Úµ' : '1 Year';
       default: return '';
     }
   };
@@ -80,7 +80,7 @@ export default function FibPaymentScreen() {
           <ArrowLeft color={themeColors.text} size={24} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: themeColors.text }]}>
-          {isKu ? 'کڕینی ئەندامێتی VIP' : 'VIP Subscription Payment'}
+          {isKu ? 'Ú©Ú•ÛŒÙ†ÛŒ Ø¦Û•Ù†Ø¯Ø§Ù…ÛŽØªÛŒ VIP' : 'VIP Subscription Payment'}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -93,7 +93,7 @@ export default function FibPaymentScreen() {
             <Text style={styles.stepNum}>1</Text>
           </View>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-            {isKu ? 'هەڵبژاردنی پلانی VIP' : 'Select VIP Plan'}
+            {isKu ? 'Ù‡Û•ÚµØ¨Ú˜Ø§Ø±Ø¯Ù†ÛŒ Ù¾Ù„Ø§Ù†ÛŒ VIP' : 'Select VIP Plan'}
           </Text>
         </View>
 
@@ -113,13 +113,13 @@ export default function FibPaymentScreen() {
                 {plan.badge && (
                   <View style={[styles.planBadge, plan.popular ? styles.planBadgePopular : styles.planBadgeStandard]}>
                     <Text style={styles.planBadgeText}>
-                      {isKu && plan.popular ? 'باوترین' : plan.badge.toUpperCase()}
+                      {isKu && plan.popular ? 'Ø¨Ø§ÙˆØªØ±ÛŒÙ†' : plan.badge.toUpperCase()}
                     </Text>
                   </View>
                 )}
                 <Text style={styles.planDuration}>{getPlanDurationLabel(plan.id)}</Text>
                 <Text style={styles.planPrice}>
-                  {plan.priceIQD.toLocaleString()} <Text style={styles.planCurrency}>{isKu ? 'د.ع' : 'IQD'}</Text>
+                  {plan.priceIQD.toLocaleString()} <Text style={styles.planCurrency}>{isKu ? 'Ø¯.Ø¹' : 'IQD'}</Text>
                 </Text>
               </Pressable>
             );
@@ -132,21 +132,21 @@ export default function FibPaymentScreen() {
             <Text style={styles.stepNum}>2</Text>
           </View>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-            {isKu ? 'پەیوەندیکردن بۆ چالاککردن' : 'Contact Support to Activate'}
+            {isKu ? 'Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒÚ©Ø±Ø¯Ù† Ø¨Û† Ú†Ø§Ù„Ø§Ú©Ú©Ø±Ø¯Ù†' : 'Contact Support to Activate'}
           </Text>
         </View>
 
         <View style={styles.contactContainer}>
           <Text style={styles.contactInstructions}>
             {isKu
-              ? 'بۆ چالاککردنی خێرای VIP، دەتوانیت ڕاستەوخۆ لە ڕێگەی واتسئاپ یان تێلیگرام پەیوەندی بە بەڕێوەبەران بوبکەیت:'
+              ? 'Ø¨Û† Ú†Ø§Ù„Ø§Ú©Ú©Ø±Ø¯Ù†ÛŒ Ø®ÛŽØ±Ø§ÛŒ VIPØŒ Ø¯Û•ØªÙˆØ§Ù†ÛŒØª Ú•Ø§Ø³ØªÛ•ÙˆØ®Û† Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ ÙˆØ§ØªØ³Ø¦Ø§Ù¾ ÛŒØ§Ù† ØªÛŽÙ„ÛŒÚ¯Ø±Ø§Ù… Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒ Ø¨Û• Ø¨Û•Ú•ÛŽÙˆÛ•Ø¨Û•Ø±Ø§Ù† Ø¨ÙˆØ¨Ú©Û•ÛŒØª:'
               : 'To activate your VIP plan immediately, contact our official support team via WhatsApp or Telegram:'}
           </Text>
 
           <View style={styles.selectedPlanSummary}>
-            <Text style={styles.summaryLabel}>{isKu ? 'پلانی هەڵبژێردراو:' : 'Selected Plan:'}</Text>
+            <Text style={styles.summaryLabel}>{isKu ? 'Ù¾Ù„Ø§Ù†ÛŒ Ù‡Û•ÚµØ¨Ú˜ÛŽØ±Ø¯Ø±Ø§Ùˆ:' : 'Selected Plan:'}</Text>
             <Text style={styles.summaryValue}>
-              {getPlanDurationLabel(selectedPlan.id)} — {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دینار' : 'IQD'}
+              {getPlanDurationLabel(selectedPlan.id)} â€” {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'Ø¯ÛŒÙ†Ø§Ø±' : 'IQD'}
             </Text>
           </View>
 
@@ -158,7 +158,7 @@ export default function FibPaymentScreen() {
               </View>
               <View>
                 <Text style={styles.btnTitle}>
-                  {isKu ? 'پەیوەندی لە ڕێگەی WhatsApp' : 'Contact via WhatsApp'}
+                  {isKu ? 'Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒ Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ WhatsApp' : 'Contact via WhatsApp'}
                 </Text>
                 <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.whatsappDisplay}</Text>
               </View>
@@ -174,7 +174,7 @@ export default function FibPaymentScreen() {
               </View>
               <View>
                 <Text style={styles.btnTitle}>
-                  {isKu ? 'پەیوەندی لە ڕێگەی Telegram' : 'Contact via Telegram'}
+                  {isKu ? 'Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒ Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ Telegram' : 'Contact via Telegram'}
                 </Text>
                 <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.telegramDisplay}</Text>
               </View>
@@ -189,11 +189,11 @@ export default function FibPaymentScreen() {
         ================================================================================
         <View style={styles.proofBox}>
           <Text style={styles.inputLabel}>
-            {isKu ? 'ژمارەی حەواڵە (Transaction Number)' : 'Transaction Reference Number'}
+            {isKu ? 'Ú˜Ù…Ø§Ø±Û•ÛŒ Ø­Û•ÙˆØ§ÚµÛ• (Transaction Number)' : 'Transaction Reference Number'}
           </Text>
           <TextInput
             style={styles.input}
-            placeholder={isKu ? 'نموونە: 123456789' : 'e.g. 123456789'}
+            placeholder={isKu ? 'Ù†Ù…ÙˆÙˆÙ†Û•: 123456789' : 'e.g. 123456789'}
             placeholderTextColor="#8E8EA4"
             value=""
             onChangeText={() => {}}
@@ -206,8 +206,8 @@ export default function FibPaymentScreen() {
           <ShieldCheck size={16} color="#8E8EA4" />
           <Text style={styles.securityText}>
             {isKu
-              ? 'پشتیوانی خێرا 24/7 · بە تەواوی پارێزراوە لەلایەن AniFlix'
-              : 'Fast 24/7 Support · Direct assistance from AniFlix'}
+              ? 'Ù¾Ø´ØªÛŒÙˆØ§Ù†ÛŒ Ø®ÛŽØ±Ø§ 24/7 Â· Ø¨Û• ØªÛ•ÙˆØ§ÙˆÛŒ Ù¾Ø§Ø±ÛŽØ²Ø±Ø§ÙˆÛ• Ù„Û•Ù„Ø§ÛŒÛ•Ù† AniFlix'
+              : 'Fast 24/7 Support Â· Direct assistance from AniFlix'}
           </Text>
         </View>
 
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   planCardSelected: {
-    borderColor: '#E50914',
+    borderColor: '#0356C5',
     backgroundColor: '#261418',
   },
   planBadge: {
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   planBadgePopular: {
-    backgroundColor: '#E50914',
+    backgroundColor: '#0356C5',
   },
   planBadgeStandard: {
     backgroundColor: '#38BDF8',

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+﻿import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { useAuth } from './useAuth';
@@ -367,7 +367,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
           ...r,
           rating,
           comment: cleanComment,
-          createdAt: r.createdAt.includes('edited') ? r.createdAt : r.createdAt + ' · edited',
+          createdAt: r.createdAt.includes('edited') ? r.createdAt : r.createdAt + ' Â· edited',
         };
       }
       return r;

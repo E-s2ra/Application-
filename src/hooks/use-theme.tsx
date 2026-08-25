@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Unified Theme Provider & Hook with Dark/Light Mode & Gamification SIM Integration
  */
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';

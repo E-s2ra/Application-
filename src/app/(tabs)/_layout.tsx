@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+﻿import { Tabs } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/hooks/use-language';
 import { Home, LayoutGrid, Bookmark, User, Menu } from 'lucide-react-native';

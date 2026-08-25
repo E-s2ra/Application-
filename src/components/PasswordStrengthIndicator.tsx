@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Check, Circle } from 'lucide-react-native';
 import { useTheme } from '@/hooks/use-theme';
@@ -51,7 +51,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 
   return (
     <View style={styles.container}>
-      {/* 🌸 Cute Strength Meter Bar & Pill */}
+      {/* ðŸŒ¸ Cute Strength Meter Bar & Pill */}
       <View style={[styles.meterHeader, isRTL && styles.meterHeaderRTL]}>
         <View style={styles.meterBars}>
           {[1, 2, 3].map((step) => {
@@ -77,7 +77,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         </View>
       </View>
 
-      {/* 📋 Dynamic Condition Checklist */}
+      {/* ðŸ“‹ Dynamic Condition Checklist */}
       <View style={styles.rulesList}>
         {ruleChecks.map((rule) => {
           const isPassed = rule.passed;

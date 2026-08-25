@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+﻿import { Stack, useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,7 +24,7 @@ export default function AdminLayout() {
         headerTintColor: '#ffffff',
         contentStyle: { backgroundColor: themeColors.background },
       }}>
-      <Stack.Screen name="index" options={{ title: '⚡ Admin Panel' }} />
+      <Stack.Screen name="index" options={{ title: 'âš¡ Admin Panel' }} />
       <Stack.Screen name="add-anime" options={{ title: 'Add New Anime', headerBackTitle: 'Panel' }} />
       <Stack.Screen name="edit-anime" options={{ title: 'Edit Media', headerBackTitle: 'Panel' }} />
     </Stack>

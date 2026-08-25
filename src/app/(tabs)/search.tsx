@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   StyleSheet,
@@ -148,8 +148,8 @@ export default function SearchScreen() {
             }}
           >
             <Heart
-              color={favorited ? '#E50914' : '#fff'}
-              fill={favorited ? '#E50914' : 'rgba(0,0,0,0.5)'}
+              color={favorited ? '#0356C5' : '#fff'}
+              fill={favorited ? '#0356C5' : 'rgba(0,0,0,0.5)'}
               size={18}
             />
           </Pressable>
@@ -175,7 +175,7 @@ export default function SearchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        {/* 🔍 Search Input Bar */}
+        {/* ðŸ” Search Input Bar */}
         <View style={styles.searchHeader}>
           <View
             style={[
@@ -207,7 +207,7 @@ export default function SearchScreen() {
 
         {/* Main Content Area */}
         <View style={styles.mainContent}>
-            {/* 🎬 Grid of Results */}
+            {/* ðŸŽ¬ Grid of Results */}
             {loading ? (
               <View style={styles.center}>
                 <ActivityIndicator size="large" color={themeColors.primary} />

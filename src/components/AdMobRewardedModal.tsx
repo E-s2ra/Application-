@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -93,7 +93,7 @@ export function AdMobRewardedModal() {
                 <Text style={styles.adLabelText}>Google AdMob</Text>
               </View>
               <Text style={styles.rewardNotice}>
-                Reward: <Text style={styles.rewardNoticeHighlight}>+{currentRewardCoins} 💰</Text>
+                Reward: <Text style={styles.rewardNoticeHighlight}>+{currentRewardCoins} ðŸ’°</Text>
               </Text>
             </View>
 
@@ -156,7 +156,7 @@ export function AdMobRewardedModal() {
                 <View style={styles.successLeft}>
                   <CheckCircle2 size={24} color="#00E676" />
                   <View>
-                    <Text style={styles.successTitle}>🎉 Reward Granted!</Text>
+                    <Text style={styles.successTitle}>ðŸŽ‰ Reward Granted!</Text>
                     <Text style={styles.successSubtitle}>
                       +{currentRewardCoins} AniFlix Coins added to your account
                     </Text>
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 6,
     borderRadius: 20,
-    backgroundColor: '#E50914',
+    backgroundColor: '#0356C5',
   },
   progressTrack: {
     width: '100%',
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   claimButton: {
-    backgroundColor: '#E50914',
+    backgroundColor: '#0356C5',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,

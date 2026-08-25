@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { StyleSheet, View, Text, Platform, Image, Pressable, Linking } from 'react-native';
 import { ADMOB_IDS, ANDROID_BANNER_ID, IOS_BANNER_ID } from '@/constants/admob';
 import { Sparkles, ExternalLink } from 'lucide-react-native';
@@ -33,7 +33,7 @@ export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerPro
       {/* Ad Label */}
       <View style={styles.adLabelRow}>
         <View style={styles.adTag}>
-          <Text style={styles.adTagText}>Ad · Google AdMob</Text>
+          <Text style={styles.adTagText}>Ad Â· Google AdMob</Text>
         </View>
         <Text style={styles.adIdText} numberOfLines={1}>
           {Platform.OS.toUpperCase()} ID: ...{adUnitId.slice(-6)}
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#E50914',
+    backgroundColor: '#0356C5',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,

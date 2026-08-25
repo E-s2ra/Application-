@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -59,10 +59,10 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
       if (id === 'vip_6_months') return '6 Months';
       return '1 Year';
     }
-    if (id === 'vip_1_month') return '١ مانگ';
-    if (id === 'vip_3_months') return '٣ مانگ';
-    if (id === 'vip_6_months') return '٦ مانگ';
-    return '١ ساڵ';
+    if (id === 'vip_1_month') return 'Ù¡ Ù…Ø§Ù†Ú¯';
+    if (id === 'vip_3_months') return 'Ù£ Ù…Ø§Ù†Ú¯';
+    if (id === 'vip_6_months') return 'Ù¦ Ù…Ø§Ù†Ú¯';
+    return 'Ù¡ Ø³Ø§Úµ';
   };
 
   const handleContactWhatsApp = async () => {
@@ -121,10 +121,10 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle} numberOfLines={1}>
-                  {isKu ? 'ئابوونەی AniFlix VIP Sovereign' : 'AniFlix VIP Sovereign'}
+                  {isKu ? 'Ø¦Ø§Ø¨ÙˆÙˆÙ†Û•ÛŒ AniFlix VIP Sovereign' : 'AniFlix VIP Sovereign'}
                 </Text>
                 <Text style={styles.modalSubtitle} numberOfLines={2}>
-                  {isKu ? 'کوالیتی 4K، بە تەواوی بێ ڕیکلام و ئەڵقەی تایبەت' : 'Ultra HD 4K, Ad-Free & Exclusive Series'}
+                  {isKu ? 'Ú©ÙˆØ§Ù„ÛŒØªÛŒ 4KØŒ Ø¨Û• ØªÛ•ÙˆØ§ÙˆÛŒ Ø¨ÛŽ Ú•ÛŒÚ©Ù„Ø§Ù… Ùˆ Ø¦Û•ÚµÙ‚Û•ÛŒ ØªØ§ÛŒØ¨Û•Øª' : 'Ultra HD 4K, Ad-Free & Exclusive Series'}
                 </Text>
               </View>
             </View>
@@ -145,11 +145,11 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                 <Sparkles color="#FFB800" size={18} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.activeVipTitle}>
-                    {isKu ? 'ئابوونەی چالاکی VIP' : 'Active VIP Subscription'}
+                    {isKu ? 'Ø¦Ø§Ø¨ÙˆÙˆÙ†Û•ÛŒ Ú†Ø§Ù„Ø§Ú©ÛŒ VIP' : 'Active VIP Subscription'}
                   </Text>
                   <Text style={styles.activeVipSub}>
                     {isKu
-                      ? `${vipDaysRemaining} ڕۆژت ماوە. نوێکردنەوە کاتەکەت زیاتر درێژ دەکاتەوە!`
+                      ? `${vipDaysRemaining} Ú•Û†Ú˜Øª Ù…Ø§ÙˆÛ•. Ù†ÙˆÛŽÚ©Ø±Ø¯Ù†Û•ÙˆÛ• Ú©Ø§ØªÛ•Ú©Û•Øª Ø²ÛŒØ§ØªØ± Ø¯Ø±ÛŽÚ˜ Ø¯Û•Ú©Ø§ØªÛ•ÙˆÛ•!`
                       : `You currently have ${vipDaysRemaining} days remaining. Subscribing will extend your active time!`}
                   </Text>
                 </View>
@@ -159,31 +159,31 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
             {/* VIP Benefits List */}
             <View style={styles.benefitsCard}>
               <Text style={styles.benefitsHeading}>
-                {isKu ? '👑 تایبەتمەندییەکانی ئەندامێتی VIP' : '👑 VIP MEMBERSHIP BENEFITS'}
+                {isKu ? 'ðŸ‘‘ ØªØ§ÛŒØ¨Û•ØªÙ…Û•Ù†Ø¯ÛŒÛŒÛ•Ú©Ø§Ù†ÛŒ Ø¦Û•Ù†Ø¯Ø§Ù…ÛŽØªÛŒ VIP' : 'ðŸ‘‘ VIP MEMBERSHIP BENEFITS'}
               </Text>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
                 <Text style={styles.benefitText}>
-                  {isKu ? '١٠٠٪ بێ هیچ ڕیکلامێک و پەخشی ڕاستەوخۆ' : '100% Commercial-Free & Ad-Free Streaming'}
+                  {isKu ? 'Ù¡Ù Ù Ùª Ø¨ÛŽ Ù‡ÛŒÚ† Ú•ÛŒÚ©Ù„Ø§Ù…ÛŽÚ© Ùˆ Ù¾Û•Ø®Ø´ÛŒ Ú•Ø§Ø³ØªÛ•ÙˆØ®Û†' : '100% Commercial-Free & Ad-Free Streaming'}
                 </Text>
               </View>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
                 <Text style={styles.benefitText}>
-                  {isKu ? 'کوالیتی بێ وێنەی Ultra HD 4K بە بەرزترین خێرایی' : 'Ultra HD 4K & Uncapped Master Bitrate'}
+                  {isKu ? 'Ú©ÙˆØ§Ù„ÛŒØªÛŒ Ø¨ÛŽ ÙˆÛŽÙ†Û•ÛŒ Ultra HD 4K Ø¨Û• Ø¨Û•Ø±Ø²ØªØ±ÛŒÙ† Ø®ÛŽØ±Ø§ÛŒÛŒ' : 'Ultra HD 4K & Uncapped Master Bitrate'}
                 </Text>
               </View>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
                 <Text style={styles.benefitText}>
-                  {isKu ? 'بینینی زووتری ئەڵقە نوێیەکان و فیلمە تایبەتەکان' : 'Early Access to New Releases & Exclusive Series'}
+                  {isKu ? 'Ø¨ÛŒÙ†ÛŒÙ†ÛŒ Ø²ÙˆÙˆØªØ±ÛŒ Ø¦Û•ÚµÙ‚Û• Ù†ÙˆÛŽÛŒÛ•Ú©Ø§Ù† Ùˆ ÙÛŒÙ„Ù…Û• ØªØ§ÛŒØ¨Û•ØªÛ•Ú©Ø§Ù†' : 'Early Access to New Releases & Exclusive Series'}
                 </Text>
               </View>
             </View>
 
             {/* Plan Cards */}
             <Text style={styles.plansSectionTitle}>
-              {isKu ? '١. هەڵبژاردنی پلانی VIP' : '1. SELECT YOUR VIP PLAN'}
+              {isKu ? 'Ù¡. Ù‡Û•ÚµØ¨Ú˜Ø§Ø±Ø¯Ù†ÛŒ Ù¾Ù„Ø§Ù†ÛŒ VIP' : '1. SELECT YOUR VIP PLAN'}
             </Text>
             <View style={styles.plansGrid}>
               {RASEDI_VIP_PLANS.map((plan) => {
@@ -206,17 +206,17 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                         ]}
                       >
                         <Text style={styles.planBadgeText}>
-                          {isKu && plan.popular ? 'باوترین' : plan.badge.toUpperCase()}
+                          {isKu && plan.popular ? 'Ø¨Ø§ÙˆØªØ±ÛŒÙ†' : plan.badge.toUpperCase()}
                         </Text>
                       </View>
                     )}
                     <Text style={styles.planDuration}>{getPlanDurationLabel(plan.id)}</Text>
                     <Text style={styles.planPrice}>
                       {plan.priceIQD.toLocaleString()}{' '}
-                      <Text style={styles.planCurrency}>{isKu ? 'د.ع' : 'IQD'}</Text>
+                      <Text style={styles.planCurrency}>{isKu ? 'Ø¯.Ø¹' : 'IQD'}</Text>
                     </Text>
                     <Text style={styles.planDays}>
-                      {isKu ? `${plan.durationDays} ڕۆژ VIP` : `${plan.durationDays} Days VIP`}
+                      {isKu ? `${plan.durationDays} Ú•Û†Ú˜ VIP` : `${plan.durationDays} Days VIP`}
                     </Text>
                   </Pressable>
                 );
@@ -225,20 +225,20 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
             {/* Direct Contact Payment Section */}
             <Text style={styles.plansSectionTitle}>
-              {isKu ? '٢. پەیوەندیکردن بۆ چالاککردنی VIP' : '2. CONTACT TO ACTIVATE VIP'}
+              {isKu ? 'Ù¢. Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒÚ©Ø±Ø¯Ù† Ø¨Û† Ú†Ø§Ù„Ø§Ú©Ú©Ø±Ø¯Ù†ÛŒ VIP' : '2. CONTACT TO ACTIVATE VIP'}
             </Text>
 
             <View style={styles.contactContainer}>
               <Text style={styles.contactInstructions}>
                 {isKu
-                  ? 'بۆ کڕین و چالاککردنی خێرای ئەندامێتی VIP، لە ڕێگەی واتسئاپ یان تێلیگرام پەیوەندی بە تیمی پشتگیری بکە:'
+                  ? 'Ø¨Û† Ú©Ú•ÛŒÙ† Ùˆ Ú†Ø§Ù„Ø§Ú©Ú©Ø±Ø¯Ù†ÛŒ Ø®ÛŽØ±Ø§ÛŒ Ø¦Û•Ù†Ø¯Ø§Ù…ÛŽØªÛŒ VIPØŒ Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ ÙˆØ§ØªØ³Ø¦Ø§Ù¾ ÛŒØ§Ù† ØªÛŽÙ„ÛŒÚ¯Ø±Ø§Ù… Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒ Ø¨Û• ØªÛŒÙ…ÛŒ Ù¾Ø´ØªÚ¯ÛŒØ±ÛŒ Ø¨Ú©Û•:'
                   : 'To purchase and activate your VIP subscription instantly, contact our official support via WhatsApp or Telegram:'}
               </Text>
 
               <View style={styles.selectedPlanSummary}>
-                <Text style={styles.summaryLabel}>{isKu ? 'پلانی هەڵبژێردراو:' : 'Selected Plan:'}</Text>
+                <Text style={styles.summaryLabel}>{isKu ? 'Ù¾Ù„Ø§Ù†ÛŒ Ù‡Û•ÚµØ¨Ú˜ÛŽØ±Ø¯Ø±Ø§Ùˆ:' : 'Selected Plan:'}</Text>
                 <Text style={styles.summaryValue}>
-                  {getPlanDurationLabel(selectedPlan.id)} — {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دینار' : 'IQD'}
+                  {getPlanDurationLabel(selectedPlan.id)} â€” {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'Ø¯ÛŒÙ†Ø§Ø±' : 'IQD'}
                 </Text>
               </View>
 
@@ -250,7 +250,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                   </View>
                   <View>
                     <Text style={styles.btnTitle}>
-                      {isKu ? 'پەیوەندی لە ڕێگەی WhatsApp' : 'Contact via WhatsApp'}
+                      {isKu ? 'Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒ Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ WhatsApp' : 'Contact via WhatsApp'}
                     </Text>
                     <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.whatsappDisplay}</Text>
                   </View>
@@ -266,7 +266,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                   </View>
                   <View>
                     <Text style={styles.btnTitle}>
-                      {isKu ? 'پەیوەندی لە ڕێگەی Telegram' : 'Contact via Telegram'}
+                      {isKu ? 'Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒ Ù„Û• Ú•ÛŽÚ¯Û•ÛŒ Telegram' : 'Contact via Telegram'}
                     </Text>
                     <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.telegramDisplay}</Text>
                   </View>
@@ -286,13 +286,13 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               </Text>
               <View style={styles.accountRow}>
                 <View>
-                  <Text style={styles.accountLabel}>{isKu ? 'ژمارەی ئەژمێری FIB:' : 'FIB Account / Phone Number:'}</Text>
+                  <Text style={styles.accountLabel}>{isKu ? 'Ú˜Ù…Ø§Ø±Û•ÛŒ Ø¦Û•Ú˜Ù…ÛŽØ±ÛŒ FIB:' : 'FIB Account / Phone Number:'}</Text>
                   <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
                   <Text style={styles.accountHolder}>{activeMethod.accountName}</Text>
                 </View>
                 <Pressable style={styles.copyBtn} onPress={handleCopyAccount}>
                   <Copy size={16} color="#FFF" />
-                  <Text style={styles.copyBtnText}>{copied ? (isKu ? 'کۆپیکرا!' : 'Copied!') : isKu ? 'کۆپیکردن' : 'Copy'}</Text>
+                  <Text style={styles.copyBtnText}>{copied ? (isKu ? 'Ú©Û†Ù¾ÛŒÚ©Ø±Ø§!' : 'Copied!') : isKu ? 'Ú©Û†Ù¾ÛŒÚ©Ø±Ø¯Ù†' : 'Copy'}</Text>
                 </Pressable>
               </View>
             </View>
@@ -303,8 +303,8 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               <ShieldCheck size={14} color="#8E8EA4" />
               <Text style={styles.securityText}>
                 {isKu
-                  ? 'پشتیوانی خێرا 24/7 · پارێزراوە لەلایەن AniFlix Sovereign'
-                  : 'Fast 24/7 Support · Protected by AniFlix Sovereign'}
+                  ? 'Ù¾Ø´ØªÛŒÙˆØ§Ù†ÛŒ Ø®ÛŽØ±Ø§ 24/7 Â· Ù¾Ø§Ø±ÛŽØ²Ø±Ø§ÙˆÛ• Ù„Û•Ù„Ø§ÛŒÛ•Ù† AniFlix Sovereign'
+                  : 'Fast 24/7 Support Â· Protected by AniFlix Sovereign'}
               </Text>
             </View>
           </ScrollView>

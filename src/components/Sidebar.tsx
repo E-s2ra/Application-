@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, TouchableWithoutFeedback, Switch } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { 
@@ -189,8 +189,8 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
               }}
               style={styles.navItem}
             >
-              <ShieldAlert color="#E50914" size={22} strokeWidth={2} />
-              <Text style={[styles.navItemText, { color: '#E50914', fontWeight: '700' }]}>
+              <ShieldAlert color="#0356C5" size={22} strokeWidth={2} />
+              <Text style={[styles.navItemText, { color: '#0356C5', fontWeight: '700' }]}>
                 {t('adminPanel')}
               </Text>
             </Pressable>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image, Pressable } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -21,7 +21,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const [screenFadeAnim] = useState(() => new Animated.Value(1));
 
   const [loadingText, setLoadingText] = useState(
-    language === 'ku' ? '🎬 دەستپێکردنی جیهانی ئەنیفلیکس...' : '🎬 Initializing AniFlix Universe...'
+    language === 'ku' ? 'ðŸŽ¬ Ø¯Û•Ø³ØªÙ¾ÛŽÚ©Ø±Ø¯Ù†ÛŒ Ø¬ÛŒÙ‡Ø§Ù†ÛŒ Ø¦Û•Ù†ÛŒÙÙ„ÛŒÚ©Ø³...' : 'ðŸŽ¬ Initializing AniFlix Universe...'
   );
   const [percent, setPercent] = useState(0);
 
@@ -69,15 +69,15 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
     // 4. Progress percentage and dynamic text updates
     const textT1 = setTimeout(() => {
-      setLoadingText('⚡ Loading 4K streams & catalogs...');
+      setLoadingText('âš¡ Loading 4K streams & catalogs...');
     }, 1200);
 
     const textT2 = setTimeout(() => {
-      setLoadingText('🍿 Preparing your personalized cinema...');
+      setLoadingText('ðŸ¿ Preparing your personalized cinema...');
     }, 2400);
 
     const textT3 = setTimeout(() => {
-      setLoadingText('✨ Welcome to AniFlix!');
+      setLoadingText('âœ¨ Welcome to AniFlix!');
     }, 3600);
 
     const interval = setInterval(() => {
@@ -117,7 +117,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
   return (
     <Animated.View style={[styles.container, { opacity: screenFadeAnim }]}>
-      {/* 🌐 Top Language Switcher on First Screen */}
+      {/* ðŸŒ Top Language Switcher on First Screen */}
       <View style={styles.topBar}>
         <Pressable
           style={styles.langPill}
@@ -125,7 +125,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
         >
           <Globe size={14} color="#00D2FF" />
           <Text style={styles.langPillText}>
-            {language === 'ku' ? 'کوردی' : 'English'}
+            {language === 'ku' ? 'Ú©ÙˆØ±Ø¯ÛŒ' : 'English'}
           </Text>
         </Pressable>
       </View>
@@ -165,7 +165,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
         {/* Subtitle */}
         <Text style={styles.tagline}>
-          {language === 'ku' ? 'جیهانی تایبەتی سینەما و ئەنیمێی تۆ' : 'YOUR ULTIMATE CINEMA & ANIME UNIVERSE'}
+          {language === 'ku' ? 'Ø¬ÛŒÙ‡Ø§Ù†ÛŒ ØªØ§ÛŒØ¨Û•ØªÛŒ Ø³ÛŒÙ†Û•Ù…Ø§ Ùˆ Ø¦Û•Ù†ÛŒÙ…ÛŽÛŒ ØªÛ†' : 'YOUR ULTIMATE CINEMA & ANIME UNIVERSE'}
         </Text>
       </Animated.View>
 
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     width: Math.min(width * 0.9, 420),
     height: Math.min(width * 0.9, 420),
     borderRadius: 210,
-    backgroundColor: 'rgba(229, 9, 20, 0.18)',
+    backgroundColor: 'rgba(3, 86, 197, 0.18)',
   },
   logoContent: {
     alignItems: 'center',
@@ -221,17 +221,17 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 22,
-    backgroundColor: '#E50914',
+    backgroundColor: '#0356C5',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
     ...Platform.select({
       web: {
         // @ts-ignore
-        boxShadow: '0px 10px 20px rgba(229, 9, 20, 0.5)',
+        boxShadow: '0px 10px 20px rgba(3, 86, 197, 0.5)',
       },
       default: {
-        shadowColor: '#E50914',
+        shadowColor: '#0356C5',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.5,
         shadowRadius: 20,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   brandTextRed: {
     fontSize: 42,
     fontWeight: '900',
-    color: '#E50914',
+    color: '#0356C5',
     letterSpacing: 1.5,
   },
   sparkleIcon: {
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#E50914',
+    backgroundColor: '#0356C5',
     borderRadius: 3,
   },
   statusRow: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   percentText: {
     fontSize: 12,
-    color: '#E50914',
+    color: '#0356C5',
     fontWeight: '700',
   },
   durationBadge: {
