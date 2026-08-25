@@ -309,7 +309,7 @@ export default function HomeScreen() {
               {item.title}
             </Text>
             <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-              {item.episodes > 1 ? `${item.episodes} ${t('episodesBadge' as any, 'Episodes')}` : t(item.genre as any, item.genre || '') ?? t('feature' as any, 'Feature')}
+              {item.episodes > 1 ? `${item.episodes} ${t('episodes', 'Episodes')}` : t(item.genre as any, item.genre || '') ?? t('movie', 'Movie')}
             </Text>
           </View>
         </View>
@@ -356,7 +356,7 @@ export default function HomeScreen() {
           </Pressable>
           <View style={styles.epBadge}>
             <Text style={styles.epBadgeText}>
-              {item.episodes > 1 ? `${item.episodes} ${t('epsBadge' as any, 'EPS')}` : t('movieBadge' as any, 'MOVIE')}
+              {item.episodes > 1 ? `${item.episodes} ${t('ep', 'EPS')}` : t('movie', 'MOVIE')}
             </Text>
           </View>
         </View>
@@ -365,7 +365,7 @@ export default function HomeScreen() {
             {item.title}
           </Text>
           <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {t(item.genre as any, item.genre || '') ?? getCategoryLabel(item.category || '', item.category || '') ?? t('streamBadge' as any, 'Stream')}
+            {t(item.genre as any, item.genre || '') ?? getCategoryLabel(item.category || '', item.category || '') ?? t('movie', 'Stream')}
           </Text>
         </View>
       </Pressable>
@@ -422,7 +422,7 @@ export default function HomeScreen() {
             >
               <Crown size={15} color="#FFB800" />
               <Text style={styles.vipHeaderBtnText}>
-                {isVIP ? `VIP (${vipDaysRemaining}d)` : 'VIP'}
+                {isVIP ? `VIP (${vipDaysRemaining} ${t('days', 'd')})` : 'VIP'}
               </Text>
             </Pressable>
 
