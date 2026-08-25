@@ -200,42 +200,8 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        {/* Split Layout */}
-        <View style={styles.splitLayout}>
-          {/* Left Sidebar: Categories */}
-          <View style={styles.sidebar}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.categoryVerticalList}
-            >
-              {CATEGORIES.map((cat) => {
-                const isSelected = selectedCategory === cat.id;
-                return (
-                  <Pressable
-                    key={cat.id}
-                    style={[
-                      styles.categorySidebarItem,
-                      isSelected && styles.categorySidebarItemActive,
-                    ]}
-                    onPress={() => setSelectedCategory(cat.id)}
-                  >
-                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                    <Text
-                      style={[
-                        styles.categorySidebarText,
-                        isSelected ? { color: themeColors.primary, fontWeight: '800' } : { color: themeColors.textSecondary },
-                      ]}
-                    >
-                      {cat.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Right Content Area */}
-          <View style={styles.mainContent}>
+        {/* Main Content Area */}
+        <View style={styles.mainContent}>
             {/* Sort/Filter alternatives - using existing Genre chips */}
             <View style={styles.filterSection}>
               <ScrollView
@@ -296,7 +262,6 @@ export default function SearchScreen() {
               />
             )}
           </View>
-        </View>
       </View>
     </View>
   );
@@ -338,39 +303,7 @@ const styles = StyleSheet.create({
   clearBtn: {
     padding: 4,
   },
-  splitLayout: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  sidebar: {
-    width: 100,
-    borderRightWidth: 1,
-    borderColor: '#222232',
-  },
   mainContent: {
-    flex: 1,
-  },
-  categoryVerticalList: {
-    paddingVertical: 12,
-  },
-  categorySidebarItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  categorySidebarItemActive: {
-    backgroundColor: 'rgba(229, 9, 20, 0.1)',
-    borderLeftWidth: 3,
-    borderColor: '#E50914',
-  },
-  categoryIcon: {
-    fontSize: 16,
-  },
-  categorySidebarText: {
-    fontSize: 12,
-    fontWeight: '600',
     flex: 1,
   },
   filterSection: {
