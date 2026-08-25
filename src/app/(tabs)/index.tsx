@@ -573,159 +573,17 @@ export default function HomeScreen() {
         ) : (
           /* When "All" is chosen, show organized categorized sections */
           <>
-            {/* ✨ Automatically populated from anime.published_at */}
-            {newProducts.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Sparkles color="#00D2FF" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('newProducts', 'New Products')}</Text>
-                  </View>
-                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                    {t('addedThisMonth', 'Added this month')}
-                  </Text>
-                </View>
-                <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap' }]}>
-                  {newProducts.map((item) => {
-                    const card = renderStandardCard({ item });
-                    return (
-                      <View key={`new-${item.id}`}>
-                        {card}
-                      </View>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-            {/* 🔥 TOP 10 Ranked Row */}
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <TrendingUp color={themeColors.primary} size={20} />
-                <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('top10Today', 'Top 10 Today')}</Text>
+            {allMedia.length > 0 && (
+              <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap', paddingTop: 20 }]}>
+                {allMedia.map((item) => {
+                  const card = renderStandardCard({ item });
+                  return (
+                    <View key={`grid-${item.id}`}>
+                      {card}
+                    </View>
+                  );
+                })}
               </View>
-            </View>
-            <FlatList
-              data={allMedia.slice(0, 10)}
-              keyExtractor={(item) => `top-${item.id}`}
-              renderItem={renderRankedCard}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.rankedList}
-            />
-
-            {/* 🎬 Blockbuster Movies Rail */}
-            {moviesRail.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Film color="#E50914" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('blockbusterMovies', 'Blockbuster Movies')}</Text>
-                  </View>
-                  <Pressable onPress={() => setActiveCategory('Movies')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
-                  </Pressable>
-                </View>
-                <FlatList
-                  data={moviesRail}
-                  keyExtractor={(item) => `mov-${item.id}`}
-                  renderItem={renderStandardCard}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </>
-            )}
-
-            {/* 🎌 Anime Movies Rail */}
-            {animeMoviesRail.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Clapperboard color="#FF8A00" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('mustWatchAnimeMovies', 'Must-Watch Anime Movies')}</Text>
-                  </View>
-                  <Pressable onPress={() => setActiveCategory('Anime Movies')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
-                  </Pressable>
-                </View>
-                <FlatList
-                  data={animeMoviesRail}
-                  keyExtractor={(item) => `amov-${item.id}`}
-                  renderItem={renderStandardCard}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </>
-            )}
-
-            {/* 🌸 Trending K-Drama Rail */}
-            {kdramaRail.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Sparkles color="#FF69B4" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('trendingKDrama', 'Trending K-Drama')}</Text>
-                  </View>
-                  <Pressable onPress={() => setActiveCategory('K-Drama')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
-                  </Pressable>
-                </View>
-                <FlatList
-                  data={kdramaRail}
-                  keyExtractor={(item) => `kd-${item.id}`}
-                  renderItem={renderStandardCard}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </>
-            )}
-
-            {/* 🎭 Gripping Drama Series Rail */}
-            {dramaRail.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Tv color="#9D4EDD" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('criticallyAcclaimed', 'Critically Acclaimed Dramas')}</Text>
-                  </View>
-                  <Pressable onPress={() => setActiveCategory('Drama')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
-                  </Pressable>
-                </View>
-                <FlatList
-                  data={dramaRail}
-                  keyExtractor={(item) => `dr-${item.id}`}
-                  renderItem={renderStandardCard}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </>
-            )}
-
-            {/* ⚡ Anime Series Rail */}
-            {animeSeriesRail.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Compass color={themeColors.accentCyan} size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('popularAnime', 'Popular Anime Series')}</Text>
-                  </View>
-                  <Pressable onPress={() => setActiveCategory('Anime Series')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
-                  </Pressable>
-                </View>
-                <FlatList
-                  data={animeSeriesRail}
-                  keyExtractor={(item) => `as-${item.id}`}
-                  renderItem={renderStandardCard}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </>
             )}
 
             {allMedia.length === 0 && (
