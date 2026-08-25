@@ -396,90 +396,11 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* Quick Category indicator / tagline on larger screens */}
-          {isDesktop && (
-            <View style={styles.desktopTagline}>
-              <Text style={{ color: themeColors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                Unlimited Anime, Movies, K-Dramas & Series in Ultra HD
-              </Text>
-            </View>
-          )}
-
           <View style={styles.homeActions}>
-            {/* 👑 VIP Sovereign Subscription Button */}
-            <Pressable
-              style={styles.vipHeaderBtn}
-              onPress={() => setShowVipModal(true)}
-            >
-              <Crown size={15} color="#FFB800" />
-              <Text style={styles.vipHeaderBtnText}>
-                {isVIP ? `VIP (${vipDaysRemaining}d)` : 'VIP'}
-              </Text>
-            </Pressable>
-
             <NotificationsBell />
-            {/* 🌐 Quick Language Switcher Button */}
-            <Pressable
-              style={[styles.rewardsHeaderBtn, { borderColor: '#00D2FF', borderWidth: 1 }]}
-              onPress={toggleLanguage}
-            >
-              <Globe size={14} color="#00D2FF" />
-              <Text style={[styles.coinsBadgeText, { color: '#00D2FF', fontWeight: '700' }]}>
-                {language === 'ku' ? 'کوردی' : 'EN'}
-              </Text>
-            </Pressable>
-
-            {/* 🎁 Rewards & Streak Hub Header Button */}
-            <Pressable
-              style={styles.rewardsHeaderBtn}
-              onPress={() => setShowRewardsModal(true)}
-            >
-              <Flame size={14} color="#FF5722" />
-              <Text style={styles.streakBadgeText}>{streakDays}d</Text>
-              <Text style={styles.headerDivider}>·</Text>
-              <Text style={styles.coinsBadgeText}>💰 {coins}</Text>
-              <View style={styles.levelPill}>
-                <Text style={styles.levelPillText}>LVL {level}</Text>
-              </View>
-            </Pressable>
           </View>
         </View>
 
-        {/* 🚀 Main Category Switcher Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryContainer}
-        >
-          {CATEGORIES.map((cat) => {
-            const isSelected = activeCategory === cat.id;
-            return (
-              <Pressable
-                key={cat.id}
-                style={[
-                  styles.categoryPill,
-                  isSelected
-                    ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
-                    : { backgroundColor: themeColors.backgroundElement },
-                ]}
-                onPress={() => {
-                  setActiveCategory(cat.id);
-                  setCurrentHeroIndex(0);
-                }}
-              >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                <Text
-                  style={[
-                    styles.categoryPillText,
-                    { color: isSelected ? '#fff' : themeColors.textSecondary },
-                  ]}
-                >
-                  {getCategoryLabel(cat.id, cat.label)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
 
         {/* 🎉 Active Seasonal Event Live Mini-Banner */}
         {activeEvent && (
@@ -614,38 +535,45 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 🏷️ Genre Filter Bar */}
+        {/* Categories Section (Moved below Hero to match reference) */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Categories</Text>
+          <Text style={[styles.seeAllText, { color: themeColors.textSecondary }]}>See All</Text>
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.genreContainer}
+          contentContainerStyle={[styles.categoryContainer, { paddingHorizontal: 16, gap: 12, marginBottom: 16 }]}
         >
-          {GENRES.map((genre) => {
-            const isSelected = activeGenre === genre;
+          {CATEGORIES.map((cat) => {
+            const isSelected = activeCategory === cat.id;
             return (
               <Pressable
-                key={genre}
+                key={cat.id}
                 style={[
-                  styles.genreChip,
+                  styles.categoryPill,
                   isSelected
-                    ? [styles.genreChipActive, { backgroundColor: themeColors.primary }]
+                    ? [styles.categoryPillActive, { borderColor: themeColors.primary, borderWidth: 1 }]
                     : { backgroundColor: themeColors.backgroundElement },
                 ]}
-                onPress={() => setActiveGenre(genre)}
+                onPress={() => {
+                  setActiveCategory(cat.id);
+                  setCurrentHeroIndex(0);
+                }}
               >
+                <Text style={styles.categoryIcon}>{cat.icon}</Text>
                 <Text
                   style={[
-                    styles.genreChipText,
-                    { color: isSelected ? '#fff' : themeColors.textSecondary },
+                    styles.categoryPillText,
+                    { color: isSelected ? themeColors.primary : themeColors.textSecondary },
                   ]}
                 >
-                  {genre}
+                  {getCategoryLabel(cat.id, cat.label)}
                 </Text>
               </Pressable>
             );
           })}
         </ScrollView>
-
         {/* When a specific category is chosen, show focused filtered list */}
         {activeCategory !== 'All' ? (
           <>
