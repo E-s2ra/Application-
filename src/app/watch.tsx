@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   StyleSheet,
@@ -15,6 +15,7 @@ import {
 import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTheme } from '@/hooks/use-theme';
+import { useLanguage } from '@/hooks/use-language';
 import {
   Shield,
   Heart,
@@ -53,6 +54,7 @@ export default function WatchScreen() {
   const { getStatsForMedia } = useReviews();
   const { awardWatchTimeReward } = useGamification();
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet } = useResponsive();
+  const { language } = useLanguage();
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);

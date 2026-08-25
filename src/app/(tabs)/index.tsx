@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
   StyleSheet,
@@ -578,8 +578,8 @@ export default function HomeScreen() {
             </View>
           </>
         ) : (
-          {/* When "All" is chosen, show organized categorized sections */}
           <>
+            {/* When "All" is chosen, show organized categorized sections */}
             {allMedia.length > 0 && (
               <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap', paddingTop: 20 }]}>
                 {allMedia.map((item) => {
@@ -609,7 +609,7 @@ export default function HomeScreen() {
                   <PrimaryGradient borderRadius={10} />
                   <Sparkles size={16} color="#FFF" />
                   <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
-                    {t('adminDashboard', 'Admin Dashboard')}
+                    {t('adminDashboard' as any, 'Admin Dashboard')}
                   </Text>
                 </Pressable>
               </View>

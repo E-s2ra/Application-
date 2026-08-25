@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -88,6 +88,7 @@ export default function ProfileScreen() {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
+  const [showThemeShop, setShowThemeShop] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
@@ -944,5 +945,17 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '800',
     fontSize: 13,
+  },
+  badgesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 16,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0356C5',
   },
 });
