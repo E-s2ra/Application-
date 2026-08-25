@@ -19,6 +19,8 @@ export type AnimeItem = {
   category?: MediaCategory | string;
   is_featured: boolean;
   description?: string | null;
+  description_ku?: string | null;
+  title_ku?: string | null;
   published_at?: string | null;
   episode_links?: { episode: number; url: string }[];
 };

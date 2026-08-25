@@ -15,14 +15,14 @@ export const Colors = {
     text: '#FFFFFF',
     textSecondary: '#8A8A9D', // Cool grey
     textMuted: '#636375',
-    primary: '#E50914', // Vibrant Netflix Red
-    primaryHover: '#F40612',
-    primaryGlow: 'rgba(229, 9, 20, 0.4)',
+    primary: '#0356C5', // Deep blue
+    primaryHover: '#0D47A1',
+    primaryGlow: 'rgba(3, 86, 197, 0.4)',
     accent: '#FFB800',
     accentCyan: '#00D2FF',
     badgeBackground: 'rgba(0, 0, 0, 0.75)',
     cardOverlay: 'rgba(9, 9, 14, 0.85)',
-    buttonBackground: '#E50914',
+    buttonBackground: '#0356C5',
     buttonText: '#FFFFFF',
     inputBackground: '#1C1C26',
     inputBorder: '#222232',
@@ -37,14 +37,14 @@ export const Colors = {
     text: '#111827',
     textSecondary: '#4B5563',
     textMuted: '#9CA3AF',
-    primary: '#8B0000', // Dark Red
-    primaryHover: '#A00000',
-    primaryGlow: 'rgba(139, 0, 0, 0.18)',
+    primary: '#0356C5', // Deep blue
+    primaryHover: '#0D47A1',
+    primaryGlow: 'rgba(3, 86, 197, 0.18)',
     accent: '#D97706',
     accentCyan: '#0284C7',
     badgeBackground: 'rgba(0, 0, 0, 0.06)',
     cardOverlay: 'rgba(255, 255, 255, 0.92)',
-    buttonBackground: '#8B0000',
+    buttonBackground: '#0356C5',
     buttonText: '#FFFFFF',
     inputBackground: '#F9FAFB',
     inputBorder: '#D1D5DB',

@@ -4,10 +4,15 @@ import {
   StyleSheet,
   View,
   Text,
+  Image,
   ScrollView,
   Pressable,
-  Image,
+  Platform,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
+import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -368,9 +373,10 @@ export default function WatchScreen() {
 
           {/* ⏯ Play/Pause */}
           <Pressable
-            style={[styles.playPauseCircle, { backgroundColor: themeColors.primary }]}
+            style={[styles.playPauseCircle, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}
             onPress={handlePlayPause}
           >
+            <PrimaryGradient borderRadius={32} />
             {isPlaying ? (
               <Pause color="#fff" size={20} fill="#fff" />
             ) : (
@@ -494,14 +500,15 @@ export default function WatchScreen() {
           </View>
 
           <Text style={[styles.animeTitle, { color: themeColors.text }]}>
-            {anime?.title ?? 'Anime Title'}
+            {language === 'ku' && anime?.title_ku ? anime.title_ku : (anime?.title ?? 'Anime Title')}
           </Text>
           <Text style={[styles.genreText, { color: themeColors.accentCyan }]}>
             {anime?.genre ?? 'Action, Adventure, Fantasy'}
           </Text>
           <Text style={[styles.description, { color: themeColors.textSecondary }]}>
-            {anime?.description ||
-              'Follow the epic journey as new powers awaken and fierce battles decide the fate of both worlds.'}
+            {language === 'ku' && anime?.description_ku 
+              ? anime.description_ku 
+              : (anime?.description || 'Follow the epic journey as new powers awaken and fierce battles decide the fate of both worlds.')}
           </Text>
 
           {/* ⚡ Quick Actions Row */}

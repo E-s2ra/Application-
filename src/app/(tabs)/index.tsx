@@ -13,6 +13,8 @@ import {
   Animated,
   Platform,
 } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
+import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation, useLanguage } from '@/hooks/use-language';
 import {
@@ -306,7 +308,7 @@ export default function HomeScreen() {
           </Pressable>
           <View style={styles.cardInfo}>
             <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
-              {item.title}
+              {language === 'ku' && item.title_ku ? item.title_ku : item.title}
             </Text>
             <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
               {item.episodes > 1 ? `${item.episodes} ${t('episodes', 'Episodes')}` : t(item.genre as any, item.genre || '') ?? t('movie', 'Movie')}
@@ -362,7 +364,7 @@ export default function HomeScreen() {
         </View>
         <View style={styles.standardCardInfo}>
           <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
-            {item.title}
+            {language === 'ku' && item.title_ku ? item.title_ku : item.title}
           </Text>
           <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
             {t(item.genre as any, item.genre || '') ?? getCategoryLabel(item.category || '', item.category || '') ?? t('movie', 'Stream')}
@@ -397,7 +399,8 @@ export default function HomeScreen() {
                 <Menu color="#fff" size={26} />
               </Pressable>
             )}
-            <View style={[styles.brandIcon, { backgroundColor: themeColors.primary }]}>
+            <View style={[styles.brandIcon, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}>
+              <PrimaryGradient borderRadius={8} />
               <Sparkles color="#fff" size={18} />
             </View>
             <Text style={styles.brandName}>
@@ -448,7 +451,8 @@ export default function HomeScreen() {
               <View style={[styles.heroContent, isDesktop && styles.heroContentDesktop]}>
                 {/* Badges Row */}
                 <View style={styles.heroBadges}>
-                  <View style={[styles.pillBadge, { backgroundColor: themeColors.primary }]}>
+                  <View style={[styles.pillBadge, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}>
+                    <PrimaryGradient borderRadius={20} />
                     <Text style={styles.pillBadgeText}>
                       {activeHeroItem.category ? getCategoryLabel(activeHeroItem.category, activeHeroItem.category).toUpperCase() : t('featured', 'FEATURED')}
                     </Text>
@@ -469,7 +473,7 @@ export default function HomeScreen() {
                   ]}
                   numberOfLines={2}
                 >
-                  {activeHeroItem.title}
+                  {language === 'ku' && activeHeroItem.title_ku ? activeHeroItem.title_ku : activeHeroItem.title}
                 </Text>
 
                 {activeHeroItem.description ? (
@@ -480,16 +484,17 @@ export default function HomeScreen() {
                     ]}
                     numberOfLines={isDesktop ? 3 : 2}
                   >
-                    {activeHeroItem.description}
+                    {language === 'ku' && activeHeroItem.description_ku ? activeHeroItem.description_ku : activeHeroItem.description}
                   </Text>
                 ) : null}
 
                 {/* Action Buttons */}
                 <View style={styles.heroActions}>
                   <Pressable
-                    style={[styles.playBtn, { backgroundColor: themeColors.primary }]}
+                    style={[styles.playBtn, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}
                     onPress={() => handleWatch(activeHeroItem.id)}
                   >
+                    <PrimaryGradient borderRadius={30} />
                     <Play color="#fff" size={18} fill="#fff" />
                     <Text style={styles.playBtnText}>{t('watchNow', 'Watch Now')}</Text>
                   </Pressable>
@@ -530,16 +535,18 @@ export default function HomeScreen() {
             {/* Indicator Dots */}
             <View style={styles.indicatorRow}>
               {featured.map((_, idx) => (
-                <Pressable
-                  key={idx}
-                  onPress={() => goToSlide(idx)}
-                  style={[
-                    styles.dot,
-                    idx === currentHeroIndex
-                      ? [styles.activeDot, { backgroundColor: themeColors.primary }]
-                      : { backgroundColor: 'rgba(255,255,255,0.3)' },
-                  ]}
-                />
+                  <Pressable
+                    key={idx}
+                    onPress={() => goToSlide(idx)}
+                    style={[
+                      styles.dot,
+                      idx === currentHeroIndex
+                        ? [styles.activeDot, { backgroundColor: themeColors.primary, overflow: 'hidden' }]
+                        : { backgroundColor: 'rgba(255,255,255,0.3)' },
+                    ]}
+                  >
+                    {idx === currentHeroIndex && <PrimaryGradient borderRadius={4} />}
+                  </Pressable>
               ))}
             </View>
           </View>
@@ -547,8 +554,6 @@ export default function HomeScreen() {
 
 
 
-        {/* When a specific category is chosen, show focused filtered list */}
-        {activeCategory !== 'All' ? (
           <>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
@@ -561,14 +566,16 @@ export default function HomeScreen() {
                 {genreFiltered.length} Titles
               </Text>
             </View>
-            <FlatList
-              data={genreFiltered}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={renderStandardCard}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.standardList}
-            />
+            <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap', paddingTop: 10 }]}>
+              {genreFiltered.map((item) => {
+                const card = renderStandardCard({ item });
+                return (
+                  <View key={`grid-cat-${item.id}`}>
+                    {card}
+                  </View>
+                );
+              })}
+            </View>
           </>
         ) : (
           /* When "All" is chosen, show organized categorized sections */
@@ -596,12 +603,13 @@ export default function HomeScreen() {
                   {t('noMediaSub', 'Your cinema catalog is clean and ready. Add and publish your real anime, movies, and series from the Admin Control Center!')}
                 </Text>
                 <Pressable
-                  style={{ backgroundColor: themeColors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  style={{ backgroundColor: themeColors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6, overflow: 'hidden' }}
                   onPress={() => router.push('/admin' as any)}
                 >
+                  <PrimaryGradient borderRadius={10} />
                   <Sparkles size={16} color="#FFF" />
                   <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
-                    {t('addFirstAnime', 'Add First Anime')}
+                    {t('adminDashboard', 'Admin Dashboard')}
                   </Text>
                 </Pressable>
               </View>

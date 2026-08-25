@@ -17,6 +17,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isKnownDisposableEmail, isValidEmail, normalizeEmail, PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
@@ -234,10 +235,11 @@ export default function SignUpScreen() {
             </View>
 
             <Pressable
-              style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
+              style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1, overflow: 'hidden' }]}
               onPress={handleSignUp}
               disabled={loading}
             >
+              <PrimaryGradient borderRadius={12} />
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (

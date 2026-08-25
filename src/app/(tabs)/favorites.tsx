@@ -6,7 +6,9 @@ import {
   FlatList,
   Pressable,
   Image,
+  useWindowDimensions,
 } from 'react-native';
+import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -22,6 +24,7 @@ const PLACEHOLDER_IMAGES = [
 export default function FavoritesScreen() {
   const router = useRouter();
   const themeColors = useTheme();
+  const { language } = useLanguage();
   const { favorites, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth } = useResponsive();
 
@@ -75,7 +78,7 @@ export default function FavoritesScreen() {
 
       <View style={styles.cardInfo}>
         <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
-          {item.title}
+          {language === 'ku' && item.title_ku ? item.title_ku : item.title}
         </Text>
         <Text style={[styles.cardGenre, { color: themeColors.textSecondary }]} numberOfLines={1}>
           {item.genre ?? item.category ?? 'Stream'}

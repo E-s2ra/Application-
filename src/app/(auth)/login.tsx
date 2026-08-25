@@ -12,6 +12,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation, useLanguage } from '@/hooks/use-language';
@@ -164,10 +165,11 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
-              style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
+              style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1, overflow: 'hidden' }]}
               onPress={handleLogin}
               disabled={loading}
             >
+              <PrimaryGradient borderRadius={12} />
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (

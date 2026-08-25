@@ -10,7 +10,9 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
+import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { Search as SearchIcon, X, Heart, Play, Sparkles } from 'lucide-react-native';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
@@ -18,7 +20,6 @@ import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { DEFAULT_CATALOG, CATEGORIES } from './index';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useLanguage } from '@/hooks/use-language';
 
 const GENRES = ['All', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
@@ -32,6 +33,8 @@ export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const themeColors = useTheme();
+  const { width } = useWindowDimensions();
+  const { language } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth, isDesktop } = useResponsive();
   const { t } = useLanguage();
@@ -159,7 +162,7 @@ export default function SearchScreen() {
 
         <View style={styles.cardInfo}>
           <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
-            {item.title}
+            {language === 'ku' && item.title_ku ? item.title_ku : item.title}
           </Text>
           <Text style={[styles.cardGenre, { color: themeColors.textSecondary }]} numberOfLines={1}>
             {item.genre ?? item.category ?? 'Stream'}
