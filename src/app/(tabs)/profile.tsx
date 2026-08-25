@@ -196,13 +196,13 @@ export default function ProfileScreen() {
               <Crown size={16} color="#FFB800" />
               <Text style={styles.levelLabel}>{t('level')} {level}</Text>
             </View>
-            <Text style={styles.levelTitle}>{levelTitle}</Text>
+            <Text style={styles.levelTitle}>{t(levelTitle as any, levelTitle)}</Text>
           </View>
           <View style={styles.xpTrack}>
             <View style={[styles.xpFill, { width: `${xpPercent}%` }]} />
           </View>
           <Text style={styles.xpText}>
-            {levelXPProgress} / {levelXPTarget} XP to Level {level + 1}
+            {levelXPProgress} / {levelXPTarget} {t('xpToLevel', 'XP to Level')} {level + 1}
           </Text>
         </View>
 
@@ -210,12 +210,12 @@ export default function ProfileScreen() {
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
             <Text style={[styles.statNumber, { color: '#FFD700' }]}>💰 {coins}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Coins</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('coins', 'Coins')}</Text>
           </View>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
             <Text style={[styles.statNumber, { color: '#FF5722' }]}>🔥 {streakDays}d</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Streak</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('streak', 'Streak')}</Text>
           </View>
 
           <Pressable
@@ -225,7 +225,7 @@ export default function ProfileScreen() {
             <Text style={[styles.statNumber, { color: themeColors.primary }]}>
               {favorites.length}
             </Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Favorites</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('favorites', 'Favorites')}</Text>
           </Pressable>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
@@ -273,7 +273,7 @@ export default function ProfileScreen() {
                 >
                   <Text style={styles.badgePillEmoji}>{b.icon}</Text>
                   <View>
-                    <Text style={styles.badgePillTitle}>{b.title}</Text>
+                    <Text style={styles.badgePillTitle}>{t(b.title as any, b.title)}</Text>
                     <Text style={styles.badgePillStatus}>
                       {b.isUnlocked ? t('unlocked') : t('locked')}
                     </Text>

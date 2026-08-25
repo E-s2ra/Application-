@@ -35,6 +35,7 @@ import { useGamification, SPIN_REWARDS, SpinReward } from '@/hooks/useGamificati
 import { useAdMob } from '@/hooks/useAdMob';
 import { VipSubscriptionModal } from './VipSubscriptionModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/use-language';
 
 interface RewardsHubModalProps {
   visible: boolean;
@@ -43,6 +44,7 @@ interface RewardsHubModalProps {
 
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { showRewardedAd } = useAdMob();
   const [showVipModal, setShowVipModal] = useState(false);
@@ -125,7 +127,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <Trophy size={22} color="#FFB800" />
-              <Text style={styles.modalTitle}>AniFlix Rewards & Events Hub</Text>
+              <Text style={styles.modalTitle}>{t('rewardsHub', 'AniFlix Rewards & Events Hub')}</Text>
             </View>
             <Pressable style={styles.closeBtn} onPress={onClose}>
               <X size={20} color="#FFF" />
@@ -137,9 +139,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             <View style={styles.statusRow}>
               <View style={styles.levelBadge}>
                 <Crown size={14} color="#FFB800" />
-                <Text style={styles.levelText}>LVL {level}</Text>
+                <Text style={styles.levelText}>{t('level')} {level}</Text>
               </View>
-              <Text style={styles.levelTitleText} numberOfLines={1} adjustsFontSizeToFit>{levelTitle}</Text>
+              <Text style={styles.levelTitleText} numberOfLines={1} adjustsFontSizeToFit>{t(levelTitle as any, levelTitle)}</Text>
 
               {isVIP ? (
                 <Pressable style={styles.vipBadge} onPress={() => setShowVipModal(true)}>
@@ -162,7 +164,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 <View style={[styles.xpFill, { width: `${xpPercent}%` }]} />
               </View>
               <Text style={styles.xpSubtext}>
-                {levelXPProgress} / {levelXPTarget} XP to Level {level + 1}
+                {levelXPProgress} / {levelXPTarget} {t('xpToLevel')} {level + 1}
               </Text>
             </View>
           </View>
@@ -177,8 +179,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 <Film size={16} color="#FFB800" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.admobBtnTitle}>Watch Ad & Earn Coins</Text>
-                <Text style={styles.admobBtnSub}>Watch a quick sponsored clip for instant reward</Text>
+                <Text style={styles.admobBtnTitle}>{t('watchAdEarn')}</Text>
+                <Text style={styles.admobBtnSub}>{t('watchAdSub')}</Text>
               </View>
             </View>
             <View style={styles.admobRewardPill}>
@@ -201,7 +203,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Text
                 style={[styles.tabBtnText, activeTab === 'missions' && styles.tabBtnTextActive]}
               >
-                Missions
+                {t('missions')}
               </Text>
             </Pressable>
 
@@ -213,7 +215,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Text
                 style={[styles.tabBtnText, activeTab === 'events' && styles.tabBtnTextActive]}
               >
-                Events
+                {t('events')}
               </Text>
             </Pressable>
 
@@ -225,7 +227,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Text
                 style={[styles.tabBtnText, activeTab === 'spin' && styles.tabBtnTextActive]}
               >
-                Lucky Spin
+                {t('luckySpin')}
               </Text>
             </Pressable>
 
@@ -237,7 +239,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Text
                 style={[styles.tabBtnText, activeTab === 'streak' && styles.tabBtnTextActive]}
               >
-                Streak ({streakDays}d)
+                {t('streak')} ({streakDays}{t('days', 'd')})
               </Text>
             </Pressable>
 
@@ -261,7 +263,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Text
                 style={[styles.tabBtnText, activeTab === 'badges' && styles.tabBtnTextActive]}
               >
-                Badges
+                {t('badges')}
               </Text>
             </Pressable>
           </ScrollView>
@@ -291,7 +293,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                           missionFilter === cat && styles.subfilterTextActive,
                         ]}
                       >
-                        {cat.toUpperCase()}
+                        {t(cat as any, cat).toUpperCase()}
                       </Text>
                     </Pressable>
                   ))}
@@ -302,8 +304,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     <View key={m.id} style={styles.missionCard}>
                       <View style={styles.missionHeader}>
                         <View style={styles.missionTitleBox}>
-                          <Text style={styles.missionTitle}>{m.title}</Text>
-                          <Text style={styles.missionDesc}>{m.description}</Text>
+                          <Text style={styles.missionTitle}>{t(m.title as any, m.title)}</Text>
+                          <Text style={styles.missionDesc}>{t(m.description as any, m.description)}</Text>
                         </View>
                         <View style={styles.rewardTag}>
                           <Text style={styles.rewardTagText}>
@@ -345,7 +347,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                             onPress={() => claimMission(m.id)}
                           >
                             <Text style={styles.claimBtnText}>
-                              {m.completed ? 'Claim Reward' : 'In Progress'}
+                              {m.completed ? t('claimReward') : t('inProgress')}
                             </Text>
                           </Pressable>
                         )}
@@ -508,14 +510,14 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                       </View>
                       <View style={styles.badgeInfoBox}>
                         <View style={styles.badgeNameRow}>
-                          <Text style={styles.badgeTitle}>{b.title}</Text>
+                          <Text style={styles.badgeTitle}>{t(b.title as any, b.title)}</Text>
                           {b.isUnlocked ? (
                             <Text style={styles.unlockedDate}>✓ {b.unlockedAt}</Text>
                           ) : (
-                            <Text style={styles.lockedTag}>🔒 Locked</Text>
+                            <Text style={styles.lockedTag}>🔒 {t('locked', 'Locked')}</Text>
                           )}
                         </View>
-                        <Text style={styles.badgeDesc}>{b.description}</Text>
+                        <Text style={styles.badgeDesc}>{t(b.description as any, b.description)}</Text>
                       </View>
                     </View>
                   ))}
