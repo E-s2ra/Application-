@@ -390,16 +390,14 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    // @ts-ignore
+    textShadow: '0px 1px 3px rgba(0,0,0,0.8)',
   },
   cardGenre: {
     fontSize: 11,
     marginTop: 4,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    // @ts-ignore
+    textShadow: '0px 1px 3px rgba(0,0,0,0.8)',
   },
   emptyContainer: {
     padding: 40,

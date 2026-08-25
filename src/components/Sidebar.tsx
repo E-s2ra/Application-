@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, Animated, StyleSheet, TouchableWithoutFeedback, Switch } from 'react-native';
+import { View, Text, Pressable, Animated, StyleSheet, Switch, Platform } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { 
   Home, LayoutGrid, Bookmark, User, ShieldAlert, Sparkles, X,
@@ -37,7 +37,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
       Animated.timing(slideAnim, {
         toValue: isOpen ? 0 : -300,
         duration: 250,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }).start();
     }
   }, [isOpen, isDesktop, slideAnim]);
@@ -76,7 +76,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
           <View style={[styles.brandIcon, { backgroundColor: themeColors.primary }]}>
             <Sparkles color="#fff" size={18} />
           </View>
-          <Text style={styles.brandName}>
+          <Text style={[styles.brandName, { color: themeColors.text }]}>
             ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
           </Text>
         </View>
@@ -135,8 +135,8 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
           }}
           style={styles.navItem}
         >
-          <Gift color="#FF5722" size={22} strokeWidth={2} />
-          <Text style={[styles.navItemText, { color: '#FF5722', fontWeight: '700' }]}>
+          <Gift color="#0356C5" size={22} strokeWidth={2} />
+          <Text style={[styles.navItemText, { color: '#0356C5', fontWeight: '700' }]}>
             Missions & Spin
           </Text>
         </Pressable>
@@ -243,9 +243,9 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>
       {isOpen && (
-        <TouchableWithoutFeedback onPress={onClose}>
+        <Pressable onPress={onClose} style={StyleSheet.absoluteFill}>
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
-        </TouchableWithoutFeedback>
+        </Pressable>
       )}
       {content}
     </View>
@@ -262,10 +262,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     paddingTop: 40,
     paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    boxShadow: '4px 0px 10px rgba(0,0,0,0.1)',
     elevation: 5,
     zIndex: 10000,
   },

@@ -402,10 +402,10 @@ export default function AdminPanelScreen() {
       <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 900) }]}>
         {/* Custom Header Bar */}
         <View style={styles.headerBar}>
-          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))} style={styles.backBtn}>
-            <ArrowLeft color="#fff" size={22} />
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))} style={[styles.backBtn, { backgroundColor: themeColors.backgroundElement }]}>
+            <ArrowLeft color={themeColors.text} size={22} />
           </Pressable>
-          <Text style={styles.headerTitle}>AniFlix Admin Center</Text>
+          <Text style={[styles.headerTitle, { color: themeColors.text }]}>AniFlix Admin Center</Text>
           <View style={{ width: 40 }} />
         </View>
 

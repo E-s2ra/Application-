@@ -67,7 +67,7 @@ export const SPIN_REWARDS: SpinReward[] = [
   { id: '3', label: '1-Day VIP Pass', icon: '👑', type: 'vip', amount: 1, color: '#9C27B0' },
   { id: '4', label: '150 Coins', icon: '💰', type: 'coins', amount: 150, color: '#FF9800' },
   { id: '5', label: '250 XP', icon: '⚡', type: 'xp', amount: 250, color: '#00E676' },
-  { id: '6', label: '500 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 500, color: '#8B0000' },
+  { id: '6', label: '500 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 500, color: '#0356C5' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -199,13 +199,13 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
 
 export const THEMES_LIST: AppTheme[] = [
   {
-    id: 'theme-crimson',
-    name: 'AniFlix Crimson (Default)',
-    description: 'Classic cinema red with deep OLED obsidian background.',
-    primary: '#8B0000',
-    glow: 'rgba(139, 0, 0, 0.4)',
-    accent: '#FFB800',
-    badgeBg: '#1A0E10',
+    id: 'theme-deep-blue',
+    name: 'AniFlix Deep Blue (Default)',
+    description: 'Glossy deep blue gradient with dark base and light reflections.',
+    primary: '#0356C5',
+    glow: 'rgba(3, 86, 197, 0.4)',
+    accent: '#0D47A1',
+    badgeBg: '#02060E',
     costCoins: 0,
     isUnlocked: true,
   },
@@ -261,7 +261,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     title: 'First Stream',
     description: 'Streamed your first title on AniFlix',
     icon: '🎬',
-    color: '#8B0000',
+    color: '#0356C5',
     isUnlocked: true,
     unlockedAt: 'Aug 19, 2026',
   },
@@ -406,7 +406,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const [vipDaysRemaining, setVipDaysRemaining] = useState(3);
   const [activeEventIndex, setActiveEventIndex] = useState(0);
   const [activeThemeId, setActiveThemeId] = useState('theme-deep-blue');
-  const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-crimson', 'theme-deep-blue']);
+  const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-deep-blue']);
   const [badges, setBadges] = useState<UserBadge[]>(DEFAULT_BADGES);
   const [missions, setMissions] = useState<Mission[]>([
     ...DEFAULT_MISSIONS,

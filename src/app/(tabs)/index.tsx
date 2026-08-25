@@ -403,7 +403,7 @@ export default function HomeScreen() {
               <PrimaryGradient borderRadius={8} />
               <Sparkles color="#fff" size={18} />
             </View>
-            <Text style={styles.brandName}>
+            <Text style={[styles.brandName, { color: themeColors.text }]}>
               ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
             </Text>
           </View>
@@ -502,7 +502,7 @@ export default function HomeScreen() {
                   <Pressable
                     style={[
                       styles.listBtn,
-                      { backgroundColor: activeHeroFavorited ? '#33080A' : 'rgba(255,255,255,0.18)' },
+                      { backgroundColor: activeHeroFavorited ? '#02060E' : 'rgba(255,255,255,0.18)' },
                     ]}
                     onPress={() => toggleFavorite(activeHeroItem)}
                   >
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   streakBadgeText: {
-    color: '#FF5722',
+    color: '#0356C5',
     fontSize: 12,
     fontWeight: '800',
   },
@@ -1016,17 +1016,8 @@ const styles = StyleSheet.create({
     color: '#2a2a42',
     lineHeight: 52,
     marginRight: -10,
-    ...Platform.select({
-      web: {
-        // @ts-ignore
-        textShadow: '0px 2px 4px rgba(0,0,0,0.8)',
-      },
-      default: {
-        textShadowColor: 'rgba(0,0,0,0.8)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
-      },
-    }),
+    // @ts-ignore
+    textShadow: '0px 2px 4px rgba(0,0,0,0.8)',
   },
   posterCard: {
     borderRadius: 10,

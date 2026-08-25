@@ -31,6 +31,11 @@ async function callAdminOperation<T>(
             };
         }
 
+        // Bypass the network call to prevent CORS console errors in local demo mode
+        if (SUPABASE_URL.includes('zkbprmyxwjfznsucyuvi')) {
+             throw new Error('Edge functions not deployed in demo mode');
+        }
+
         // Call the Edge Function using Supabase client to automatically handle CORS and API keys
         const { data, error: invokeError } = await supabase.functions.invoke('admin-operations', {
             body: { action, ...payload },

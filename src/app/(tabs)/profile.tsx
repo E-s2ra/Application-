@@ -289,7 +289,7 @@ export default function ProfileScreen() {
           {/* Admin Panel Button (Admin only) */}
           {isAdmin && (
             <Pressable 
-              style={[styles.menuItem, { backgroundColor: '#8a0a10', borderColor: '#ff1e27' }]}
+              style={[styles.menuItem, { backgroundColor: themeColors.primary, borderColor: themeColors.accentCyan }]}
               onPress={handleAdminPanel}
             >
               <ChevronRight color="rgba(255,255,255,0.7)" size={20} />
@@ -339,20 +339,7 @@ export default function ProfileScreen() {
             </View>
           </Pressable>
 
-          {/* 🎨 Theme Shop */}
-          <Pressable 
-            style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
-            onPress={() => setShowThemeShop(true)}
-          >
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-            <View style={styles.menuItemContent}>
-              <Text style={[styles.menuItemTitle, { color: themeColors.text }]}>{t('themeShop')}: {activeTheme?.name || 'AniFlix Crimson (Default)'}</Text>
-              <Text style={styles.menuItemSub}>{t('customizeColors')}</Text>
-            </View>
-            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.1)' }]}>
-              <Palette color="#8B5CF6" size={20} />
-            </View>
-          </Pressable>
+
 
           {/* 🌐 Language Switcher (English ⇄ کوردی سۆرانی) */}
           <Pressable 
@@ -542,10 +529,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#222232',
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    boxShadow: '0px 4px 5px rgba(0,0,0,0.3)',
     elevation: 4,
   },
   levelCardHeader: {

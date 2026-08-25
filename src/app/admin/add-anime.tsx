@@ -175,10 +175,10 @@ export default function AddAnimeScreen() {
       <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 800) }]}>
         {/* Custom Header */}
         <View style={styles.headerBar}>
-          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/admin'))} style={styles.backBtn}>
-            <ArrowLeft color="#fff" size={22} />
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/admin'))} style={[styles.backBtn, { backgroundColor: themeColors.backgroundElement }]}>
+            <ArrowLeft color={themeColors.text} size={22} />
           </Pressable>
-          <Text style={styles.headerTitle}>Add New Media</Text>
+          <Text style={[styles.headerTitle, { color: themeColors.text }]}>Add New Media</Text>
           <View style={{ width: 40 }} />
         </View>
 

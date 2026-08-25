@@ -225,19 +225,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    ...Platform.select({
-      web: {
-        // @ts-ignore
-        boxShadow: '0px 10px 20px rgba(3, 86, 197, 0.5)',
-      },
-      default: {
-        shadowColor: '#0356C5',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 12,
-      },
-    }),
+    boxShadow: '0px 10px 20px rgba(3, 86, 197, 0.5)',
+    elevation: 12,
   },
   flameBadge: {
     position: 'absolute',

@@ -2,15 +2,15 @@ import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { DOCKER_ANON_KEY, DOCKER_POSTGREST_URL } from '@/lib/docker-db';
+
 
 // Always use the hosted Supabase cloud URL for auth — the local Docker URL
 // is only for the separate dockerDb client (payments/VIP/points data).
 export const SUPABASE_URL =
-  Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || DOCKER_POSTGREST_URL;
+  Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:54324' : 'http://127.0.0.1:54324');
 
 export const SUPABASE_ANON_KEY =
-  Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || DOCKER_ANON_KEY;
+  Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNjcwMDAwMDAwLCJleHAiOjIwODcwMDAwMDB9.jjx2F-4f4MyPHfE435brkahvEse6WQZVAQexGnboLIw';
 
 // Access and refresh tokens must never be kept in general-purpose app storage.
 // Expo SecureStore uses the platform's encrypted credential storage on native.

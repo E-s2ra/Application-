@@ -89,7 +89,9 @@ export default function WatchScreen() {
 
   const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
-    p.play();
+    if (Platform.OS !== 'web') {
+      p.play();
+    }
   });
 
   useEffect(() => {
@@ -116,11 +118,17 @@ export default function WatchScreen() {
 
         const defaultMatch = DEFAULT_CATALOG.find((item) => item.id === id);
 
-        const { data } = await supabase
-          .from('anime')
-          .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
-          .eq('id', id)
-          .single();
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id));
+        
+        let data = null;
+        if (isUuid) {
+          const { data: supabaseData } = await supabase
+            .from('anime')
+            .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
+            .eq('id', id)
+            .single();
+          data = supabaseData;
+        }
 
         if (data) {
           const itemWithOverrides = { ...(data as AnimeItem), ...(overrides[String(id)] || {}) };
@@ -143,11 +151,15 @@ export default function WatchScreen() {
           });
         }
 
-        const { data: recs } = await supabase
-          .from('anime')
-          .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
-          .neq('id', id)
-          .limit(6);
+        let recs = null;
+        if (isUuid) {
+          const { data: supabaseRecs } = await supabase
+            .from('anime')
+            .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
+            .neq('id', id)
+            .limit(6);
+          recs = supabaseRecs;
+        }
 
         let finalRecs: AnimeItem[] = [];
         const safeRecs = (recs && recs.length > 0) ? recs : [];
@@ -196,13 +208,6 @@ export default function WatchScreen() {
 
     if (directUrl) {
       setVideoSource(directUrl);
-      if (player && typeof player.replace === 'function') {
-        try {
-          player.replace(directUrl);
-        } catch (e) {
-          console.log('Error replacing player source:', e);
-        }
-      }
       setPlaybackError(null);
       return;
     }
@@ -211,11 +216,6 @@ export default function WatchScreen() {
       .then(({ url }) => {
         if (!cancelled) {
           setVideoSource(url);
-          if (player && typeof player.replace === 'function') {
-            try {
-              player.replace(url);
-            } catch (e) {}
-          }
           setPlaybackError(null);
         }
       })
@@ -321,9 +321,9 @@ export default function WatchScreen() {
         {/* 🔙 Custom Top Navigation Bar */}
         <View style={[styles.customNav, { backgroundColor: themeColors.backgroundElement }]}>
           <Pressable style={styles.backButton} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}>
-            <ArrowLeft color="#fff" size={22} />
+            <ArrowLeft color={themeColors.text} size={22} />
           </Pressable>
-          <Text style={styles.navTitle} numberOfLines={1}>
+          <Text style={[styles.navTitle, { color: themeColors.text }]} numberOfLines={1}>
             {anime?.title ?? 'AniFlix Cinema'}
           </Text>
           <View style={{ width: 40 }} />
@@ -369,8 +369,8 @@ export default function WatchScreen() {
         <View style={[styles.controlsBar, { backgroundColor: themeColors.backgroundCard }]}>
           {/* ⏪ -10s Rewind */}
           <Pressable style={styles.controlBtn} onPress={handleSeekBackward10}>
-            <RotateCcw color="#fff" size={20} />
-            <Text style={styles.controlBtnLabel}>-10s</Text>
+            <RotateCcw color={themeColors.text} size={20} />
+            <Text style={[styles.controlBtnLabel, { color: themeColors.text }]}>-10s</Text>
           </Pressable>
 
           {/* ⏯ Play/Pause */}
@@ -388,8 +388,8 @@ export default function WatchScreen() {
 
           {/* ⏩ +10s Forward */}
           <Pressable style={styles.controlBtn} onPress={handleSeekForward10}>
-            <RotateCw color="#fff" size={20} />
-            <Text style={styles.controlBtnLabel}>+10s</Text>
+            <RotateCw color={themeColors.text} size={20} />
+            <Text style={[styles.controlBtnLabel, { color: themeColors.text }]}>+10s</Text>
           </Pressable>
 
           {/* 🔄 Aspect Ratio Toggle Button (16:9 ↔ 9:16) */}
@@ -489,11 +489,11 @@ export default function WatchScreen() {
                 {`${anime?.episodes ?? 1} EPS`}
               </Text>
             </View>
-            <View style={styles.badgeGlass}>
-              <Text style={styles.badgeGlassText}>{aspectRatio}</Text>
+            <View style={[styles.badgeGlass, { backgroundColor: themeColors.backgroundElement }]}>
+              <Text style={[styles.badgeGlassText, { color: themeColors.text }]}>{aspectRatio}</Text>
             </View>
-            <View style={styles.badgeGlass}>
-              <Text style={styles.badgeGlassText}>{playbackSpeed}X SPEED</Text>
+            <View style={[styles.badgeGlass, { backgroundColor: themeColors.backgroundElement }]}>
+              <Text style={[styles.badgeGlassText, { color: themeColors.text }]}>{playbackSpeed}X SPEED</Text>
             </View>
             <View style={styles.ratingBadge}>
               <Star color="#FFB800" size={12} fill="#FFB800" />
@@ -518,16 +518,16 @@ export default function WatchScreen() {
             <Pressable
               style={[
                 styles.actionBtn,
-                { backgroundColor: favorited ? '#33080A' : themeColors.backgroundElement },
+                { backgroundColor: favorited ? '#02060E' : themeColors.backgroundElement },
               ]}
               onPress={() => anime && toggleFavorite(anime)}
             >
               <Heart
-                color={favorited ? themeColors.primary : '#fff'}
+                color={favorited ? themeColors.primary : themeColors.text}
                 fill={favorited ? themeColors.primary : 'none'}
                 size={20}
               />
-              <Text style={[styles.actionBtnText, { color: favorited ? themeColors.primary : '#fff' }]}>
+              <Text style={[styles.actionBtnText, { color: favorited ? themeColors.primary : themeColors.text }]}>
                 {favorited ? 'In My List' : '+ My List'}
               </Text>
             </Pressable>
@@ -561,7 +561,7 @@ export default function WatchScreen() {
                     onPress={() => setSelectedEpisode(epNum)}
                   >
                     {isActive && <Play color="#fff" size={14} fill="#fff" />}
-                    <Text style={[styles.epCardText]}>
+                    <Text style={[styles.epCardText, { color: isActive ? '#fff' : themeColors.text }]}>
                       Ep {epNum}
                     </Text>
                   </Pressable>

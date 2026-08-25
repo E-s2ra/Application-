@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   planBadgePopular: {
-    backgroundColor: '#8B0000',
+    backgroundColor: '#0356C5',
   },
   planBadgeStandard: {
     backgroundColor: '#2A2A3E',
