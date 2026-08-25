@@ -47,15 +47,15 @@ import { NotificationsBell } from '@/components/NotificationsBell';
 import { useSidebar } from './_layout';
 
 export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: string }[] = [
-  { id: 'All', label: 'All', icon: 'ðŸŒŸ' },
-  { id: 'Movies', label: 'Movies', icon: 'ðŸŽ¬' },
-  { id: 'Anime Movies', label: 'Anime Movies', icon: 'ðŸŽŒ' },
-  { id: 'K-Drama', label: 'K-Drama', icon: 'ðŸŒ¸' },
-  { id: 'Drama', label: 'Drama', icon: 'ðŸŽ­' },
-  { id: 'Anime Series', label: 'Anime Series', icon: 'âš¡' },
+  { id: 'All', label: 'All', icon: '🌟' },
+  { id: 'Movies', label: 'Movies', icon: '🎬' },
+  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
+  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
+  { id: 'Drama', label: 'Drama', icon: '🎭' },
+  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
 ];
 
-const GENRES = ['All', 'ðŸ”¥ Trending', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
+const GENRES = ['All', '🔥 Trending', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
 const PLACEHOLDER_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
@@ -175,7 +175,7 @@ export default function HomeScreen() {
 
   // Genre filtered media
   const genreFiltered = categoryFiltered.filter((item) => {
-    if (activeGenre === 'All' || activeGenre === 'ðŸ”¥ Trending') return true;
+    if (activeGenre === 'All' || activeGenre === '🔥 Trending') return true;
     return item.genre?.toLowerCase().includes(activeGenre.toLowerCase());
   });
 
@@ -418,7 +418,7 @@ export default function HomeScreen() {
           )}
 
           <View style={styles.homeActions}>
-            {/* ðŸ‘‘ VIP Sovereign Subscription Button */}
+            {/* 👑 VIP Sovereign Subscription Button */}
             <Pressable
               style={styles.vipHeaderBtn}
               onPress={() => setShowVipModal(true)}
@@ -437,7 +437,7 @@ export default function HomeScreen() {
 
 
 
-        {/* ðŸŽ¬ Animated Auto-Moving Hero Banner */}
+        {/* 🎬 Animated Auto-Moving Hero Banner */}
         {featured.length > 0 && (
           <View style={[styles.heroSection, { height: heroHeight }]}>
             <Animated.View style={[styles.heroSlide, { height: heroHeight, opacity: fadeAnim }]}>
@@ -552,14 +552,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* When a specific category is chosen, show focused filtered list */}
         {activeCategory !== 'All' ? (
           <>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
                 <Flame color={themeColors.primary} size={20} />
                 <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                  {getCategoryLabel(activeCategory, activeCategory)} {activeGenre !== 'All' ? `Â· ${t(activeGenre as any, activeGenre)}` : ''}
+                  {getCategoryLabel(activeCategory, activeCategory)} {activeGenre !== 'All' ? `· ${t(activeGenre as any, activeGenre)}` : ''}
                 </Text>
               </View>
               <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
@@ -578,8 +577,8 @@ export default function HomeScreen() {
             </View>
           </>
         ) : (
+          /* When "All" is chosen, show organized categorized sections */
           <>
-            {/* When "All" is chosen, show organized categorized sections */}
             {allMedia.length > 0 && (
               <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap', paddingTop: 20 }]}>
                 {allMedia.map((item) => {
@@ -617,7 +616,7 @@ export default function HomeScreen() {
           </>
         )}
 
-        {/* ðŸ“¢ Google AdMob Platform-Specific Banner Ad */}
+        {/* 📢 Google AdMob Platform-Specific Banner Ad */}
         <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
           <AdMobBanner placement="home_bottom" />
         </View>
@@ -625,10 +624,10 @@ export default function HomeScreen() {
         <View style={{ height: 40 }} />
       </View>
 
-      {/* ðŸŽ AniFlix Gamification & Rewards Hub Modal */}
+      {/* 🎁 AniFlix Gamification & Rewards Hub Modal */}
       <RewardsHubModal visible={showRewardsModal} onClose={() => setShowRewardsModal(false)} />
 
-      {/* ðŸ‘‘ VIP Sovereign Subscription Modal */}
+      {/* 👑 VIP Sovereign Subscription Modal */}
       <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </ScrollView>
   );

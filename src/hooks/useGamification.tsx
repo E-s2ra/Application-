@@ -62,21 +62,21 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '50 Coins', icon: 'ðŸ’°', type: 'coins', amount: 50, color: '#FFB800' },
-  { id: '2', label: '100 XP', icon: 'âš¡', type: 'xp', amount: 100, color: '#00D2FF' },
-  { id: '3', label: '1-Day VIP Pass', icon: 'ðŸ‘‘', type: 'vip', amount: 1, color: '#9C27B0' },
-  { id: '4', label: '150 Coins', icon: 'ðŸ’°', type: 'coins', amount: 150, color: '#FF9800' },
-  { id: '5', label: '250 XP', icon: 'âš¡', type: 'xp', amount: 250, color: '#00E676' },
-  { id: '6', label: '500 Coins (Jackpot!)', icon: 'ðŸ’Ž', type: 'coins', amount: 500, color: '#8B0000' },
+  { id: '1', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FFB800' },
+  { id: '2', label: '100 XP', icon: '⚡', type: 'xp', amount: 100, color: '#00D2FF' },
+  { id: '3', label: '1-Day VIP Pass', icon: '👑', type: 'vip', amount: 1, color: '#9C27B0' },
+  { id: '4', label: '150 Coins', icon: '💰', type: 'coins', amount: 150, color: '#FF9800' },
+  { id: '5', label: '250 XP', icon: '⚡', type: 'xp', amount: 250, color: '#00E676' },
+  { id: '6', label: '500 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 500, color: '#8B0000' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
   {
     id: 'kurdish-cinema-fest',
-    title: 'â˜€ï¸ Kurdish Festival Cinema Gala',
+    title: '☀️ Kurdish Festival Cinema Gala',
     subtitle: 'Earn 2x Coins, unlock the Kurdish Sun Badge & Gold Theme!',
     badgeName: 'Kurdish Sun Legend',
-    badgeIcon: 'â˜€ï¸',
+    badgeIcon: '☀️',
     bannerImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
     themeColor: '#FFB800',
     endDate: 'Aug 31, 2026',
@@ -110,10 +110,10 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
   },
   {
     id: 'ramadan-nights',
-    title: 'ðŸŒ™ Ramadan Midnight Cinema',
+    title: '🌙 Ramadan Midnight Cinema',
     subtitle: 'Stream after sunset to earn Night Owl XP & Emerald Theme!',
     badgeName: 'Crescent Night Owl',
-    badgeIcon: 'ðŸŒ™',
+    badgeIcon: '🌙',
     bannerImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
     themeColor: '#00E676',
     endDate: 'Sep 30, 2026',
@@ -147,10 +147,10 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
   },
   {
     id: 'new-year-gala',
-    title: 'ðŸŽ† New Year Cinema Premiere',
+    title: '🎆 New Year Cinema Premiere',
     subtitle: 'Celebrate the new year with double spins & Neon Cyberpunk theme!',
     badgeName: 'New Year Luminary',
-    badgeIcon: 'ðŸŽ†',
+    badgeIcon: '🎆',
     bannerImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80',
     themeColor: '#9D4EDD',
     endDate: 'Jan 15, 2027',
@@ -172,10 +172,10 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
   },
   {
     id: 'summer-cinema-blockbuster',
-    title: 'ðŸ–ï¸ Summer Cinema Blockbuster',
+    title: '🏖️ Summer Cinema Blockbuster',
     subtitle: 'Beat the heat with action movies and earn Sunset Coral Theme!',
     badgeName: 'Summer Wave Master',
-    badgeIcon: 'ðŸ–ï¸',
+    badgeIcon: '🏖️',
     bannerImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1200&q=80',
     themeColor: '#FF6D00',
     endDate: 'Jul 31, 2026',
@@ -199,13 +199,13 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
 
 export const THEMES_LIST: AppTheme[] = [
   {
-    id: 'theme-deep-blue',
-    name: 'AniFlix Deep Blue (Default)',
-    description: 'Glossy deep blue gradient with dark obsidian background.',
-    primary: '#0356C5',
-    glow: 'rgba(3, 86, 197, 0.4)',
+    id: 'theme-crimson',
+    name: 'AniFlix Crimson (Default)',
+    description: 'Classic cinema red with deep OLED obsidian background.',
+    primary: '#8B0000',
+    glow: 'rgba(139, 0, 0, 0.4)',
     accent: '#FFB800',
-    badgeBg: '#02060E',
+    badgeBg: '#1A0E10',
     costCoins: 0,
     isUnlocked: true,
   },
@@ -260,7 +260,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-novice',
     title: 'First Stream',
     description: 'Streamed your first title on AniFlix',
-    icon: 'ðŸŽ¬',
+    icon: '🎬',
     color: '#8B0000',
     isUnlocked: true,
     unlockedAt: 'Aug 19, 2026',
@@ -269,7 +269,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-streak-3',
     title: '3-Day Fire Streak',
     description: 'Logged in for 3 consecutive days',
-    icon: 'ðŸ”¥',
+    icon: '🔥',
     color: '#FF5722',
     isUnlocked: true,
     unlockedAt: 'Aug 18, 2026',
@@ -278,7 +278,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-critic',
     title: '5-Star Critic',
     description: 'Published a helpful community review',
-    icon: 'â­',
+    icon: '⭐',
     color: '#FFB800',
     isUnlocked: true,
     unlockedAt: 'Aug 19, 2026',
@@ -287,7 +287,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-kurdish-sun',
     title: 'Kurdish Sun Legend',
     description: 'Participated in the Kurdish Cinema Gala',
-    icon: 'â˜€ï¸',
+    icon: '☀️',
     color: '#FFD700',
     isUnlocked: false,
   },
@@ -295,7 +295,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-vip',
     title: 'AniFlix VIP Sovereign',
     description: 'Unlocked active VIP Ultra HD status',
-    icon: 'ðŸ‘‘',
+    icon: '👑',
     color: '#9C27B0',
     isUnlocked: false,
   },
@@ -406,7 +406,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const [vipDaysRemaining, setVipDaysRemaining] = useState(3);
   const [activeEventIndex, setActiveEventIndex] = useState(0);
   const [activeThemeId, setActiveThemeId] = useState('theme-deep-blue');
-  const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-deep-blue']);
+  const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-crimson', 'theme-deep-blue']);
   const [badges, setBadges] = useState<UserBadge[]>(DEFAULT_BADGES);
   const [missions, setMissions] = useState<Mission[]>([
     ...DEFAULT_MISSIONS,
@@ -422,11 +422,11 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const nextLevelXP = level * 300;
 
   const getLevelTitle = (lvl: number) => {
-    if (lvl >= 20) return 'Legendary Cinephile ðŸ‘‘';
-    if (lvl >= 10) return 'Master Streamer âš¡';
-    if (lvl >= 5) return 'Anime VIP ðŸŒŸ';
-    if (lvl >= 3) return 'Cinema Enthusiast ðŸŽ¬';
-    return 'Novice Watcher ðŸ¿';
+    if (lvl >= 20) return 'Legendary Cinephile 👑';
+    if (lvl >= 10) return 'Master Streamer ⚡';
+    if (lvl >= 5) return 'Anime VIP 🌟';
+    if (lvl >= 3) return 'Cinema Enthusiast 🎬';
+    return 'Novice Watcher 🍿';
   };
 
   const themes: AppTheme[] = THEMES_LIST.map((t) => ({

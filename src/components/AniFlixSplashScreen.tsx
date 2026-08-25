@@ -21,7 +21,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const [screenFadeAnim] = useState(() => new Animated.Value(1));
 
   const [loadingText, setLoadingText] = useState(
-    language === 'ku' ? 'ðŸŽ¬ Ø¯Û•Ø³ØªÙ¾ÛŽÚ©Ø±Ø¯Ù†ÛŒ Ø¬ÛŒÙ‡Ø§Ù†ÛŒ Ø¦Û•Ù†ÛŒÙÙ„ÛŒÚ©Ø³...' : 'ðŸŽ¬ Initializing AniFlix Universe...'
+    language === 'ku' ? '🎬 دەستپێکردنی جیهانی ئەنیفلیکس...' : '🎬 Initializing AniFlix Universe...'
   );
   const [percent, setPercent] = useState(0);
 
@@ -69,15 +69,15 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
     // 4. Progress percentage and dynamic text updates
     const textT1 = setTimeout(() => {
-      setLoadingText('âš¡ Loading 4K streams & catalogs...');
+      setLoadingText('⚡ Loading 4K streams & catalogs...');
     }, 1200);
 
     const textT2 = setTimeout(() => {
-      setLoadingText('ðŸ¿ Preparing your personalized cinema...');
+      setLoadingText('🍿 Preparing your personalized cinema...');
     }, 2400);
 
     const textT3 = setTimeout(() => {
-      setLoadingText('âœ¨ Welcome to AniFlix!');
+      setLoadingText('✨ Welcome to AniFlix!');
     }, 3600);
 
     const interval = setInterval(() => {
@@ -117,7 +117,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
   return (
     <Animated.View style={[styles.container, { opacity: screenFadeAnim }]}>
-      {/* ðŸŒ Top Language Switcher on First Screen */}
+      {/* 🌐 Top Language Switcher on First Screen */}
       <View style={styles.topBar}>
         <Pressable
           style={styles.langPill}
@@ -125,7 +125,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
         >
           <Globe size={14} color="#00D2FF" />
           <Text style={styles.langPillText}>
-            {language === 'ku' ? 'Ú©ÙˆØ±Ø¯ÛŒ' : 'English'}
+            {language === 'ku' ? 'کوردی' : 'English'}
           </Text>
         </Pressable>
       </View>
@@ -165,7 +165,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
         {/* Subtitle */}
         <Text style={styles.tagline}>
-          {language === 'ku' ? 'Ø¬ÛŒÙ‡Ø§Ù†ÛŒ ØªØ§ÛŒØ¨Û•ØªÛŒ Ø³ÛŒÙ†Û•Ù…Ø§ Ùˆ Ø¦Û•Ù†ÛŒÙ…ÛŽÛŒ ØªÛ†' : 'YOUR ULTIMATE CINEMA & ANIME UNIVERSE'}
+          {language === 'ku' ? 'جیهانی تایبەتی سینەما و ئەنیمێی تۆ' : 'YOUR ULTIMATE CINEMA & ANIME UNIVERSE'}
         </Text>
       </Animated.View>
 

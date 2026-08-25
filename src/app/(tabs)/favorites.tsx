@@ -114,7 +114,7 @@ export default function FavoritesScreen() {
             </View>
             <Text style={[styles.emptyTitle, { color: themeColors.text }]}>Your List is Empty</Text>
             <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-              Tap the â¤ï¸ heart icon on any anime, movie, or series to save it here for instant access anytime.
+              Tap the ❤️ heart icon on any anime, movie, or series to save it here for instant access anytime.
             </Text>
             <Pressable
               style={[styles.browseButton, { backgroundColor: themeColors.primary }]}

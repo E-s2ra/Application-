@@ -1,13 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
-/**
- * On native (Android/iOS) we target the local Docker PostgREST when available.
- * On web (localhost / production) Docker is never reachable, so we fall back
- * directly to the hosted Supabase project — this eliminates ERR_CONNECTION_REFUSED.
- */
-import { supabase } from './supabase';
-
 // Local Docker CORS Proxy on port 54324
 export const DOCKER_POSTGREST_URL =
   process.env.EXPO_PUBLIC_DOCKER_POSTGREST_URL ||
@@ -23,6 +16,13 @@ const SUPABASE_CLOUD_URL =
 const SUPABASE_CLOUD_ANON_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
+
+/**
+ * On native (Android/iOS) we target the local Docker PostgREST when available.
+ * On web (localhost / production) Docker is never reachable, so we fall back
+ * directly to the hosted Supabase project — this eliminates ERR_CONNECTION_REFUSED.
+ */
+import { supabase } from './supabase';
 
 const useLocalDocker = Platform.OS !== 'web';
 

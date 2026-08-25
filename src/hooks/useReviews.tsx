@@ -367,7 +367,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
           ...r,
           rating,
           comment: cleanComment,
-          createdAt: r.createdAt.includes('edited') ? r.createdAt : r.createdAt + ' Â· edited',
+          createdAt: r.createdAt.includes('edited') ? r.createdAt : r.createdAt + ' · edited',
         };
       }
       return r;

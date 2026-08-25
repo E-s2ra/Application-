@@ -51,7 +51,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 
   return (
     <View style={styles.container}>
-      {/* ðŸŒ¸ Cute Strength Meter Bar & Pill */}
+      {/* 🌸 Cute Strength Meter Bar & Pill */}
       <View style={[styles.meterHeader, isRTL && styles.meterHeaderRTL]}>
         <View style={styles.meterBars}>
           {[1, 2, 3].map((step) => {
@@ -77,7 +77,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         </View>
       </View>
 
-      {/* ðŸ“‹ Dynamic Condition Checklist */}
+      {/* 📋 Dynamic Condition Checklist */}
       <View style={styles.rulesList}>
         {ruleChecks.map((rule) => {
           const isPassed = rule.passed;

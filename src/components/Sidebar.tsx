@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, TouchableWithoutFeedback, Switch } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { 
@@ -28,7 +28,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   
   const isAdmin = user?.email?.toLowerCase() === 'esra99san@gmail.com';
 
-  const [slideAnim] = useState(() => new Animated.Value(-300));
+  const [slideAnim] = useState(new Animated.Value(-300));
 
   useEffect(() => {
     if (isDesktop) {
@@ -238,7 +238,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   }
 
   // Mobile overlay
-  if (!isOpen) return null;
+  if (!isOpen && (slideAnim as any)._value === -300) return null;
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>

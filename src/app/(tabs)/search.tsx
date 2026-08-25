@@ -175,7 +175,7 @@ export default function SearchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        {/* ðŸ” Search Input Bar */}
+        {/* 🔍 Search Input Bar */}
         <View style={styles.searchHeader}>
           <View
             style={[
@@ -207,7 +207,7 @@ export default function SearchScreen() {
 
         {/* Main Content Area */}
         <View style={styles.mainContent}>
-            {/* ðŸŽ¬ Grid of Results */}
+            {/* 🎬 Grid of Results */}
             {loading ? (
               <View style={styles.center}>
                 <ActivityIndicator size="large" color={themeColors.primary} />

@@ -22,11 +22,11 @@ import {
 } from 'react-native';
 
 const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
-  { id: 'Movies', label: 'Movies', icon: 'ðŸŽ¬' },
-  { id: 'Anime Movies', label: 'Anime Movies', icon: 'ðŸŽŒ' },
-  { id: 'K-Drama', label: 'K-Drama', icon: 'ðŸŒ¸' },
-  { id: 'Drama', label: 'Drama', icon: 'ðŸŽ­' },
-  { id: 'Anime Series', label: 'Anime Series', icon: 'âš¡' },
+  { id: 'Movies', label: 'Movies', icon: '🎬' },
+  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
+  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
+  { id: 'Drama', label: 'Drama', icon: '🎭' },
+  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
 ];
 
 export default function EditAnimeScreen() {
@@ -161,10 +161,10 @@ export default function EditAnimeScreen() {
     setSaving(false);
 
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert(`Changes to "${title}" have been saved and updated for all users! ðŸŽ‰`);
+      window.alert(`Changes to "${title}" have been saved and updated for all users! 🎉`);
       router.replace('/admin');
     } else {
-      Alert.alert('Updated! ðŸŽ‰', `"${title}" has been saved and updated for all users.`, [
+      Alert.alert('Updated! 🎉', `"${title}" has been saved and updated for all users.`, [
         { text: 'Back to Panel', onPress: () => router.replace('/admin') },
       ]);
     }
@@ -402,7 +402,7 @@ export default function EditAnimeScreen() {
                   <View key={link.episode} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#242436', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
                     <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', marginRight: 6 }}>Ep {link.episode}</Text>
                     <Pressable onPress={() => handleRemoveLink(link.episode)}>
-                      <Text style={{ color: '#FF4D4D', fontSize: 16, fontWeight: '900', lineHeight: 16 }}>Ã—</Text>
+                      <Text style={{ color: '#FF4D4D', fontSize: 16, fontWeight: '900', lineHeight: 16 }}>×</Text>
                     </Pressable>
                   </View>
                 ))}

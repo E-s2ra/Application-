@@ -39,7 +39,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrorMessage(null);
     if (!email.trim() || !password.trim()) {
-      setErrorMessage(isRTL ? 'ØªÚ©Ø§ÛŒÛ• Ø¦ÛŒÙ…Û•ÛŒÚµ Ùˆ ØªÛŽÙ¾Û•Ú•Û•ÙˆØ´Û•Ú©Û•Øª Ø¨Ù†ÙˆÙˆØ³Û•.' : 'Please enter your email and password.');
+      setErrorMessage(isRTL ? 'تکایە ئیمەیڵ و تێپەڕەوشەکەت بنووسە.' : 'Please enter your email and password.');
       return;
     }
     setLoading(true);
@@ -68,7 +68,7 @@ export default function LoginScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
-          {/* ðŸŒ Top Right Language Switcher on First Screen */}
+          {/* 🌐 Top Right Language Switcher on First Screen */}
           <View style={{ width: '100%', alignItems: 'flex-end', marginBottom: 12 }}>
             <Pressable
               onPress={toggleLanguage}
@@ -86,7 +86,7 @@ export default function LoginScreen() {
             >
               <Globe size={14} color="#00D2FF" />
               <Text style={{ color: '#00D2FF', fontSize: 12, fontWeight: '700' }}>
-                {language === 'ku' ? 'Ú©ÙˆØ±Ø¯ÛŒ (Ø³Û†Ø±Ø§Ù†ÛŒ)' : 'English (EN)'}
+                {language === 'ku' ? 'کوردی (سۆرانی)' : 'English (EN)'}
               </Text>
             </Pressable>
           </View>

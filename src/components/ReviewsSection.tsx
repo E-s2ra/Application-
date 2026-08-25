@@ -36,11 +36,11 @@ interface ReviewsSectionProps {
 }
 
 const RATING_LABELS: Record<number, string> = {
-  1: 'Disappointing ðŸ˜ž',
-  2: 'Fair ðŸ˜',
-  3: 'Good ðŸ™‚',
-  4: 'Great ðŸ˜ƒ',
-  5: 'Masterpiece ðŸ¤©',
+  1: 'Disappointing 😞',
+  2: 'Fair 😐',
+  3: 'Good 🙂',
+  4: 'Great 😃',
+  5: 'Masterpiece 🤩',
 };
 
 function renderCommentWithMentions(content: string, themePrimary: string, baseStyle: any) {
@@ -218,11 +218,11 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
 
 
 
-      {/* â­ Interactive "Rate This Title" & Review Box */}
+      {/* ⭐ Interactive "Rate This Title" & Review Box */}
       <View style={styles.composerCard}>
         <View style={styles.composerHeader}>
           <Text style={styles.composerTitle}>
-            {userReview ? 'âœï¸ Your Review (Edit or Update)' : `How was ${mediaTitle || 'this title'}?`}
+            {userReview ? '✏️ Your Review (Edit or Update)' : `How was ${mediaTitle || 'this title'}?`}
           </Text>
           {userReview && (
             <Pressable
@@ -263,7 +263,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
         {/* Comment Input */}
         <TextInput
           style={styles.commentInput}
-          placeholder="Write your reviewâ€¦ Use @username to notify someone."
+          placeholder="Write your review… Use @username to notify someone."
           placeholderTextColor="#68687C"
           multiline
           numberOfLines={3}
@@ -299,7 +299,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
         </View>
       </View>
 
-      {/* ðŸ·ï¸ Filter Tabs */}
+      {/* 🏷️ Filter Tabs */}
       <View style={[styles.sortRow, isXS && styles.sortRowSmall]}>
         <Text style={styles.communitySubheader}>COMMUNITY REVIEWS</Text>
         <View style={styles.tabPills}>
@@ -324,7 +324,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
         </View>
       </View>
 
-      {/* ðŸ’¬ Reviews List */}
+      {/* 💬 Reviews List */}
       <View style={styles.reviewsList}>
         {sortedReviews.length === 0 ? (
           <View style={styles.emptyReviews}>
@@ -420,7 +420,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                   )}
                 </View>
 
-                {/* ðŸ“ Inline Edit Mode vs Normal View */}
+                {/* 📝 Inline Edit Mode vs Normal View */}
                 {isEditing ? (
                   <View style={styles.inlineEditBox}>
                     {/* Inline Star Picker */}
@@ -499,7 +499,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                       style={styles.replyInput}
                       value={replyText}
                       onChangeText={setReplyText}
-                      placeholder="Write a replyâ€¦ Use @username to tag someone."
+                      placeholder="Write a reply… Use @username to tag someone."
                       placeholderTextColor="#68687C"
                       multiline
                       maxLength={1000}
@@ -513,7 +513,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                         disabled={!replyText.trim() || isReplying}
                         onPress={() => void submitReply(rev.id)}
                       >
-                        <Text style={styles.replySubmitText}>{isReplying ? 'Postingâ€¦' : 'Reply'}</Text>
+                        <Text style={styles.replySubmitText}>{isReplying ? 'Posting…' : 'Reply'}</Text>
                       </Pressable>
                     </View>
                   </View>

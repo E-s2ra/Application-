@@ -33,7 +33,7 @@ export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerPro
       {/* Ad Label */}
       <View style={styles.adLabelRow}>
         <View style={styles.adTag}>
-          <Text style={styles.adTagText}>Ad Â· Google AdMob</Text>
+          <Text style={styles.adTagText}>Ad · Google AdMob</Text>
         </View>
         <Text style={styles.adIdText} numberOfLines={1}>
           {Platform.OS.toUpperCase()} ID: ...{adUnitId.slice(-6)}
