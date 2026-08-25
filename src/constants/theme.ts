@@ -7,25 +7,25 @@ import { Platform } from 'react-native';
 export const Colors = {
   dark: {
     mode: 'dark' as const,
-    background: '#0B0B0E',
-    backgroundElement: '#141419',
-    backgroundCard: '#1A1A24',
+    background: '#09090E', // Deeper black background
+    backgroundElement: '#161622', // Elements and navigation
+    backgroundCard: '#1C1C26', // Cards and modals
     backgroundSelected: '#242436',
-    border: '#2A2A3E',
+    border: '#222232', // Ultra subtle border
     text: '#FFFFFF',
-    textSecondary: '#9A9AA8',
+    textSecondary: '#8A8A9D', // Cool grey
     textMuted: '#636375',
-    primary: '#E50914', // Vibrant Red
+    primary: '#E50914', // Vibrant Netflix Red
     primaryHover: '#F40612',
     primaryGlow: 'rgba(229, 9, 20, 0.4)',
     accent: '#FFB800',
     accentCyan: '#00D2FF',
     badgeBackground: 'rgba(0, 0, 0, 0.75)',
-    cardOverlay: 'rgba(11, 11, 14, 0.85)',
+    cardOverlay: 'rgba(9, 9, 14, 0.85)',
     buttonBackground: '#E50914',
     buttonText: '#FFFFFF',
-    inputBackground: '#1A1A24',
-    inputBorder: '#2A2A3E',
+    inputBackground: '#1C1C26',
+    inputBorder: '#222232',
   },
   light: {
     mode: 'light' as const,

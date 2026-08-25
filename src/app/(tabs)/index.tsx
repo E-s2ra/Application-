@@ -1020,18 +1020,13 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 90,
-    height: 90,
-    borderRadius: 24, // softer curves
-    gap: 12,
+    width: 80,
+    height: 80,
+    borderRadius: 20, // square with rounded edges like reference
+    gap: 10,
     backgroundColor: '#161622',
     borderWidth: 1,
-    borderColor: '#2A2A3E',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 4,
+    borderColor: '#222232',
   },
   categoryPillActive: {
     borderColor: 'transparent',
@@ -1045,11 +1040,11 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     position: 'relative',
-    marginTop: 0,
-    borderRadius: 0,
+    marginTop: 8,
+    borderRadius: 24, // Matches the reference's inset rounded card
     overflow: 'hidden',
-    marginHorizontal: 0,
-    height: 500, // Much taller, premium hero section
+    marginHorizontal: 16,
+    height: 480, // Large but not full screen
   },
   heroSlide: {
     width: '100%',
@@ -1133,15 +1128,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 30, // fully rounded pill
+    paddingVertical: 14,
+    borderRadius: 12, // More structured button
     gap: 8,
     backgroundColor: '#E50914',
-    shadowColor: '#E50914',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5,
   },
   playBtnText: {
     color: '#fff',
@@ -1153,12 +1143,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 30, // fully rounded pill
+    paddingVertical: 14,
+    borderRadius: 12, // More structured button
     gap: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   listBtnText: {
     fontSize: 15,
@@ -1208,7 +1198,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#222232',
   },
   genreChipActive: {
     borderColor: 'transparent',
@@ -1272,7 +1262,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#222232',
   },
   posterImage: {
     width: '100%',
@@ -1337,7 +1327,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#222232',
   },
   standardImageWrapper: {
     position: 'relative',

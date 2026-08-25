@@ -337,9 +337,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   sidebar: {
-    width: 110,
+    width: 100,
     borderRightWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#222232',
   },
   mainContent: {
     flex: 1,
@@ -355,8 +355,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categorySidebarItemActive: {
-    backgroundColor: '#1E1E2D',
-    borderRightWidth: 3,
+    backgroundColor: 'rgba(229, 9, 20, 0.1)',
+    borderLeftWidth: 3,
     borderColor: '#E50914',
   },
   categoryIcon: {
@@ -369,8 +369,8 @@ const styles = StyleSheet.create({
   },
   filterSection: {
     borderBottomWidth: 1,
-    borderColor: '#242436',
-    paddingVertical: 8,
+    borderColor: '#222232',
+    paddingVertical: 12,
   },
   genreScroll: {
     paddingHorizontal: 12,

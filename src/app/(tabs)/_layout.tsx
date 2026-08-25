@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/hooks/use-language';
-import { Home, Search, Heart, User } from 'lucide-react-native';
+import { Home, LayoutGrid, Bookmark, User } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationsBell } from '@/components/NotificationsBell';
@@ -60,10 +60,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: t('tabSearch', 'Search'),
-          headerTitle: t('tabSearch', 'Search'),
+          title: t('tabBrowse', 'Browse'),
+          headerTitle: t('tabBrowse', 'Browse'),
           tabBarIcon: ({ color, focused }) => (
-            <Search color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
+            <LayoutGrid color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />
@@ -73,7 +73,7 @@ export default function TabLayout() {
           title: t('tabFavorites', 'My List'),
           headerTitle: t('tabFavorites', 'My List'),
           tabBarIcon: ({ color, focused }) => (
-            <Heart color={color} size={22} fill={focused ? color : 'none'} strokeWidth={focused ? 2.5 : 2} />
+            <Bookmark color={color} size={22} fill={focused ? color : 'none'} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />

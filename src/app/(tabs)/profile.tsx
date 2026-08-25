@@ -430,16 +430,13 @@ export default function ProfileScreen() {
 
           {/* Sign Out Button */}
           <Pressable
-            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+            style={[styles.actionRow, { backgroundColor: 'transparent', borderColor: '#E50914', borderWidth: 1, justifyContent: 'center', marginTop: 10 }]}
             onPress={handleLogout}
           >
-            <View style={styles.actionRowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#20202E' }]}>
-                <LogOut color="#ff4444" size={18} />
-              </View>
-              <Text style={[styles.actionRowText, { color: '#ff6666' }]}>Sign Out</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={[styles.actionRowText, { color: '#E50914' }]}>Logout</Text>
+              <LogOut color="#E50914" size={18} />
             </View>
-            <ChevronRight color={themeColors.textSecondary} size={18} />
           </Pressable>
         </View>
 
@@ -596,7 +593,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, // more rounded
     padding: 20, // larger padding
     borderWidth: 1,
-    borderColor: '#2A2A3E',
+    borderColor: '#222232',
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -662,7 +659,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#161622',
     borderWidth: 1,
-    borderColor: '#2A2A3E',
+    borderColor: '#222232',
   },
   statNumber: {
     fontSize: 15,
@@ -799,7 +796,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#161622',
     borderWidth: 1,
-    borderColor: '#2A2A3E',
+    borderColor: '#222232',
   },
   actionRowLeft: {
     flexDirection: 'row',
