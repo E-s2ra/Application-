@@ -202,40 +202,6 @@ export default function SearchScreen() {
 
         {/* Main Content Area */}
         <View style={styles.mainContent}>
-            {/* Sort/Filter alternatives - using existing Genre chips */}
-            <View style={styles.filterSection}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.genreScroll}
-              >
-                {GENRES.map((genre) => {
-                  const isSelected = selectedGenre === genre;
-                  return (
-                    <Pressable
-                      key={genre}
-                      style={[
-                        styles.genreChip,
-                        isSelected
-                          ? [styles.genreChipActive, { backgroundColor: '#242436' }]
-                          : { backgroundColor: 'transparent' },
-                      ]}
-                      onPress={() => setSelectedGenre(genre)}
-                    >
-                      <Text
-                        style={[
-                          styles.genreChipText,
-                          { color: isSelected ? themeColors.text : themeColors.textSecondary },
-                        ]}
-                      >
-                        {genre}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
             {/* 🎬 Grid of Results */}
             {loading ? (
               <View style={styles.center}>
