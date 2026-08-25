@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, Platform, Image, Pressable, Linking } from 'react-native';
 import { ADMOB_IDS, ANDROID_BANNER_ID, IOS_BANNER_ID } from '@/constants/admob';
 import { Sparkles, ExternalLink } from 'lucide-react-native';

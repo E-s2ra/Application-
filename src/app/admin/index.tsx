@@ -1,4 +1,4 @@
-﻿import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';

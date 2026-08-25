@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Check, Circle } from 'lucide-react-native';
 import { useTheme } from '@/hooks/use-theme';

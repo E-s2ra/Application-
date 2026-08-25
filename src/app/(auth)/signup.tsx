@@ -1,4 +1,4 @@
-﻿import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useTranslation, useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
