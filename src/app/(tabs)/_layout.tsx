@@ -1,15 +1,20 @@
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/hooks/use-language';
-import { Home, LayoutGrid, Bookmark, User } from 'lucide-react-native';
-import { Platform } from 'react-native';
+import { Home, LayoutGrid, Bookmark, User, Menu } from 'lucide-react-native';
+import { Platform, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationsBell } from '@/components/NotificationsBell';
+import { Sidebar } from '@/components/Sidebar';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useState } from 'react';
 
 export default function TabLayout() {
   const themeColors = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Dynamically compute tab bar dimensions from device safe area with comfortable mobile clearance
   const bottomInset = Math.max(insets.bottom, 0);
@@ -17,7 +22,10 @@ export default function TabLayout() {
   const tabBarHeight = 52 + tabBarPaddingBottom;
 
   return (
-    <Tabs
+    <View style={{ flex: 1, flexDirection: 'row' }}>
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <View style={{ flex: 1 }}>
+        <Tabs
       screenOptions={{
         headerStyle: {
           backgroundColor: themeColors.backgroundElement,
@@ -29,8 +37,14 @@ export default function TabLayout() {
           fontWeight: '700',
           fontSize: 18,
         },
+        headerLeft: () => !isDesktop ? (
+          <Pressable onPress={() => setIsSidebarOpen(true)} style={{ paddingHorizontal: 16 }}>
+            <Menu color={themeColors.text} size={24} />
+          </Pressable>
+        ) : null,
         headerRight: () => <NotificationsBell />,
         tabBarStyle: {
+          display: isDesktop ? 'none' : 'flex',
           backgroundColor: themeColors.background,
           borderTopWidth: 0,
           elevation: 0,
@@ -87,7 +101,9 @@ export default function TabLayout() {
           ),
         }}
       />
-    </Tabs>
+      </Tabs>
+      </View>
+    </View>
   );
 }
 
