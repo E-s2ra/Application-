@@ -8,6 +8,7 @@ import { NotificationsBell } from '@/components/NotificationsBell';
 import { Sidebar } from '@/components/Sidebar';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useState } from 'react';
+import { RewardsHubModal } from '@/components/RewardsHubModal';
 
 export default function TabLayout() {
   const themeColors = useTheme();
@@ -15,6 +16,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isRewardsOpen, setIsRewardsOpen] = useState(false);
 
   // Dynamically compute tab bar dimensions from device safe area with comfortable mobile clearance
   const bottomInset = Math.max(insets.bottom, 0);
@@ -23,7 +25,11 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1, flexDirection: 'row' }}>
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        onOpenRewards={() => setIsRewardsOpen(true)}
+      />
       <View style={{ flex: 1 }}>
         <Tabs
       screenOptions={{
@@ -103,6 +109,7 @@ export default function TabLayout() {
       />
       </Tabs>
       </View>
+      <RewardsHubModal visible={isRewardsOpen} onClose={() => setIsRewardsOpen(false)} />
     </View>
   );
 }

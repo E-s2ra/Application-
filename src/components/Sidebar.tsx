@@ -1,7 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, TouchableWithoutFeedback } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
-import { Home, LayoutGrid, Bookmark, User, ShieldAlert, Sparkles, X } from 'lucide-react-native';
+import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
+import { 
+  Home, LayoutGrid, Bookmark, User, ShieldAlert, Sparkles, X,
+  Film, Clapperboard, Tv, Zap, Flame, Swords, Heart, Compass, Star, Ghost, Smile, Gift, ChevronRight
+} from 'lucide-react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,13 +12,15 @@ import { useAuth } from '@/hooks/useAuth';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenRewards?: () => void;
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   const themeColors = useTheme();
   const { isDesktop } = useResponsive();
   const router = useRouter();
   const pathname = usePathname();
+  const params = useLocalSearchParams();
   const { user } = useAuth();
   
   const isAdmin = user?.email?.toLowerCase() === 'esra99san@gmail.com';
@@ -39,6 +44,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { label: 'Browse', icon: LayoutGrid, route: '/search' },
     { label: 'My List', icon: Bookmark, route: '/favorites' },
     { label: 'Profile', icon: User, route: '/profile' },
+  ];
+
+  const categories = [
+    { label: 'Movies', icon: Film, route: '/search', params: { category: 'Movies' } },
+    { label: 'Anime Movies', icon: Clapperboard, route: '/search', params: { category: 'Anime Movies' } },
+    { label: 'K-Drama', icon: Sparkles, route: '/search', params: { category: 'K-Drama' } },
+    { label: 'Drama', icon: Tv, route: '/search', params: { category: 'Drama' } },
+    { label: 'Anime Series', icon: Zap, route: '/search', params: { category: 'Anime Series' } },
+  ];
+
+  const genres = [
+    { label: 'Trending', icon: Flame, route: '/search', params: { genre: '🔥 Trending' } },
+    { label: 'Action', icon: Swords, route: '/search', params: { genre: 'Action' } },
+    { label: 'Romance', icon: Heart, route: '/search', params: { genre: 'Romance' } },
+    { label: 'Sci-Fi', icon: Compass, route: '/search', params: { genre: 'Sci-Fi' } },
+    { label: 'Fantasy', icon: Star, route: '/search', params: { genre: 'Fantasy' } },
+    { label: 'Comedy', icon: Smile, route: '/search', params: { genre: 'Comedy' } },
+    { label: 'Horror', icon: Ghost, route: '/search', params: { genre: 'Horror' } },
   ];
 
   const sidebarWidth = 260;
@@ -71,7 +94,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       </View>
 
-      <View style={styles.navLinks}>
+      <Animated.ScrollView 
+        style={styles.navLinks} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 60 }}
+      >
+        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>MAIN MENU</Text>
         {navItems.map((item) => {
           // Expo router pathname matching
           const isActive = pathname === item.route || (item.route === '/' && (pathname === '/(tabs)' || pathname === '/(tabs)/index'));
@@ -105,6 +133,91 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           );
         })}
 
+        <View style={[styles.adminDivider, { backgroundColor: themeColors.border, marginVertical: 12 }]} />
+        
+        <Pressable
+          onPress={() => {
+            if (onOpenRewards) onOpenRewards();
+            if (!isDesktop) onClose();
+          }}
+          style={styles.navItem}
+        >
+          <Gift color="#FF5722" size={22} strokeWidth={2} />
+          <Text style={[styles.navItemText, { color: '#FF5722', fontWeight: '700' }]}>
+            Missions & Spin
+          </Text>
+        </Pressable>
+
+        <View style={[styles.adminDivider, { backgroundColor: themeColors.border, marginVertical: 12 }]} />
+        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>CATEGORIES</Text>
+        
+        {categories.map((item) => {
+          const isActive = pathname === item.route && params.category === item.params.category;
+          const Icon = item.icon;
+          return (
+            <Pressable
+              key={item.params.category}
+              onPress={() => {
+                router.push({ pathname: item.route, params: item.params } as any);
+                if (!isDesktop) onClose();
+              }}
+              style={[
+                styles.navItem,
+                isActive && [styles.navItemActive, { backgroundColor: themeColors.primary + '1A' }]
+              ]}
+            >
+              <Icon
+                color={isActive ? themeColors.primary : themeColors.textSecondary}
+                size={20}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
+              <Text
+                style={[
+                  styles.navItemText,
+                  { color: isActive ? themeColors.primary : themeColors.textSecondary },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+
+        <View style={[styles.adminDivider, { backgroundColor: themeColors.border, marginVertical: 12 }]} />
+        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>GENRES</Text>
+
+        {genres.map((item) => {
+          const isActive = pathname === item.route && params.genre === item.params.genre;
+          const Icon = item.icon;
+          return (
+            <Pressable
+              key={item.params.genre}
+              onPress={() => {
+                router.push({ pathname: item.route, params: item.params } as any);
+                if (!isDesktop) onClose();
+              }}
+              style={[
+                styles.navItem,
+                isActive && [styles.navItemActive, { backgroundColor: themeColors.primary + '1A' }]
+              ]}
+            >
+              <Icon
+                color={isActive ? themeColors.primary : themeColors.textSecondary}
+                size={20}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
+              <Text
+                style={[
+                  styles.navItemText,
+                  { color: isActive ? themeColors.primary : themeColors.textSecondary },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+
         {isAdmin && (
           <View style={styles.adminSection}>
             <View style={[styles.adminDivider, { backgroundColor: themeColors.border }]} />
@@ -123,7 +236,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </Pressable>
           </View>
         )}
-      </View>
+      </Animated.ScrollView>
     </Animated.View>
   );
 
@@ -221,5 +334,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     paddingHorizontal: 16,
     marginBottom: 10,
+  },
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    paddingHorizontal: 16,
+    marginBottom: 6,
+    marginTop: 4,
   }
 });

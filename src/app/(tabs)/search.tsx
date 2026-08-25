@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   StyleSheet,
   View,
@@ -29,13 +29,19 @@ const PLACEHOLDER_IMAGES = [
 
 export default function SearchScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth, isDesktop } = useResponsive();
 
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'All' | MediaCategory>('All');
-  const [selectedGenre, setSelectedGenre] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState<'All' | MediaCategory>((params.category as MediaCategory) || 'All');
+  const [selectedGenre, setSelectedGenre] = useState((params.genre as string) || 'All');
+
+  useEffect(() => {
+    if (params.category) setSelectedCategory(params.category as MediaCategory);
+    if (params.genre) setSelectedGenre(params.genre as string);
+  }, [params.category, params.genre]);
   const [mediaList, setMediaList] = useState<AnimeItem[]>(DEFAULT_CATALOG);
   const [loading, setLoading] = useState(true);
 

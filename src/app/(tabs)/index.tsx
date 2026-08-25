@@ -396,11 +396,90 @@ export default function HomeScreen() {
             </Text>
           </View>
 
+          {/* Quick Category indicator / tagline on larger screens */}
+          {isDesktop && (
+            <View style={styles.desktopTagline}>
+              <Text style={{ color: themeColors.textSecondary, fontSize: 13, fontWeight: '600' }}>
+                Unlimited Anime, Movies, K-Dramas & Series in Ultra HD
+              </Text>
+            </View>
+          )}
+
           <View style={styles.homeActions}>
+            {/* 👑 VIP Sovereign Subscription Button */}
+            <Pressable
+              style={styles.vipHeaderBtn}
+              onPress={() => setShowVipModal(true)}
+            >
+              <Crown size={15} color="#FFB800" />
+              <Text style={styles.vipHeaderBtnText}>
+                {isVIP ? `VIP (${vipDaysRemaining}d)` : 'VIP'}
+              </Text>
+            </Pressable>
+
             <NotificationsBell />
+            {/* 🌐 Quick Language Switcher Button */}
+            <Pressable
+              style={[styles.rewardsHeaderBtn, { borderColor: '#00D2FF', borderWidth: 1 }]}
+              onPress={toggleLanguage}
+            >
+              <Globe size={14} color="#00D2FF" />
+              <Text style={[styles.coinsBadgeText, { color: '#00D2FF', fontWeight: '700' }]}>
+                {language === 'ku' ? 'کوردی' : 'EN'}
+              </Text>
+            </Pressable>
+
+            {/* 🎁 Rewards & Streak Hub Header Button */}
+            <Pressable
+              style={styles.rewardsHeaderBtn}
+              onPress={() => setShowRewardsModal(true)}
+            >
+              <Flame size={14} color="#FF5722" />
+              <Text style={styles.streakBadgeText}>{streakDays}d</Text>
+              <Text style={styles.headerDivider}>·</Text>
+              <Text style={styles.coinsBadgeText}>💰 {coins}</Text>
+              <View style={styles.levelPill}>
+                <Text style={styles.levelPillText}>LVL {level}</Text>
+              </View>
+            </Pressable>
           </View>
         </View>
 
+        {/* 🚀 Main Category Switcher Pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryContainer}
+        >
+          {CATEGORIES.map((cat) => {
+            const isSelected = activeCategory === cat.id;
+            return (
+              <Pressable
+                key={cat.id}
+                style={[
+                  styles.categoryPill,
+                  isSelected
+                    ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
+                    : { backgroundColor: themeColors.backgroundElement },
+                ]}
+                onPress={() => {
+                  setActiveCategory(cat.id);
+                  setCurrentHeroIndex(0);
+                }}
+              >
+                <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                <Text
+                  style={[
+                    styles.categoryPillText,
+                    { color: isSelected ? '#fff' : themeColors.textSecondary },
+                  ]}
+                >
+                  {getCategoryLabel(cat.id, cat.label)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
         {/* 🎉 Active Seasonal Event Live Mini-Banner */}
         {activeEvent && (
@@ -499,7 +578,7 @@ export default function HomeScreen() {
                     <Text
                       style={[
                         styles.listBtnText,
-                        { color: '#fff' },
+                        { color: activeHeroFavorited ? themeColors.primary : '#fff' },
                       ]}
                     >
                       {activeHeroFavorited ? t('inList', 'In My List') : `+ ${t('addToList', 'My List')}`}
@@ -535,45 +614,38 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Categories Section (Moved below Hero to match reference) */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Categories</Text>
-          <Text style={[styles.seeAllText, { color: themeColors.textSecondary }]}>See All</Text>
-        </View>
+        {/* 🏷️ Genre Filter Bar */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.categoryContainer, { paddingHorizontal: 16, gap: 12, marginBottom: 16 }]}
+          contentContainerStyle={styles.genreContainer}
         >
-          {CATEGORIES.map((cat) => {
-            const isSelected = activeCategory === cat.id;
+          {GENRES.map((genre) => {
+            const isSelected = activeGenre === genre;
             return (
               <Pressable
-                key={cat.id}
+                key={genre}
                 style={[
-                  styles.categoryPill,
+                  styles.genreChip,
                   isSelected
-                    ? [styles.categoryPillActive, { borderColor: themeColors.primary, borderWidth: 1 }]
+                    ? [styles.genreChipActive, { backgroundColor: themeColors.primary }]
                     : { backgroundColor: themeColors.backgroundElement },
                 ]}
-                onPress={() => {
-                  setActiveCategory(cat.id);
-                  setCurrentHeroIndex(0);
-                }}
+                onPress={() => setActiveGenre(genre)}
               >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
                 <Text
                   style={[
-                    styles.categoryPillText,
-                    { color: isSelected ? themeColors.primary : themeColors.textSecondary },
+                    styles.genreChipText,
+                    { color: isSelected ? '#fff' : themeColors.textSecondary },
                   ]}
                 >
-                  {getCategoryLabel(cat.id, cat.label)}
+                  {genre}
                 </Text>
               </Pressable>
             );
           })}
         </ScrollView>
+
         {/* When a specific category is chosen, show focused filtered list */}
         {activeCategory !== 'All' ? (
           <>
@@ -944,39 +1016,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  categoryContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
   categoryPill: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: 80,
-    height: 80,
-    borderRadius: 20, // square with rounded edges like reference
-    gap: 10,
-    backgroundColor: '#161622',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
     borderWidth: 1,
-    borderColor: '#222232',
+    borderColor: '#242436',
   },
   categoryPillActive: {
     borderColor: 'transparent',
   },
   categoryIcon: {
-    fontSize: 20,
-  },
-  categoryContainer: {
-    paddingHorizontal: 16,
-    gap: 12,
+    fontSize: 14,
   },
   categoryPillText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   heroSection: {
     position: 'relative',
-    marginTop: 8,
-    borderRadius: 24, // Matches the reference's inset rounded card
+    marginTop: 4,
+    borderRadius: 12,
     overflow: 'hidden',
-    marginHorizontal: 16,
-    height: 480, // Large but not full screen
+    marginHorizontal: 12,
   },
   heroSlide: {
     width: '100%',
@@ -991,13 +1061,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(7, 7, 10, 0.65)',
   },
   heroContent: {
-    padding: 24,
-    paddingBottom: 40,
+    padding: 20,
+    paddingBottom: 32,
     zIndex: 5,
-    backgroundColor: 'rgba(0,0,0,0.3)', // Added subtle darkening gradient at bottom
-    borderTopColor: 'rgba(255,255,255,0.05)',
-    borderTopWidth: 1,
-    backdropFilter: 'blur(10px)', // Glassmorphism effect if supported
   },
   heroContentDesktop: {
     padding: 36,
@@ -1047,33 +1113,29 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: '#fff',
-    fontSize: 34,
+    fontSize: 26,
     fontWeight: '900',
-    marginBottom: 8,
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: 6,
+    letterSpacing: 0.2,
   },
   heroDesc: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    lineHeight: 20,
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    lineHeight: 19,
     marginBottom: 16,
   },
   heroActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   playBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12, // More structured button
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 8,
     gap: 8,
-    backgroundColor: '#E50914',
   },
   playBtnText: {
     color: '#fff',
@@ -1081,19 +1143,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   listBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12, // More structured button
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 8,
     gap: 8,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   listBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   navArrow: {
@@ -1140,7 +1200,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#222232',
+    borderColor: '#242436',
   },
   genreChipActive: {
     borderColor: 'transparent',
@@ -1204,7 +1264,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#222232',
+    borderColor: '#242436',
   },
   posterImage: {
     width: '100%',
@@ -1243,22 +1303,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 10,
-    backgroundColor: 'transparent',
+    padding: 8,
+    backgroundColor: 'rgba(7, 7, 10, 0.85)',
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   cardMeta: {
     fontSize: 11,
-    marginTop: 4,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    marginTop: 2,
   },
   standardList: {
     paddingHorizontal: 16,
@@ -1269,7 +1323,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#222232',
+    borderColor: '#242436',
   },
   standardImageWrapper: {
     position: 'relative',
@@ -1293,7 +1347,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   standardCardInfo: {
-    padding: 10,
+    padding: 8,
   },
   vipHeaderBtn: {
     flexDirection: 'row',
