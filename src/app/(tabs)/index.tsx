@@ -309,7 +309,7 @@ export default function HomeScreen() {
               {item.title}
             </Text>
             <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-              {item.episodes > 1 ? `${item.episodes} Episodes` : item.genre ?? 'Feature'}
+              {item.episodes > 1 ? `${item.episodes} ${t('episodesBadge', 'Episodes')}` : t(item.genre as any, item.genre) ?? t('feature', 'Feature')}
             </Text>
           </View>
         </View>
@@ -338,7 +338,7 @@ export default function HomeScreen() {
           />
           {item.category && (
             <View style={styles.cardCategoryBadge}>
-              <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
+              <Text style={styles.cardCategoryText}>{getCategoryLabel(item.category, item.category).toUpperCase()}</Text>
             </View>
           )}
           <Pressable
@@ -356,7 +356,7 @@ export default function HomeScreen() {
           </Pressable>
           <View style={styles.epBadge}>
             <Text style={styles.epBadgeText}>
-              {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
+              {item.episodes > 1 ? `${item.episodes} ${t('epsBadge', 'EPS')}` : t('movieBadge', 'MOVIE')}
             </Text>
           </View>
         </View>
@@ -365,7 +365,7 @@ export default function HomeScreen() {
             {item.title}
           </Text>
           <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {item.genre ?? item.category ?? 'Stream'}
+            {t(item.genre as any, item.genre) ?? getCategoryLabel(item.category, item.category) ?? t('streamBadge', 'Stream')}
           </Text>
         </View>
       </Pressable>
@@ -427,68 +427,10 @@ export default function HomeScreen() {
             </Pressable>
 
             <NotificationsBell />
-            {/* 🌐 Quick Language Switcher Button */}
-            <Pressable
-              style={[styles.rewardsHeaderBtn, { borderColor: '#00D2FF', borderWidth: 1 }]}
-              onPress={toggleLanguage}
-            >
-              <Globe size={14} color="#00D2FF" />
-              <Text style={[styles.coinsBadgeText, { color: '#00D2FF', fontWeight: '700' }]}>
-                {language === 'ku' ? 'کوردی' : 'EN'}
-              </Text>
-            </Pressable>
-
-            {/* 🎁 Rewards & Streak Hub Header Button */}
-            <Pressable
-              style={styles.rewardsHeaderBtn}
-              onPress={() => setShowRewardsModal(true)}
-            >
-              <Flame size={14} color="#FF5722" />
-              <Text style={styles.streakBadgeText}>{streakDays}d</Text>
-              <Text style={styles.headerDivider}>·</Text>
-              <Text style={styles.coinsBadgeText}>💰 {coins}</Text>
-              <View style={styles.levelPill}>
-                <Text style={styles.levelPillText}>LVL {level}</Text>
-              </View>
-            </Pressable>
           </View>
         </View>
 
-        {/* 🚀 Main Category Switcher Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryContainer}
-        >
-          {CATEGORIES.map((cat) => {
-            const isSelected = activeCategory === cat.id;
-            return (
-              <Pressable
-                key={cat.id}
-                style={[
-                  styles.categoryPill,
-                  isSelected
-                    ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
-                    : { backgroundColor: themeColors.backgroundElement },
-                ]}
-                onPress={() => {
-                  setActiveCategory(cat.id);
-                  setCurrentHeroIndex(0);
-                }}
-              >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                <Text
-                  style={[
-                    styles.categoryPillText,
-                    { color: isSelected ? '#fff' : themeColors.textSecondary },
-                  ]}
-                >
-                  {getCategoryLabel(cat.id, cat.label)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+
 
         {/* 🎉 Active Seasonal Event Live Mini-Banner */}
         {activeEvent && (
@@ -623,37 +565,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 🏷️ Genre Filter Bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.genreContainer}
-        >
-          {GENRES.map((genre) => {
-            const isSelected = activeGenre === genre;
-            return (
-              <Pressable
-                key={genre}
-                style={[
-                  styles.genreChip,
-                  isSelected
-                    ? [styles.genreChipActive, { backgroundColor: themeColors.primary }]
-                    : { backgroundColor: themeColors.backgroundElement },
-                ]}
-                onPress={() => setActiveGenre(genre)}
-              >
-                <Text
-                  style={[
-                    styles.genreChipText,
-                    { color: isSelected ? '#fff' : themeColors.textSecondary },
-                  ]}
-                >
-                  {genre}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+
 
         {/* When a specific category is chosen, show focused filtered list */}
         {activeCategory !== 'All' ? (
@@ -662,7 +574,7 @@ export default function HomeScreen() {
               <View style={styles.sectionTitleRow}>
                 <Flame color={themeColors.primary} size={20} />
                 <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                  {activeCategory} {activeGenre !== 'All' ? `· ${activeGenre}` : ''}
+                  {getCategoryLabel(activeCategory, activeCategory)} {activeGenre !== 'All' ? `· ${t(activeGenre as any, activeGenre)}` : ''}
                 </Text>
               </View>
               <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
@@ -687,10 +599,10 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <Sparkles color="#00D2FF" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>New Products</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('newProducts', 'New Products')}</Text>
                   </View>
                   <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                    Added this month
+                    {t('addedThisMonth', 'Added this month')}
                   </Text>
                 </View>
                 <FlatList
@@ -707,7 +619,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
                 <TrendingUp color={themeColors.primary} size={20} />
-                <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Top 10 Today</Text>
+                <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('top10Today', 'Top 10 Today')}</Text>
               </View>
             </View>
             <FlatList
@@ -725,10 +637,10 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <Film color="#E50914" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Blockbuster Movies</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('blockbusterMovies', 'Blockbuster Movies')}</Text>
                   </View>
                   <Pressable onPress={() => setActiveCategory('Movies')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
                   </Pressable>
                 </View>
                 <FlatList
@@ -748,10 +660,10 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <Clapperboard color="#FF8A00" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Must-Watch Anime Movies</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('mustWatchAnimeMovies', 'Must-Watch Anime Movies')}</Text>
                   </View>
                   <Pressable onPress={() => setActiveCategory('Anime Movies')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
                   </Pressable>
                 </View>
                 <FlatList
@@ -771,10 +683,10 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <Sparkles color="#FF69B4" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Trending K-Drama</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('trendingKDrama', 'Trending K-Drama')}</Text>
                   </View>
                   <Pressable onPress={() => setActiveCategory('K-Drama')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
                   </Pressable>
                 </View>
                 <FlatList
@@ -794,10 +706,10 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <Tv color="#9D4EDD" size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Critically Acclaimed Dramas</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('criticallyAcclaimed', 'Critically Acclaimed Dramas')}</Text>
                   </View>
                   <Pressable onPress={() => setActiveCategory('Drama')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
                   </Pressable>
                 </View>
                 <FlatList
@@ -817,10 +729,10 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <Compass color={themeColors.accentCyan} size={20} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Popular Anime Series</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('popularAnime', 'Popular Anime Series')}</Text>
                   </View>
                   <Pressable onPress={() => setActiveCategory('Anime Series')}>
-                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>See All →</Text>
+                    <Text style={[styles.seeAllText, { color: themeColors.primary }]}>{t('seeAll', 'See All')} →</Text>
                   </Pressable>
                 </View>
                 <FlatList

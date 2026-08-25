@@ -51,7 +51,6 @@ export default function WatchScreen() {
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
-  const [selectedEpisode, setSelectedEpisode] = useState(1);
 
   // 🎬 Video Player Custom Controls State
   const [isPlaying, setIsPlaying] = useState(true);
@@ -60,6 +59,7 @@ export default function WatchScreen() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [earnedNotification, setEarnedNotification] = useState<string | null>(null);
+  const [selectedEpisode, setSelectedEpisode] = useState(1);
 
   // 🍿 Watch-to-Earn: Award Coins & XP during active playback
   useEffect(() => {
@@ -171,15 +171,31 @@ export default function WatchScreen() {
     let cancelled = false;
 
     // Check if anime already has a direct HTTP/HTTPS link (e.g. Cloudflare R2 or CDN URL)
+    const specificEpisodeUrl = anime.episode_links?.find(e => e.episode === selectedEpisode)?.url?.trim();
+
     const directUrl =
-      (anime.video_url && anime.video_url.startsWith('http'))
-        ? anime.video_url
-        : (anime.video_asset_key && anime.video_asset_key.startsWith('http'))
-        ? anime.video_asset_key
+      (specificEpisodeUrl && specificEpisodeUrl.startsWith('http'))
+        ? specificEpisodeUrl
+        : (anime.video_url && anime.video_url.trim().startsWith('http'))
+        ? anime.video_url.trim()
+        : (anime.video_asset_key && anime.video_asset_key.trim().startsWith('http'))
+        ? anime.video_asset_key.trim()
         : null;
 
+    console.log('WATCH DEBUG - episode_links:', anime.episode_links);
+    console.log('WATCH DEBUG - selectedEpisode:', selectedEpisode);
+    console.log('WATCH DEBUG - specificEpisodeUrl:', specificEpisodeUrl);
+    console.log('WATCH DEBUG - directUrl:', directUrl);
+
     if (directUrl) {
-      setVideoSource({ uri: directUrl });
+      setVideoSource(directUrl);
+      if (player && typeof player.replace === 'function') {
+        try {
+          player.replace(directUrl);
+        } catch (e) {
+          console.log('Error replacing player source:', e);
+        }
+      }
       setPlaybackError(null);
       return;
     }
@@ -187,7 +203,12 @@ export default function WatchScreen() {
     void getPlaybackUrl(anime.id)
       .then(({ url }) => {
         if (!cancelled) {
-          setVideoSource({ uri: url });
+          setVideoSource(url);
+          if (player && typeof player.replace === 'function') {
+            try {
+              player.replace(url);
+            } catch (e) {}
+          }
           setPlaybackError(null);
         }
       })
@@ -203,12 +224,10 @@ export default function WatchScreen() {
       });
 
     return () => { cancelled = true; };
-  }, [anime?.id, anime?.video_url, anime?.video_asset_key]);
+  }, [anime?.id, anime?.video_url, anime?.video_asset_key, anime?.episode_links, selectedEpisode]);
 
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.8, count: 14 };
-  const totalEps = anime?.episodes && anime.episodes > 0 ? Math.min(anime.episodes, 24) : 12;
-  const episodesList = Array.from({ length: totalEps }, (_, i) => i + 1);
 
   // ⏪ Rewind 10 Seconds
   const handleSeekBackward10 = () => {
@@ -459,7 +478,7 @@ export default function WatchScreen() {
             )}
             <View style={[styles.badge, { backgroundColor: themeColors.primary }]}>
               <Text style={styles.badgeText}>
-                {(anime?.episodes ?? 1) > 1 ? `EPISODE ${selectedEpisode}` : 'MOVIE'}
+                {`${anime?.episodes ?? 1} EPS`}
               </Text>
             </View>
             <View style={styles.badgeGlass}>
@@ -509,25 +528,37 @@ export default function WatchScreen() {
         {/* 📑 Episodes List Picker */}
         <View style={styles.episodesSection}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Episodes</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.epList}>
-            {episodesList.map((epNum) => {
-              const isSelected = selectedEpisode === epNum;
-              return (
-                <Pressable
-                  key={epNum}
-                  style={[
-                    styles.epCard,
-                    isSelected
-                      ? [styles.epCardActive, { backgroundColor: themeColors.primary }]
-                      : { backgroundColor: themeColors.backgroundElement },
-                  ]}
-                  onPress={() => setSelectedEpisode(epNum)}
-                >
-                  <Play color="#fff" size={14} fill={isSelected ? '#fff' : 'none'} />
-                  <Text style={styles.epCardText}>Ep {epNum}</Text>
-                </Pressable>
-              );
-            })}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.epList}
+          >
+            {(() => {
+              // Determine which episodes to show buttons for
+              const availableEpisodes = anime?.episode_links && anime.episode_links.length > 0
+                ? anime.episode_links.map(l => l.episode).sort((a, b) => a - b)
+                : Array.from({ length: anime?.episodes ?? 1 }).map((_, i) => i + 1);
+
+              return availableEpisodes.map((epNum) => {
+                const isActive = epNum === selectedEpisode;
+                return (
+                  <Pressable
+                    key={epNum}
+                    style={[
+                      styles.epCard,
+                      isActive && styles.epCardActive,
+                      isActive && { backgroundColor: themeColors.primary }
+                    ]}
+                    onPress={() => setSelectedEpisode(epNum)}
+                  >
+                    {isActive && <Play color="#fff" size={14} fill="#fff" />}
+                    <Text style={[styles.epCardText]}>
+                      Ep {epNum}
+                    </Text>
+                  </Pressable>
+                );
+              });
+            })()}
           </ScrollView>
         </View>
 

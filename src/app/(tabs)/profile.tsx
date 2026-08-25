@@ -37,6 +37,8 @@ import {
   Moon,
   Globe,
   CreditCard,
+  ShieldAlert,
+  Disc3,
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -182,7 +184,7 @@ export default function ProfileScreen() {
               <Tv color={themeColors.accentCyan} size={14} />
             )}
             <Text style={styles.roleText}>
-              {isAdmin ? 'PLATFORM ADMIN' : isVIP ? `VIP MEMBER (${vipDaysRemaining}d)` : 'STANDARD STREAMER · GET VIP'}
+              {isAdmin ? t('platformAdmin') : isVIP ? `${t('vipMember')} (${vipDaysRemaining}d)` : t('standardStreamerGetVip')}
             </Text>
           </Pressable>
         </View>
@@ -192,7 +194,7 @@ export default function ProfileScreen() {
           <View style={styles.levelCardHeader}>
             <View style={styles.levelLeft}>
               <Crown size={16} color="#FFB800" />
-              <Text style={styles.levelLabel}>LEVEL {level}</Text>
+              <Text style={styles.levelLabel}>{t('level')} {level}</Text>
             </View>
             <Text style={styles.levelTitle}>{levelTitle}</Text>
           </View>
@@ -228,215 +230,159 @@ export default function ProfileScreen() {
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
             <Text style={[styles.statNumber, { color: '#00D2FF' }]}>👥 {followingCount}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Following</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('following')}</Text>
           </View>
         </View>
 
         {/* 🎁 Rewards & Missions Banner */}
-        <Pressable style={styles.rewardsBanner} onPress={() => setShowRewardsModal(true)}>
-          <View style={styles.rewardsBannerLeft}>
-            <View style={styles.rewardsIconBox}>
-              <Trophy size={22} color="#FFB800" />
-            </View>
-            <View>
-              <Text style={styles.rewardsBannerTitle}>Rewards & Seasonal Events</Text>
-              <Text style={styles.rewardsBannerSub}>
-                Spin wheel, claim daily streak, & complete festival missions
-              </Text>
-            </View>
-          </View>
-          <ChevronRight color="#FFB800" size={20} />
-        </Pressable>
-
-        {/* 🏅 Badges Showcase */}
-        <View style={styles.badgesSection}>
-          <View style={styles.badgesSectionHeader}>
-            <Text style={styles.badgesSectionTitle}>MY ACHIEVEMENT BADGES</Text>
-            <Pressable onPress={() => setShowRewardsModal(true)}>
-              <Text style={styles.seeAllBadges}>View All →</Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.badgesScroll}
+        <Pressable 
+            style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
+            onPress={() => setShowRewardsModal(true)}
           >
-            {badges.map((b) => (
-              <View
-                key={b.id}
-                style={[
-                  styles.badgePill,
-                  !b.isUnlocked && styles.badgePillLocked,
-                  { backgroundColor: themeColors.backgroundCard },
-                ]}
-              >
-                <Text style={styles.badgePillEmoji}>{b.icon}</Text>
-                <View>
-                  <Text style={styles.badgePillTitle}>{b.title}</Text>
-                  <Text style={styles.badgePillStatus}>
-                    {b.isUnlocked ? 'Unlocked' : 'Locked'}
-                  </Text>
+            <ChevronRight color={themeColors.textSecondary} size={20} />
+            <View style={styles.menuItemContent}>
+              <Text style={[styles.menuItemTitle, { color: themeColors.text }]}>{t('rewardsHub')}</Text>
+              <Text style={styles.menuItemSub}>{t('rewardsSub')}</Text>
+            </View>
+            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(255, 184, 0, 0.1)' }]}>
+              <Trophy color="#FFB800" size={20} />
+            </View>
+          </Pressable>
+
+          {/* Achievement Badges Section */}
+          <View style={styles.badgesSection}>
+            <View style={styles.badgesHeader}>
+              <Text style={styles.badgesSectionTitle}>{t('myBadges')}</Text>
+              <Pressable onPress={() => setShowRewardsModal(true)}>
+                <Text style={styles.viewAllText}>{t('viewAll')}</Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.badgesScroll}
+            >
+              {badges.map((b) => (
+                <View
+                  key={b.id}
+                  style={[
+                    styles.badgePill,
+                    !b.isUnlocked && styles.badgePillLocked,
+                    { backgroundColor: themeColors.backgroundCard },
+                  ]}
+                >
+                  <Text style={styles.badgePillEmoji}>{b.icon}</Text>
+                  <View>
+                    <Text style={styles.badgePillTitle}>{b.title}</Text>
+                    <Text style={styles.badgePillStatus}>
+                      {b.isUnlocked ? t('unlocked') : t('locked')}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
+              ))}
+            </ScrollView>
+          </View>
 
         {/* ⚙️ Actions List */}
         <View style={styles.actionsSection}>
           {/* Admin Panel Button (Admin only) */}
           {isAdmin && (
-            <Pressable
-              style={[styles.adminBanner, { backgroundColor: themeColors.primary }]}
+            <Pressable 
+              style={[styles.menuItem, { backgroundColor: '#8a0a10', borderColor: '#ff1e27' }]}
               onPress={handleAdminPanel}
             >
-              <View style={styles.adminBannerLeft}>
-                <Shield color="#fff" size={24} />
-                <View>
-                  <Text style={styles.adminBannerTitle}>Admin Control Center</Text>
-                  <Text style={styles.adminBannerSub}>Publish, manage & feature anime</Text>
-                </View>
+              <ChevronRight color="rgba(255,255,255,0.7)" size={20} />
+              <View style={styles.menuItemContent}>
+                <Text style={[styles.menuItemTitle, { color: '#fff' }]}>{t('adminCenter')}</Text>
+                <Text style={[styles.menuItemSub, { color: 'rgba(255,255,255,0.8)' }]}>{t('adminCenterSub')}</Text>
               </View>
-              <ChevronRight color="#fff" size={20} />
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+                <ShieldAlert color="#fff" size={20} />
+              </View>
             </Pressable>
           )}
 
           {/* Dedicated FIB Payment Screen Link */}
           {!isVIP && (
-            <Pressable
-              style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+            <Pressable 
+              style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
               onPress={() => router.push('/fib-payment' as any)}
             >
-              <View style={styles.actionRowLeft}>
-                <View style={[styles.iconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
-                  <CreditCard color="#38BDF8" size={18} />
-                </View>
-                <View>
-                  <Text style={[styles.actionRowText, { color: '#38BDF8' }]}>
-                    {language === 'ku' ? 'پارەدان لە ڕێگەی FIB' : 'VIP Subscription (FIB)'}
-                  </Text>
-                  <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>
-                    {language === 'ku' ? 'پارەدان بۆ VIP لە ڕێگەی بانکی یەکەمی عێراقی' : 'Upgrade to VIP using First Iraqi Bank'}
-                  </Text>
-                </View>
+              <ChevronRight color={themeColors.textSecondary} size={20} />
+              <View style={styles.menuItemContent}>
+                <Text style={[styles.menuItemTitle, { color: themeColors.text }]}>
+                  {language === 'ku' ? 'پارەدان لە ڕێگەی FIB' : 'VIP Subscription (FIB)'}
+                </Text>
+                <Text style={styles.menuItemSub}>
+                  {language === 'ku' ? 'پارەدان بۆ VIP لە ڕێگەی بانکی یەکەمی عێراقی' : 'Upgrade to VIP using First Iraqi Bank'}
+                </Text>
               </View>
-              <ChevronRight color={themeColors.textSecondary} size={18} />
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+                <CreditCard color="#38BDF8" size={20} />
+              </View>
             </Pressable>
           )}
 
-          {/* Watch Ad to Earn Coins Button */}
-          <Pressable
-            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
+          {/* 📺 Watch Ad for Coins */}
+          <Pressable 
+            style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
             onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
           >
-            <View style={styles.actionRowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
-                <PlayCircle color="#FFB800" size={18} />
-              </View>
-              <View>
-                <Text style={[styles.actionRowText, { color: '#FFD700' }]}>
-                  Watch Ad & Earn 100 Coins
-                </Text>
-                <Text style={styles.actionSubtext}>Get +100 Coins & +150 XP instantly</Text>
-              </View>
+            <ChevronRight color={themeColors.textSecondary} size={20} />
+            <View style={styles.menuItemContent}>
+              <Text style={[styles.menuItemTitle, { color: themeColors.text }]}>{t('watchAdEarn')}</Text>
+              <Text style={styles.menuItemSub}>{t('watchAdSub')}</Text>
             </View>
-            <ChevronRight color={themeColors.textSecondary} size={18} />
+            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(255, 184, 0, 0.1)' }]}>
+              <Disc3 color="#FFB800" size={20} />
+            </View>
           </Pressable>
 
-          {/* ☀️ / 🌙 Appearance Mode Toggle */}
-          <Pressable
-            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, borderWidth: 1 }]}
-            onPress={toggleColorMode}
+          {/* 🎨 Theme Shop */}
+          <Pressable 
+            style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
+            onPress={() => setShowThemeShop(true)}
           >
-            <View style={styles.actionRowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: isDark ? '#2D2013' : '#FEF3C7' }]}>
-                {isDark ? <Moon color="#F59E0B" size={18} /> : <Sun color="#D97706" size={18} />}
-              </View>
-              <View>
-                <Text style={[styles.actionRowText, { color: themeColors.text }]}>
-                  {language === 'ku' ? `ڕووکار: ${isDark ? 'دۆخی تاریک 🌙' : 'دۆخی ڕووناک ☀️'}` : `Appearance: ${isDark ? 'Dark Mode 🌙' : 'Light Mode ☀️'}`}
-                </Text>
-                <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>
-                  {language === 'ku' ? 'دەست لێبدە بۆ گۆڕینی دۆخی ڕووناک/تاریک' : `Tap to switch to ${isDark ? 'Light' : 'Dark'} mode`}
-                </Text>
-              </View>
+            <ChevronRight color={themeColors.textSecondary} size={20} />
+            <View style={styles.menuItemContent}>
+              <Text style={[styles.menuItemTitle, { color: themeColors.text }]}>{t('themeShop')}: {activeTheme?.name || 'AniFlix Crimson (Default)'}</Text>
+              <Text style={styles.menuItemSub}>{t('customizeColors')}</Text>
             </View>
-            <View style={{ backgroundColor: themeColors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
-                {isDark ? 'DARK' : 'LIGHT'}
-              </Text>
+            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.1)' }]}>
+              <Palette color="#8B5CF6" size={20} />
             </View>
           </Pressable>
 
           {/* 🌐 Language Switcher (English ⇄ کوردی سۆرانی) */}
-          <Pressable
-            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, borderWidth: 1 }]}
+          <Pressable 
+            style={[styles.menuItem, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
             onPress={toggleLanguage}
           >
-            <View style={styles.actionRowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: language === 'ku' ? '#1E293B' : '#0F172A' }]}>
-                <Globe color="#00D2FF" size={18} />
-              </View>
-              <View>
-                <Text style={[styles.actionRowText, { color: themeColors.text }]}>
-                  {language === 'ku' ? 'زمان: کوردی (سۆرانی) 🎌' : 'Language: English 🌐'}
-                </Text>
-                <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>
-                  {language === 'ku' ? 'دەست لێبدە بۆ گۆڕین بۆ English' : 'Tap to switch to کوردی سۆرانی (Kurdish)'}
-                </Text>
-              </View>
-            </View>
             <View style={{ backgroundColor: '#00D2FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
               <Text style={{ color: '#000', fontSize: 11, fontWeight: '700' }}>
                 {language === 'ku' ? 'KU / ک' : 'EN'}
               </Text>
             </View>
-          </Pressable>
-
-          {/* Theme Shop Button */}
-          <Pressable
-            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, borderWidth: 1 }]}
-            onPress={() => setShowRewardsModal(true)}
-          >
-            <View style={styles.actionRowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#1E1B2C' }]}>
-                <Palette color={primaryColor} size={18} />
-              </View>
-              <View>
-                <Text style={[styles.actionRowText, { color: themeColors.text }]}>
-                  App Theme: {activeTheme.name}
-                </Text>
-                <Text style={[styles.actionSubtext, { color: themeColors.textSecondary }]}>Customize AniFlix colors with Coins</Text>
-              </View>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={18} />
-          </Pressable>
-
-          {/* My Favorites Link */}
-          <Pressable
-            style={[styles.actionRow, { backgroundColor: themeColors.backgroundCard }]}
-            onPress={() => router.push('/(tabs)/favorites' as any)}
-          >
-            <View style={styles.actionRowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#33080A' }]}>
-                <Heart color={themeColors.primary} size={18} fill={themeColors.primary} />
-              </View>
-              <Text style={[styles.actionRowText, { color: themeColors.text }]}>
-                My Favorites List
+            <View style={styles.menuItemContent}>
+              <Text style={[styles.menuItemTitle, { color: themeColors.text }]}>
+                {t('languageSetting')}
+              </Text>
+              <Text style={styles.menuItemSub}>
+                {t('switchLanguageSub')}
               </Text>
             </View>
-            <ChevronRight color={themeColors.textSecondary} size={18} />
+            <View style={[styles.menuIconBox, { backgroundColor: language === 'ku' ? '#1E293B' : '#0F172A' }]}>
+              <Globe color="#00D2FF" size={20} />
+            </View>
           </Pressable>
 
           {/* Sign Out Button */}
-          <Pressable
-            style={[styles.actionRow, { backgroundColor: 'transparent', borderColor: '#E50914', borderWidth: 1, justifyContent: 'center', marginTop: 10 }]}
+          <Pressable 
+            style={styles.logoutBtn}
             onPress={handleLogout}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={[styles.actionRowText, { color: '#E50914' }]}>Logout</Text>
-              <LogOut color="#E50914" size={18} />
-            </View>
+            <LogOut color="#E50914" size={20} />
+            <Text style={styles.logoutText}>{t('signOut')}</Text>
           </Pressable>
         </View>
 
@@ -819,6 +765,54 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8EA4',
     marginTop: 1,
+  },
+  menuItem: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  menuItemContent: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  menuItemTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+    textAlign: 'right',
+  },
+  menuItemSub: {
+    fontSize: 11,
+    color: '#8E8EA4',
+    textAlign: 'right',
+  },
+  menuIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    marginTop: 20,
+    backgroundColor: 'rgba(229, 9, 20, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(229, 9, 20, 0.3)',
+  },
+  logoutText: {
+    color: '#E50914',
+    fontSize: 15,
+    fontWeight: '700',
   },
   avatarImage: {
     width: 96,

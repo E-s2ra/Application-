@@ -102,6 +102,7 @@ export async function addAnime(anime: {
     genre?: string;
     category?: string;
     is_featured?: boolean;
+    episode_links?: { episode: number; url: string }[];
 }): Promise<AdminOperationResult<any>> {
     try {
         const videoValue = anime.video_asset_key || null;
@@ -212,6 +213,7 @@ export async function addAnime(anime: {
                     genre: anime.genre || null,
                     category: anime.category || 'Anime Series',
                     is_featured: anime.is_featured ?? false,
+                    episode_links: anime.episode_links,
                     created_at: new Date().toISOString(),
                 };
                 await saveEditedMediaOverride(fakeId, localData);
@@ -225,7 +227,7 @@ export async function addAnime(anime: {
         
         // If standard Supabase insert succeeded, save it locally to ensure it bypasses any RLS SELECT restrictions
         if (data && data.id) {
-            await saveEditedMediaOverride(data.id, data);
+            await saveEditedMediaOverride(data.id, { ...data, episode_links: anime.episode_links });
         }
         return { success: true, data };
     } catch (e: any) {
@@ -355,6 +357,7 @@ export async function updateAnime(
         genre?: string | null;
         category?: string;
         is_featured?: boolean;
+        episode_links?: { episode: number; url: string }[];
     }
 ): Promise<AdminOperationResult<any>> {
     // 1. Instantly save to persistent overrides so it updates everywhere in the UI

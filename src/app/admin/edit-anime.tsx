@@ -42,8 +42,8 @@ export default function EditAnimeScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [videoAssetKey, setVideoAssetKey] = useState('');
   const [episodes, setEpisodes] = useState('1');
+  const [episodeLinks, setEpisodeLinks] = useState<{episode: number, url: string}[]>([{episode: 1, url: ''}]);
   const [genre, setGenre] = useState('');
   const [category, setCategory] = useState<MediaCategory>('Movies');
   const [isFeatured, setIsFeatured] = useState(false);
@@ -75,8 +75,14 @@ export default function EditAnimeScreen() {
           setTitle(animeData.title || '');
           setDescription(animeData.description || '');
           setImageUrl(animeData.image_url || '');
-          setVideoAssetKey(animeData.video_asset_key || animeData.video_url || '');
           setEpisodes(String(animeData.episodes || 1));
+          
+          if (animeData.episode_links && Array.isArray(animeData.episode_links)) {
+            setEpisodeLinks(animeData.episode_links);
+          } else {
+            setEpisodeLinks([{ episode: 1, url: animeData.video_asset_key || animeData.video_url || '' }]);
+          }
+
           setGenre(animeData.genre || '');
           setCategory((animeData.category as MediaCategory) || 'Movies');
           setIsFeatured(animeData.is_featured ?? false);
@@ -88,6 +94,42 @@ export default function EditAnimeScreen() {
     }
     loadItem();
   }, [id]);
+
+  const [newEpNum, setNewEpNum] = useState('');
+  const [newEpUrl, setNewEpUrl] = useState('');
+  const [linkError, setLinkError] = useState('');
+
+  const handleAddLink = () => {
+    setLinkError('');
+    const cleanNumStr = newEpNum.replace(/\D/g, '');
+    const num = parseInt(cleanNumStr, 10);
+    
+    if (!cleanNumStr || isNaN(num) || num <= 0) {
+      setLinkError('Please enter a valid episode number (e.g. 1).');
+      return;
+    }
+    if (!newEpUrl.trim()) {
+      setLinkError('Please enter a valid video URL.');
+      return;
+    }
+    
+    setEpisodeLinks(prev => {
+      const next = [...prev];
+      const existingIdx = next.findIndex(l => l.episode === num);
+      if (existingIdx >= 0) {
+        next[existingIdx].url = newEpUrl.trim();
+      } else {
+        next.push({ episode: num, url: newEpUrl.trim() });
+      }
+      return next.sort((a, b) => a.episode - b.episode);
+    });
+    setNewEpNum('');
+    setNewEpUrl('');
+  };
+
+  const handleRemoveLink = (epToRemove: number) => {
+    setEpisodeLinks(prev => prev.filter(l => l.episode !== epToRemove));
+  };
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -109,8 +151,8 @@ export default function EditAnimeScreen() {
       title: title.trim(),
       description: description.trim() || null,
       image_url: imageUrl.trim() || null,
-      video_asset_key: videoAssetKey.trim() || null,
       episodes: epsNum,
+      episode_links: episodeLinks.filter(e => e.url.trim().length > 0),
       genre: genre.trim() || null,
       category: category,
       is_featured: isFeatured,
@@ -299,24 +341,74 @@ export default function EditAnimeScreen() {
           />
         </View>
 
-        {/* Video URL or Key */}
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.text }]}>Video Stream URL / Cloudflare R2 Link</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: themeColors.backgroundElement,
-                color: themeColors.text,
-                borderColor: themeColors.border,
-              },
-            ]}
-            placeholder="https://pub-...r2.dev/videos/episode1.mp4"
-            placeholderTextColor={themeColors.textSecondary}
-            value={videoAssetKey}
-            onChangeText={setVideoAssetKey}
-            autoCapitalize="none"
-          />
+        {/* Episode Link Manager */}
+        <View style={[styles.fieldGroup, { backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#242436', marginBottom: 24 }]}>
+          <Text style={[styles.label, { color: themeColors.text }]}>Add or Update Episode Link</Text>
+          
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+            <View style={{ flex: 1 }}>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: themeColors.backgroundElement,
+                    color: themeColors.text,
+                    borderColor: themeColors.border,
+                    marginBottom: 0
+                  },
+                ]}
+                placeholder="Ep #"
+                placeholderTextColor={themeColors.textSecondary}
+                value={newEpNum}
+                onChangeText={setNewEpNum}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={{ flex: 3 }}>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: themeColors.backgroundElement,
+                    color: themeColors.text,
+                    borderColor: themeColors.border,
+                    marginBottom: 0
+                  },
+                ]}
+                placeholder="https://...mp4"
+                placeholderTextColor={themeColors.textSecondary}
+                value={newEpUrl}
+                onChangeText={setNewEpUrl}
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+          
+          {linkError ? <Text style={{ color: '#FF4D4D', fontSize: 12, marginBottom: 8, fontWeight: 'bold' }}>{linkError}</Text> : null}
+
+          <Pressable
+            style={{ backgroundColor: themeColors.primary, paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
+            onPress={handleAddLink}
+            disabled={saving}
+          >
+            <Text style={{ color: '#fff', fontWeight: '800' }}>Save Episode Link</Text>
+          </Pressable>
+
+          {episodeLinks.length > 0 && (
+            <View style={{ marginTop: 16 }}>
+              <Text style={{ color: themeColors.textSecondary, fontSize: 12, marginBottom: 8, fontWeight: '700' }}>CURRENTLY ADDED EPISODES:</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {episodeLinks.map((link) => (
+                  <View key={link.episode} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#242436', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', marginRight: 6 }}>Ep {link.episode}</Text>
+                    <Pressable onPress={() => handleRemoveLink(link.episode)}>
+                      <Text style={{ color: '#FF4D4D', fontSize: 16, fontWeight: '900', lineHeight: 16 }}>×</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Description */}

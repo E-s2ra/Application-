@@ -20,6 +20,7 @@ export type AnimeItem = {
   is_featured: boolean;
   description?: string | null;
   published_at?: string | null;
+  episode_links?: { episode: number; url: string }[];
 };
 
 type FavoritesContextType = {

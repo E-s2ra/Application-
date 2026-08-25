@@ -216,40 +216,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
         </View>
       </View>
 
-      {/* 📊 Score & Breakdown Card */}
-      <View style={[styles.summaryCard, isXS && styles.summaryCardSmall]}>
-        <View style={[styles.scoreCol, isXS && styles.scoreColSmall]}>
-          <Text style={styles.bigScoreText}>{stats.average.toFixed(1)}</Text>
-          <View style={styles.starsRow}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                size={16}
-                color="#FFB800"
-                fill={star <= Math.round(stats.average) ? '#FFB800' : 'transparent'}
-              />
-            ))}
-          </View>
-          <Text style={styles.totalReviewsSubText}>out of 5 stars</Text>
-        </View>
 
-        {/* Breakdown Bars */}
-        <View style={[styles.breakdownCol, isXS && styles.breakdownColSmall]}>
-          {[5, 4, 3, 2, 1].map((stars) => {
-            const count = stats.breakdown[stars] || 0;
-            const percentage = stats.count > 0 ? (count / stats.count) * 100 : 0;
-            return (
-              <View key={stars} style={styles.breakdownRow}>
-                <Text style={styles.starLabel}>{stars}★</Text>
-                <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { width: `${percentage}%` }]} />
-                </View>
-                <Text style={styles.barCount}>{count}</Text>
-              </View>
-            );
-          })}
-        </View>
-      </View>
 
       {/* ⭐ Interactive "Rate This Title" & Review Box */}
       <View style={styles.composerCard}>

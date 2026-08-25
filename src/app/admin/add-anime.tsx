@@ -39,12 +39,48 @@ export default function AddAnimeScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [videoAssetKey, setVideoAssetKey] = useState('');
   const [episodes, setEpisodes] = useState('1');
+  const [episodeLinks, setEpisodeLinks] = useState<{episode: number, url: string}[]>([{episode: 1, url: ''}]);
   const [genre, setGenre] = useState('');
   const [category, setCategory] = useState<MediaCategory>('Movies');
   const [isFeatured, setIsFeatured] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [linkError, setLinkError] = useState('');
+
+  const [newEpNum, setNewEpNum] = useState('');
+  const [newEpUrl, setNewEpUrl] = useState('');
+
+  const handleAddLink = () => {
+    setLinkError('');
+    const cleanNumStr = newEpNum.replace(/\D/g, '');
+    const num = parseInt(cleanNumStr, 10);
+    
+    if (!cleanNumStr || isNaN(num) || num <= 0) {
+      setLinkError('Please enter a valid episode number (e.g. 1).');
+      return;
+    }
+    if (!newEpUrl.trim()) {
+      setLinkError('Please enter a valid video URL.');
+      return;
+    }
+    
+    setEpisodeLinks(prev => {
+      const next = [...prev];
+      const existingIdx = next.findIndex(l => l.episode === num);
+      if (existingIdx >= 0) {
+        next[existingIdx].url = newEpUrl.trim();
+      } else {
+        next.push({ episode: num, url: newEpUrl.trim() });
+      }
+      return next.sort((a, b) => a.episode - b.episode);
+    });
+    setNewEpNum('');
+    setNewEpUrl('');
+  };
+
+  const handleRemoveLink = (epToRemove: number) => {
+    setEpisodeLinks(prev => prev.filter(l => l.episode !== epToRemove));
+  };
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -64,8 +100,8 @@ export default function AddAnimeScreen() {
       title: title.trim(),
       description: description.trim() || undefined,
       image_url: imageUrl.trim() || undefined,
-      video_asset_key: videoAssetKey.trim() || undefined,
       episodes: epsNum,
+      episode_links: episodeLinks.filter(e => e.url.trim().length > 0),
       genre: genre.trim() || undefined,
       category: category,
       is_featured: isFeatured,
@@ -98,7 +134,7 @@ export default function AddAnimeScreen() {
     setTitle('');
     setDescription('');
     setImageUrl('');
-    setVideoAssetKey('');
+    setEpisodeLinks([{episode: 1, url: ''}]);
     setEpisodes('1');
     setGenre('');
     setCategory('Movies');
@@ -227,18 +263,61 @@ export default function AddAnimeScreen() {
             />
           </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: themeColors.textSecondary }]}>VIDEO STREAM URL / CLOUDFLARE R2 LINK</Text>
-            <TextInput
-              style={inputStyle}
-              placeholder="https://pub-...r2.dev/videos/episode1.mp4"
-              placeholderTextColor={themeColors.textSecondary}
-              value={videoAssetKey}
-              onChangeText={setVideoAssetKey}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
-            />
+          {/* Episode Link Manager */}
+          <View style={[styles.fieldGroup, { backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#242436' }]}>
+            <Text style={[styles.label, { color: themeColors.textSecondary }]}>ADD OR UPDATE EPISODE LINK</Text>
+            
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  style={[inputStyle, { marginBottom: 0 }]}
+                  placeholder="Ep #"
+                  placeholderTextColor={themeColors.textSecondary}
+                  value={newEpNum}
+                  onChangeText={setNewEpNum}
+                  keyboardType="number-pad"
+                  editable={!loading}
+                />
+              </View>
+              <View style={{ flex: 3 }}>
+                <TextInput
+                  style={[inputStyle, { marginBottom: 0 }]}
+                  placeholder="https://...mp4"
+                  placeholderTextColor={themeColors.textSecondary}
+                  value={newEpUrl}
+                  onChangeText={setNewEpUrl}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
+            </View>
+
+            {linkError ? <Text style={{ color: '#FF4D4D', fontSize: 12, marginBottom: 8, fontWeight: 'bold' }}>{linkError}</Text> : null}
+            
+            <Pressable
+              style={{ backgroundColor: themeColors.primary, paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
+              onPress={handleAddLink}
+              disabled={loading}
+            >
+              <Text style={{ color: '#fff', fontWeight: '800' }}>Save Episode Link</Text>
+            </Pressable>
+
+            {episodeLinks.length > 0 && (
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ color: themeColors.textSecondary, fontSize: 12, marginBottom: 8, fontWeight: '700' }}>CURRENTLY ADDED EPISODES:</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {episodeLinks.map((link) => (
+                    <View key={link.episode} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#242436', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', marginRight: 6 }}>Ep {link.episode}</Text>
+                      <Pressable onPress={() => handleRemoveLink(link.episode)}>
+                        <Text style={{ color: '#FF4D4D', fontSize: 16, fontWeight: '900', lineHeight: 16 }}>×</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
 
           <View style={styles.row}>

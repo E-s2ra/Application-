@@ -1,13 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Animated, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, Pressable, Animated, StyleSheet, TouchableWithoutFeedback, Switch } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { 
   Home, LayoutGrid, Bookmark, User, ShieldAlert, Sparkles, X,
-  Film, Clapperboard, Tv, Zap, Flame, Swords, Heart, Compass, Star, Ghost, Smile, Gift, ChevronRight
+  Film, Clapperboard, Tv, Zap, Flame, Swords, Heart, Compass, Star, Ghost, Smile, Gift, ChevronRight, Moon, Sun
 } from 'lucide-react-native';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme, useColorMode } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/use-language';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,11 +18,13 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   const themeColors = useTheme();
+  const { isDark, toggleColorMode } = useColorMode();
   const { isDesktop } = useResponsive();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams();
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   const isAdmin = user?.email?.toLowerCase() === 'esra99san@gmail.com';
 
@@ -40,17 +43,17 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   }, [isOpen, isDesktop]);
 
   const navItems = [
-    { label: 'Home', icon: Home, route: '/' },
-    { label: 'Browse', icon: LayoutGrid, route: '/search' },
-    { label: 'My List', icon: Bookmark, route: '/favorites' },
+    { label: t('tabHome'), icon: Home, route: '/' },
+    { label: t('tabSearch'), icon: LayoutGrid, route: '/search' },
+    { label: t('tabFavorites'), icon: Bookmark, route: '/favorites' },
   ];
 
   const categories = [
-    { label: 'Movies', icon: Film, route: '/search', params: { category: 'Movies' } },
-    { label: 'Anime Movies', icon: Clapperboard, route: '/search', params: { category: 'Anime Movies' } },
-    { label: 'K-Drama', icon: Sparkles, route: '/search', params: { category: 'K-Drama' } },
-    { label: 'Drama', icon: Tv, route: '/search', params: { category: 'Drama' } },
-    { label: 'Anime Series', icon: Zap, route: '/search', params: { category: 'Anime Series' } },
+    { label: t('catMovies'), icon: Film, route: '/search', params: { category: 'Movies' } },
+    { label: t('catAnimeMovies'), icon: Clapperboard, route: '/search', params: { category: 'Anime Movies' } },
+    { label: t('catKDrama'), icon: Sparkles, route: '/search', params: { category: 'K-Drama' } },
+    { label: t('catDrama'), icon: Tv, route: '/search', params: { category: 'Drama' } },
+    { label: t('catAnimeSeries'), icon: Zap, route: '/search', params: { category: 'Anime Series' } },
   ];
 
 
@@ -85,11 +88,11 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
       </View>
 
       <Animated.ScrollView 
-        style={styles.navLinks} 
+        style={[styles.navLinks, { flex: 1 }]} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={{ paddingBottom: 60, gap: 8 }}
       >
-        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>MAIN MENU</Text>
+        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>{t('mainMenu')}</Text>
         {navItems.map((item) => {
           // Expo router pathname matching
           const isActive = pathname === item.route || (item.route === '/' && (pathname === '/(tabs)' || pathname === '/(tabs)/index'));
@@ -139,7 +142,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
         </Pressable>
 
         <View style={[styles.adminDivider, { backgroundColor: themeColors.border, marginVertical: 12 }]} />
-        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>CATEGORIES</Text>
+        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>{t('categoriesTitle')}</Text>
         
         {categories.map((item) => {
           const isActive = pathname === item.route && params.category === item.params.category;
@@ -178,7 +181,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
         {isAdmin && (
           <View style={styles.adminSection}>
             <View style={[styles.adminDivider, { backgroundColor: themeColors.border }]} />
-            <Text style={[styles.adminHeader, { color: themeColors.textSecondary }]}>ADMINISTRATION</Text>
+            <Text style={[styles.adminHeader, { color: themeColors.textSecondary }]}>{t('administration')}</Text>
             <Pressable
               onPress={() => {
                 router.push('/admin' as any);
@@ -188,7 +191,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
             >
               <ShieldAlert color="#E50914" size={22} strokeWidth={2} />
               <Text style={[styles.navItemText, { color: '#E50914', fontWeight: '700' }]}>
-                Admin Panel
+                {t('adminPanel')}
               </Text>
             </Pressable>
           </View>
@@ -207,9 +210,25 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
         >
           <User color={pathname === '/profile' ? themeColors.primary : themeColors.textSecondary} size={22} strokeWidth={pathname === '/profile' ? 2.5 : 2} />
           <Text style={[styles.navItemText, { color: pathname === '/profile' ? themeColors.primary : themeColors.textSecondary }]}>
-            Profile
+            {t('tabProfile')}
           </Text>
         </Pressable>
+
+        <View style={[styles.adminDivider, { backgroundColor: themeColors.border, marginVertical: 12 }]} />
+        <View style={[styles.navItem, { justifyContent: 'space-between', paddingVertical: 8 }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            {isDark ? <Moon color={themeColors.textSecondary} size={22} strokeWidth={2} /> : <Sun color={themeColors.textSecondary} size={22} strokeWidth={2} />}
+            <Text style={[styles.navItemText, { color: themeColors.textSecondary }]}>
+              {t('darkMode').split(' ')[0] + ' ' + t('darkMode').split(' ')[1]}
+            </Text>
+          </View>
+          <Switch 
+            value={isDark} 
+            onValueChange={toggleColorMode} 
+            trackColor={{ false: themeColors.backgroundElement, true: themeColors.primary }}
+            thumbColor={'#fff'}
+          />
+        </View>
       </Animated.ScrollView>
     </Animated.View>
   );
@@ -278,7 +297,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   navLinks: {
-    gap: 8,
+    flex: 1,
   },
   navItem: {
     flexDirection: 'row',
