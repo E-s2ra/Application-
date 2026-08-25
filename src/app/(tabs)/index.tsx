@@ -409,7 +409,7 @@ export default function HomeScreen() {
           {isDesktop && (
             <View style={styles.desktopTagline}>
               <Text style={{ color: themeColors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                Unlimited Anime, Movies, K-Dramas & Series in Ultra HD
+                {t('desktopTagline', 'Unlimited Anime, Movies, K-Dramas & Series in Ultra HD')}
               </Text>
             </View>
           )}
@@ -450,7 +450,7 @@ export default function HomeScreen() {
                 <View style={styles.heroBadges}>
                   <View style={[styles.pillBadge, { backgroundColor: themeColors.primary }]}>
                     <Text style={styles.pillBadgeText}>
-                      {activeHeroItem.category?.toUpperCase() || 'FEATURED'}
+                      {activeHeroItem.category ? getCategoryLabel(activeHeroItem.category, activeHeroItem.category).toUpperCase() : t('featured', 'FEATURED')}
                     </Text>
                   </View>
                   <View style={styles.pillGlass}>
@@ -585,14 +585,16 @@ export default function HomeScreen() {
                     {t('addedThisMonth', 'Added this month')}
                   </Text>
                 </View>
-                <FlatList
-                  data={newProducts}
-                  keyExtractor={(item) => `new-${item.id}`}
-                  renderItem={renderStandardCard}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
+                <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap' }]}>
+                  {newProducts.map((item) => {
+                    const card = renderStandardCard({ item });
+                    return (
+                      <View key={`new-${item.id}`}>
+                        {card}
+                      </View>
+                    );
+                  })}
+                </View>
               </>
             )}
             {/* 🔥 TOP 10 Ranked Row */}
