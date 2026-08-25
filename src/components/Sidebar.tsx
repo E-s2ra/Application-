@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, TouchableWithoutFeedback, Switch } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { 
@@ -40,7 +40,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
         useNativeDriver: true,
       }).start();
     }
-  }, [isOpen, isDesktop]);
+  }, [isOpen, isDesktop, slideAnim]);
 
   const navItems = [
     { label: t('tabHome'), icon: Home, route: '/' },
