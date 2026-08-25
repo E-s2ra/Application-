@@ -30,6 +30,7 @@ import {
   Flame,
   Globe,
   Crown,
+  Menu,
 } from 'lucide-react-native';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
@@ -41,6 +42,7 @@ import { AdMobBanner } from '@/components/AdMobBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
 import { NotificationsBell } from '@/components/NotificationsBell';
+import { useSidebar } from './_layout';
 
 export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: string }[] = [
   { id: 'All', label: 'All', icon: '🌟' },
@@ -81,6 +83,8 @@ export default function HomeScreen() {
     isDesktop,
     isTablet,
   } = useResponsive();
+  
+  const { openSidebar } = useSidebar();
 
   const [allMedia, setAllMedia] = useState<AnimeItem[]>(DEFAULT_CATALOG);
   const [activeCategory, setActiveCategory] = useState<'All' | MediaCategory>('All');
@@ -388,6 +392,11 @@ export default function HomeScreen() {
         {/* Top Brand Bar */}
         <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
           <View style={styles.brandRow}>
+            {!isDesktop && (
+              <Pressable onPress={openSidebar} style={{ marginRight: 12 }}>
+                <Menu color="#fff" size={26} />
+              </Pressable>
+            )}
             <View style={[styles.brandIcon, { backgroundColor: themeColors.primary }]}>
               <Sparkles color="#fff" size={18} />
             </View>

@@ -7,8 +7,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationsBell } from '@/components/NotificationsBell';
 import { Sidebar } from '@/components/Sidebar';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
+
+export const SidebarContext = createContext({
+  openSidebar: () => {},
+  closeSidebar: () => {},
+});
+
+export const useSidebar = () => useContext(SidebarContext);
 
 export default function TabLayout() {
   const themeColors = useTheme();
@@ -24,7 +31,11 @@ export default function TabLayout() {
   const tabBarHeight = 52 + tabBarPaddingBottom;
 
   return (
-    <View style={{ flex: 1, flexDirection: 'row' }}>
+    <SidebarContext.Provider value={{
+      openSidebar: () => setIsSidebarOpen(true),
+      closeSidebar: () => setIsSidebarOpen(false),
+    }}>
+      <View style={{ flex: 1, flexDirection: 'row' }}>
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
@@ -111,6 +122,7 @@ export default function TabLayout() {
       </View>
       <RewardsHubModal visible={isRewardsOpen} onClose={() => setIsRewardsOpen(false)} />
     </View>
+    </SidebarContext.Provider>
   );
 }
 
