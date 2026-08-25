@@ -43,7 +43,6 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
     { label: 'Home', icon: Home, route: '/' },
     { label: 'Browse', icon: LayoutGrid, route: '/search' },
     { label: 'My List', icon: Bookmark, route: '/favorites' },
-    { label: 'Profile', icon: User, route: '/profile' },
   ];
 
   const categories = [
@@ -194,6 +193,23 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
             </Pressable>
           </View>
         )}
+
+        <View style={[styles.adminDivider, { backgroundColor: themeColors.border, marginVertical: 12, marginTop: isAdmin ? 20 : 12 }]} />
+        <Pressable
+          onPress={() => {
+            router.push('/profile');
+            if (!isDesktop) onClose();
+          }}
+          style={[
+            styles.navItem,
+            pathname === '/profile' && [styles.navItemActive, { backgroundColor: themeColors.primary + '1A' }]
+          ]}
+        >
+          <User color={pathname === '/profile' ? themeColors.primary : themeColors.textSecondary} size={22} strokeWidth={pathname === '/profile' ? 2.5 : 2} />
+          <Text style={[styles.navItemText, { color: pathname === '/profile' ? themeColors.primary : themeColors.textSecondary }]}>
+            Profile
+          </Text>
+        </Pressable>
       </Animated.ScrollView>
     </Animated.View>
   );
