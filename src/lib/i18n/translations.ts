@@ -141,6 +141,9 @@ export const translations = {
     'Left your first review': 'Left your first review',
     'Kurdish Sun Legend': 'Kurdish Sun Legend',
     'Participated in the Kurdish Cinema Gala event': 'Participated in the Kurdish Cinema Gala event',
+    searchPlaceholder: 'Search AniFlix (Anime, Movies, K-Drama, Series)...',
+    noResults: 'No results',
+    attemptDifferentSearch: 'Attempt a different search or explore the categories on the left.',
 
     // Appearance & Settings
     appearance: 'Appearance',
@@ -328,6 +331,9 @@ export const translations = {
     'Left your first review': 'یەکەم بۆچوونی خۆتت نووسی',
     'Kurdish Sun Legend': 'ئەفسانەی خۆری کوردی',
     'Participated in the Kurdish Cinema Gala event': 'بەشداریت کرد لە بۆنەی گالای سینەمای کوردی',
+    searchPlaceholder: 'گەڕان لە ئەنیفلیکس (ئەنیمێ، فیلم، درامای کۆری، زنجیرە)...',
+    noResults: 'هیچ ئەنجامێک نەدۆزرایەوە',
+    attemptDifferentSearch: 'هەوڵی گەڕانێکی جیاواز بدە یان پشکنین بۆ بەشەکانی لای چەپ بکە.',
 
     // Appearance & Settings
     appearance: 'ڕووکار',

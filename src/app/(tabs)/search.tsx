@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { DEFAULT_CATALOG, CATEGORIES } from './index';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useLanguage } from '@/hooks/use-language';
 
 const GENRES = ['All', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
@@ -33,6 +34,7 @@ export default function SearchScreen() {
   const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth, isDesktop } = useResponsive();
+  const { t } = useLanguage();
 
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | MediaCategory>((params.category as MediaCategory) || 'All');
@@ -186,7 +188,7 @@ export default function SearchScreen() {
             <SearchIcon color={themeColors.textSecondary} size={20} />
             <TextInput
               style={[styles.input, { color: themeColors.text }]}
-              placeholder="Search AniFlix (Anime, Movies, K-Drama, Series)..."
+              placeholder={t('searchPlaceholder')}
               placeholderTextColor={themeColors.textSecondary}
               value={query}
               onChangeText={setQuery}
@@ -219,9 +221,9 @@ export default function SearchScreen() {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <Sparkles color={themeColors.textSecondary} size={48} />
-                    <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No results</Text>
+                    <Text style={[styles.emptyTitle, { color: themeColors.text }]}>{t('noResults')}</Text>
                     <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-                      Attempt a different search or explore the categories on the left.
+                      {t('attemptDifferentSearch')}
                     </Text>
                   </View>
                 }
