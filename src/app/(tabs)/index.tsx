@@ -432,27 +432,7 @@ export default function HomeScreen() {
 
 
 
-        {/* 🎉 Active Seasonal Event Live Mini-Banner */}
-        {activeEvent && (
-          <Pressable
-            style={styles.eventMiniBanner}
-            onPress={() => setShowRewardsModal(true)}
-          >
-            <View style={styles.eventMiniContent}>
-              <View style={styles.eventTagRow}>
-                <View style={styles.eventTag}>
-                  <Text style={styles.eventTagText}>🎉 LIVE EVENT</Text>
-                </View>
-                <Text style={styles.eventBonusBadge}>2x XP & Coins</Text>
-              </View>
-              <Text style={styles.eventMiniTitle}>{activeEvent.title}</Text>
-              <Text style={styles.eventMiniSubtitle}>{activeEvent.subtitle}</Text>
-            </View>
-            <View style={styles.eventActionBox}>
-              <Text style={styles.eventActionText}>Missions & Spin →</Text>
-            </View>
-          </Pressable>
-        )}
+
 
         {/* 🎬 Animated Auto-Moving Hero Banner */}
         {featured.length > 0 && (
