@@ -194,105 +194,103 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        {/* 🏷️ Category Filter Pills */}
-        <View style={styles.filterSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
-          >
-            {CATEGORIES.map((cat) => {
-              const isSelected = selectedCategory === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  style={[
-                    styles.categoryPill,
-                    isSelected
-                      ? [styles.categoryPillActive, { backgroundColor: themeColors.primary }]
-                      : { backgroundColor: themeColors.backgroundElement },
-                  ]}
-                  onPress={() => setSelectedCategory(cat.id)}
-                >
-                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                  <Text
+        {/* Split Layout */}
+        <View style={styles.splitLayout}>
+          {/* Left Sidebar: Categories */}
+          <View style={styles.sidebar}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.categoryVerticalList}
+            >
+              {CATEGORIES.map((cat) => {
+                const isSelected = selectedCategory === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id}
                     style={[
-                      styles.categoryPillText,
-                      { color: isSelected ? '#fff' : themeColors.textSecondary },
+                      styles.categorySidebarItem,
+                      isSelected && styles.categorySidebarItemActive,
                     ]}
+                    onPress={() => setSelectedCategory(cat.id)}
                   >
-                    {cat.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {/* 🏷️ Genre Filter Chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.genreScroll}
-          >
-            {GENRES.map((genre) => {
-              const isSelected = selectedGenre === genre;
-              return (
-                <Pressable
-                  key={genre}
-                  style={[
-                    styles.genreChip,
-                    isSelected
-                      ? [styles.genreChipActive, { backgroundColor: themeColors.accentCyan }]
-                      : { backgroundColor: themeColors.backgroundElement },
-                  ]}
-                  onPress={() => setSelectedGenre(genre)}
-                >
-                  <Text
-                    style={[
-                      styles.genreChipText,
-                      { color: isSelected ? '#000' : themeColors.textSecondary },
-                    ]}
-                  >
-                    {genre}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* 📊 Results Count Header */}
-        <View style={styles.resultsHeader}>
-          <Text style={[styles.resultsCount, { color: themeColors.textSecondary }]}>
-            Showing {filteredList.length} results
-          </Text>
-        </View>
-
-        {/* 🎬 Grid of Results */}
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={themeColors.primary} />
+                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                    <Text
+                      style={[
+                        styles.categorySidebarText,
+                        isSelected ? { color: themeColors.primary, fontWeight: '800' } : { color: themeColors.textSecondary },
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
-        ) : (
-          <FlatList
-            data={filteredList}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={renderCard}
-            numColumns={numCols}
-            key={`search-grid-${numCols}`}
-            columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
-            contentContainerStyle={[styles.grid, { padding: pagePad, paddingTop: 4, paddingBottom: 40 }]}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Sparkles color={themeColors.textSecondary} size={48} />
-                <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No results</Text>
-                <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-                  Attempt a different search or explore the categories above.
-                </Text>
+
+          {/* Right Content Area */}
+          <View style={styles.mainContent}>
+            {/* Sort/Filter alternatives - using existing Genre chips */}
+            <View style={styles.filterSection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.genreScroll}
+              >
+                {GENRES.map((genre) => {
+                  const isSelected = selectedGenre === genre;
+                  return (
+                    <Pressable
+                      key={genre}
+                      style={[
+                        styles.genreChip,
+                        isSelected
+                          ? [styles.genreChipActive, { backgroundColor: '#242436' }]
+                          : { backgroundColor: 'transparent' },
+                      ]}
+                      onPress={() => setSelectedGenre(genre)}
+                    >
+                      <Text
+                        style={[
+                          styles.genreChipText,
+                          { color: isSelected ? themeColors.text : themeColors.textSecondary },
+                        ]}
+                      >
+                        {genre}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* 🎬 Grid of Results */}
+            {loading ? (
+              <View style={styles.center}>
+                <ActivityIndicator size="large" color={themeColors.primary} />
               </View>
-            }
-          />
-        )}
+            ) : (
+              <FlatList
+                data={filteredList}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={renderCard}
+                numColumns={numCols}
+                key={`search-grid-${numCols}`}
+                columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
+                contentContainerStyle={[styles.grid, { padding: pagePad, paddingTop: 12, paddingBottom: 40 }]}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Sparkles color={themeColors.textSecondary} size={48} />
+                    <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No results</Text>
+                    <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
+                      Attempt a different search or explore the categories on the left.
+                    </Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -334,45 +332,54 @@ const styles = StyleSheet.create({
   clearBtn: {
     padding: 4,
   },
-  filterSection: {
-    gap: 8,
+  splitLayout: {
+    flex: 1,
+    flexDirection: 'row',
   },
-  categoryScroll: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    gap: 8,
+  sidebar: {
+    width: 110,
+    borderRightWidth: 1,
+    borderColor: '#242436',
   },
-  categoryPill: {
+  mainContent: {
+    flex: 1,
+  },
+  categoryVerticalList: {
+    paddingVertical: 12,
+  },
+  categorySidebarItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#242436',
+    gap: 8,
   },
-  categoryPillActive: {
-    borderColor: 'transparent',
+  categorySidebarItemActive: {
+    backgroundColor: '#1E1E2D',
+    borderRightWidth: 3,
+    borderColor: '#E50914',
   },
   categoryIcon: {
-    fontSize: 12,
+    fontSize: 16,
   },
-  categoryPillText: {
+  categorySidebarText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
+    flex: 1,
+  },
+  filterSection: {
+    borderBottomWidth: 1,
+    borderColor: '#242436',
+    paddingVertical: 8,
   },
   genreScroll: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    gap: 6,
+    paddingHorizontal: 12,
+    gap: 8,
   },
   genreChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#242436',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   genreChipActive: {
     borderColor: 'transparent',
@@ -463,15 +470,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cardInfo: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 10,
+    backgroundColor: 'transparent',
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   cardGenre: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 11,
+    marginTop: 4,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   emptyContainer: {
     padding: 40,

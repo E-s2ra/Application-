@@ -31,9 +31,10 @@ export default function TabLayout() {
         },
         headerRight: () => <NotificationsBell />,
         tabBarStyle: {
-          backgroundColor: themeColors.backgroundElement,
-          borderTopColor: themeColors.border,
-          borderTopWidth: 1,
+          backgroundColor: themeColors.background,
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
           height: tabBarHeight,
           paddingBottom: tabBarPaddingBottom,
           paddingTop: 8,
@@ -41,8 +42,9 @@ export default function TabLayout() {
         tabBarActiveTintColor: themeColors.primary,
         tabBarInactiveTintColor: themeColors.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
+          fontSize: 11,
+          fontWeight: '700',
+          marginTop: 4,
         },
       }}>
       <Tabs.Screen

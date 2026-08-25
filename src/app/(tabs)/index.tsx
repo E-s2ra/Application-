@@ -578,7 +578,7 @@ export default function HomeScreen() {
                     <Text
                       style={[
                         styles.listBtnText,
-                        { color: activeHeroFavorited ? themeColors.primary : '#fff' },
+                        { color: '#fff' },
                       ]}
                     >
                       {activeHeroFavorited ? t('inList', 'In My List') : `+ ${t('addToList', 'My List')}`}
@@ -1022,23 +1022,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryPill: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    justifyContent: 'center',
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    gap: 8,
     borderWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#2A2A3E',
   },
   categoryPillActive: {
     borderColor: 'transparent',
   },
   categoryIcon: {
-    fontSize: 14,
+    fontSize: 20,
   },
   categoryPillText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
   },
   heroSection: {
@@ -1130,9 +1131,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   playBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 22,
+    justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
@@ -1143,17 +1145,19 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   listBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
+    justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: '#2A2A3E',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   listBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
   },
   navArrow: {
@@ -1303,16 +1307,22 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 8,
-    backgroundColor: 'rgba(7, 7, 10, 0.85)',
+    padding: 10,
+    backgroundColor: 'transparent',
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   cardMeta: {
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 4,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   standardList: {
     paddingHorizontal: 16,
@@ -1347,7 +1357,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   standardCardInfo: {
-    padding: 8,
+    padding: 10,
   },
   vipHeaderBtn: {
     flexDirection: 'row',

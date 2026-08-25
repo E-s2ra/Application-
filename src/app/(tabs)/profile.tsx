@@ -545,8 +545,8 @@ const styles = StyleSheet.create({
     marginTop: 24,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#242436',
-    backgroundColor: 'rgba(18, 18, 26, 0.5)',
+    borderColor: '#2A2A3E',
+    backgroundColor: 'rgba(20, 20, 20, 0.5)',
     paddingBottom: 24,
   },
   header: {
@@ -591,12 +591,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   levelCard: {
-    backgroundColor: '#12121E',
+    backgroundColor: '#141414',
     marginHorizontal: 16,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#242438',
+    borderColor: '#2A2A3E',
     marginBottom: 14,
   },
   levelCardHeader: {
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#2A2A3E',
   },
   statNumber: {
     fontSize: 15,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#2A2A3E',
   },
   badgePillLocked: {
     opacity: 0.45,
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#242436',
+    borderColor: '#2A2A3E',
   },
   actionRowLeft: {
     flexDirection: 'row',
