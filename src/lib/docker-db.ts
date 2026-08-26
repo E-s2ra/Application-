@@ -18,20 +18,9 @@ const SUPABASE_CLOUD_ANON_KEY =
   'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
 
 /**
- * On native (Android/iOS) we target the local Docker PostgREST when available
- * during development ONLY. In production APK/IPA builds, Docker is never
- * reachable (10.0.2.2 is emulator-only), so we always use cloud Supabase.
+ * Always use cloud Supabase to avoid network hangs on physical devices.
+ * 10.0.2.2 is only reachable from Android Emulator.
  */
 import { supabase } from './supabase';
 
-const useLocalDocker = __DEV__ && Platform.OS !== 'web';
-
-export const dockerDb = useLocalDocker
-  ? createClient(DOCKER_POSTGREST_URL, DOCKER_ANON_KEY, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        storageKey: 'docker-db-auth-local',
-      },
-    })
-  : supabase;
+export const dockerDb = supabase;
