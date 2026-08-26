@@ -403,7 +403,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const [streakDays, setStreakDays] = useState(4);
   const [hasClaimedDailyStreak, setHasClaimedDailyStreak] = useState(false);
   const [canSpinWheel, setCanSpinWheel] = useState(true);
-  const [vipDaysRemaining, setVipDaysRemaining] = useState(3);
+  const [vipDaysRemaining, setVipDaysRemaining] = useState(0);
+  const [vipExpiresAt, setVipExpiresAt] = useState<string | null>(null);
   const [activeEventIndex, setActiveEventIndex] = useState(0);
   const [activeThemeId, setActiveThemeId] = useState('theme-deep-blue');
   const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-deep-blue']);
@@ -454,7 +455,21 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           if (parsed.hasClaimedDailyStreak !== undefined)
             setHasClaimedDailyStreak(parsed.hasClaimedDailyStreak);
           if (parsed.canSpinWheel !== undefined) setCanSpinWheel(parsed.canSpinWheel);
-          if (parsed.vipDaysRemaining !== undefined) setVipDaysRemaining(parsed.vipDaysRemaining);
+          
+          let loadedExpiresAt = parsed.vipExpiresAt;
+          if (loadedExpiresAt) {
+            const diffMs = new Date(loadedExpiresAt).getTime() - Date.now();
+            const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            setVipDaysRemaining(days);
+            setVipExpiresAt(loadedExpiresAt);
+          } else if (parsed.vipDaysRemaining) {
+            const exp = new Date();
+            exp.setDate(exp.getDate() + parsed.vipDaysRemaining);
+            const expString = exp.toISOString();
+            setVipExpiresAt(expString);
+            setVipDaysRemaining(parsed.vipDaysRemaining);
+          }
+
           if (parsed.activeThemeId) setActiveThemeId(parsed.activeThemeId);
           if (parsed.unlockedThemeIds) setUnlockedThemeIds(parsed.unlockedThemeIds);
           if (parsed.missions) setMissions(parsed.missions);
@@ -519,6 +534,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         hasClaimedDailyStreak,
         canSpinWheel,
         vipDaysRemaining,
+        vipExpiresAt,
         activeThemeId,
         unlockedThemeIds,
         missions,
@@ -607,20 +623,32 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     let newCoins = coins;
     let newXp = xp;
     let newVipDays = vipDaysRemaining;
+    let newExpiresAt = vipExpiresAt;
 
     if (reward.type === 'coins') newCoins += reward.amount;
     if (reward.type === 'xp') newXp += reward.amount;
-    if (reward.type === 'vip') newVipDays += reward.amount;
+    if (reward.type === 'vip') {
+      const currentExp = (newExpiresAt && new Date(newExpiresAt).getTime() > Date.now()) 
+          ? new Date(newExpiresAt) 
+          : new Date();
+      currentExp.setDate(currentExp.getDate() + reward.amount);
+      newExpiresAt = currentExp.toISOString();
+      const diffMs = currentExp.getTime() - Date.now();
+      newVipDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    }
 
     setCoins(newCoins);
     setXp(newXp);
-    setVipDaysRemaining(newVipDays);
+    if (reward.type === 'vip') {
+      setVipDaysRemaining(newVipDays);
+      setVipExpiresAt(newExpiresAt);
+    }
     setCanSpinWheel(false);
 
     persist({
       coins: newCoins,
       xp: newXp,
-      vipDaysRemaining: newVipDays,
+      ...(reward.type === 'vip' ? { vipDaysRemaining: newVipDays, vipExpiresAt: newExpiresAt } : {}),
       canSpinWheel: false,
     });
 
@@ -721,9 +749,18 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   };
 
   const activateVIP = (days: number) => {
-    const newVip = vipDaysRemaining + days;
-    setVipDaysRemaining(newVip);
-    persist({ vipDaysRemaining: newVip });
+    const currentExp = (vipExpiresAt && new Date(vipExpiresAt).getTime() > Date.now()) 
+        ? new Date(vipExpiresAt) 
+        : new Date();
+    currentExp.setDate(currentExp.getDate() + days);
+    const newExpiresAt = currentExp.toISOString();
+    
+    const diffMs = currentExp.getTime() - Date.now();
+    const newVipDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+    setVipDaysRemaining(newVipDays);
+    setVipExpiresAt(newExpiresAt);
+    persist({ vipDaysRemaining: newVipDays, vipExpiresAt: newExpiresAt });
 
     // Record in Docker Postgres vip_transactions
     if (user?.id && !user.id.startsWith('guest-')) {
