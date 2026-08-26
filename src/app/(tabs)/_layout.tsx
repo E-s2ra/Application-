@@ -65,7 +65,7 @@ export default function TabLayout() {
           backgroundColor: themeColors.background,
           borderTopWidth: 0,
           elevation: 0,
-          shadowOpacity: 0,
+          ...(Platform.OS === 'web' ? { boxShadow: 'none' } : { shadowOpacity: 0 }),
           height: tabBarHeight,
           paddingBottom: tabBarPaddingBottom,
           paddingTop: 8,
