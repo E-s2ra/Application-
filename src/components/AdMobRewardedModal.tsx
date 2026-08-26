@@ -65,7 +65,7 @@ export function AdMobRewardedModal() {
           setIsCompleted(true);
           // Credit reward
           onAdCompleted();
-          addXPAndCoins(100, currentRewardCoins);
+          addXPAndCoins(100, currentRewardCoins, true);
           return 0;
         }
         return prev - 1;

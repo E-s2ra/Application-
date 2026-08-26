@@ -390,7 +390,7 @@ type GamificationContextType = {
   equipTheme: (themeId: string) => void;
   activateVIP: (days: number) => void;
   awardWatchTimeReward: (minutes: number) => { coins: number; xp: number };
-  addXPAndCoins: (xpGain: number, coinsGain: number) => void;
+  addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
@@ -525,7 +525,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     loadData();
   }, [user]);
 
-  const persist = async (updates: any) => {
+  const persist = async (updates: any, skipDbSync = false) => {
     try {
       const stateToSave = {
         coins,
@@ -549,7 +549,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       }
 
       // Sync to Docker Postgres profiles in background
-      if (user?.id && !user.id.startsWith('guest-')) {
+      if (!skipDbSync && user?.id && !user.id.startsWith('guest-')) {
         const payload: any = { updated_at: new Date().toISOString() };
         if (updates.coins !== undefined) payload.coins = updates.coins;
         if (updates.xp !== undefined) {
@@ -570,7 +570,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     } catch {}
   };
 
-  const addXPAndCoins = (xpGain: number, coinsGain: number) => {
+  const addXPAndCoins = (xpGain: number, coinsGain: number, skipDbSync = false) => {
     const multiplier = activeEvent.bonusMultiplier || 1;
     const finalCoins = Math.round(coinsGain * multiplier);
     const finalXP = Math.round(xpGain * multiplier);
@@ -578,7 +578,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     const newXp = xp + finalXP;
     setCoins(newCoins);
     setXp(newXp);
-    persist({ coins: newCoins, xp: newXp });
+    persist({ coins: newCoins, xp: newXp }, skipDbSync);
   };
 
   const claimDailyStreak = () => {
