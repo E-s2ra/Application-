@@ -108,6 +108,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
       clearTimeout(finishTimer);
       clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const progressWidth = progressAnim.interpolate({
