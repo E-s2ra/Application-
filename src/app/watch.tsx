@@ -43,6 +43,7 @@ import { DEFAULT_CATALOG } from './(tabs)/index';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ReviewsSection } from '@/components/ReviewsSection';
 import { AdMobBanner } from '@/components/AdMobBanner';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SPEED_OPTIONS = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0];
 
@@ -55,6 +56,7 @@ export default function WatchScreen() {
   const { awardWatchTimeReward } = useGamification();
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet } = useResponsive();
   const { language } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
@@ -319,7 +321,7 @@ export default function WatchScreen() {
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
         {/* 🔙 Custom Top Navigation Bar */}
-        <View style={[styles.customNav, { backgroundColor: themeColors.backgroundElement }]}>
+        <View style={[styles.customNav, { backgroundColor: themeColors.backgroundElement, paddingTop: Math.max(insets.top, 12) + 8 }]}>
           <Pressable style={styles.backButton} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}>
             <ArrowLeft color={themeColors.text} size={22} />
           </Pressable>

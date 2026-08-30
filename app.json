@@ -2,7 +2,6 @@
   "expo": {
     "name": "AniFlix",
     "slug": "aniflix",
-    "owner": "e2sras-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -58,8 +57,9 @@
       },
       "router": {},
       "eas": {
-        "projectId": "5ed87f19-67d1-44dd-849d-ed39f301ea76"
+        "projectId": "81668aec-c344-4b87-bd86-9ccc0d43ea9f"
       }
-    }
+    },
+    "owner": "es334ra"
   }
 }

@@ -99,6 +99,7 @@ serve(async (req) => {
                         genre: anime.genre || null,
                         category: anime.category || 'Movies',
                         is_featured: anime.is_featured || false,
+                        episode_links: anime.episode_links || [],
                     }])
                     .select();
 

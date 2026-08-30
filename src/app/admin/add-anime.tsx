@@ -96,12 +96,14 @@ export default function AddAnimeScreen() {
 
     setLoading(true);
 
+    const validLinks = episodeLinks.filter(e => e.url.trim().length > 0);
     const result = await addAnime({
       title: title.trim(),
       description: description.trim() || undefined,
       image_url: imageUrl.trim() || undefined,
+      video_asset_key: validLinks.length > 0 ? validLinks[0].url : undefined,
       episodes: epsNum,
-      episode_links: episodeLinks.filter(e => e.url.trim().length > 0),
+      episode_links: validLinks,
       genre: genre.trim() || undefined,
       category: category,
       is_featured: isFeatured,

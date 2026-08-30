@@ -31,10 +31,8 @@ async function callAdminOperation<T>(
             };
         }
 
-        // Bypass the network call to prevent CORS console errors in local demo mode
-        if (SUPABASE_URL.includes('zkbprmyxwjfznsucyuvi')) {
-             throw new Error('Edge functions not deployed in demo mode');
-        }
+        // Edge functions can be called directly
+
 
         // Call the Edge Function using Supabase client to automatically handle CORS and API keys
         const { data, error: invokeError } = await supabase.functions.invoke('admin-operations', {
@@ -112,20 +110,8 @@ export async function addAnime(anime: {
     try {
         const videoValue = anime.video_asset_key || null;
 
-        // Also insert into local Docker PostgreSQL database
-        try {
-            await dockerDb.from('anime').insert({
-                title: anime.title,
-                description: anime.description || null,
-                image_url: anime.image_url || null,
-                episodes: anime.episodes || 1,
-                genre: anime.genre || null,
-                category: anime.category || 'Anime Series',
-                is_featured: anime.is_featured ?? false,
-            });
-        } catch (dockerInsertErr: any) {
-            console.warn(`Docker anime insert failed:`, dockerInsertErr);
-        }
+        // The local Docker database insert has been removed because dockerDb is now pointing
+        // to the exact same cloud Supabase instance, which was causing duplicate posts.
 
         // Attempt 1: Standard video_url field in Supabase
         let { data, error } = await supabase
@@ -139,6 +125,7 @@ export async function addAnime(anime: {
                 genre: anime.genre || null,
                 category: anime.category || 'Anime Series',
                 is_featured: anime.is_featured ?? false,
+                episode_links: anime.episode_links || [],
             })
             .select()
             .single();
@@ -156,6 +143,7 @@ export async function addAnime(anime: {
                     genre: anime.genre || null,
                     category: anime.category || 'Anime Series',
                     is_featured: anime.is_featured ?? false,
+                    episode_links: anime.episode_links || [],
                 })
                 .select()
                 .single();
@@ -179,6 +167,7 @@ export async function addAnime(anime: {
                     genre: anime.genre || null,
                     category: anime.category || 'Anime Series',
                     is_featured: anime.is_featured ?? false,
+                    episode_links: anime.episode_links || [],
                 })
                 .select()
                 .single();
@@ -197,9 +186,16 @@ export async function addAnime(anime: {
         if (error) {
             const edgeResult = await callAdminOperation('add_anime', { anime });
             if (edgeResult.success && edgeResult.data) {
-                const dataId = (edgeResult.data as any).id;
-                await saveEditedMediaOverride(dataId, edgeResult.data);
-                return edgeResult;
+                // edgeResult.data might be an array if the Edge function returned raw Supabase insert result
+                const insertedData = Array.isArray(edgeResult.data) ? edgeResult.data[0] : edgeResult.data;
+                const dataId = insertedData?.id;
+                
+                if (dataId) {
+                    // Merge episode_links into the local override so the UI can play the video,
+                    // even if the Edge function hasn't been updated to insert them into Supabase yet.
+                    await saveEditedMediaOverride(dataId, { ...insertedData, episode_links: anime.episode_links });
+                }
+                return { success: true, data: insertedData };
             } else if (edgeResult.success) {
                 return edgeResult; // Fallback if data is missing
             }
@@ -259,12 +255,7 @@ export async function deleteAnime(
             console.warn(`Comment cleanup failed:`, commentDeleteErr);
         }
 
-        // 3. Perform direct database delete on both Supabase and Docker PostgreSQL
-        try {
-            await dockerDb.from('anime').delete().eq('id', animeId);
-        } catch (dockerDelErr: any) {
-            console.warn(`Docker anime delete failed:`, dockerDelErr);
-        }
+        // 3. Perform direct database delete on Supabase
 
         const { error } = await supabase
             .from('anime')

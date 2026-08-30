@@ -8,15 +8,13 @@ import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isKnownDisposableEmail, isValidEmail, normalizeEmail, PASSWORD_REQUIREMENTS, validatePassword } from '@/lib/password';
@@ -90,18 +88,15 @@ export default function SignUpScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}
-    >
-      <ScrollView
+    <View style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}>
+      <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scroll,
           (isDesktop || isTablet) && styles.scrollCentered,
         ]}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        contentInsetAdjustmentBehavior="automatic"
+        enableOnAndroid={true}
+        extraScrollHeight={20}
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
           {/* 🌐 Top Right Language Switcher on First Screen */}
@@ -184,7 +179,7 @@ export default function SignUpScreen() {
               <TextInput
                 ref={passwordInput}
                 style={[styles.passwordInput, { color: themeColors.text }, isRTL && { textAlign: 'right' }]}
-                placeholder={`${t('password', 'Password')} (5+ chars, number, symbol)`}
+                placeholder={t('password', 'Password')}
                 secureTextEntry={!showPassword}
                 placeholderTextColor={themeColors.textSecondary}
                 value={password}
@@ -255,8 +250,8 @@ export default function SignUpScreen() {
             </Pressable>
           </View>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
@@ -267,6 +262,7 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     padding: 24,
+    paddingBottom: 80,
     justifyContent: 'center',
   },
   scrollCentered: {
@@ -360,6 +356,7 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingHorizontal: 16,
     fontSize: 15,
+    textAlignVertical: 'center',
   },
   eyeButton: {
     paddingHorizontal: 14,

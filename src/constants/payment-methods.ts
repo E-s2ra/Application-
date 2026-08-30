@@ -76,8 +76,8 @@ export type ContactPaymentConfig = {
 export const OFFICIAL_CONTACT_CHANNELS = {
   whatsappNumber: '9647824076461',
   whatsappDisplay: '+964 782 407 6461',
-  telegramUsername: 'AniFlixSupport',
-  telegramDisplay: '@AniFlixSupport',
+  telegramUsername: 'esmahil219',
+  telegramDisplay: '@esmahil219',
 };
 
 export function createWhatsAppVipMessage(planName: string, priceIQD: number, userEmail?: string): string {

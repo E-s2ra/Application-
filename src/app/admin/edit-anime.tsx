@@ -147,12 +147,14 @@ export default function EditAnimeScreen() {
 
     setSaving(true);
 
+    const validLinks = episodeLinks.filter(e => e.url.trim().length > 0);
     const result = await updateAnime(id as string, {
       title: title.trim(),
       description: description.trim() || null,
       image_url: imageUrl.trim() || null,
+      video_asset_key: validLinks.length > 0 ? validLinks[0].url : null,
       episodes: epsNum,
-      episode_links: episodeLinks.filter(e => e.url.trim().length > 0),
+      episode_links: validLinks,
       genre: genre.trim() || null,
       category: category,
       is_featured: isFeatured,

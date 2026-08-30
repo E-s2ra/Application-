@@ -6,12 +6,10 @@ import {
   View,
   Pressable,
   Text,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
-  ScrollView,
   Image,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
@@ -54,18 +52,15 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}
-    >
-      <ScrollView
+    <View style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}>
+      <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scrollContent,
           (isDesktop || isTablet) && styles.scrollContentCentered,
         ]}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        contentInsetAdjustmentBehavior="automatic"
+        enableOnAndroid={true}
+        extraScrollHeight={20}
       >
         <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
           {/* 🌐 Top Right Language Switcher on First Screen */}
@@ -189,8 +184,8 @@ export default function LoginScreen() {
             </Pressable>
           </View>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
@@ -201,6 +196,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 24,
+    paddingBottom: 80,
     justifyContent: 'center',
   },
   scrollContentCentered: {
@@ -279,6 +275,7 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingHorizontal: 16,
     fontSize: 15,
+    textAlignVertical: 'center',
   },
   eyeButton: {
     paddingHorizontal: 14,

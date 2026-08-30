@@ -43,7 +43,6 @@ import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 import { AdMobBanner } from '@/components/AdMobBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
-import { NotificationsBell } from '@/components/NotificationsBell';
 import { useSidebar } from './_layout';
 
 export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: string }[] = [
@@ -392,7 +391,7 @@ export default function HomeScreen() {
     >
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
         {/* Top Brand Bar */}
-        <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
+        <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 36) + 16 }]}>
           <View style={styles.brandRow}>
             {!isDesktop && (
               <Pressable onPress={openSidebar} style={{ marginRight: 12 }}>
@@ -428,8 +427,6 @@ export default function HomeScreen() {
                 {isVIP ? `VIP (${vipDaysRemaining} ${t('days', 'd')})` : 'VIP'}
               </Text>
             </Pressable>
-
-            <NotificationsBell />
           </View>
         </View>
 
