@@ -34,9 +34,8 @@ import {
   Crown,
   Menu,
 } from 'lucide-react-native';
-import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
-import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
+import { MediaService } from '@/services/media.service';
 import { useGamification } from '@/hooks/useGamification';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
@@ -107,48 +106,11 @@ export default function HomeScreen() {
 
   const fetchMedia = async () => {
     try {
-      const [deletedIds, overrides] = await Promise.all([
-        getDeletedMediaIds(),
-        getEditedMediaOverrides(),
-      ]);
-
-      const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
-        setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 1500)
-      );
-
-      const fetchPromise = supabase
-        .from('anime')
-        .select('id, title, description, image_url, episodes, genre, category, is_featured, created_at')
-        .order('created_at', { ascending: false });
-
-      const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
-      const { data, error } = result || {};
-      let combined: AnimeItem[] = [];
-      const deleted = deletedIds.map(String);
-      const safeData = (!error && data) ? data : [];
-      
-      const customItems = safeData
-        .filter((item: any) => !deleted.includes(String(item.id)))
-        .map((item: any) => ({
-          ...item,
-          category: item.category || 'Anime Series',
-          published_at: item.published_at || item.created_at || null,
-          ...(overrides[String(item.id)] || {}),
-        })) as AnimeItem[];
-        
-      const defaultItems = DEFAULT_CATALOG
-        .filter((d) => !deleted.includes(String(d.id)))
-        .map((d) => ({ ...d, ...(overrides[String(d.id)] || {}) }));
-        
-      const newLocalItems = Object.values(overrides)
-        .filter((override: any) => !deleted.includes(String(override.id)) && !safeData.some((d: any) => String(d.id) === String(override.id)) && !DEFAULT_CATALOG.some(d => String(d.id) === String(override.id))) as AnimeItem[];
-
-      combined = [...newLocalItems, ...customItems, ...defaultItems];
-
-      setAllMedia(combined);
+      const items = await MediaService.getCatalog(0);
+      setAllMedia(items);
     } catch (err) {
-      console.warn('Error fetching media:', err);
-      setAllMedia(DEFAULT_CATALOG);
+      console.warn('[HomeScreen] fetchMedia error:', err);
+      setAllMedia([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -3,11 +3,6 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, updateAnimeFeatured, callAdminOperation } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
-import {
-  getPendingManualPayments,
-  approveManualPayment,
-  rejectManualPayment,
-} from '@/lib/rasedi-payment';
 import { router, useRouter, useFocusEffect } from 'expo-router';
 import {
   ArrowLeft,
@@ -110,7 +105,8 @@ export default function AdminPanelScreen() {
           .order('created_at', { ascending: false }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
         supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-        getPendingManualPayments(),
+        // Pending manual payments are no longer tracked — VIP is granted directly by admin
+        Promise.resolve([]),
       ];
 
       promises.push(
@@ -147,49 +143,16 @@ export default function AdminPanelScreen() {
       if (typeof vips === 'number') setVipCount(vips);
       if (typeof payments === 'number') setPaymentsCount(payments);
       setPendingPayments(pending || []);
-    } catch (_e) {
+    } catch (e) {
+      console.warn('[Admin] fetchAnime error:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const handleApprovePayment = async (item: any) => {
-    setActionLoadingId(item.id);
-    const res = await approveManualPayment(item.id);
-    setActionLoadingId(null);
-
-    if (res.success) {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(`VIP Approved successfully for ${item.metadata?.user_email || 'User'}!`);
-      } else {
-        Alert.alert('Success', `VIP Approved successfully!`);
-      }
-      fetchAnime();
-    } else {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(res.error || 'Failed to approve payment.');
-      } else {
-        Alert.alert('Error', res.error || 'Failed to approve payment.');
-      }
-    }
-  };
-
-  const handleRejectPayment = async (item: any) => {
-    setActionLoadingId(item.id);
-    const res = await rejectManualPayment(item.id);
-    setActionLoadingId(null);
-
-    if (res.success) {
-      fetchAnime();
-    } else {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(res.error || 'Failed to reject payment.');
-      } else {
-        Alert.alert('Error', res.error || 'Failed to reject payment.');
-      }
-    }
-  };
+  // Payment approval/rejection removed — VIP is now granted directly via the Instant VIP Grant form.
+  // Admin receives WhatsApp/Telegram message → opens admin panel → types user email → clicks Grant VIP.
 
   useFocusEffect(
     useCallback(() => {

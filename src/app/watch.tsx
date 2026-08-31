@@ -78,7 +78,10 @@ export default function WatchScreen() {
         const reward = await awardWatchTimeReward(1);
         setEarnedNotification(`Watching AniFlix: +${reward.coins} Coins & +${reward.xp} XP`);
         setTimeout(() => setEarnedNotification(null), 4000);
-      } catch {}
+      } catch (err) {
+        // Non-critical: reward failure should not interrupt playback
+        if (__DEV__) console.warn('[Watch] Watch-to-earn reward error:', err);
+      }
     }, 45000);
 
     return () => clearInterval(interval);
@@ -102,7 +105,10 @@ export default function WatchScreen() {
     // Keep playbackRate synced
     try {
       player.playbackRate = playbackSpeed;
-    } catch {}
+  } catch (err) {
+    // Non-critical: playback speed sync may fail on some platforms
+    if (__DEV__) console.warn('[Watch] playbackRate sync error:', err);
+  }
   }, [playbackSpeed, player]);
 
   useEffect(() => {

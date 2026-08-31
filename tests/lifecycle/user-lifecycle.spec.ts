@@ -1,144 +1,172 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
-test.describe('Real User Lifecycle E2E Test Suite', () => {
+/**
+ * Real User Lifecycle E2E Test Suite
+ *
+ * Tests the full manual VIP grant flow:
+ *   1. Register a new user
+ *   2. Verify they start with no VIP
+ *   3. Admin logs in and grants VIP via the admin panel
+ *   4. User logs back in and VIP is visible on their profile
+ *
+ * Prerequisites:
+ *   Set PLAYWRIGHT_ADMIN_EMAIL and PLAYWRIGHT_ADMIN_PASSWORD in your .env.test file.
+ *   Run: PLAYWRIGHT_ADMIN_EMAIL=... PLAYWRIGHT_ADMIN_PASSWORD=... npx playwright test
+ */
+
+const ADMIN_EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL || '';
+const ADMIN_PASSWORD = process.env.PLAYWRIGHT_ADMIN_PASSWORD || '';
+
+/** Fills a form input that matches any of the provided placeholders */
+async function fillInput(page: Page, placeholders: string[], value: string, timeout = 8000): Promise<void> {
+  const selectors = placeholders.map((p) => `input[placeholder*="${p}"]`).join(', ');
+  const input = page.locator(selectors).first();
+  await input.waitFor({ state: 'visible', timeout });
+  await input.fill(value);
+}
+
+/** Clears auth state stored in localStorage and reloads to a given path */
+async function clearSessionAndGoto(page: Page, path: string): Promise<void> {
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  await page.goto(path);
+}
+
+test.describe('Real User Lifecycle E2E', () => {
   const timestamp = Date.now();
   const testUser = {
     fullName: `E2E Tester ${timestamp}`,
     email: `e2e_user_${timestamp}@gmail.com`,
-    password: `E2EPass123!`,
-  };
-  const adminUser = {
-    email: process.env.PLAYWRIGHT_ADMIN_EMAIL || '',
-    password: process.env.PLAYWRIGHT_ADMIN_PASSWORD || '',
+    password: 'E2EPass123!',
   };
 
-  test('Full User Lifecycle: Registration -> Normal Features -> Admin VIP Grant -> VIP Unlocked', async ({ page }) => {
-    test.setTimeout(120000); // 2 minute test budget for complete E2E lifecycle
+  test.beforeAll(() => {
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      console.warn(
+        '[Lifecycle] Skipping: Set PLAYWRIGHT_ADMIN_EMAIL and PLAYWRIGHT_ADMIN_PASSWORD env vars to run this test.'
+      );
+    }
+  });
 
-    if (!adminUser.email || !adminUser.password) {
-      test.skip(true, 'Admin credentials not set. Set PLAYWRIGHT_ADMIN_EMAIL and PLAYWRIGHT_ADMIN_PASSWORD env vars.');
+  test('Full lifecycle: Register → verify no-VIP → admin grants VIP → user sees VIP', async ({ page }) => {
+    test.setTimeout(150_000);
+
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      test.skip(true, 'Admin credentials not set in env vars.');
       return;
     }
 
-    // ==========================================
-    // STEP 1: REGISTER FRESH NEW USER ACCOUNT
-    // ==========================================
-    console.log(`[Lifecycle Step 1] Registering fresh user: ${testUser.email}`);
+    // ──────────────────────────────────────────────────────────────
+    // STEP 1: Register a fresh user
+    // ──────────────────────────────────────────────────────────────
+    console.log(`[Step 1] Registering: ${testUser.email}`);
     await page.goto('/signup');
-    await page.waitForTimeout(2000);
 
-    const nameInput = page.locator('input[placeholder*="Full Name"]').or(page.locator('input[placeholder*="Name"]').first());
-    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
-    await nameInput.fill(testUser.fullName);
+    await fillInput(page, ['Full Name', 'Name'], testUser.fullName);
+    await fillInput(page, ['Email'], testUser.email);
 
-    const signupEmailInput = page.locator('input[placeholder*="Email"]').or(page.locator('input[type="email"]').first());
-    await signupEmailInput.fill(testUser.email);
+    // Fill password fields (first = password, second = confirm)
+    const passwordInputs = page.locator('input[type="password"]');
+    await passwordInputs.nth(0).fill(testUser.password);
+    await passwordInputs.nth(1).fill(testUser.password);
 
-    const signupPasswordInput = page.locator('input[placeholder*="Password"]').first();
-    await signupPasswordInput.fill(testUser.password);
+    await page.getByRole('button', { name: /create aniflix account/i }).click();
 
-    const signupConfirmInput = page.locator('input[placeholder*="Confirm"]').first();
-    await signupConfirmInput.fill(testUser.password);
+    // Wait for navigation to the home/tabs screen (not a timeout)
+    await page.waitForURL(/tabs|home/, { timeout: 15_000 });
+    console.log(`[Step 1] ✅ Registration successful, URL: ${page.url()}`);
 
-    const submitBtn = page.getByRole('button', { name: /create aniflix account/i }).or(page.locator('text=Create AniFlix Account'));
-    await submitBtn.click();
-
-    await page.waitForTimeout(4000);
-
-    const afterSignUpBody = await page.innerText('body');
-    console.log(`[Lifecycle Step 1] Registration response received`);
-    const isSignedUp = page.url().includes('tabs') || afterSignUpBody.includes('Account created') || afterSignUpBody.includes('Home') || afterSignUpBody.includes(testUser.fullName);
-    expect(isSignedUp).toBeTruthy();
-
-    // ==========================================
-    // STEP 2: VERIFY INITIAL NORMAL USER STATE (NO VIP)
-    // ==========================================
-    console.log(`[Lifecycle Step 2] Verifying initial user state on profile (No VIP)`);
+    // ──────────────────────────────────────────────────────────────
+    // STEP 2: Verify user starts without VIP
+    // ──────────────────────────────────────────────────────────────
+    console.log('[Step 2] Checking initial user state (should have no VIP)');
     await page.goto('/(tabs)/profile');
-    await page.waitForTimeout(2500);
+    await page.waitForLoadState('networkidle');
 
-    const profileTextBefore = await page.innerText('body');
-    // Fresh normal user MUST show "STANDARD STREAMER" badge and NOT "VIP SOVEREIGN · ACTIVE"
-    expect(profileTextBefore).toContain('STANDARD STREAMER');
-    expect(profileTextBefore).not.toContain('VIP SOVEREIGN · ACTIVE');
-    console.log(`[Lifecycle Step 2] Pre-VIP verification passed for ${testUser.email}`);
+    const profileBodyBefore = await page.locator('body').innerText();
+    expect(profileBodyBefore).toContain('STANDARD STREAMER');
+    expect(profileBodyBefore).not.toContain('VIP SOVEREIGN');
+    console.log('[Step 2] ✅ No VIP confirmed for new user');
 
-    // ==========================================
-    // STEP 3: CLEAR SESSION & LOG IN AS ADMIN
-    // ==========================================
-    console.log(`[Lifecycle Step 3] Clearing user session to log in as Admin: ${adminUser.email}`);
-    await page.evaluate(() => localStorage.clear());
-    await page.goto('/(auth)/login');
-    await page.waitForTimeout(2000);
+    // ──────────────────────────────────────────────────────────────
+    // STEP 3: Switch to admin session
+    // ──────────────────────────────────────────────────────────────
+    console.log(`[Step 3] Logging in as admin: ${ADMIN_EMAIL}`);
+    await clearSessionAndGoto(page, '/(auth)/login');
 
-    const adminEmailInput = page.locator('input[placeholder*="Email"]').or(page.locator('input[type="email"]').first());
-    await adminEmailInput.waitFor({ state: 'visible', timeout: 5000 });
-    await adminEmailInput.fill(adminUser.email);
+    await fillInput(page, ['Email'], ADMIN_EMAIL);
+    await fillInput(page, ['Password'], ADMIN_PASSWORD);
+    await page.getByRole('button', { name: /sign in/i }).click();
 
-    const adminPasswordInput = page.locator('input[placeholder*="Password"]').or(page.locator('input[type="password"]').first());
-    await adminPasswordInput.fill(adminUser.password);
-
-    const signInBtn = page.getByText('Sign In', { exact: true }).or(page.locator('text="Sign In"'));
-    await signInBtn.first().click();
-    await page.waitForTimeout(5000); // Allow Supabase Auth token exchange for Admin
-
-    // Navigate to Admin Dashboard
+    // Wait for the admin panel to load (confirms admin auth worked)
     await page.goto('/admin');
-    await page.waitForTimeout(3000);
+    await page.waitForSelector('text=/Admin Panel|Media Catalog|VIP Approvals/i', { timeout: 15_000 });
+    console.log('[Step 3] ✅ Admin panel loaded');
 
-    const adminBodyText = await page.innerText('body');
-    expect(adminBodyText).toMatch(/Admin Panel|Media Catalog|VIP Approvals/i);
-    console.log(`[Lifecycle Step 3] Admin dashboard loaded`);
+    // ──────────────────────────────────────────────────────────────
+    // STEP 4: Grant VIP to the test user
+    // ──────────────────────────────────────────────────────────────
+    console.log(`[Step 4] Granting 30-day VIP to: ${testUser.email}`);
 
-    // ==========================================
-    // STEP 4: FIND EXACT USER & GRANT VIP VIA ADMIN
-    // ==========================================
-    console.log(`[Lifecycle Step 4] Admin granting 30-Day VIP to: ${testUser.email}`);
+    // Click into VIP Approvals tab if visible
     const vipTab = page.locator('text=VIP Approvals').first();
-    if (await vipTab.isVisible()) {
+    if (await vipTab.isVisible({ timeout: 3000 }).catch(() => false)) {
       await vipTab.click();
-      await page.waitForTimeout(1000);
     }
 
-    const grantEmailInput = page.locator('input[placeholder*="user@gmail.com"]').or(page.locator('input[placeholder*="Email"]').first());
-    await grantEmailInput.waitFor({ state: 'visible', timeout: 5000 });
-    await grantEmailInput.fill(testUser.email);
+    await fillInput(page, ['user@gmail.com', 'Email', 'email'], testUser.email);
 
-    const grantVipBtn = page.locator('text=Approve & Activate VIP Access').or(page.locator('text=Grant VIP').first());
-    await grantVipBtn.click();
+    const grantBtn = page.locator('text=/Approve.*VIP|Grant VIP/i').first();
+    await grantBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await grantBtn.click();
 
-    await page.waitForTimeout(4000);
-    console.log(`[Lifecycle Step 4] VIP Grant action completed for ${testUser.email}`);
+    // Wait for success feedback (alert text or banner)
+    await page.waitForSelector('text=/VIP activated|success/i', { timeout: 15_000 });
+    console.log('[Step 4] ✅ VIP grant confirmed');
 
-    // ==========================================
-    // STEP 5: CLEAR ADMIN SESSION & RE-LOGIN AS SAME USER
-    // ==========================================
-    console.log(`[Lifecycle Step 5] Clearing Admin session & re-logging in as original user: ${testUser.email}`);
-    await page.evaluate(() => localStorage.clear());
-    await page.goto('/(auth)/login');
-    await page.waitForTimeout(2000);
+    // ──────────────────────────────────────────────────────────────
+    // STEP 5: Switch back to the test user's session
+    // ──────────────────────────────────────────────────────────────
+    console.log(`[Step 5] Re-logging in as: ${testUser.email}`);
+    await clearSessionAndGoto(page, '/(auth)/login');
 
-    const userEmailAgain = page.locator('input[placeholder*="Email"]').or(page.locator('input[type="email"]').first());
-    await userEmailAgain.waitFor({ state: 'visible', timeout: 5000 });
-    await userEmailAgain.fill(testUser.email);
+    await fillInput(page, ['Email'], testUser.email);
+    await fillInput(page, ['Password'], testUser.password);
+    await page.getByRole('button', { name: /sign in/i }).click();
 
-    const userPassAgain = page.locator('input[placeholder*="Password"]').or(page.locator('input[type="password"]').first());
-    await userPassAgain.fill(testUser.password);
+    await page.waitForURL(/tabs|home/, { timeout: 15_000 });
+    console.log('[Step 5] ✅ User re-authenticated');
 
-    await signInBtn.first().click();
-    await page.waitForTimeout(4000);
-    console.log(`[Lifecycle Step 5] Original user re-authenticated`);
-
-    // ==========================================
-    // STEP 6: VERIFY USER RECEIVED VIP ACCESS
-    // ==========================================
-    console.log(`[Lifecycle Step 6] Verifying user VIP status post-elevation`);
+    // ──────────────────────────────────────────────────────────────
+    // STEP 6: Confirm VIP is visible on the user's profile
+    // ──────────────────────────────────────────────────────────────
+    console.log('[Step 6] Verifying VIP status on profile');
     await page.goto('/(tabs)/profile');
-    await page.waitForTimeout(2500);
+    await page.waitForLoadState('networkidle');
 
-    const profileTextAfter = await page.innerText('body');
-    const hasVipUnlocked = profileTextAfter.includes('VIP SOVEREIGN · ACTIVE') || profileTextAfter.includes('unlocked') || profileTextAfter.includes('VIP');
-    expect(hasVipUnlocked).toBeTruthy();
-    console.log(`[Lifecycle Step 6] VIP Access confirmed on User Profile!`);
+    const profileBodyAfter = await page.locator('body').innerText();
+    const hasVip =
+      profileBodyAfter.includes('VIP SOVEREIGN') ||
+      profileBodyAfter.includes('VIP · ACTIVE') ||
+      profileBodyAfter.includes('VIP Sovereign');
+    expect(hasVip).toBeTruthy();
+    console.log('[Step 6] ✅ VIP access confirmed on user profile!');
+
+    // ──────────────────────────────────────────────────────────────
+    // STEP 7: Persistence check — reload and confirm VIP is still active
+    // ──────────────────────────────────────────────────────────────
+    console.log('[Step 7] Reloading page to verify VIP persists across refresh');
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    const profileBodyReloaded = await page.locator('body').innerText();
+    const vipPersisted =
+      profileBodyReloaded.includes('VIP SOVEREIGN') ||
+      profileBodyReloaded.includes('VIP · ACTIVE') ||
+      profileBodyReloaded.includes('VIP Sovereign');
+    expect(vipPersisted).toBeTruthy();
+    console.log('[Step 7] ✅ VIP status persists after page reload');
   });
 });

@@ -258,7 +258,6 @@ export async function updateAnime(
         description?: string | null;
         image_url?: string | null;
         video_asset_key?: string | null;
-        video_url?: string | null;
         episodes?: number;
         genre?: string | null;
         category?: string;
@@ -269,50 +268,30 @@ export async function updateAnime(
     // 1. Instantly save to persistent overrides so it updates everywhere in the UI
     await saveEditedMediaOverride(animeId, updates);
 
-    // If this is a local-only item, we are done! It doesn't exist in Supabase so don't try to update it there.
+    // Local-only items (not in DB) — nothing more to do
     if (String(animeId).startsWith('local_') || String(animeId).startsWith('debug_')) {
         return { success: true, data: { id: animeId, ...updates } };
     }
 
     try {
-        const videoVal = updates.video_asset_key ?? updates.video_url;
-        const cleanUpdates: Record<string, any> = {
-            ...updates,
-            updated_at: new Date().toISOString(),
-        };
-
-        if (videoVal !== undefined) {
-            cleanUpdates.video_url = videoVal;
-            delete cleanUpdates.video_asset_key;
-        }
-
-        let { data, error } = await supabase
+        // After migration 20260831030000 both video_url and video_asset_key exist in DB
+        // and are kept in sync by the trg_sync_video_columns trigger. We just set one.
+        const { data, error } = await supabase
             .from('anime')
-            .update(cleanUpdates)
+            .update({ ...updates, updated_at: new Date().toISOString() })
             .eq('id', animeId)
             .select()
             .single();
 
-        if (error && (error.message.includes('video_url') || error.message.includes('schema cache'))) {
-            cleanUpdates.video_asset_key = videoVal;
-            delete cleanUpdates.video_url;
-            const retry = await supabase
-                .from('anime')
-                .update(cleanUpdates)
-                .eq('id', animeId)
-                .select()
-                .single();
-            data = retry.data;
-            error = retry.error;
-        }
-
         if (error) {
+            // Fall through to Edge Function which runs as service-role and bypasses RLS
             const edgeResult = await callAdminOperation('update_anime', { anime: { id: animeId, ...updates } });
             if (edgeResult.success) return edgeResult;
+            return { success: false, error: error.message };
         }
         return { success: true, data };
     } catch (e: any) {
-        console.warn('updateAnime error:', e);
+        console.warn('[admin-operations] updateAnime error:', e);
         return { success: false, error: e.message || 'Failed to update media' };
     }
 }
