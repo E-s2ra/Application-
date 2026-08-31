@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
   StyleSheet,
@@ -10,7 +10,6 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Animated,
   Platform,
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,27 +32,27 @@ import {
   Globe,
   Crown,
   Menu,
+  Coins,
 } from 'lucide-react-native';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { MediaService } from '@/services/media.service';
 import { useGamification } from '@/hooks/useGamification';
+import { GlobalNavbar } from '@/components/GlobalNavbar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useSidebar } from '@/context/SidebarContext';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 import { AdMobBanner } from '@/components/AdMobBanner';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useResponsive } from '@/hooks/useResponsive';
-import { useSidebar } from './_layout';
 
-export const CATEGORIES: { id: 'All' | MediaCategory; label: string }[] = [
-  { id: 'All', label: 'All' },
-  { id: 'Movies', label: 'Movies' },
-  { id: 'Anime Movies', label: 'Anime Movies' },
-  { id: 'K-Drama', label: 'K-Drama' },
-  { id: 'Drama', label: 'Drama' },
-  { id: 'Anime Series', label: 'Anime Series' },
+export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: any }[] = [
+  { id: 'All', label: 'All', icon: Compass },
+  { id: 'Movies', label: 'Movies', icon: Film },
+  { id: 'Anime Movies', label: 'Anime Movies', icon: Clapperboard },
+  { id: 'K-Drama', label: 'K-Drama', icon: Tv },
+  { id: 'Drama', label: 'Drama', icon: Flame },
+  { id: 'Anime Series', label: 'Anime Series', icon: Sparkles },
 ];
-
-const GENRES = ['All', 'Trending', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
 const PLACEHOLDER_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
@@ -67,10 +66,10 @@ export const DEFAULT_CATALOG: AnimeItem[] = [];
 export default function HomeScreen() {
   const router = useRouter();
   const themeColors = useTheme();
-  const { t, language, toggleLanguage } = useLanguage();
-  const insets = useSafeAreaInsets();
+  const { t, language } = useLanguage();
+  const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { coins, streakDays, level, activeEvent, isVIP, vipDaysRemaining } = useGamification();
+  const { coins, streakDays, isVIP, vipDaysRemaining } = useGamification();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
   const {
@@ -82,17 +81,19 @@ export default function HomeScreen() {
     maxContentWidth,
     isDesktop,
     isTablet,
+    width,
   } = useResponsive();
   
   const { openSidebar } = useSidebar();
 
   const [allMedia, setAllMedia] = useState<AnimeItem[]>(DEFAULT_CATALOG);
   const [activeCategory, setActiveCategory] = useState<'All' | MediaCategory>('All');
-  const [activeGenre, setActiveGenre] = useState<string>('All');
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
-  const [fadeAnim] = useState(new Animated.Value(1));
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const heroFlatListRef = useRef<FlatList>(null);
+  const heroWidth = Math.min(width - 24, maxContentWidth - 24);
 
   const getCategoryLabel = (id: string, defaultLabel: string) => {
     if (id === 'All') return t('catAll', defaultLabel);
@@ -107,7 +108,15 @@ export default function HomeScreen() {
   const fetchMedia = async () => {
     try {
       const items = await MediaService.getCatalog(0);
-      setAllMedia(items);
+      const seenIds = new Set<string>();
+      const uniqueItems: AnimeItem[] = [];
+      items.forEach((item) => {
+        if (item && item.id && !seenIds.has(String(item.id))) {
+          seenIds.add(String(item.id));
+          uniqueItems.push(item);
+        }
+      });
+      setAllMedia(uniqueItems);
     } catch (err) {
       console.warn('[HomeScreen] fetchMedia error:', err);
       setAllMedia([]);
@@ -132,13 +141,7 @@ export default function HomeScreen() {
   // Featured Carousel List
   const featured = categoryFiltered.filter((a) => a.is_featured).length > 0
     ? categoryFiltered.filter((a) => a.is_featured)
-    : categoryFiltered.slice(0, 4);
-
-  // Genre filtered media
-  const genreFiltered = categoryFiltered.filter((item) => {
-    if (activeGenre === 'All' || activeGenre === 'Trending') return true;
-    return item.genre?.toLowerCase().includes(activeGenre.toLowerCase());
-  });
+    : categoryFiltered.slice(0, 5);
 
   // Rails by Category
   const moviesRail = allMedia.filter((item) => item.category === 'Movies');
@@ -146,60 +149,26 @@ export default function HomeScreen() {
   const kdramaRail = allMedia.filter((item) => item.category === 'K-Drama');
   const dramaRail = allMedia.filter((item) => item.category === 'Drama');
   const animeSeriesRail = allMedia.filter((item) => item.category === 'Anime Series');
-  const newProducts = allMedia
-    .filter((item) => {
-      const pubDate = item.published_at || (item as any).created_at;
-      if (!pubDate) return false;
-      const publishedAt = new Date(pubDate).getTime();
-      const now = new Date().getTime();
-      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-      return Number.isFinite(publishedAt) && publishedAt >= thirtyDaysAgo;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.published_at || (a as any).created_at || 0).getTime();
-      const dateB = new Date(b.published_at || (b as any).created_at || 0).getTime();
-      return dateB - dateA;
-    })
-    .slice(0, 12);
 
-  // Auto-sliding Hero timer: 4 seconds
+  // Auto-sliding Hero timer: 5 seconds
   useEffect(() => {
     if (featured.length <= 1) return;
 
-    const isNativeDriver = Platform.OS !== 'web';
-
     const timer = setInterval(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0.2,
-        duration: 300,
-        useNativeDriver: isNativeDriver,
-      }).start(() => {
-        setCurrentHeroIndex((prev) => (prev + 1) % featured.length);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: isNativeDriver,
-        }).start();
+      setCurrentHeroIndex((prev) => {
+        const nextIndex = (prev + 1) % featured.length;
+        heroFlatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+        return nextIndex;
       });
-    }, 4000);
+    }, 5000);
 
     return () => clearInterval(timer);
-  }, [featured, fadeAnim]);
+  }, [featured.length]);
 
   const goToSlide = (newIndex: number) => {
-    const isNativeDriver = Platform.OS !== 'web';
-    Animated.timing(fadeAnim, {
-      toValue: 0.2,
-      duration: 200,
-      useNativeDriver: isNativeDriver,
-    }).start(() => {
-      setCurrentHeroIndex(newIndex);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: isNativeDriver,
-      }).start();
-    });
+    if (newIndex < 0 || newIndex >= featured.length) return;
+    setCurrentHeroIndex(newIndex);
+    heroFlatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
   };
 
   const nextHero = () => {
@@ -221,17 +190,111 @@ export default function HomeScreen() {
     router.push({ pathname: '/watch', params: { id } });
   };
 
-  const activeHeroItem = featured[currentHeroIndex] || DEFAULT_CATALOG[0];
-  const activeHeroFavorited = activeHeroItem ? isFavorite(activeHeroItem.id) : false;
+  const renderHeroSlide = ({ item }: { item: AnimeItem }) => {
+    const favorited = isFavorite(item.id);
+    const heroImgUri = item?.image_url && String(item.image_url).trim().length > 0
+      ? String(item.image_url).trim()
+      : PLACEHOLDER_HERO_IMAGES[0];
+
+    return (
+      <View style={[styles.heroSlideItem, { width: heroWidth, height: heroHeight }]}>
+        <Image
+          source={{ uri: heroImgUri }}
+          style={styles.heroBackdrop}
+          resizeMode="cover"
+        />
+        <View style={styles.heroDarkGradient} />
+
+        <View style={[styles.heroContent, isDesktop && styles.heroContentDesktop]}>
+          {/* Badges Row */}
+          <View style={styles.heroBadges}>
+            <View style={[styles.pillBadge, { backgroundColor: themeColors.primary }]}>
+              <PrimaryGradient borderRadius={4} />
+              <Text style={styles.pillBadgeText}>
+                {item.category ? getCategoryLabel(item.category, item.category).toUpperCase() : 'FEATURED'}
+              </Text>
+            </View>
+            <View style={styles.pillGlass}>
+              <Text style={styles.pillGlassText}>4K ULTRA HD</Text>
+            </View>
+            <View style={styles.ratingBadge}>
+              <Star color="#FFB800" size={11} fill="#FFB800" />
+              <Text style={styles.ratingText}>9.8</Text>
+            </View>
+          </View>
+
+          <Text
+            style={[
+              styles.heroTitle,
+              { fontSize: isDesktop ? 34 : isTablet ? 28 : 22 },
+            ]}
+            numberOfLines={2}
+          >
+            {language === 'ku' && item.title_ku ? item.title_ku : item.title}
+          </Text>
+
+          {item.description ? (
+            <Text
+              style={[
+                styles.heroDesc,
+                { maxWidth: isDesktop ? 650 : isTablet ? 500 : undefined },
+              ]}
+              numberOfLines={isDesktop ? 3 : 2}
+            >
+              {language === 'ku' && item.description_ku ? item.description_ku : item.description}
+            </Text>
+          ) : null}
+
+          {/* Action Buttons */}
+          <View style={styles.heroActions}>
+            <Pressable
+              style={[styles.playBtn, { backgroundColor: themeColors.primary }]}
+              onPress={() => handleWatch(item.id)}
+            >
+              <PrimaryGradient borderRadius={8} />
+              <Play color="#FFFFFF" size={16} fill="#FFFFFF" />
+              <Text style={styles.playBtnText}>{t('watchNow', 'Watch Now')}</Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.listBtn,
+                { backgroundColor: favorited ? themeColors.backgroundCard : 'rgba(255,255,255,0.15)', borderColor: themeColors.border },
+              ]}
+              onPress={() => toggleFavorite(item)}
+            >
+              <Heart
+                color={favorited ? themeColors.primary : '#FFFFFF'}
+                fill={favorited ? themeColors.primary : 'none'}
+                size={16}
+              />
+              <Text
+                style={[
+                  styles.listBtnText,
+                  { color: favorited ? themeColors.primary : '#FFFFFF' },
+                ]}
+              >
+                {favorited ? t('inList', 'In My List') : `+ ${t('addToList', 'My List')}`}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   const renderRankedCard = ({ item, index }: { item: AnimeItem; index: number }) => {
     const favorited = isFavorite(item.id);
+    const cardImg = (item?.image_url && String(item.image_url).trim().length > 0)
+      ? String(item.image_url).trim()
+      : PLACEHOLDER_HERO_IMAGES[0];
+
     return (
       <Pressable
-        style={[styles.rankedCardContainer, { width: rankedCardWidth + 24 }]}
+        style={[styles.rankedCardContainer, { width: rankedCardWidth + 28 }]}
         onPress={() => handleWatch(item.id)}
       >
-        <Text style={[styles.rankNumber, { fontSize: isTablet || isDesktop ? 54 : 44 }]}>
+        <Text style={[styles.rankNumber, { fontSize: isTablet || isDesktop ? 56 : 46, color: themeColors.primary }]}>
           {index + 1}
         </Text>
         <View
@@ -239,41 +302,58 @@ export default function HomeScreen() {
             styles.posterCard,
             {
               backgroundColor: themeColors.backgroundCard,
+              borderColor: themeColors.border,
               width: rankedCardWidth,
               height: rankedCardHeight,
             },
           ]}
         >
           <Image
-            source={{ uri: item.image_url || PLACEHOLDER_HERO_IMAGES[0] }}
+            source={{ uri: cardImg }}
             style={styles.posterImage}
             resizeMode="cover"
           />
+          <View style={styles.cardImageOverlay} />
+
           {item.category && (
-            <View style={styles.cardCategoryBadge}>
+            <View style={[styles.cardCategoryBadge, { backgroundColor: themeColors.primary }]}>
+              <PrimaryGradient borderRadius={4} />
               <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
             </View>
           )}
+
           <Pressable
-            style={styles.cardHeartBtn}
+            style={[styles.cardHeartBtn, { backgroundColor: favorited ? 'rgba(3, 86, 197, 0.3)' : 'rgba(0,0,0,0.5)', borderColor: favorited ? themeColors.primary : 'rgba(255,255,255,0.2)' }]}
             onPress={(e) => {
               e.stopPropagation?.();
               toggleFavorite(item);
             }}
           >
             <Heart
-              color={favorited ? '#0356C5' : '#fff'}
-              fill={favorited ? '#0356C5' : 'rgba(0,0,0,0.4)'}
-              size={16}
+              color={favorited ? themeColors.primary : '#FFFFFF'}
+              fill={favorited ? themeColors.primary : 'rgba(0,0,0,0.4)'}
+              size={14}
             />
           </Pressable>
+
+          <View style={styles.centerPlayCircle}>
+            <View style={[styles.playCircleInner, { backgroundColor: themeColors.primary }]}>
+              <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
+            </View>
+          </View>
+
           <View style={styles.cardInfo}>
-            <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
+            <Text style={[styles.cardTitle, { color: '#FFFFFF' }]} numberOfLines={1}>
               {language === 'ku' && item.title_ku ? item.title_ku : item.title}
             </Text>
-            <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-              {item.episodes > 1 ? `${item.episodes} ${t('episodes', 'Episodes')}` : t(item.genre as any, item.genre || '') ?? t('movie', 'Movie')}
-            </Text>
+            <View style={styles.cardMetaRow}>
+              <Star size={10} color="#FFB800" fill="#FFB800" />
+              <Text style={styles.cardRatingText}>9.8</Text>
+              <Text style={styles.cardMetaDot}>·</Text>
+              <Text style={[styles.cardMeta, { color: 'rgba(255,255,255,0.8)' }]} numberOfLines={1}>
+                {item.episodes > 1 ? `${item.episodes} EPS` : item.genre || 'Movie'}
+              </Text>
+            </View>
           </View>
         </View>
       </Pressable>
@@ -282,12 +362,17 @@ export default function HomeScreen() {
 
   const renderStandardCard = ({ item }: { item: AnimeItem }) => {
     const favorited = isFavorite(item.id);
+    const cardImg = (item?.image_url && String(item.image_url).trim().length > 0)
+      ? String(item.image_url).trim()
+      : PLACEHOLDER_HERO_IMAGES[0];
+
     return (
       <Pressable
         style={[
           styles.standardCard,
           {
             backgroundColor: themeColors.backgroundCard,
+            borderColor: themeColors.border,
             width: railCardWidth,
           },
         ]}
@@ -295,41 +380,58 @@ export default function HomeScreen() {
       >
         <View style={[styles.standardImageWrapper, { width: railCardWidth, height: railCardHeight }]}>
           <Image
-            source={{ uri: item.image_url || PLACEHOLDER_HERO_IMAGES[0] }}
+            source={{ uri: cardImg }}
             style={styles.standardImage}
             resizeMode="cover"
           />
+          <View style={styles.cardImageOverlay} />
+
           {item.category && (
-            <View style={styles.cardCategoryBadge}>
+            <View style={[styles.cardCategoryBadge, { backgroundColor: themeColors.primary }]}>
+              <PrimaryGradient borderRadius={4} />
               <Text style={styles.cardCategoryText}>{getCategoryLabel(item.category, item.category).toUpperCase()}</Text>
             </View>
           )}
+
           <Pressable
-            style={styles.cardHeartBtn}
+            style={[styles.cardHeartBtn, { backgroundColor: favorited ? 'rgba(3, 86, 197, 0.3)' : 'rgba(0,0,0,0.5)', borderColor: favorited ? themeColors.primary : 'rgba(255,255,255,0.2)' }]}
             onPress={(e) => {
               e.stopPropagation?.();
               toggleFavorite(item);
             }}
           >
             <Heart
-              color={favorited ? '#0356C5' : '#fff'}
-              fill={favorited ? '#0356C5' : 'rgba(0,0,0,0.4)'}
-              size={16}
+              color={favorited ? themeColors.primary : '#FFFFFF'}
+              fill={favorited ? themeColors.primary : 'rgba(0,0,0,0.4)'}
+              size={14}
             />
           </Pressable>
+
+          <View style={styles.centerPlayCircle}>
+            <View style={[styles.playCircleInner, { backgroundColor: themeColors.primary }]}>
+              <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
+            </View>
+          </View>
+
           <View style={styles.epBadge}>
             <Text style={styles.epBadgeText}>
-              {item.episodes > 1 ? `${item.episodes} ${t('ep', 'EPS')}` : t('movie', 'MOVIE')}
+              {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
             </Text>
           </View>
         </View>
+
         <View style={styles.standardCardInfo}>
           <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
             {language === 'ku' && item.title_ku ? item.title_ku : item.title}
           </Text>
-          <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {t(item.genre as any, item.genre || '') ?? getCategoryLabel(item.category || '', item.category || '') ?? t('movie', 'Stream')}
-          </Text>
+          <View style={styles.cardMetaRow}>
+            <Star size={10} color="#FFB800" fill="#FFB800" />
+            <Text style={[styles.cardRatingText, { color: themeColors.textSecondary }]}>9.8</Text>
+            <Text style={[styles.cardMetaDot, { color: themeColors.textSecondary }]}>·</Text>
+            <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
+              {item.genre || getCategoryLabel(item.category || '', item.category || '') || 'Stream'}
+            </Text>
+          </View>
         </View>
       </Pressable>
     );
@@ -344,188 +446,253 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: themeColors.background }]}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        {/* Top Brand Bar */}
-        <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 36) + 16 }]}>
-          <View style={styles.brandRow}>
-            {!isDesktop && (
-              <Pressable onPress={openSidebar} style={{ marginRight: 12 }}>
-                <Menu color="#fff" size={26} />
-              </Pressable>
-            )}
-            <View style={[styles.brandIcon, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}>
-              <PrimaryGradient borderRadius={8} />
-              <Sparkles color="#fff" size={18} />
-            </View>
-            <Text style={[styles.brandName, { color: themeColors.text }]}>
-              ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
-            </Text>
-          </View>
+    <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+      <GlobalNavbar showBrandLogo={true} />
 
-          {/* Quick Category indicator / tagline on larger screens */}
-          {isDesktop && (
-            <View style={styles.desktopTagline}>
-              <Text style={{ color: themeColors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                {t('desktopTagline', 'Unlimited Anime, Movies, K-Dramas & Series in Ultra HD')}
-              </Text>
-            </View>
-          )}
+      <ScrollView
+        style={[styles.container, { backgroundColor: themeColors.background }]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
 
-          <View style={styles.homeActions}>
-            {/* 👑 VIP Sovereign Subscription Button */}
-            <Pressable
-              style={styles.vipHeaderBtn}
-              onPress={() => setShowVipModal(true)}
-            >
-              <Crown size={15} color="#FFB800" />
-              <Text style={styles.vipHeaderBtnText}>
-                {isVIP ? `VIP (${vipDaysRemaining} ${t('days', 'd')})` : 'VIP'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-
-
-
-
-        {/* 🎬 Animated Auto-Moving Hero Banner */}
-        {featured.length > 0 && (
-          <View style={[styles.heroSection, { height: heroHeight }]}>
-            <Animated.View style={[styles.heroSlide, { height: heroHeight, opacity: fadeAnim }]}>
-              <Image
-                source={{ uri: activeHeroItem.image_url || PLACEHOLDER_HERO_IMAGES[0] }}
-                style={styles.heroBackdrop}
-                resizeMode="cover"
-              />
-              <View style={styles.heroDarkGradient} />
-
-              <View style={[styles.heroContent, isDesktop && styles.heroContentDesktop]}>
-                {/* Badges Row */}
-                <View style={styles.heroBadges}>
-                  <View style={[styles.pillBadge, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}>
-                    <PrimaryGradient borderRadius={20} />
-                    <Text style={styles.pillBadgeText}>
-                      {activeHeroItem.category ? getCategoryLabel(activeHeroItem.category, activeHeroItem.category).toUpperCase() : t('featured', 'FEATURED')}
-                    </Text>
-                  </View>
-                  <View style={styles.pillGlass}>
-                    <Text style={styles.pillGlassText}>4K ULTRA HD</Text>
-                  </View>
-                  <View style={styles.ratingBadge}>
-                    <Star color="#FFB800" size={12} fill="#FFB800" />
-                    <Text style={styles.ratingText}>9.8</Text>
-                  </View>
-                </View>
-
+        {/* 🏷️ Horizontal Category Filter Bar */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryContainer}
+        >
+          {CATEGORIES.map((cat) => {
+            const isSelected = activeCategory === cat.id;
+            const CatIcon = cat.icon;
+            return (
+              <Pressable
+                key={cat.id}
+                onPress={() => setActiveCategory(cat.id)}
+                style={[
+                  styles.categoryPill,
+                  {
+                    backgroundColor: isSelected ? themeColors.primary : themeColors.backgroundElement,
+                    borderColor: isSelected ? themeColors.primary : themeColors.border,
+                  },
+                ]}
+              >
+                {isSelected && <PrimaryGradient borderRadius={20} />}
+                <CatIcon size={14} color={isSelected ? '#FFFFFF' : themeColors.textSecondary} />
                 <Text
                   style={[
-                    styles.heroTitle,
-                    { fontSize: isDesktop ? 34 : isTablet ? 28 : 24 },
+                    styles.categoryPillText,
+                    { color: isSelected ? '#FFFFFF' : themeColors.textSecondary },
                   ]}
-                  numberOfLines={2}
                 >
-                  {language === 'ku' && activeHeroItem.title_ku ? activeHeroItem.title_ku : activeHeroItem.title}
+                  {getCategoryLabel(cat.id, cat.label)}
                 </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
-                {activeHeroItem.description ? (
-                  <Text
-                    style={[
-                      styles.heroDesc,
-                      { maxWidth: isDesktop ? 650 : isTablet ? 500 : undefined },
-                    ]}
-                    numberOfLines={isDesktop ? 3 : 2}
-                  >
-                    {language === 'ku' && activeHeroItem.description_ku ? activeHeroItem.description_ku : activeHeroItem.description}
-                  </Text>
-                ) : null}
-
-                {/* Action Buttons */}
-                <View style={styles.heroActions}>
-                  <Pressable
-                    style={[styles.playBtn, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}
-                    onPress={() => handleWatch(activeHeroItem.id)}
-                  >
-                    <PrimaryGradient borderRadius={30} />
-                    <Play color="#fff" size={18} fill="#fff" />
-                    <Text style={styles.playBtnText}>{t('watchNow', 'Watch Now')}</Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={[
-                      styles.listBtn,
-                      { backgroundColor: activeHeroFavorited ? '#02060E' : 'rgba(255,255,255,0.18)' },
-                    ]}
-                    onPress={() => toggleFavorite(activeHeroItem)}
-                  >
-                    <Heart
-                      color={activeHeroFavorited ? themeColors.primary : '#fff'}
-                      fill={activeHeroFavorited ? themeColors.primary : 'none'}
-                      size={18}
-                    />
-                    <Text
-                      style={[
-                        styles.listBtnText,
-                        { color: activeHeroFavorited ? themeColors.primary : '#fff' },
-                      ]}
-                    >
-                      {activeHeroFavorited ? t('inList', 'In My List') : `+ ${t('addToList', 'My List')}`}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            </Animated.View>
+        {/* 🎬 Native Touch-Swipeable Hero Slider Banner */}
+        {featured.length > 0 && (
+          <View style={[styles.heroSection, { height: heroHeight }]}>
+            <FlatList
+              ref={heroFlatListRef}
+              data={featured}
+              keyExtractor={(item) => `hero-${item.id}`}
+              renderItem={renderHeroSlide}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={heroWidth}
+              decelerationRate="fast"
+              getItemLayout={(_, index) => ({
+                length: heroWidth,
+                offset: heroWidth * index,
+                index,
+              })}
+              onMomentumScrollEnd={(e) => {
+                const newIndex = Math.round(e.nativeEvent.contentOffset.x / heroWidth);
+                if (newIndex >= 0 && newIndex < featured.length) {
+                  setCurrentHeroIndex(newIndex);
+                }
+              }}
+            />
 
             {/* Left / Right Carousel Chevrons */}
-            <Pressable style={[styles.navArrow, styles.navArrowLeft]} onPress={prevHero}>
-              <ChevronLeft color="#fff" size={24} />
-            </Pressable>
-            <Pressable style={[styles.navArrow, styles.navArrowRight]} onPress={nextHero}>
-              <ChevronRight color="#fff" size={24} />
-            </Pressable>
+            {featured.length > 1 && (
+              <>
+                <Pressable style={[styles.navArrow, styles.navArrowLeft]} onPress={prevHero}>
+                  <ChevronLeft color="#FFFFFF" size={22} />
+                </Pressable>
+                <Pressable style={[styles.navArrow, styles.navArrowRight]} onPress={nextHero}>
+                  <ChevronRight color="#FFFFFF" size={22} />
+                </Pressable>
+              </>
+            )}
 
             {/* Indicator Dots */}
-            <View style={styles.indicatorRow}>
-              {featured.map((_, idx) => (
+            {featured.length > 1 && (
+              <View style={styles.indicatorRow}>
+                {featured.map((_, idx) => (
                   <Pressable
                     key={idx}
                     onPress={() => goToSlide(idx)}
                     style={[
                       styles.dot,
                       idx === currentHeroIndex
-                        ? [styles.activeDot, { backgroundColor: themeColors.primary, overflow: 'hidden' }]
+                        ? [styles.activeDot, { backgroundColor: themeColors.primary }]
                         : { backgroundColor: 'rgba(255,255,255,0.3)' },
                     ]}
-                  >
-                    {idx === currentHeroIndex && <PrimaryGradient borderRadius={4} />}
-                  </Pressable>
-              ))}
-            </View>
+                  />
+                ))}
+              </View>
+            )}
           </View>
         )}
 
-        {activeCategory !== 'All' ? (
+        {/* 🍿 Dynamic Rails Content */}
+        {activeCategory === 'All' ? (
           <>
+            {/* 🔥 Top 10 Ranked Rail */}
+            {allMedia.length > 0 && (
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Flame color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Top 10 Trending</Text>
+                  </View>
+                </View>
+                <FlatList
+                  horizontal
+                  data={allMedia.slice(0, 10)}
+                  keyExtractor={(item) => `ranked-${item.id}`}
+                  renderItem={renderRankedCard}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.rankedList}
+                />
+              </View>
+            )}
+
+            {/* 🎬 Movies Rail */}
+            {moviesRail.length > 0 && (
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Film color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Blockbuster Movies</Text>
+                  </View>
+                </View>
+                <FlatList
+                  horizontal
+                  data={moviesRail}
+                  keyExtractor={(item) => `movie-${item.id}`}
+                  renderItem={renderStandardCard}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.standardList}
+                />
+              </View>
+            )}
+
+            {/* 🍿 Anime Movies Rail */}
+            {animeMoviesRail.length > 0 && (
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Clapperboard color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Anime Feature Films</Text>
+                  </View>
+                </View>
+                <FlatList
+                  horizontal
+                  data={animeMoviesRail}
+                  keyExtractor={(item) => `animemovie-${item.id}`}
+                  renderItem={renderStandardCard}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.standardList}
+                />
+              </View>
+            )}
+
+            {/* 📺 K-Drama Rail */}
+            {kdramaRail.length > 0 && (
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Tv color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Popular K-Dramas</Text>
+                  </View>
+                </View>
+                <FlatList
+                  horizontal
+                  data={kdramaRail}
+                  keyExtractor={(item) => `kdrama-${item.id}`}
+                  renderItem={renderStandardCard}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.standardList}
+                />
+              </View>
+            )}
+
+            {/* ✨ Anime Series Rail */}
+            {animeSeriesRail.length > 0 && (
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Sparkles color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Anime Series</Text>
+                  </View>
+                </View>
+                <FlatList
+                  horizontal
+                  data={animeSeriesRail}
+                  keyExtractor={(item) => `animeseries-${item.id}`}
+                  renderItem={renderStandardCard}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.standardList}
+                />
+              </View>
+            )}
+
+            {/* Empty Catalog Fallback */}
+            {allMedia.length === 0 && (
+              <View style={[styles.emptyBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+                <Film size={40} color={themeColors.primary} style={{ marginBottom: 10 }} />
+                <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
+                  {t('noMediaTitle', 'No Products Published Yet')}
+                </Text>
+                <Text style={[styles.emptySub, { color: themeColors.textSecondary }]}>
+                  {t('noMediaSub', 'Your cinema catalog is clean and ready. Add and publish your real anime, movies, and series from the Admin Control Center!')}
+                </Text>
+                <Pressable
+                  style={[styles.adminBtn, { backgroundColor: themeColors.primary }]}
+                  onPress={() => router.push('/admin' as any)}
+                >
+                  <PrimaryGradient borderRadius={10} />
+                  <Sparkles size={15} color="#FFFFFF" />
+                  <Text style={styles.adminBtnText}>Admin Console</Text>
+                </Pressable>
+              </View>
+            )}
+          </>
+        ) : (
+          /* Category Filtered Grid View */
+          <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
-                <Flame color={themeColors.primary} size={20} />
+                <Flame color={themeColors.primary} size={18} />
                 <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                  {getCategoryLabel(activeCategory, activeCategory)} {activeGenre !== 'All' ? `· ${t(activeGenre as any, activeGenre)}` : ''}
+                  {getCategoryLabel(activeCategory, activeCategory)}
                 </Text>
               </View>
               <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                {genreFiltered.length} Titles
+                {categoryFiltered.length} Titles
               </Text>
             </View>
-            <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap', paddingTop: 10 }]}>
-              {genreFiltered.map((item) => {
+
+            <View style={styles.gridWrap}>
+              {categoryFiltered.map((item) => {
                 const card = renderStandardCard({ item });
                 return (
                   <View key={`grid-cat-${item.id}`}>
@@ -534,45 +701,7 @@ export default function HomeScreen() {
                 );
               })}
             </View>
-          </>
-        ) : (
-          /* When "All" is chosen, show organized categorized sections */
-          <>
-            {allMedia.length > 0 && (
-              <View style={[styles.standardList, { flexDirection: 'row', flexWrap: 'wrap', paddingTop: 20 }]}>
-                {allMedia.map((item) => {
-                  const card = renderStandardCard({ item });
-                  return (
-                    <View key={`grid-${item.id}`}>
-                      {card}
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
-            {allMedia.length === 0 && (
-              <View style={{ padding: 32, alignItems: 'center', marginHorizontal: 16, marginTop: 24, borderRadius: 16, backgroundColor: themeColors.backgroundCard, borderWidth: 1, borderColor: themeColors.border }}>
-                <Film size={44} color={themeColors.primary} style={{ marginBottom: 12 }} />
-                <Text style={{ color: themeColors.text, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
-                  {t('noMediaTitle', 'No Products Published Yet')}
-                </Text>
-                <Text style={{ color: themeColors.textSecondary, fontSize: 13, textAlign: 'center', maxWidth: 320, lineHeight: 18, marginBottom: 18 }}>
-                  {t('noMediaSub', 'Your cinema catalog is clean and ready. Add and publish your real anime, movies, and series from the Admin Control Center!')}
-                </Text>
-                <Pressable
-                  style={{ backgroundColor: themeColors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6, overflow: 'hidden' }}
-                  onPress={() => router.push('/admin' as any)}
-                >
-                  <PrimaryGradient borderRadius={10} />
-                  <Sparkles size={16} color="#FFF" />
-                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
-                    {t('adminDashboard' as any, 'Admin Dashboard')}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </>
+          </View>
         )}
 
         {/* 📢 Google AdMob Platform-Specific Banner Ad */}
@@ -589,6 +718,7 @@ export default function HomeScreen() {
       {/* 👑 VIP Sovereign Subscription Modal */}
       <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </ScrollView>
+    </View>
   );
 }
 
@@ -618,131 +748,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  menuIconBtn: {
+    marginRight: 4,
+  },
   brandIcon: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   brandName: {
-    color: '#fff',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
   },
   desktopTagline: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 16,
   },
   homeActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 6,
   },
   rewardsHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161622',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#262638',
-    gap: 5,
+    gap: 4,
   },
   streakBadgeText: {
     color: '#0356C5',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
   },
   headerDivider: {
     color: '#444458',
-    fontSize: 12,
+    fontSize: 11,
   },
   coinsBadgeText: {
     color: '#FFD700',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
   },
-  levelPill: {
-    backgroundColor: '#262010',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+  vipHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     borderWidth: 1,
-    borderColor: '#FFB800',
-    marginLeft: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 16,
   },
-  levelPillText: {
+  vipHeaderBtnText: {
     color: '#FFB800',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '900',
   },
-  eventMiniBanner: {
-    marginHorizontal: 16,
-    marginTop: 6,
-    marginBottom: 10,
-    backgroundColor: '#181510',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#3D3216',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  eventMiniContent: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  eventTagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  eventTag: {
-    backgroundColor: '#0356C5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  eventTagText: {
-    color: '#FFF',
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  eventBonusBadge: {
-    color: '#FFB800',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  eventMiniTitle: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 2,
-  },
-  eventMiniSubtitle: {
-    color: '#9E9EB4',
-    fontSize: 11,
-  },
-  eventActionBox: {
-    backgroundColor: '#2A2210',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFB800',
-  },
-  eventActionText: {
-    color: '#FFB800',
-    fontSize: 11,
-    fontWeight: '700',
-  },
+
+  /* CATEGORIES */
   categoryContainer: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -751,220 +821,203 @@ const styles = StyleSheet.create({
   categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 20,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#242436',
-  },
-  categoryPillActive: {
-    borderColor: 'transparent',
-  },
-  categoryIcon: {
-    fontSize: 14,
   },
   categoryPillText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
   },
+
+  /* HERO BANNER SLIDER */
   heroSection: {
     position: 'relative',
     marginTop: 4,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     marginHorizontal: 12,
   },
-  heroSlide: {
-    width: '100%',
+  heroSlideItem: {
     position: 'relative',
     justifyContent: 'flex-end',
   },
   heroBackdrop: {
-    ...StyleSheet.absoluteFill,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   heroDarkGradient: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(7, 7, 10, 0.65)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(7, 7, 10, 0.55)',
   },
   heroContent: {
-    padding: 20,
-    paddingBottom: 32,
+    padding: 16,
+    paddingBottom: 28,
     zIndex: 5,
   },
   heroContentDesktop: {
-    padding: 36,
-    paddingBottom: 44,
+    padding: 32,
+    paddingBottom: 40,
   },
   heroBadges: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
+    marginBottom: 6,
   },
   pillBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   pillBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
   pillGlass: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   pillGlassText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
   },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 4,
-    gap: 4,
+    gap: 3,
   },
   ratingText: {
     color: '#FFB800',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
   },
   heroTitle: {
-    color: '#fff',
-    fontSize: 26,
+    color: '#FFFFFF',
     fontWeight: '900',
-    marginBottom: 6,
-    letterSpacing: 0.2,
+    marginBottom: 4,
   },
   heroDesc: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 16,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 14,
   },
   heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   playBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
-    gap: 8,
+    gap: 6,
   },
   playBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
   },
   listBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
   listBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
   },
   navArrow: {
     position: 'absolute',
     top: '45%',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
   navArrowLeft: {
-    left: 12,
+    left: 10,
   },
   navArrowRight: {
-    right: 12,
+    right: 10,
   },
   indicatorRow: {
     position: 'absolute',
-    bottom: 12,
+    bottom: 10,
     alignSelf: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: 5,
     zIndex: 10,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
   activeDot: {
-    width: 20,
-    borderRadius: 3,
+    width: 18,
+    borderRadius: 2.5,
   },
-  genreContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  genreChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#242436',
-  },
-  genreChipActive: {
-    borderColor: 'transparent',
-  },
-  genreChipText: {
-    fontSize: 13,
-    fontWeight: '600',
+
+  /* RAILS & CARDS */
+  railSection: {
+    marginTop: 18,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+    fontSize: 16,
+    fontWeight: '900',
   },
   sectionCount: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  seeAllText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   rankedList: {
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 14,
   },
   rankedCardContainer: {
     flexDirection: 'row',
@@ -972,49 +1025,64 @@ const styles = StyleSheet.create({
   },
   rankNumber: {
     fontWeight: '900',
-    color: '#2a2a42',
-    lineHeight: 52,
-    marginRight: -10,
-    // @ts-ignore
-    textShadow: '0px 2px 4px rgba(0,0,0,0.8)',
+    lineHeight: 48,
+    marginRight: -8,
   },
   posterCard: {
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#242436',
+    position: 'relative',
   },
   posterImage: {
     width: '100%',
     height: '100%',
   },
-  cardHeartBtn: {
+  cardImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  centerPlayCircle: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    top: '36%',
+    left: '50%',
+    transform: [{ translateX: -16 }, { translateY: -16 }],
+    zIndex: 4,
+  },
+  playCircleInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 3,
+    elevation: 4,
+    opacity: 0.9,
+  },
+  cardHeartBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    zIndex: 5,
   },
   cardCategoryBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 6,
+    top: 6,
+    left: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    zIndex: 3,
+    zIndex: 5,
   },
   cardCategoryText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
   },
   cardInfo: {
     position: 'absolute',
@@ -1022,26 +1090,46 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 8,
-    backgroundColor: 'rgba(7, 7, 10, 0.85)',
+    backgroundColor: 'rgba(7, 7, 10, 0.88)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   cardTitle: {
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  cardRatingText: {
+    color: '#FFB800',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  cardMetaDot: {
+    fontSize: 10,
     fontWeight: '700',
   },
   cardMeta: {
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 10,
   },
   standardList: {
     paddingHorizontal: 16,
     gap: 12,
-    paddingBottom: 4,
+  },
+  gridWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingTop: 10,
   },
   standardCard: {
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#242436',
   },
   standardImageWrapper: {
     position: 'relative',
@@ -1052,36 +1140,56 @@ const styles = StyleSheet.create({
   },
   epBadge: {
     position: 'absolute',
-    bottom: 8,
-    left: 8,
+    bottom: 6,
+    left: 6,
     backgroundColor: 'rgba(0,0,0,0.75)',
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
+    zIndex: 4,
   },
   epBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
   },
   standardCardInfo: {
     padding: 8,
   },
-  vipHeaderBtn: {
+
+  /* EMPTY STATE */
+  emptyBox: {
+    padding: 32,
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 12,
+    textAlign: 'center',
+    maxWidth: 320,
+    lineHeight: 17,
+    marginBottom: 16,
+  },
+  adminBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#261F0E',
-    borderWidth: 1,
-    borderColor: '#FFB800',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
+    gap: 6,
   },
-  vipHeaderBtnText: {
-    color: '#FFB800',
-    fontSize: 12,
-    fontWeight: '800',
+  adminBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 13,
   },
 });

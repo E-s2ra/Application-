@@ -22,11 +22,14 @@ import {
   UserPlus,
   UserCheck,
   Crown,
+  MessageSquare,
+  Send,
 } from 'lucide-react-native';
 import { useReviews, Review } from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocial } from '@/hooks/useSocial';
 import { useResponsive } from '@/hooks/useResponsive';
+import { PrimaryGradient } from './PrimaryGradient';
 
 interface ReviewsSectionProps {
   mediaId: string;
@@ -62,21 +65,23 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
   const stats = getStatsForMedia(mediaId);
   const userReview = getUserReview(mediaId);
 
-  // Main Composer State
+  // Composer State
   const [selectedRating, setSelectedRating] = useState<number>(userReview?.rating || 5);
+  const [commentText, setCommentText] = useState<string>(userReview?.comment || '');
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeSort, setActiveSort] = useState<'top' | 'recent'>('top');
 
-  // Inline Review Edit State
+  // Inline Edit State
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [inlineEditRating, setInlineEditRating] = useState<number>(5);
+  const [inlineEditComment, setInlineEditComment] = useState<string>('');
 
-  // Keep composer in sync when userReview changes
   useEffect(() => {
     if (userReview) {
       setSelectedRating(userReview.rating);
+      setCommentText(userReview.comment || '');
     }
   }, [userReview]);
 
@@ -85,17 +90,16 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleStarPress = (rating: number) => {
-    setSelectedRating(rating);
-  };
-
   const handleSubmitReview = async () => {
     setIsSubmitting(true);
     try {
-      await addReview(mediaId, selectedRating);
-      showToast(userReview ? 'Rating updated successfully!' : 'Rating published!');
+      await addReview(mediaId, selectedRating, commentText);
+      showToast(userReview ? 'Review updated!' : 'Review posted!');
+      if (!userReview) {
+        setCommentText('');
+      }
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Unable to save your review.');
+      showToast(error instanceof Error ? error.message : 'Unable to save review.');
     } finally {
       setIsSubmitting(false);
     }
@@ -109,41 +113,35 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
           setEditingReviewId(null);
         }
         setSelectedRating(5);
-        showToast('Rating deleted');
+        setCommentText('');
+        showToast('Review deleted');
       } catch (error) {
-        showToast(error instanceof Error ? error.message : 'Unable to delete the rating.');
+        showToast(error instanceof Error ? error.message : 'Unable to delete review.');
       }
     };
 
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this rating?')) {
+      if (typeof window !== 'undefined' && window.confirm('Delete your review?')) {
         await performDelete();
       }
     } else {
-      Alert.alert(
-        'Delete Rating',
-        'Are you sure you want to delete your rating?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: performDelete },
-        ]
-      );
+      Alert.alert('Delete Review', 'Are you sure you want to delete your review?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: performDelete },
+      ]);
     }
   };
 
   const startInlineEdit = (rev: Review) => {
     setEditingReviewId(rev.id);
     setInlineEditRating(rev.rating);
-  };
-
-  const cancelInlineEdit = () => {
-    setEditingReviewId(null);
+    setInlineEditComment(rev.comment || '');
   };
 
   const saveInlineEdit = async (reviewId: string) => {
-    await editReview(reviewId, inlineEditRating);
+    await editReview(reviewId, inlineEditRating, inlineEditComment);
     setEditingReviewId(null);
-    showToast('Rating updated!');
+    showToast('Review updated!');
   };
 
   const sortedReviews = [...reviews].sort((a, b) => {
@@ -154,64 +152,106 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
   });
 
   const displayRating = hoverRating !== null ? hoverRating : selectedRating;
+  const totalCount = stats.count || 1;
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.backgroundCard }]}>
-      {/* Header */}
-      <View style={[styles.headerRow, isXS && styles.headerRowSmall]}>
+    <View style={[styles.container, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+      
+      {/* 🌟 Section Header */}
+      <View style={styles.headerRow}>
         <View style={styles.titleRow}>
-          <Star size={20} color={themeColors.primary} />
-          <Text style={[styles.sectionTitle, isXS && styles.sectionTitleSmall]}>Ratings & Community Reviews</Text>
+          <MessageSquare size={20} color={themeColors.primary} />
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Ratings & Reviews</Text>
         </View>
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>{stats.count} reviews</Text>
+        <View style={[styles.countBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+          <Text style={[styles.countBadgeText, { color: themeColors.textSecondary }]}>{stats.count} Ratings</Text>
         </View>
       </View>
 
+      {/* 📊 Rating Breakdown Dashboard */}
+      <View style={[styles.dashboardCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+        <View style={styles.scoreBox}>
+          <Text style={[styles.scoreNumber, { color: themeColors.text }]}>{stats.average.toFixed(1)}</Text>
+          <View style={styles.scoreStarsRow}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Star
+                key={s}
+                size={14}
+                color="#FFB800"
+                fill={s <= Math.round(stats.average) ? '#FFB800' : 'transparent'}
+              />
+            ))}
+          </View>
+          <Text style={[styles.scoreCountText, { color: themeColors.textSecondary }]}>
+            {stats.count} total reviews
+          </Text>
+        </View>
 
+        <View style={styles.barsContainer}>
+          {[5, 4, 3, 2, 1].map((stars) => {
+            const count = stats.breakdown[stars] || 0;
+            const percent = Math.round((count / totalCount) * 100);
+            return (
+              <View key={stars} style={styles.barRow}>
+                <Text style={[styles.barStarLabel, { color: themeColors.textSecondary }]}>{stars}★</Text>
+                <View style={[styles.barTrack, { backgroundColor: themeColors.border }]}>
+                  <View style={[styles.barFill, { width: `${percent}%`, backgroundColor: themeColors.primary }]} />
+                </View>
+                <Text style={[styles.barPercentText, { color: themeColors.textMuted }]}>{percent}%</Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
 
-      {/* ⭐ Interactive "Rate This Title" & Review Box */}
-      <View style={styles.composerCard}>
+      {/* ✍️ Interactive Composer (Stars + Written Comment Text Input) */}
+      <View style={[styles.composerCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
         <View style={styles.composerHeader}>
-          <Text style={styles.composerTitle}>
-            {userReview ? 'Your Rating (Edit or Update)' : `How was ${mediaTitle || 'this title'}?`}
+          <Text style={[styles.composerTitle, { color: themeColors.text }]}>
+            {userReview ? 'Your Rating & Review' : `Rate & Comment on ${mediaTitle || 'this title'}`}
           </Text>
           {userReview && (
-            <Pressable
-              style={styles.deleteTopBtn}
-              onPress={() => handleDeleteReview(userReview.id)}
-            >
+            <Pressable style={styles.deleteTopBtn} onPress={() => handleDeleteReview(userReview.id)}>
               <Trash2 size={13} color="#FF5252" />
               <Text style={styles.deleteTopBtnText}>Delete</Text>
             </Pressable>
           )}
         </View>
 
-        {/* Star Rating Selector */}
+        {/* Star Rating Bar */}
         <View style={styles.starSelectorRow}>
           {[1, 2, 3, 4, 5].map((star) => (
             <Pressable
               key={star}
-              onPress={() => handleStarPress(star)}
+              onPress={() => setSelectedRating(star)}
               onHoverIn={() => setHoverRating(star)}
               onHoverOut={() => setHoverRating(null)}
-              style={({ pressed }) => [
-                styles.starBtn,
-                pressed && { transform: [{ scale: 1.2 }] },
-              ]}
+              style={styles.starBtn}
             >
               <Star
-                size={28}
+                size={26}
                 color="#FFB800"
                 fill={star <= displayRating ? '#FFB800' : 'transparent'}
               />
             </Pressable>
           ))}
-          <Text style={styles.ratingDescriptor}>
-            {RATING_LABELS[displayRating] || 'Select your rating'}
+          <Text style={[styles.ratingDescriptor, { color: themeColors.accent || '#FFB800' }]}>
+            {RATING_LABELS[displayRating] || 'Select rating'}
           </Text>
         </View>
 
+        {/* Comment Text Input Box */}
+        <View style={[styles.inputBoxContainer, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+          <TextInput
+            style={[styles.commentInput, { color: themeColors.text }]}
+            placeholder="Write your review or comment (optional)..."
+            placeholderTextColor={themeColors.textMuted}
+            value={commentText}
+            onChangeText={setCommentText}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
 
         {/* Action Button */}
         <View style={styles.composerActionRow}>
@@ -232,32 +272,40 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
             disabled={isSubmitting}
             onPress={handleSubmitReview}
           >
+            <Send size={15} color="#FFFFFF" />
             <Text style={styles.submitBtnText}>
-              {isSubmitting ? 'Saving...' : userReview ? 'Save Changes' : 'Post Rating'}
+              {isSubmitting ? 'Posting...' : userReview ? 'Update Review' : 'Post Review'}
             </Text>
           </Pressable>
         </View>
       </View>
 
       {/* 🏷️ Filter Tabs */}
-      <View style={[styles.sortRow, isXS && styles.sortRowSmall]}>
-        <Text style={styles.communitySubheader}>COMMUNITY REVIEWS</Text>
+      <View style={styles.sortRow}>
+        <Text style={[styles.communitySubheader, { color: themeColors.textSecondary }]}>COMMUNITY COMMENTS</Text>
         <View style={styles.tabPills}>
           <Pressable
-            style={[styles.tabPill, activeSort === 'top' && styles.tabPillActive]}
+            style={[
+              styles.tabPill,
+              { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+              activeSort === 'top' && { backgroundColor: themeColors.primary, borderColor: themeColors.primary }
+            ]}
             onPress={() => setActiveSort('top')}
           >
-            <Text style={[styles.tabPillText, activeSort === 'top' && styles.tabPillTextActive]}>
+            <Text style={[styles.tabPillText, { color: activeSort === 'top' ? '#FFF' : themeColors.textSecondary }]}>
               Top Helpful
             </Text>
           </Pressable>
+
           <Pressable
-            style={[styles.tabPill, activeSort === 'recent' && styles.tabPillActive]}
+            style={[
+              styles.tabPill,
+              { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+              activeSort === 'recent' && { backgroundColor: themeColors.primary, borderColor: themeColors.primary }
+            ]}
             onPress={() => setActiveSort('recent')}
           >
-            <Text
-              style={[styles.tabPillText, activeSort === 'recent' && styles.tabPillTextActive]}
-            >
+            <Text style={[styles.tabPillText, { color: activeSort === 'recent' ? '#FFF' : themeColors.textSecondary }]}>
               Latest
             </Text>
           </Pressable>
@@ -267,8 +315,9 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
       {/* 💬 Reviews List */}
       <View style={styles.reviewsList}>
         {sortedReviews.length === 0 ? (
-          <View style={styles.emptyReviews}>
-            <Text style={styles.emptyReviewsText}>
+          <View style={[styles.emptyReviews, { backgroundColor: themeColors.backgroundElement }]}>
+            <MessageSquare size={28} color={themeColors.textMuted} />
+            <Text style={[styles.emptyReviewsText, { color: themeColors.textSecondary }]}>
               No reviews yet. Be the first to share your thoughts!
             </Text>
           </View>
@@ -285,29 +334,23 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                 key={rev.id}
                 style={[
                   styles.reviewCard,
-                  isUserAuthor && styles.userReviewCard,
+                  { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+                  isUserAuthor && { borderColor: themeColors.primary, backgroundColor: themeColors.backgroundCard }
                 ]}
               >
                 {/* Author Header */}
-                <View style={[styles.reviewHeader, isXS && styles.reviewHeaderSmall]}>
-                  <View style={[styles.authorRow, isXS && styles.authorRowSmall]}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.authorRow}>
                     {rev.userAvatar ? (
                       <Image source={{ uri: rev.userAvatar }} style={styles.avatarImg} />
                     ) : (
-                      <View
-                        style={[
-                          styles.avatarPlaceholder,
-                          isUserAuthor && { backgroundColor: '#FFB800' },
-                        ]}
-                      >
-                        <Text style={[styles.avatarText, isUserAuthor && { color: '#000' }]}>
-                          {avatarInitial}
-                        </Text>
+                      <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors.primary }]}>
+                        <Text style={styles.avatarText}>{avatarInitial}</Text>
                       </View>
                     )}
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1 }}>
                       <View style={styles.nameRow}>
-                        <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">
+                        <Text style={[styles.userNameText, { color: themeColors.text }]} numberOfLines={1}>
                           {rev.userName} {isUserAuthor ? '(You)' : ''}
                         </Text>
                         {rev.isVip && (
@@ -326,31 +369,27 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                           <Pressable
                             style={[
                               styles.followBtn,
-                              isFollowing(rev.userId) && styles.followingBtn,
+                              { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border },
+                              isFollowing(rev.userId) && { borderColor: '#00E676' },
                             ]}
                             onPress={() => toggleFollow(rev.userId)}
                           >
                             {isFollowing(rev.userId) ? (
                               <UserCheck size={10} color="#00E676" />
                             ) : (
-                              <UserPlus size={10} color="#00D2FF" />
+                              <UserPlus size={10} color={themeColors.primary} />
                             )}
-                            <Text
-                              style={[
-                                styles.followBtnText,
-                                isFollowing(rev.userId) && styles.followingBtnText,
-                              ]}
-                            >
+                            <Text style={[styles.followBtnText, { color: isFollowing(rev.userId) ? '#00E676' : themeColors.primary }]}>
                               {isFollowing(rev.userId) ? 'Following' : 'Follow'}
                             </Text>
                           </Pressable>
                         )}
                       </View>
-                      <Text style={styles.reviewDate}>{rev.createdAt}</Text>
+                      <Text style={[styles.reviewDate, { color: themeColors.textMuted }]}>{rev.createdAt}</Text>
                     </View>
                   </View>
 
-                  {/* Stars Rating */}
+                  {/* Rating Stars */}
                   {!isEditing && (
                     <View style={styles.cardStars}>
                       {[1, 2, 3, 4, 5].map((s) => (
@@ -365,17 +404,19 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                   )}
                 </View>
 
-                {/* 📝 Inline Edit Mode vs Normal View */}
-                {isEditing ? (
+                {/* Written Comment Text */}
+                {!isEditing && rev.comment ? (
+                  <Text style={[styles.commentBodyText, { color: themeColors.text }]}>
+                    {rev.comment}
+                  </Text>
+                ) : null}
+
+                {/* Inline Edit Mode */}
+                {isEditing && (
                   <View style={styles.inlineEditBox}>
-                    {/* Inline Star Picker */}
                     <View style={styles.inlineStarsRow}>
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <Pressable
-                          key={star}
-                          onPress={() => setInlineEditRating(star)}
-                          style={styles.starBtnSmall}
-                        >
+                        <Pressable key={star} onPress={() => setInlineEditRating(star)}>
                           <Star
                             size={20}
                             color="#FFB800"
@@ -383,93 +424,78 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                           />
                         </Pressable>
                       ))}
-                      <Text style={styles.inlineRatingLabel}>
-                        {RATING_LABELS[inlineEditRating]}
-                      </Text>
+                      <Text style={styles.inlineRatingLabel}>{RATING_LABELS[inlineEditRating]}</Text>
                     </View>
 
+                    <TextInput
+                      style={[styles.inlineCommentInput, { color: themeColors.text, backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+                      value={inlineEditComment}
+                      onChangeText={setInlineEditComment}
+                      multiline
+                    />
+
                     <View style={styles.inlineActionsRow}>
-                      <Pressable style={styles.inlineCancelBtn} onPress={cancelInlineEdit}>
-                        <X size={14} color="#A0A0B8" />
-                        <Text style={styles.inlineCancelText}>Cancel</Text>
+                      <Pressable style={styles.inlineCancelBtn} onPress={() => setEditingReviewId(null)}>
+                        <X size={14} color={themeColors.textMuted} />
+                        <Text style={[styles.inlineCancelText, { color: themeColors.textMuted }]}>Cancel</Text>
                       </Pressable>
-                      <Pressable
-                        style={styles.inlineSaveBtn}
-                        onPress={() => saveInlineEdit(rev.id)}
-                      >
+                      <Pressable style={[styles.inlineSaveBtn, { backgroundColor: themeColors.primary }]} onPress={() => saveInlineEdit(rev.id)}>
                         <Check size={14} color="#FFF" />
                         <Text style={styles.inlineSaveText}>Save</Text>
                       </Pressable>
                     </View>
                   </View>
-                ) : null}
+                )}
 
-
-
-                {/* Footer with Helpful Button & Author Actions (Edit / Delete) */}
+                {/* Footer with Helpful & Actions */}
                 <View style={styles.reviewFooter}>
-                  {/* Author Edit & Delete buttons */}
                   {isUserAuthor && !isEditing ? (
                     <View style={styles.authorActionsRow}>
-                      <Pressable
-                        style={styles.authorActionBtn}
-                        onPress={() => startInlineEdit(rev)}
-                      >
-                        <Edit3 size={13} color="#00D2FF" />
-                        <Text style={[styles.authorActionText, { color: '#00D2FF' }]}>Edit</Text>
+                      <Pressable style={styles.authorActionBtn} onPress={() => startInlineEdit(rev)}>
+                        <Edit3 size={13} color={themeColors.primary} />
+                        <Text style={[styles.authorActionText, { color: themeColors.primary }]}>Edit</Text>
                       </Pressable>
-                      <Pressable
-                        style={styles.authorActionBtn}
-                        onPress={() => handleDeleteReview(rev.id)}
-                      >
+                      <Pressable style={styles.authorActionBtn} onPress={() => handleDeleteReview(rev.id)}>
                         <Trash2 size={13} color="#FF5252" />
                         <Text style={[styles.authorActionText, { color: '#FF5252' }]}>Delete</Text>
                       </Pressable>
                     </View>
-                  ) : (
-                    <View />
-                  )}
+                  ) : <View />}
 
-                  {/* Helpful Button */}
                   <Pressable
-                    style={({ pressed }) => [
-                      styles.helpfulBtn,
-                      pressed && { opacity: 0.7 },
-                    ]}
+                    style={[styles.helpfulBtn, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
                     onPress={() => toggleHelpful(rev.id)}
                   >
-                    <ThumbsUp size={13} color="#9A9AA8" />
-                    <Text style={styles.helpfulText}>
+                    <ThumbsUp size={12} color={themeColors.textSecondary} />
+                    <Text style={[styles.helpfulText, { color: themeColors.textSecondary }]}>
                       Helpful {rev.helpfulCount > 0 ? `(${rev.helpfulCount})` : ''}
                     </Text>
                   </Pressable>
                 </View>
+
               </View>
             );
           })
         )}
       </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 14,
-    padding: 20,
-    marginTop: 24,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#242436',
+    marginHorizontal: 16,
+    marginTop: 8,
   },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerRowSmall: {
-    alignItems: 'flex-start',
-    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
   titleRow: {
     flexDirection: 'row',
@@ -478,139 +504,101 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  sectionTitleSmall: {
-    fontSize: 16,
-    flexShrink: 1,
+    fontWeight: '900',
   },
   countBadge: {
-    backgroundColor: '#1E1E2C',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#2D2D42',
   },
   countBadgeText: {
-    fontSize: 12,
-    color: '#9A9AA8',
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
-  summaryCard: {
+
+  /* DASHBOARD CARD */
+  dashboardCard: {
     flexDirection: 'row',
-    backgroundColor: '#111118',
+    padding: 14,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1D1D2C',
-  },
-  summaryCardSmall: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    padding: 12,
-  },
-  scoreCol: {
+    gap: 16,
+    marginBottom: 16,
     alignItems: 'center',
-    paddingRight: 20,
+  },
+  scoreBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: 14,
     borderRightWidth: 1,
-    borderRightColor: '#222234',
-    minWidth: 95,
+    borderRightColor: '#262C40',
   },
-  scoreColSmall: {
-    minWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222234',
-    paddingRight: 0,
-    paddingBottom: 12,
-    marginBottom: 12,
-  },
-  bigScoreText: {
-    fontSize: 36,
+  scoreNumber: {
+    fontSize: 32,
     fontWeight: '900',
-    color: '#FFFFFF',
-    lineHeight: 40,
   },
-  starsRow: {
+  scoreStarsRow: {
     flexDirection: 'row',
-    gap: 3,
+    gap: 2,
     marginVertical: 4,
   },
-  totalReviewsSubText: {
-    fontSize: 11,
-    color: '#7B7B90',
+  scoreCountText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
-  breakdownCol: {
+  barsContainer: {
     flex: 1,
-    paddingLeft: 18,
-    gap: 5,
+    gap: 4,
   },
-  breakdownColSmall: {
-    paddingLeft: 0,
-  },
-  breakdownRow: {
+  barRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  starLabel: {
-    fontSize: 11,
-    color: '#8C8CA2',
+  barStarLabel: {
+    fontSize: 10,
+    fontWeight: '700',
     width: 22,
-    fontWeight: '600',
   },
   barTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: '#202030',
     borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    backgroundColor: '#FFB800',
     borderRadius: 3,
   },
-  barCount: {
-    fontSize: 11,
-    color: '#65657A',
-    width: 20,
+  barPercentText: {
+    fontSize: 10,
+    fontWeight: '600',
+    width: 28,
     textAlign: 'right',
   },
+
+  /* COMPOSER CARD */
   composerCard: {
-    backgroundColor: '#12121B',
+    padding: 14,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 22,
     borderWidth: 1,
-    borderColor: '#262638',
+    marginBottom: 16,
   },
   composerHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   composerTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#FFF',
+    fontWeight: '800',
   },
   deleteTopBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: 'rgba(255, 82, 82, 0.12)',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 82, 82, 0.3)',
   },
   deleteTopBtnText: {
     color: '#FF5252',
@@ -624,38 +612,28 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   starBtn: {
-    padding: 4,
+    padding: 2,
   },
   ratingDescriptor: {
-    fontSize: 13,
-    color: '#FFB800',
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     marginLeft: 8,
   },
-  commentInput: {
-    backgroundColor: '#0C0C12',
+  inputBoxContainer: {
     borderRadius: 10,
-    padding: 12,
-    color: '#FFF',
-    fontSize: 14,
-    minHeight: 70,
-    textAlignVertical: 'top',
     borderWidth: 1,
-    borderColor: '#252538',
+    padding: 10,
     marginBottom: 12,
+  },
+  commentInput: {
+    fontSize: 13,
+    minHeight: 60,
+    textAlignVertical: 'top',
   },
   composerActionRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 12,
-  },
-  mentionHint: {
-    color: '#7B7B90',
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: -5,
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
   toastSuccess: {
     flexDirection: 'row',
@@ -663,41 +641,39 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   toastText: {
-    fontSize: 12,
     color: '#00E676',
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 8,
+    marginLeft: 'auto',
   },
   submitBtnDisabled: {
-    opacity: 0.4,
+    opacity: 0.6,
   },
   submitBtnText: {
+    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '700',
-    color: '#FFF',
+    fontWeight: '800',
   },
+
+  /* COMMUNITY COMMENTS FILTER */
   sortRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
-  },
-  sortRowSmall: {
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   communitySubheader: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#717188',
-    letterSpacing: 1.2,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   tabPills: {
     flexDirection: 'row',
@@ -706,277 +682,124 @@ const styles = StyleSheet.create({
   tabPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 14,
-    backgroundColor: '#151520',
-  },
-  tabPillActive: {
-    backgroundColor: '#27273A',
+    borderRadius: 6,
+    borderWidth: 1,
   },
   tabPillText: {
     fontSize: 11,
-    color: '#78788E',
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  tabPillTextActive: {
-    color: '#FFFFFF',
-  },
+
+  /* REVIEWS LIST */
   reviewsList: {
-    gap: 12,
+    gap: 10,
   },
   emptyReviews: {
-    padding: 20,
     alignItems: 'center',
+    padding: 24,
+    borderRadius: 12,
+    gap: 8,
   },
   emptyReviewsText: {
-    color: '#6F6F84',
     fontSize: 13,
+    fontWeight: '600',
   },
   reviewCard: {
-    backgroundColor: '#101018',
-    borderRadius: 10,
-    padding: 14,
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1D1D2C',
-  },
-  userReviewCard: {
-    borderColor: '#3D3D58',
-    backgroundColor: '#141422',
   },
   reviewHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
     marginBottom: 8,
-  },
-  reviewHeaderSmall: {
-    gap: 8,
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  authorRowSmall: {
     flex: 1,
-    minWidth: 0,
   },
   avatarImg: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   avatarPlaceholder: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#0356C5',
-    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarText: {
-    color: '#FFF',
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '800',
-    fontSize: 14,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
   userNameText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  verifiedText: {
-    fontSize: 10,
-    color: '#00D2FF',
-    fontWeight: '600',
+    fontWeight: '800',
   },
   vipBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(255, 184, 0, 0.12)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    gap: 2,
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
   vipText: {
-    fontSize: 10,
     color: '#FFB800',
-    fontWeight: '800',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  verifiedText: {
+    color: '#00D2FF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   followBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: 'rgba(0, 210, 255, 0.1)',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.3)',
-    marginLeft: 4,
-  },
-  followingBtn: {
-    backgroundColor: 'rgba(0, 230, 118, 0.1)',
-    borderColor: 'rgba(0, 230, 118, 0.3)',
   },
   followBtnText: {
-    fontSize: 10,
-    color: '#00D2FF',
-    fontWeight: '700',
-  },
-  followingBtnText: {
-    color: '#00E676',
+    fontSize: 9,
+    fontWeight: '800',
   },
   reviewDate: {
-    fontSize: 11,
-    color: '#65657A',
+    fontSize: 10,
     marginTop: 2,
   },
   cardStars: {
     flexDirection: 'row',
     gap: 2,
   },
-  reviewComment: {
+  commentBodyText: {
     fontSize: 13,
-    color: '#D4D4E2',
     lineHeight: 19,
-    marginBottom: 10,
-  },
-  reviewFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  repliesList: {
-    marginTop: 10,
-    marginLeft: 20,
-    paddingLeft: 11,
-    borderLeftWidth: 2,
-    borderLeftColor: '#303048',
-    gap: 8,
-  },
-  replyCard: {
-    backgroundColor: '#151520',
-    borderRadius: 8,
-    padding: 10,
-  },
-  replyAuthor: {
-    color: '#00D2FF',
-    fontSize: 12,
-    fontWeight: '800',
-    marginBottom: 3,
-  },
-  replyComment: {
-    color: '#D4D4E2',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  replyButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingVertical: 7,
-    paddingHorizontal: 4,
-    marginTop: 4,
-  },
-  replyButtonText: {
-    color: '#00D2FF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  replyComposer: {
-    backgroundColor: '#0A0A10',
-    borderColor: '#262638',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 9,
-    marginTop: 8,
-  },
-  replyInput: {
-    color: '#FFF',
-    fontSize: 13,
-    minHeight: 54,
-    textAlignVertical: 'top',
-  },
-  replyActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-  },
-  replyCancelButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  replyCancelText: {
-    color: '#A0A0B8',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  replySubmitButton: {
-    backgroundColor: '#0356C5',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  replySubmitText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  authorActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  authorActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#1E1E2C',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  authorActionText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  helpfulBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#161622',
-  },
-  helpfulText: {
-    fontSize: 11,
-    color: '#9A9AA8',
-    fontWeight: '500',
+    marginVertical: 6,
   },
   inlineEditBox: {
-    backgroundColor: '#0A0A10',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#262638',
-    marginBottom: 10,
+    marginTop: 6,
     gap: 8,
   },
   inlineStarsRow: {
@@ -984,25 +807,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  starBtnSmall: {
-    padding: 2,
-  },
   inlineRatingLabel: {
-    fontSize: 12,
     color: '#FFB800',
+    fontSize: 11,
     fontWeight: '700',
     marginLeft: 6,
   },
-  inlineTextInput: {
-    backgroundColor: '#12121D',
-    borderRadius: 6,
-    padding: 10,
-    color: '#FFF',
-    fontSize: 13,
-    minHeight: 50,
-    textAlignVertical: 'top',
+  inlineCommentInput: {
+    fontSize: 12,
+    padding: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#1F1F30',
+    minHeight: 50,
   },
   inlineActionsRow: {
     flexDirection: 'row',
@@ -1014,14 +830,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: '#1C1C28',
+    paddingVertical: 4,
   },
   inlineCancelText: {
     fontSize: 12,
-    color: '#A0A0B8',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   inlineSaveBtn: {
     flexDirection: 'row',
@@ -1030,11 +843,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: '#00E676',
   },
   inlineSaveText: {
+    color: '#FFFFFF',
     fontSize: 12,
-    color: '#000',
     fontWeight: '800',
+  },
+  reviewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  authorActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  authorActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  authorActionText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  helpfulBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  helpfulText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

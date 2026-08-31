@@ -9,17 +9,13 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useState, createContext, useContext } from 'react';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 
-export const SidebarContext = createContext({
-  openSidebar: () => {},
-  closeSidebar: () => {},
-});
-
-export const useSidebar = () => useContext(SidebarContext);
+import { SidebarContext, useSidebar } from '@/context/SidebarContext';
+export { useSidebar };
 
 export default function TabLayout() {
   const themeColors = useTheme();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { isDesktop } = useResponsive();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isRewardsOpen, setIsRewardsOpen] = useState(false);
@@ -43,21 +39,7 @@ export default function TabLayout() {
       <View style={{ flex: 1 }}>
         <Tabs
       screenOptions={{
-        headerStyle: {
-          backgroundColor: themeColors.backgroundElement,
-          borderBottomColor: themeColors.border,
-          borderBottomWidth: 1,
-        },
-        headerTintColor: themeColors.text,
-        headerTitleStyle: {
-          fontWeight: '700',
-          fontSize: 18,
-        },
-        headerLeft: () => !isDesktop ? (
-          <Pressable onPress={() => setIsSidebarOpen(true)} style={{ paddingHorizontal: 16 }}>
-            <Menu color={themeColors.text} size={24} />
-          </Pressable>
-        ) : null,
+        headerShown: false,
         tabBarStyle: {
           display: isDesktop ? 'none' : 'flex',
           backgroundColor: themeColors.backgroundElement,

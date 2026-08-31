@@ -39,9 +39,18 @@ export async function callAdminOperation<T>(
         });
 
         if (invokeError) {
+            let errorMsg = invokeError.message || 'Operation failed';
+            try {
+                if ('context' in invokeError && typeof (invokeError as any).context?.json === 'function') {
+                    const parsed = await (invokeError as any).context.json();
+                    if (parsed?.error) errorMsg = parsed.error;
+                }
+            } catch {
+                // Ignore json parsing error
+            }
             return {
                 success: false,
-                error: invokeError.message || 'Operation failed',
+                error: errorMsg,
             };
         }
 

@@ -12,6 +12,7 @@ export type Review = {
   userName: string;
   userAvatar?: string;
   rating: number; // 1 to 5
+  comment?: string;
   createdAt: string;
   helpfulCount: number;
   isVerified?: boolean;
@@ -29,8 +30,8 @@ type ReviewsContextType = {
   getReviewsForMedia: (mediaId: string) => Review[];
   getStatsForMedia: (mediaId: string) => RatingStats;
   getUserReview: (mediaId: string) => Review | undefined;
-  addReview: (mediaId: string, rating: number) => Promise<void>;
-  editReview: (reviewId: string, rating: number) => Promise<void>;
+  addReview: (mediaId: string, rating: number, comment?: string) => Promise<void>;
+  editReview: (reviewId: string, rating: number, comment?: string) => Promise<void>;
   deleteReview: (reviewId: string) => Promise<void>;
   toggleHelpful: (reviewId: string) => Promise<void>;
 };
@@ -141,7 +142,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const addReview = async (mediaId: string, rating: number) => {
+  const addReview = async (mediaId: string, rating: number, comment?: string) => {
     const authorName = profile?.full_name || user?.email?.split('@')[0] || 'AniFlix Streamer';
     const authorId = user?.id || 'guest-' + Date.now();
 
@@ -157,6 +158,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
       updated[existingIndex] = {
         ...existing,
         rating,
+        comment: comment?.trim() || existing.comment,
         createdAt: 'Just now (edited)',
       };
     } else {
@@ -168,6 +170,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         userName: authorName,
         userAvatar: profile?.avatar_url || undefined,
         rating,
+        comment: comment?.trim() || undefined,
         createdAt: 'Just now',
         helpfulCount: 0,
         isVerified: true,
@@ -179,7 +182,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
     await saveReviews(updated);
   };
 
-  const editReview = async (reviewId: string, rating: number) => {
+  const editReview = async (reviewId: string, rating: number, comment?: string) => {
     const currentUserId = user?.id || 'guest-user';
     const target = reviews.find((review) => review.id === reviewId && review.userId === currentUserId);
     if (!target) throw new Error('You can only edit your own rating.');
@@ -189,6 +192,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         return {
           ...r,
           rating,
+          comment: comment !== undefined ? comment.trim() : r.comment,
           createdAt: r.createdAt.includes('edited') ? r.createdAt : r.createdAt + ' · edited',
         };
       }

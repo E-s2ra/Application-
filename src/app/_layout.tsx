@@ -111,6 +111,8 @@ function RootNavigation({
   );
 }
 
+import { ToastProvider } from '@/hooks/useToast';
+
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
 
@@ -124,7 +126,9 @@ export default function RootLayout() {
                 <SocialProvider>
                   <AdMobProvider>
                     <SafeAreaProvider>
-                      <RootNavigation showSplash={showSplash} onFinishSplash={() => setShowSplash(false)} />
+                      <ToastProvider>
+                        <RootNavigation showSplash={showSplash} onFinishSplash={() => setShowSplash(false)} />
+                      </ToastProvider>
                     </SafeAreaProvider>
                   </AdMobProvider>
                 </SocialProvider>

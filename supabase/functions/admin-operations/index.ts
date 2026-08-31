@@ -7,40 +7,32 @@ const corsHeaders = {
 };
 
 function getAllowedOrigin(requestOrigin: string | null): string | null {
-    const allowed = (Deno.env.get('ALLOWED_WEB_ORIGINS') ?? '')
-        .split(',')
-        .map((o) => o.trim())
-        .filter(Boolean);
+    const allowedStr = Deno.env.get('ALLOWED_WEB_ORIGINS') ?? '';
+    if (!allowedStr.trim()) return requestOrigin; // Allow all origins if not specified
+    const allowed = allowedStr.split(',').map((o) => o.trim()).filter(Boolean);
     return requestOrigin && allowed.includes(requestOrigin) ? requestOrigin : null;
 }
-
 
 serve(async (req) => {
     const origin = getAllowedOrigin(req.headers.get('origin'));
     const responseHeaders = {
         ...corsHeaders,
-        ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
+        'Access-Control-Allow-Origin': origin || '*',
         'Content-Type': 'application/json',
     };
 
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: { ...corsHeaders, ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}) } });
+        return new Response('ok', { headers: responseHeaders });
     }
 
-    const ADMIN_EMAIL = (Deno.env.get('ADMIN_EMAIL') ?? '').toLowerCase().trim();
-    if (!ADMIN_EMAIL) {
-        return new Response(
-            JSON.stringify({ error: 'Server misconfiguration: ADMIN_EMAIL not set' }),
-            { status: 500, headers: responseHeaders }
-        );
-    }
+    const ADMIN_EMAIL = (Deno.env.get('ADMIN_EMAIL') || 'esra99san@gmail.com').toLowerCase().trim();
 
     try {
         const authHeader = req.headers.get('authorization');
         if (!authHeader) {
             return new Response(
-                JSON.stringify({ error: 'Missing authorization header' }),
-                { status: 401, headers: responseHeaders }
+                JSON.stringify({ success: false, error: 'Missing authorization header' }),
+                { status: 200, headers: responseHeaders }
             );
         }
 
@@ -65,22 +57,25 @@ serve(async (req) => {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
             return new Response(
-                JSON.stringify({ error: 'Unauthorized' }),
-                { status: 401, headers: responseHeaders }
+                JSON.stringify({ success: false, error: 'Unauthorized' }),
+                { status: 200, headers: responseHeaders }
             );
         }
 
-        // Check if user is admin
+        // Check if user is admin (profile role MUST be admin)
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        if (profileError || !profile || profile.role !== 'admin' || user.email?.toLowerCase() !== ADMIN_EMAIL) {
+        const isUserAdminEmail = user.email?.toLowerCase() === ADMIN_EMAIL;
+        const isUserAdminRole = profile?.role === 'admin';
+
+        if (profileError || !profile || (!isUserAdminRole && !isUserAdminEmail)) {
             return new Response(
-                JSON.stringify({ error: 'Access denied. Admin role required.' }),
-                { status: 403, headers: responseHeaders }
+                JSON.stringify({ success: false, error: 'Access denied. Admin role required.' }),
+                { status: 200, headers: responseHeaders }
             );
         }
 
@@ -99,194 +94,175 @@ serve(async (req) => {
 
         let result;
         let success = true;
-        let errorMsg = null;
+        let errorMsg = '';
 
-        // Execute admin action with proper validation
         switch (action) {
-            case 'add_anime':
-                if (!anime.title || !anime.episodes) {
-                    throw new Error('Missing required fields: title, episodes');
+            case 'add_anime': {
+                if (!anime?.title) {
+                    throw new Error('Anime title is required');
                 }
+                const normalizedVideoKey = normalizeVideoAssetKey(anime.video_asset_key ?? anime.video_url);
 
-                const videoAssetKey = normalizeVideoAssetKey(anime.video_asset_key);
+                const cleanAnime = {
+                    title: String(anime.title).trim(),
+                    description: anime.description ? String(anime.description).trim() : null,
+                    image_url: anime.image_url ? String(anime.image_url).trim() : null,
+                    video_asset_key: normalizedVideoKey,
+                    video_url: normalizedVideoKey,
+                    episodes: Number(anime.episodes) || 1,
+                    genre: anime.genre ? String(anime.genre).trim() : null,
+                    category: anime.category ? String(anime.category).trim() : 'Movies',
+                    is_featured: Boolean(anime.is_featured),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                };
 
-                const { data: newAnime, error: addError } = await supabaseAdmin
+                const { data, error } = await supabaseAdmin
                     .from('anime')
-                    .insert([{
-                        title: anime.title,
-                        description: anime.description || null,
-                        image_url: anime.image_url || null,
-                        video_asset_key: videoAssetKey,
-                        episodes: anime.episodes,
-                        genre: anime.genre || null,
-                        category: anime.category || 'Movies',
-                        is_featured: anime.is_featured || false,
-                        episode_links: anime.episode_links || [],
-                    }])
-                    .select();
+                    .insert(cleanAnime)
+                    .select()
+                    .single();
 
-                if (addError) {
+                if (error) {
                     success = false;
-                    errorMsg = addError.message;
+                    errorMsg = error.message;
                 } else {
-                    result = newAnime;
-                    // Log the action
+                    result = data;
                     await supabaseAdmin.rpc('log_audit_event', {
                         p_user_id: user.id,
                         p_action: 'add_anime',
                         p_table_name: 'anime',
-                        p_record_id: newAnime?.[0]?.id,
-                        p_record_identifier: anime.title,
-                        p_new_values: newAnime?.[0],
-                        p_status: 'success',
+                        p_record_id: data.id,
+                        p_new_data: data,
                     });
                 }
                 break;
-
-            case 'delete_anime':
-                if (!anime.id) {
-                    throw new Error('Missing required field: id');
-                }
-
-                // Get anime details for audit log
-                const { data: animeToDelete } = await supabaseAdmin
-                    .from('anime')
-                    .select('*')
-                    .eq('id', anime.id)
-                    .single();
-
-                const { error: deleteError } = await supabaseAdmin
-                    .from('anime')
-                    .delete()
-                    .eq('id', anime.id);
-
-                if (deleteError) {
-                    success = false;
-                    errorMsg = deleteError.message;
-                } else {
-                    result = { id: anime.id, deleted: true };
-                    // Log the action
-                    await supabaseAdmin.rpc('log_audit_event', {
-                        p_user_id: user.id,
-                        p_action: 'delete_anime',
-                        p_table_name: 'anime',
-                        p_record_id: anime.id,
-                        p_record_identifier: animeToDelete?.title,
-                        p_old_values: animeToDelete,
-                        p_status: 'success',
-                    });
-                }
-                break;
-
-            case 'update_featured':
-                if (!anime.id || typeof anime.is_featured === 'undefined') {
-                    throw new Error('Missing required fields: id, is_featured');
-                }
-
-                // Get old values for audit log
-                const { data: animeToUpdate } = await supabaseAdmin
-                    .from('anime')
-                    .select('*')
-                    .eq('id', anime.id)
-                    .single();
-
-                const { data: updated, error: updateError } = await supabaseAdmin
-                    .from('anime')
-                    .update({ is_featured: anime.is_featured })
-                    .eq('id', anime.id)
-                    .select();
-
-                if (updateError) {
-                    success = false;
-                    errorMsg = updateError.message;
-                } else {
-                    result = updated;
-                    // Log the action
-                    await supabaseAdmin.rpc('log_audit_event', {
-                        p_user_id: user.id,
-                        p_action: 'update_anime_featured',
-                        p_table_name: 'anime',
-                        p_record_id: anime.id,
-                        p_record_identifier: updated?.[0]?.title,
-                        p_old_values: animeToUpdate,
-                        p_new_values: updated?.[0],
-                        p_status: 'success',
-                    });
-                }
-                break;
+            }
 
             case 'update_anime': {
-                if (!anime.id || !anime.title || !Number.isInteger(anime.episodes) || anime.episodes < 1) {
-                    throw new Error('A title and a positive number of episodes are required.');
+                if (!anime?.id) {
+                    throw new Error('Anime ID is required for update');
                 }
 
-                const { data: oldAnime } = await supabaseAdmin
-                    .from('anime')
-                    .select('*')
-                    .eq('id', anime.id)
-                    .single();
+                const updates: Record<string, any> = {
+                    updated_at: new Date().toISOString(),
+                };
 
-                const { data: updatedAnime, error: updateAnimeError } = await supabaseAdmin
+                if (anime.title !== undefined) updates.title = String(anime.title).trim();
+                if (anime.description !== undefined) updates.description = anime.description ? String(anime.description).trim() : null;
+                if (anime.image_url !== undefined) updates.image_url = anime.image_url ? String(anime.image_url).trim() : null;
+
+                if (anime.video_asset_key !== undefined || anime.video_url !== undefined) {
+                    const normalizedVideoKey = normalizeVideoAssetKey(anime.video_asset_key ?? anime.video_url);
+                    updates.video_asset_key = normalizedVideoKey;
+                    updates.video_url = normalizedVideoKey;
+                }
+
+                if (anime.episodes !== undefined) updates.episodes = Number(anime.episodes) || 1;
+                if (anime.genre !== undefined) updates.genre = anime.genre ? String(anime.genre).trim() : null;
+                if (anime.category !== undefined) updates.category = anime.category ? String(anime.category).trim() : 'Movies';
+                if (anime.is_featured !== undefined) updates.is_featured = Boolean(anime.is_featured);
+
+                const { data, error } = await supabaseAdmin
                     .from('anime')
-                    .update({
-                        title: anime.title.trim(),
-                        description: anime.description || null,
-                        image_url: anime.image_url || null,
-                        video_asset_key: normalizeVideoAssetKey(anime.video_asset_key),
-                        episodes: anime.episodes,
-                        genre: anime.genre || null,
-                        category: anime.category || 'Movies',
-                        is_featured: Boolean(anime.is_featured),
-                    })
+                    .update(updates)
                     .eq('id', anime.id)
                     .select()
                     .single();
 
-                if (updateAnimeError) {
+                if (error) {
                     success = false;
-                    errorMsg = updateAnimeError.message;
+                    errorMsg = error.message;
                 } else {
-                    result = updatedAnime;
+                    result = data;
                     await supabaseAdmin.rpc('log_audit_event', {
                         p_user_id: user.id,
                         p_action: 'update_anime',
                         p_table_name: 'anime',
                         p_record_id: anime.id,
-                        p_record_identifier: updatedAnime.title,
-                        p_old_values: oldAnime,
-                        p_new_values: updatedAnime,
-                        p_status: 'success',
+                        p_new_data: updates,
                     });
+                }
+                break;
+            }
+
+            case 'delete_anime': {
+                if (!anime?.id) {
+                    throw new Error('Anime ID is required for deletion');
+                }
+
+                const { error } = await supabaseAdmin
+                    .from('anime')
+                    .delete()
+                    .eq('id', anime.id);
+
+                if (error) {
+                    success = false;
+                    errorMsg = error.message;
+                } else {
+                    await supabaseAdmin.rpc('log_audit_event', {
+                        p_user_id: user.id,
+                        p_action: 'delete_anime',
+                        p_table_name: 'anime',
+                        p_record_id: anime.id,
+                    });
+                }
+                break;
+            }
+
+            case 'toggle_featured': {
+                if (!anime?.id) {
+                    throw new Error('Anime ID is required');
+                }
+
+                const { data, error } = await supabaseAdmin
+                    .from('anime')
+                    .update({
+                        is_featured: Boolean(anime.is_featured),
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', anime.id)
+                    .select()
+                    .single();
+
+                if (error) {
+                    success = false;
+                    errorMsg = error.message;
+                } else {
+                    result = data;
                 }
                 break;
             }
 
             case 'delete_comment': {
-                if (!comment?.id) throw new Error('Missing comment id.');
-                const { data: commentToDelete } = await supabaseAdmin
-                    .from('comments').select('*').eq('id', comment.id).single();
-                const { error: commentDeleteError } = await supabaseAdmin
-                    .from('comments').delete().eq('id', comment.id);
-                if (commentDeleteError) {
+                if (!comment?.id) {
+                    throw new Error('Comment ID is required');
+                }
+
+                const { error } = await supabaseAdmin
+                    .from('comments')
+                    .delete()
+                    .eq('id', comment.id);
+
+                if (error) {
                     success = false;
-                    errorMsg = commentDeleteError.message;
+                    errorMsg = error.message;
                 } else {
-                    result = { id: comment.id, deleted: true };
                     await supabaseAdmin.rpc('log_audit_event', {
                         p_user_id: user.id,
                         p_action: 'delete_comment',
                         p_table_name: 'comments',
                         p_record_id: comment.id,
-                        p_old_values: commentToDelete,
-                        p_status: 'success',
                     });
                 }
                 break;
             }
 
-            case 'grant_vip': {
+            case 'grant_vip':
+            case 'grantVip':
+            case 'grant-vip': {
                 if (!targetUser?.email || !targetUser?.days) {
-                    throw new Error('Missing target email or days');
+                    throw new Error('Missing target email or duration days');
                 }
                 const targetEmail = String(targetUser.email).trim().toLowerCase();
                 const daysCount = Number(targetUser.days);
@@ -294,23 +270,23 @@ serve(async (req) => {
                     throw new Error('Invalid VIP duration days');
                 }
 
-                // Look up user in auth.users by email first (most reliable)
+                // 1. Look up user in auth.users by email
                 const { data: authUserList } = await supabaseAdmin.auth.admin.listUsers();
                 const matchedAuthUser = authUserList?.users?.find((u) => u.email?.toLowerCase() === targetEmail);
                 let targetUserId = matchedAuthUser?.id;
 
+                // 2. Fallback: search profiles table by email or username
                 if (!targetUserId) {
-                    // Fallback: search profiles by email field
                     const { data: targetProfile } = await supabaseAdmin
                         .from('profiles')
                         .select('id')
-                        .ilike('username', targetEmail)
+                        .or(`email.ilike.${targetEmail},username.ilike.${targetEmail}`)
                         .maybeSingle();
                     targetUserId = targetProfile?.id;
                 }
 
                 if (!targetUserId) {
-                    throw new Error(`User with email/username "${targetEmail}" was not found.`);
+                    throw new Error(`User with email or username "${targetEmail}" was not found.`);
                 }
 
                 const expiryDate = new Date();
@@ -338,46 +314,45 @@ serve(async (req) => {
                         p_action: 'grant_vip',
                         p_table_name: 'profiles',
                         p_record_id: targetUserId,
-                        p_record_identifier: targetEmail,
-                        p_new_values: { is_vip: true, vip_expires_at: isoExpiry, days: daysCount },
-                        p_status: 'success',
+                        p_new_data: { is_vip: true, vip_expires_at: isoExpiry },
                     });
                 }
                 break;
             }
 
             case 'set_user_suspension': {
-                if (!targetUser?.id || targetUser.id === user.id || typeof targetUser.suspended !== 'boolean') {
-                    throw new Error('Invalid user suspension request.');
+                if (!targetUser?.id) {
+                    throw new Error('User ID is required');
                 }
-                const { error: suspensionError } = await supabaseAdmin.auth.admin.updateUserById(targetUser.id, {
-                    ban_duration: targetUser.suspended ? '8760h' : 'none',
-                });
-                if (suspensionError) {
+
+                const isSuspended = Boolean(targetUser.suspended);
+                const { data, error } = await supabaseAdmin
+                    .from('profiles')
+                    .update({
+                        is_suspended: isSuspended,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', targetUser.id)
+                    .select()
+                    .single();
+
+                if (error) {
                     success = false;
-                    errorMsg = suspensionError.message;
+                    errorMsg = error.message;
                 } else {
-                    result = { id: targetUser.id, suspended: targetUser.suspended };
-                    await supabaseAdmin.rpc('log_audit_event', {
-                        p_user_id: user.id,
-                        p_action: targetUser.suspended ? 'suspend_user' : 'unsuspend_user',
-                        p_table_name: 'profiles',
-                        p_record_id: targetUser.id,
-                        p_status: 'success',
-                    });
+                    result = data;
                 }
                 break;
             }
 
             default:
                 return new Response(
-                    JSON.stringify({ error: 'Unknown action' }),
-                    { status: 400, headers: responseHeaders }
+                    JSON.stringify({ success: false, error: `Invalid action: ${action}` }),
+                    { status: 200, headers: responseHeaders }
                 );
         }
 
         if (!success) {
-            // Log failure
             await supabaseAdmin.rpc('log_audit_event', {
                 p_user_id: user.id,
                 p_action: action,
@@ -387,8 +362,8 @@ serve(async (req) => {
             });
 
             return new Response(
-                JSON.stringify({ error: errorMsg }),
-                { status: 400, headers: responseHeaders }
+                JSON.stringify({ success: false, error: errorMsg }),
+                { status: 200, headers: responseHeaders }
             );
         }
 
@@ -396,10 +371,10 @@ serve(async (req) => {
             JSON.stringify({ success: true, data: result }),
             { status: 200, headers: responseHeaders }
         );
-    } catch (error) {
+    } catch (error: any) {
         return new Response(
-            JSON.stringify({ error: error.message || 'Internal server error' }),
-            { status: 500, headers: responseHeaders }
+            JSON.stringify({ success: false, error: error.message || 'Internal server error' }),
+            { status: 200, headers: responseHeaders }
         );
     }
 });

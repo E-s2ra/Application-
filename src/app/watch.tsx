@@ -8,16 +8,12 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  ActivityIndicator,
-  Animated,
-  Dimensions,
 } from 'react-native';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
 import {
-  Shield,
   Heart,
   Star,
   Play,
@@ -26,26 +22,28 @@ import {
   RotateCw,
   RotateCcw,
   Gauge,
-  Smartphone,
-  Monitor,
   Volume2,
   VolumeX,
   Maximize2,
+  Share2,
+  Check,
+  Tv,
+  Film,
   Sparkles,
+  Layers,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { getPlaybackUrl } from '@/lib/playback';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
 import { useReviews } from '@/hooks/useReviews';
-import { useGamification } from '@/hooks/useGamification';
 import { DEFAULT_CATALOG } from './(tabs)/index';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ReviewsSection } from '@/components/ReviewsSection';
-import { AdMobBanner } from '@/components/AdMobBanner';
+import { useToast } from '@/hooks/useToast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const SPEED_OPTIONS = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0];
+const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
 export default function WatchScreen() {
   const { id } = useLocalSearchParams();
@@ -53,44 +51,23 @@ export default function WatchScreen() {
   const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getStatsForMedia } = useReviews();
-  const { awardWatchTimeReward } = useGamification();
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet } = useResponsive();
   const { language } = useLanguage();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
 
-  // 🎬 Video Player Custom Controls State
+  // Player state
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  const [earnedNotification, setEarnedNotification] = useState<string | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [sharedToast, setSharedToast] = useState(false);
+  const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
 
-  // 🍿 Watch-to-Earn: Award Coins & XP during active playback
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(async () => {
-      try {
-        const reward = await awardWatchTimeReward(1);
-        setEarnedNotification(`Watching AniFlix: +${reward.coins} Coins & +${reward.xp} XP`);
-        setTimeout(() => setEarnedNotification(null), 4000);
-      } catch (err) {
-        // Non-critical: reward failure should not interrupt playback
-        if (__DEV__) console.warn('[Watch] Watch-to-earn reward error:', err);
-      }
-    }, 45000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
-  // Ref for VideoView (needed for fullscreen)
   const videoViewRef = useRef<VideoView>(null);
-
-  // The player receives only a short-lived URL from the secure Edge API.
   const [videoSource, setVideoSource] = useState<any>(null);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
 
@@ -102,13 +79,11 @@ export default function WatchScreen() {
   });
 
   useEffect(() => {
-    // Keep playbackRate synced
     try {
       player.playbackRate = playbackSpeed;
-  } catch (err) {
-    // Non-critical: playback speed sync may fail on some platforms
-    if (__DEV__) console.warn('[Watch] playbackRate sync error:', err);
-  }
+    } catch (err) {
+      if (__DEV__) console.warn('[Watch] playbackRate sync error:', err);
+    }
   }, [playbackSpeed, player]);
 
   useEffect(() => {
@@ -127,9 +102,8 @@ export default function WatchScreen() {
         }
 
         const defaultMatch = DEFAULT_CATALOG.find((item) => item.id === id);
-
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id));
-        
+
         let data = null;
         if (isUuid) {
           const { data: supabaseData } = await supabase
@@ -171,37 +145,26 @@ export default function WatchScreen() {
           recs = supabaseRecs;
         }
 
-        let finalRecs: AnimeItem[] = [];
         const safeRecs = (recs && recs.length > 0) ? recs : [];
-
         const customRecs = safeRecs
           .filter((item: any) => !deletedIds.includes(item.id))
           .map((item: any) => ({ ...(item as AnimeItem), ...(overrides[item.id] || {}) }));
-          
-        const defaultRecs = DEFAULT_CATALOG
-          .filter((item) => !deletedIds.includes(item.id))
-          .map((item) => ({ ...item, ...(overrides[item.id] || {}) }));
-          
-        const localRecs = Object.values(overrides)
-          .filter((override: any) => !deletedIds.includes(override.id) && override.id !== id && !safeRecs.some((r: any) => r.id === override.id) && !DEFAULT_CATALOG.some(d => d.id === override.id)) as AnimeItem[];
 
-        finalRecs = [...localRecs, ...customRecs, ...defaultRecs].slice(0, 6);
-        setRecommendations(finalRecs);
-
-      } catch (err: any) {
-        setPlaybackError('Failed to load anime details. Please try again.');
+        setRecommendations(customRecs.length > 0 ? customRecs : DEFAULT_CATALOG.filter((i) => i.id !== id).slice(0, 6));
+      } catch (e) {
+        console.warn('[Watch] Error loading media data:', e);
+        setPlaybackError('Failed to load media details.');
       }
     }
-    loadData();
+
+    void loadData();
   }, [id]);
 
   useEffect(() => {
-    if (!anime?.id) return;
+    if (!anime) return;
     let cancelled = false;
 
-    // Check if anime already has a direct HTTP/HTTPS link (e.g. Cloudflare R2 or CDN URL)
     const specificEpisodeUrl = anime.episode_links?.find((e: any) => e.episode === selectedEpisode)?.url?.trim();
-
     const directUrl =
       (specificEpisodeUrl && specificEpisodeUrl.startsWith('http'))
         ? specificEpisodeUrl
@@ -210,11 +173,6 @@ export default function WatchScreen() {
         : (anime.video_asset_key && anime.video_asset_key.trim().startsWith('http'))
         ? anime.video_asset_key.trim()
         : null;
-
-    console.log('WATCH DEBUG - episode_links:', anime.episode_links);
-    console.log('WATCH DEBUG - selectedEpisode:', selectedEpisode);
-    console.log('WATCH DEBUG - specificEpisodeUrl:', specificEpisodeUrl);
-    console.log('WATCH DEBUG - directUrl:', directUrl);
 
     if (directUrl) {
       setVideoSource(directUrl);
@@ -235,403 +193,409 @@ export default function WatchScreen() {
             setVideoSource({ uri: directUrl });
             setPlaybackError(null);
           } else {
-            setPlaybackError('Secure playback is unavailable for this title.');
+            setPlaybackError('Secure 4K stream is unavailable for this episode.');
           }
         }
       });
 
-    return () => { cancelled = true; };
-  }, [anime?.id, anime?.video_url, anime?.video_asset_key, anime?.episode_links, selectedEpisode]);
+    return () => {
+      cancelled = true;
+    };
+  }, [anime, selectedEpisode]);
 
-  const favorited = anime ? isFavorite(anime.id) : false;
-  const stats = anime ? getStatsForMedia(anime.id) : { average: 4.8, count: 14 };
-
-  // ⏪ Rewind 10 Seconds
-  const handleSeekBackward10 = () => {
-    try {
-      if (typeof player.seekBy === 'function') {
-        player.seekBy(-10);
-      } else if (typeof player.currentTime === 'number') {
-        player.currentTime = Math.max(0, player.currentTime - 10);
-      }
-    } catch (e: any) {
-      setPlaybackError('Seek operation failed.');
-    }
-  };
-
-  // ⏩ Fast Forward 10 Seconds
-  const handleSeekForward10 = () => {
-    try {
-      if (typeof player.seekBy === 'function') {
-        player.seekBy(10);
-      } else if (typeof player.currentTime === 'number') {
-        player.currentTime = player.currentTime + 10;
-      }
-    } catch (e: any) {
-      setPlaybackError('Seek operation failed.');
-    }
-  };
-
-  // ⏯ Play / Pause Toggle
   const handlePlayPause = () => {
-    try {
-      if (isPlaying) {
-        player.pause();
-        setIsPlaying(false);
-      } else {
-        player.play();
-        setIsPlaying(true);
-      }
-    } catch {
-      setIsPlaying(!isPlaying);
+    if (!player) return;
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
     }
   };
 
-  // 🔄 Aspect Ratio Toggle (16:9 Landscape ↔ 9:16 Vertical Reel)
-  const toggleAspectRatio = () => {
-    setAspectRatio((prev) => (prev === '16:9' ? '9:16' : '16:9'));
+  const handleToggleMute = () => {
+    if (!player) return;
+    player.muted = !isMuted;
+    setIsMuted(!isMuted);
   };
 
-  // ⚡ Change Playback Speed
+  const handleSeekForward10 = () => {
+    if (!player) return;
+    try {
+      player.currentTime = (player.currentTime || 0) + 10;
+    } catch (e) {
+      if (__DEV__) console.warn('[Watch] seek forward error:', e);
+    }
+  };
+
+  const handleSeekBackward10 = () => {
+    if (!player) return;
+    try {
+      player.currentTime = Math.max(0, (player.currentTime || 0) - 10);
+    } catch (e) {
+      if (__DEV__) console.warn('[Watch] seek backward error:', e);
+    }
+  };
+
   const handleSelectSpeed = (speed: number) => {
     setPlaybackSpeed(speed);
     setShowSpeedMenu(false);
-    try {
-      player.playbackRate = speed;
-    } catch (e: any) {
-      setPlaybackError('Failed to adjust playback speed.');
-    }
   };
 
-  // 🔇 Mute / Unmute Toggle
-  const handleToggleMute = () => {
-    const nextMuted = !isMuted;
-    setIsMuted(nextMuted);
-    try {
-      player.muted = nextMuted;
-    } catch (e: any) {
-      setPlaybackError('Failed to mute audio.');
-    }
-  };
-
-  // 🖥️ Enter Fullscreen (Cross-platform)
   const handleFullscreen = async () => {
     try {
       if (videoViewRef.current?.enterFullscreen) {
         await videoViewRef.current.enterFullscreen();
       }
-    } catch (e: any) {
+    } catch {
       setPlaybackError('Failed to toggle fullscreen.');
     }
   };
 
+  const { showSuccess } = useToast();
+
+  const handleShare = () => {
+    showSuccess('Stream link copied to clipboard');
+  };
+
+  const favorited = anime ? isFavorite(anime.id) : false;
+  const stats = anime ? getStatsForMedia(anime.id) : { average: 4.9, count: 64 };
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        {/* 🔙 Custom Top Navigation Bar */}
-        <View style={[styles.customNav, { backgroundColor: themeColors.backgroundElement, paddingTop: Math.max(insets.top, 12) + 8 }]}>
-          <Pressable style={styles.backButton} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}>
-            <ArrowLeft color={themeColors.text} size={22} />
-          </Pressable>
-          <Text style={[styles.navTitle, { color: themeColors.text }]} numberOfLines={1}>
-            {anime?.title ?? 'AniFlix Cinema'}
-          </Text>
-          <View style={{ width: 40 }} />
-        </View>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      
+      {/* 🔙 Minimalist Navigation Header Bar */}
+      <View style={[
+        styles.headerBar,
+        {
+          backgroundColor: themeColors.backgroundElement,
+          borderBottomColor: themeColors.border,
+          paddingTop: Math.max(insets.top + 6, 14),
+        }
+      ]}>
+        <Pressable
+          style={[styles.headerBtn, { backgroundColor: themeColors.backgroundCard }]}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
+          <ArrowLeft color={themeColors.text} size={20} />
+        </Pressable>
 
-        {/* 🎬 Video Player Container with Dynamic Aspect Ratio (16:9 or 9:16) */}
-        <View style={styles.playerWrapper}>
-          <View
-            style={[
-              styles.videoPlayerBox,
-              aspectRatio === '9:16' ? styles.videoBoxVertical : styles.videoBoxLandscape,
-              (isDesktop || isTablet) && styles.videoPlayerBoxDesktop,
-            ]}
-          >
-            <VideoView
-              ref={videoViewRef}
-              style={styles.video}
-              player={player}
-              contentFit={aspectRatio === '9:16' ? 'cover' : 'contain'}
-            />
-            {playbackError && (
-              <View style={styles.videoUnavailable}>
-                <Text style={styles.videoUnavailableText}>{playbackError}</Text>
-              </View>
-            )}
+        <Text style={[styles.headerTitle, { color: themeColors.text }]} numberOfLines={1}>
+          {anime?.title ?? 'AniFlix Cinema'}
+        </Text>
 
-            {/* Floating Aspect Ratio Badge */}
-            <View style={styles.ratioBadge}>
-              <Text style={styles.ratioBadgeText}>{aspectRatio}</Text>
-            </View>
-
-            {/* 🍿 Live Watch-to-Earn Rewards Floating Toast */}
-            {earnedNotification && (
-              <View style={styles.watchRewardToast}>
-                <Sparkles size={14} color="#FFD700" />
-                <Text style={styles.watchRewardText}>{earnedNotification}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* 🎛️ Cinema Player Controls Bar */}
-        <View style={[styles.controlsBar, { backgroundColor: themeColors.backgroundCard }]}>
-          {/* ⏪ -10s Rewind */}
-          <Pressable style={styles.controlBtn} onPress={handleSeekBackward10}>
-            <RotateCcw color={themeColors.text} size={20} />
-            <Text style={[styles.controlBtnLabel, { color: themeColors.text }]}>-10s</Text>
-          </Pressable>
-
-          {/* ⏯ Play/Pause */}
-          <Pressable
-            style={[styles.playPauseCircle, { backgroundColor: themeColors.primary, overflow: 'hidden' }]}
-            onPress={handlePlayPause}
-          >
-            <PrimaryGradient borderRadius={32} />
-            {isPlaying ? (
-              <Pause color="#fff" size={20} fill="#fff" />
-            ) : (
-              <Play color="#fff" size={20} fill="#fff" />
-            )}
-          </Pressable>
-
-          {/* ⏩ +10s Forward */}
-          <Pressable style={styles.controlBtn} onPress={handleSeekForward10}>
-            <RotateCw color={themeColors.text} size={20} />
-            <Text style={[styles.controlBtnLabel, { color: themeColors.text }]}>+10s</Text>
-          </Pressable>
-
-          {/* 🔄 Aspect Ratio Toggle Button (16:9 ↔ 9:16) */}
-          <Pressable style={[styles.controlBtn, styles.aspectToggleBtn]} onPress={toggleAspectRatio}>
-            {aspectRatio === '16:9' ? (
-              <Smartphone color="#00D2FF" size={20} />
-            ) : (
-              <Monitor color="#00D2FF" size={20} />
-            )}
-            <Text style={[styles.controlBtnLabel, { color: '#00D2FF' }]}>
-              {aspectRatio === '16:9' ? '9:16 Mode' : '16:9 Mode'}
-            </Text>
-          </Pressable>
-
-          {/* ⚡ Speed Selector Button */}
-          <Pressable
-            style={[
-              styles.controlBtn,
-              styles.speedBtn,
-              showSpeedMenu && { backgroundColor: themeColors.backgroundSelected },
-            ]}
-            onPress={() => setShowSpeedMenu(!showSpeedMenu)}
-          >
-            <Gauge color="#FFB800" size={18} />
-            <Text style={[styles.controlBtnLabel, { color: '#FFB800', fontWeight: '800' }]}>
-              {playbackSpeed}x
-            </Text>
-          </Pressable>
-
-          {/* 🔇 Volume / Mute Toggle */}
-          <Pressable style={[styles.controlBtn, styles.volumeBtn]} onPress={handleToggleMute}>
-            {isMuted ? (
-              <VolumeX color="#ff6666" size={20} />
-            ) : (
-              <Volume2 color="#4BB543" size={20} />
-            )}
-            <Text style={[styles.controlBtnLabel, { color: isMuted ? '#ff6666' : '#4BB543' }]}>
-              {isMuted ? 'Muted' : 'Sound'}
-            </Text>
-          </Pressable>
-
-          {/* 🖥️ Fullscreen Button */}
-          <Pressable style={[styles.controlBtn, styles.fullscreenBtn]} onPress={handleFullscreen}>
-            <Maximize2 color="#B388FF" size={20} />
-            <Text style={[styles.controlBtnLabel, { color: '#B388FF' }]}>Fullscreen</Text>
-          </Pressable>
-        </View>
-
-        {/* 🚀 Playback Speed Options Menu */}
-        {showSpeedMenu && (
-          <View style={[styles.speedMenu, { backgroundColor: themeColors.backgroundElement }]}>
-            <Text style={[styles.speedMenuTitle, { color: themeColors.textSecondary }]}>
-              SELECT PLAYBACK SPEED
-            </Text>
-            <View style={styles.speedOptionsGrid}>
-              {SPEED_OPTIONS.map((speed) => {
-                const isCurrent = playbackSpeed === speed;
-                return (
-                  <Pressable
-                    key={speed}
-                    style={[
-                      styles.speedOptionChip,
-                      isCurrent
-                        ? [styles.speedOptionChipActive, { backgroundColor: themeColors.primary }]
-                        : { backgroundColor: themeColors.backgroundCard },
-                    ]}
-                    onPress={() => handleSelectSpeed(speed)}
-                  >
-                    <Text style={[styles.speedOptionText, { color: isCurrent ? '#fff' : '#9A9AA8' }]}>
-                      {speed === 1.0 ? 'Normal (1x)' : `${speed}x`}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* DRM / Screen Protection Badge */}
-        <View style={styles.drmBanner}>
-          <Shield color={themeColors.primary} size={16} />
-          <Text style={styles.drmText}>
-            AniFlix Protected 4K Stream · Screen Recording & Screenshots Disabled
-          </Text>
-        </View>
-
-        {/* 📋 Anime Info & Meta */}
-        <View style={styles.infoSection}>
-          <View style={styles.badgeRow}>
-            {anime?.category && (
-              <View style={[styles.badge, { backgroundColor: '#7C4DFF' }]}>
-                <Text style={styles.badgeText}>{anime.category.toUpperCase()}</Text>
-              </View>
-            )}
-            <View style={[styles.badge, { backgroundColor: themeColors.primary }]}>
-              <Text style={styles.badgeText}>
-                {`${anime?.episodes ?? 1} EPS`}
-              </Text>
-            </View>
-            <View style={[styles.badgeGlass, { backgroundColor: themeColors.backgroundElement }]}>
-              <Text style={[styles.badgeGlassText, { color: themeColors.text }]}>{aspectRatio}</Text>
-            </View>
-            <View style={[styles.badgeGlass, { backgroundColor: themeColors.backgroundElement }]}>
-              <Text style={[styles.badgeGlassText, { color: themeColors.text }]}>{playbackSpeed}X SPEED</Text>
-            </View>
-            <View style={styles.ratingBadge}>
-              <Star color="#FFB800" size={12} fill="#FFB800" />
-              <Text style={styles.ratingText}>{stats.average.toFixed(1)}</Text>
-            </View>
-          </View>
-
-          <Text style={[styles.animeTitle, { color: themeColors.text }]}>
-            {language === 'ku' && anime?.title_ku ? anime.title_ku : (anime?.title ?? 'Anime Title')}
-          </Text>
-          <Text style={[styles.genreText, { color: themeColors.accentCyan }]}>
-            {anime?.genre ?? 'Action, Adventure, Fantasy'}
-          </Text>
-          <Text style={[styles.description, { color: themeColors.textSecondary }]}>
-            {language === 'ku' && anime?.description_ku 
-              ? anime.description_ku 
-              : (anime?.description || 'Follow the epic journey as new powers awaken and fierce battles decide the fate of both worlds.')}
-          </Text>
-
-          {/* ⚡ Quick Actions Row */}
-          <View style={styles.actionRow}>
-            <Pressable
-              style={[
-                styles.actionBtn,
-                { backgroundColor: favorited ? '#02060E' : themeColors.backgroundElement },
-              ]}
-              onPress={() => anime && toggleFavorite(anime)}
-            >
-              <Heart
-                color={favorited ? themeColors.primary : themeColors.text}
-                fill={favorited ? themeColors.primary : 'none'}
-                size={20}
-              />
-              <Text style={[styles.actionBtnText, { color: favorited ? themeColors.primary : themeColors.text }]}>
-                {favorited ? 'In My List' : '+ My List'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* 📑 Episodes List Picker */}
-        <View style={styles.episodesSection}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Episodes</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.epList}
-          >
-            {(() => {
-              // Determine which episodes to show buttons for
-              const availableEpisodes = anime?.episode_links && anime.episode_links.length > 0
-                ? anime.episode_links.map((l: any) => l.episode).sort((a: number, b: number) => a - b)
-                : Array.from({ length: anime?.episodes ?? 1 }).map((_, i) => i + 1);
-
-              return availableEpisodes.map((epNum: number) => {
-                const isActive = epNum === selectedEpisode;
-                return (
-                  <Pressable
-                    key={epNum}
-                    style={[
-                      styles.epCard,
-                      isActive && styles.epCardActive,
-                      isActive && { backgroundColor: themeColors.primary }
-                    ]}
-                    onPress={() => setSelectedEpisode(epNum)}
-                  >
-                    {isActive && <Play color="#fff" size={14} fill="#fff" />}
-                    <Text style={[styles.epCardText, { color: isActive ? '#fff' : themeColors.text }]}>
-                      Ep {epNum}
-                    </Text>
-                  </Pressable>
-                );
-              });
-            })()}
-          </ScrollView>
-        </View>
-
-        {/* 🌟 More Like This Carousel */}
-        {recommendations.length > 0 && (
-          <View style={styles.recsSection}>
-            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>You Might Also Like</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recList}>
-              {recommendations.map((item) => (
-                <Pressable
-                  key={item.id}
-                  style={[
-                    styles.recCard,
-                    {
-                      backgroundColor: themeColors.backgroundCard,
-                      width: railCardWidth,
-                    },
-                  ]}
-                  onPress={() => router.push({ pathname: '/watch', params: { id: item.id } })}
-                >
-                  <Image
-                    source={{
-                      uri: item.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
-                    }}
-                    style={[styles.recThumbnail, { width: railCardWidth, height: railCardHeight }]}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.recInfo}>
-                    <Text style={[styles.recTitle, { color: themeColors.text }]} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text style={[styles.recGenre, { color: themeColors.textSecondary }]} numberOfLines={1}>
-                      {item.genre ?? 'Anime'}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* ⭐ Ratings & Community Reviews Section */}
-        {anime && (
-          <ReviewsSection mediaId={anime.id} mediaTitle={anime.title} />
-        )}
-
-        {/* 📢 Google AdMob Banner */}
-        <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
-          <AdMobBanner placement="watch_bottom" />
-        </View>
-
-        <View style={{ height: 60 }} />
+        <Pressable
+          style={[styles.headerBtn, { backgroundColor: themeColors.backgroundCard }]}
+          onPress={handleShare}
+          accessibilityRole="button"
+          accessibilityLabel="Share"
+        >
+          <Share2 color={themeColors.text} size={18} />
+        </Pressable>
       </View>
-    </ScrollView>
+
+      {/* Share Toast Notification */}
+      {sharedToast && (
+        <View style={[styles.toastBanner, { backgroundColor: themeColors.backgroundCard }]}>
+          <Check color="#00E676" size={15} />
+          <Text style={styles.toastText}>Link copied to clipboard</Text>
+        </View>
+      )}
+
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
+          
+          {/* 🎬 Clean Cinema Video Frame */}
+          <View style={styles.playerWrapper}>
+            <View style={[styles.videoBox, (isDesktop || isTablet) && styles.videoBoxDesktop]}>
+              <VideoView
+                ref={videoViewRef}
+                style={styles.videoElement}
+                player={player}
+                contentFit="contain"
+              />
+
+              {playbackError && (
+                <View style={styles.videoErrorBox}>
+                  <Tv color={themeColors.error} size={32} />
+                  <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Sleek Minimalist Controls Bar */}
+            <View style={[styles.controlsRow, { backgroundColor: themeColors.backgroundElement, borderBottomColor: themeColors.border }]}>
+              <Pressable style={styles.controlIconBtn} onPress={handleSeekBackward10}>
+                <RotateCcw color={themeColors.textSecondary} size={18} />
+              </Pressable>
+
+              <Pressable style={styles.playPauseBtn} onPress={handlePlayPause}>
+                <PrimaryGradient borderRadius={20} />
+                {isPlaying ? <Pause color="#FFFFFF" size={18} fill="#FFFFFF" /> : <Play color="#FFFFFF" size={18} fill="#FFFFFF" />}
+              </Pressable>
+
+              <Pressable style={styles.controlIconBtn} onPress={handleSeekForward10}>
+                <RotateCw color={themeColors.textSecondary} size={18} />
+              </Pressable>
+
+              <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+
+              {/* Speed Menu Toggle */}
+              <Pressable
+                style={[styles.pillBtn, { backgroundColor: themeColors.backgroundCard }, showSpeedMenu && styles.pillBtnActive]}
+                onPress={() => setShowSpeedMenu(!showSpeedMenu)}
+              >
+                <Gauge color={showSpeedMenu ? themeColors.primary : themeColors.textSecondary} size={15} />
+                <Text style={[styles.pillBtnText, { color: showSpeedMenu ? themeColors.primary : themeColors.textSecondary }]}>
+                  {playbackSpeed}x
+                </Text>
+              </Pressable>
+
+              {/* Mute Button */}
+              <Pressable style={styles.controlIconBtn} onPress={handleToggleMute}>
+                {isMuted ? <VolumeX color={themeColors.error} size={18} /> : <Volume2 color={themeColors.textSecondary} size={18} />}
+              </Pressable>
+
+              {/* Fullscreen Button */}
+              <Pressable style={styles.controlIconBtn} onPress={handleFullscreen}>
+                <Maximize2 color={themeColors.textSecondary} size={18} />
+              </Pressable>
+            </View>
+
+            {/* Speed Selector Menu */}
+            {showSpeedMenu && (
+              <View style={[styles.speedMenu, { backgroundColor: themeColors.backgroundElement, borderBottomColor: themeColors.border }]}>
+                <View style={styles.speedRow}>
+                  {SPEED_OPTIONS.map((speed) => {
+                    const isCurrent = playbackSpeed === speed;
+                    return (
+                      <Pressable
+                        key={speed}
+                        style={[
+                          styles.speedChip,
+                          { backgroundColor: themeColors.backgroundCard },
+                          isCurrent && { backgroundColor: themeColors.primary }
+                        ]}
+                        onPress={() => handleSelectSpeed(speed)}
+                      >
+                        <Text style={[
+                          styles.speedChipText,
+                          { color: isCurrent ? '#FFFFFF' : themeColors.textSecondary }
+                        ]}>
+                          {speed === 1.0 ? '1x' : `${speed}x`}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* 🌟 NETFLIX-STYLE MEDIA POSTER HEADER CARD (Theme Colors Preserved) */}
+          {anime && (
+            <View style={[
+              styles.mediaRichCard,
+              { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }
+            ]}>
+              <View style={styles.mediaHeaderFlex}>
+                {/* Poster Artwork Image */}
+                <Image
+                  source={{ uri: anime.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
+                  style={styles.posterThumbnail}
+                  resizeMode="cover"
+                />
+
+                {/* Title & Metadata */}
+                <View style={styles.mediaHeaderInfo}>
+                  <View style={styles.badgeRow}>
+                    <View style={[styles.catBadge, { backgroundColor: themeColors.primary }]}>
+                      <Text style={styles.catBadgeText}>{(anime.category || 'ANIME').toUpperCase()}</Text>
+                    </View>
+                    <View style={[styles.hdBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, borderWidth: 1 }]}>
+                      <Text style={[styles.hdBadgeText, { color: themeColors.text }]}>4K ULTRA HD</Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.mediaTitleText, { color: themeColors.text }]} numberOfLines={2}>
+                    {language === 'ku' && anime.title_ku ? anime.title_ku : anime.title}
+                  </Text>
+
+                  <Text style={[styles.genreSubText, { color: themeColors.accentCyan || themeColors.primary }]}>
+                    {anime.genre ?? 'Action, Fantasy, Drama'}
+                  </Text>
+
+                  <View style={styles.statsRow}>
+                    <View style={styles.ratingBox}>
+                      <Star color="#FFB800" size={13} fill="#FFB800" />
+                      <Text style={styles.ratingVal}>{stats.average.toFixed(1)}</Text>
+                    </View>
+                    <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
+                    <Text style={[styles.epCountText, { color: themeColors.textSecondary }]}>{anime.episodes || 1} EPS</Text>
+                    <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
+                    <Text style={[styles.subLabelText, { color: themeColors.textMuted }]}>SUB & DUB</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Action CTAs Row */}
+              <View style={styles.richActionRow}>
+                <Pressable
+                  style={[
+                    styles.myListBtn,
+                    { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+                    favorited && { borderColor: themeColors.primary, backgroundColor: 'rgba(3, 86, 197, 0.15)' }
+                  ]}
+                  onPress={() => toggleFavorite(anime)}
+                >
+                  <Heart
+                    color={favorited ? themeColors.primary : themeColors.text}
+                    fill={favorited ? themeColors.primary : 'none'}
+                    size={18}
+                  />
+                  <Text style={[styles.myListBtnText, { color: favorited ? themeColors.primary : themeColors.text }]}>
+                    {favorited ? 'In My List' : '+ My List'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[styles.shareBtn, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
+                  onPress={handleShare}
+                >
+                  <Share2 color={themeColors.text} size={18} />
+                  <Text style={[styles.shareBtnText, { color: themeColors.text }]}>Share</Text>
+                </Pressable>
+              </View>
+
+              {/* Synopsis Box */}
+              <Pressable
+                style={[styles.synopsisWrapper, { backgroundColor: themeColors.backgroundElement }]}
+                onPress={() => setIsExpandedSynopsis(!isExpandedSynopsis)}
+              >
+                <Text style={[styles.synopsisText, { color: themeColors.textSecondary }]} numberOfLines={isExpandedSynopsis ? undefined : 3}>
+                  {language === 'ku' && anime.description_ku ? anime.description_ku : (anime.description || 'Experience this epic title with master audio and original subtitles.')}
+                </Text>
+                <Text style={[styles.readMoreBtn, { color: themeColors.primary }]}>
+                  {isExpandedSynopsis ? 'Show less' : 'Read more...'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* 📑 NETFLIX-STYLE EPISODES LIST */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Film color={themeColors.primary} size={18} />
+                <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Episodes ({anime?.episodes ?? 1})</Text>
+              </View>
+              <Text style={[styles.seasonTag, { color: themeColors.textMuted }]}>Season 1</Text>
+            </View>
+
+            <View style={styles.episodesListGrid}>
+              {(() => {
+                const availableEpisodes = anime?.episode_links && anime.episode_links.length > 0
+                  ? anime.episode_links.map((l: any) => l.episode).sort((a: number, b: number) => a - b)
+                  : Array.from({ length: anime?.episodes ?? 1 }).map((_, i) => i + 1);
+
+                return availableEpisodes.map((epNum: number) => {
+                  const isActive = epNum === selectedEpisode;
+                  return (
+                    <Pressable
+                      key={epNum}
+                      style={[
+                        styles.epCardTile,
+                        { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border },
+                        isActive && { borderColor: themeColors.primary, backgroundColor: themeColors.backgroundElement }
+                      ]}
+                      onPress={() => setSelectedEpisode(epNum)}
+                    >
+                      <View style={styles.epTileLeftRow}>
+                        <View style={[
+                          styles.epPlayIconBox,
+                          { backgroundColor: themeColors.backgroundElement },
+                          isActive && { backgroundColor: themeColors.primary }
+                        ]}>
+                          {isActive ? <Play color="#FFFFFF" size={14} fill="#FFFFFF" /> : <Text style={[styles.epTileNumberText, { color: themeColors.textSecondary }]}>{epNum}</Text>}
+                        </View>
+                        
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.epTileTitle, { color: themeColors.text }, isActive && { color: themeColors.primary }]}>
+                            Episode {epNum}
+                          </Text>
+                          <Text style={[styles.epTileMetaText, { color: themeColors.textMuted }]}>24 min · 4K Ultra HD</Text>
+                        </View>
+                      </View>
+
+                      {isActive ? (
+                        <View style={[styles.playingTag, { backgroundColor: themeColors.primaryGlow || 'rgba(3, 86, 197, 0.15)', borderColor: themeColors.primary }]}>
+                          <Sparkles size={12} color={themeColors.primary} />
+                          <Text style={[styles.playingTagText, { color: themeColors.primary }]}>NOW PLAYING</Text>
+                        </View>
+                      ) : (
+                        <Play color={themeColors.textMuted} size={16} />
+                      )}
+                    </Pressable>
+                  );
+                });
+              })()}
+            </View>
+          </View>
+
+          {/* 🌟 RECOMMENDATIONS RAIL (Theme-aware Poster Cards) */}
+          {recommendations.length > 0 && (
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Layers color={themeColors.primary} size={18} />
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>You Might Also Like</Text>
+                </View>
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recRail}>
+                {recommendations.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.recPosterCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, width: railCardWidth }]}
+                    onPress={() => router.push({ pathname: '/watch', params: { id: item.id } })}
+                  >
+                    <Image
+                      source={{ uri: item.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
+                      style={[styles.recPosterImg, { width: railCardWidth, height: railCardHeight }]}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.recBadgeOverlay}>
+                      <Star color="#FFB800" size={10} fill="#FFB800" />
+                      <Text style={styles.recBadgeText}>4.9</Text>
+                    </View>
+                    <View style={styles.recMetaContainer}>
+                      <Text style={[styles.recTitleText, { color: themeColors.text }]} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={[styles.recGenreText, { color: themeColors.textSecondary }]} numberOfLines={1}>
+                        {item.genre ?? 'Anime'}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* ⭐ COMMUNITY REVIEWS SECTION */}
+          {anime && (
+            <View style={{ marginTop: 16 }}>
+              <ReviewsSection mediaId={anime.id} mediaTitle={anime.title} />
+            </View>
+          )}
+
+          <View style={{ height: 80 }} />
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -639,344 +603,385 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentWrapper: {
-    width: '100%',
-    alignSelf: 'center',
-  },
-  customNav: {
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#242436',
   },
-  backButton: {
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 12,
+  },
+  toastBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderColor: '#00E676',
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+  },
+  toastText: {
+    color: '#00E676',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  contentWrapper: {
+    width: '100%',
+    alignSelf: 'center',
+  },
+
+  /* VIDEO PLAYER */
+  playerWrapper: {
+    width: '100%',
+    backgroundColor: '#000000',
+  },
+  videoBox: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000000',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoBoxDesktop: {
+    maxHeight: 520,
+  },
+  videoElement: {
+    width: '100%',
+    height: '100%',
+  },
+  videoErrorBox: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(10, 10, 15, 0.94)',
+    gap: 8,
+  },
+  videoErrorText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  /* CONTROLS ROW */
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  controlIconBtn: {
+    padding: 6,
+  },
+  playPauseBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  navTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#fff',
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 8,
+  divider: {
+    width: 1,
+    height: 18,
   },
-  playerWrapper: {
-    width: '100%',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
-  videoPlayerBox: {
-    width: '100%',
-    backgroundColor: '#000',
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoPlayerBoxDesktop: {
-    maxHeight: 560,
-  },
-  videoBoxLandscape: {
-    aspectRatio: 16 / 9,
-  },
-  videoBoxVertical: {
-    aspectRatio: 9 / 16,
-    maxHeight: 520,
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-  },
-  videoUnavailable: {
-    ...StyleSheet.absoluteFill,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    pointerEvents: 'none',
-  },
-  videoUnavailableText: {
-    color: '#9A9AA8',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  ratioBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  ratioBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  watchRewardToast: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
+  pillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(18, 18, 29, 0.92)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FFD700',
-    zIndex: 20,
-  },
-  watchRewardText: {
-    color: '#FFD700',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  controlsBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#242436',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  controlBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
     gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
-  controlBtnLabel: {
-    color: '#fff',
+  pillBtnActive: {
+    backgroundColor: 'rgba(3, 86, 197, 0.15)',
+  },
+  pillBtnText: {
     fontSize: 11,
     fontWeight: '700',
-  },
-  playPauseCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  aspectToggleBtn: {
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.4)',
-    backgroundColor: 'rgba(0, 210, 255, 0.1)',
-  },
-  speedBtn: {
-    borderWidth: 1,
-    borderColor: 'rgba(255, 184, 0, 0.4)',
-    backgroundColor: 'rgba(255, 184, 0, 0.1)',
-  },
-  volumeBtn: {
-    borderWidth: 1,
-    borderColor: 'rgba(75, 181, 67, 0.4)',
-    backgroundColor: 'rgba(75, 181, 67, 0.1)',
-  },
-  fullscreenBtn: {
-    borderWidth: 1,
-    borderColor: 'rgba(179, 136, 255, 0.4)',
-    backgroundColor: 'rgba(179, 136, 255, 0.1)',
   },
   speedMenu: {
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#242436',
   },
-  speedMenuTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  speedOptionsGrid: {
+  speedRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 8,
   },
-  speedOptionChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#242436',
+  speedChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
-  speedOptionChipActive: {
-    borderColor: '#0356C5',
-  },
-  speedOptionText: {
-    fontSize: 13,
+  speedChipText: {
+    fontSize: 12,
     fontWeight: '700',
   },
-  drmBanner: {
+
+  /* MEDIA RICH CARD */
+  mediaRichCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+  },
+  mediaHeaderFlex: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#12121A',
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#242436',
+    gap: 14,
   },
-  drmText: {
-    color: '#9A9AA8',
-    fontSize: 11,
-    fontWeight: '600',
+  posterThumbnail: {
+    width: 90,
+    height: 125,
+    borderRadius: 10,
   },
-  infoSection: {
-    padding: 18,
+  mediaHeaderInfo: {
+    flex: 1,
+    justifyContent: 'center',
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 6,
   },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  catBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 4,
   },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
+  catBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
   },
-  badgeGlass: {
-    backgroundColor: '#242436',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  hdBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 4,
   },
-  badgeGlassText: {
-    color: '#fff',
-    fontSize: 10,
+  hdBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  mediaTitleText: {
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  genreSubText: {
+    fontSize: 12,
     fontWeight: '700',
+    marginBottom: 8,
   },
-  ratingBadge: {
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 4,
-    gap: 4,
+    gap: 6,
   },
-  ratingText: {
+  ratingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255, 184, 0, 0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  ratingVal: {
     color: '#FFB800',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  dotSeparator: {
+    fontSize: 12,
+  },
+  epCountText: {
     fontSize: 11,
     fontWeight: '700',
   },
-  animeTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    marginBottom: 4,
-  },
-  genreText: {
-    fontSize: 13,
+  subLabelText: {
+    fontSize: 10,
     fontWeight: '700',
-    marginBottom: 10,
   },
-  description: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 18,
-  },
-  actionRow: {
+
+  /* RICH ACTION ROW */
+  richActionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 12,
   },
-  actionBtn: {
+  myListBtn: {
     flex: 1,
-    minWidth: 120,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 10,
     gap: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#242436',
   },
-  actionBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  episodesSection: {
-    marginTop: 8,
-    paddingVertical: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
+  myListBtnText: {
+    fontSize: 13,
     fontWeight: '800',
-    paddingHorizontal: 18,
-    marginBottom: 12,
   },
-  epList: {
-    paddingHorizontal: 18,
-    gap: 10,
-  },
-  epCard: {
+  shareBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 6,
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#242436',
   },
-  epCardActive: {
-    borderColor: '#0356C5',
-  },
-  epCardText: {
-    color: '#fff',
+  shareBtnText: {
     fontSize: 13,
+    fontWeight: '800',
+  },
+  synopsisWrapper: {
+    padding: 12,
+    borderRadius: 10,
+  },
+  synopsisText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  readMoreBtn: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+
+  /* SECTIONS */
+  sectionContainer: {
+    marginTop: 18,
+    paddingHorizontal: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  seasonTag: {
+    fontSize: 12,
     fontWeight: '700',
   },
-  recsSection: {
-    marginTop: 16,
+
+  /* EPISODES GRID TILES */
+  episodesListGrid: {
+    gap: 10,
   },
-  recList: {
-    paddingHorizontal: 18,
-    gap: 14,
+  epCardTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  recCard: {
+  epTileLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  epPlayIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  epTileNumberText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  epTileTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  epTileMetaText: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  playingTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  playingTagText: {
+    fontSize: 10,
+    fontWeight: '900',
+  },
+
+  /* RECOMMENDATIONS RAIL */
+  recRail: {
+    gap: 12,
+  },
+  recPosterCard: {
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#242436',
+    position: 'relative',
   },
-  recThumbnail: {
+  recPosterImg: {
     width: '100%',
   },
-  recInfo: {
+  recBadgeOverlay: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  recBadgeText: {
+    color: '#FFB800',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  recMetaContainer: {
     padding: 8,
   },
-  recTitle: {
+  recTitleText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  recGenre: {
+  recGenreText: {
     fontSize: 11,
     marginTop: 2,
   },

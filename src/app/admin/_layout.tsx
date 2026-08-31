@@ -10,7 +10,6 @@ export default function AdminLayout() {
 
   useEffect(() => {
     if (!isLoading && profile?.role !== 'admin') {
-      // Non-admin users get redirected away
       router.replace('/(tabs)');
     }
   }, [profile, isLoading, router]);
@@ -18,15 +17,12 @@ export default function AdminLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: themeColors.primary,
-        },
-        headerTintColor: '#ffffff',
+        headerShown: false,
         contentStyle: { backgroundColor: themeColors.background },
       }}>
-      <Stack.Screen name="index" options={{ title: 'Admin Panel' }} />
-      <Stack.Screen name="add-anime" options={{ title: 'Add New Anime', headerBackTitle: 'Panel' }} />
-      <Stack.Screen name="edit-anime" options={{ title: 'Edit Media', headerBackTitle: 'Panel' }} />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="add-anime" />
+      <Stack.Screen name="edit-anime" />
     </Stack>
   );
 }

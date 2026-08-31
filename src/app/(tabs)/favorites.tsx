@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   StyleSheet,
@@ -6,30 +7,50 @@ import {
   FlatList,
   Pressable,
   Image,
-  useWindowDimensions,
+  ScrollView,
 } from 'react-native';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
-import { useFavorites, AnimeItem } from '@/hooks/useFavorites';
+import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
-import { Play, Heart, Film } from 'lucide-react-native';
+import { 
+  Play, Heart, Star, Bookmark, Sparkles, Film, Clapperboard, Tv, Flame, Compass, TrendingUp, ChevronRight 
+} from 'lucide-react-native';
+import { EmptyState } from '@/components/EmptyState';
+import { GlobalNavbar } from '@/components/GlobalNavbar';
+import { PrimaryGradient } from '@/components/PrimaryGradient';
 
+const PLACEHOLDER_HERO = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80';
 const PLACEHOLDER_IMAGES = [
-  'https://picsum.photos/id/1015/800/1200',
-  'https://picsum.photos/id/1025/800/1200',
-  'https://picsum.photos/id/1062/800/1200',
-  'https://picsum.photos/id/1074/800/1200',
+  'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
+  'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&q=80',
+  'https://images.unsplash.com/photo-1563089145-599997674d42?w=800&q=80',
+  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80',
 ];
 
-import { Bookmark } from 'lucide-react-native';
-import { EmptyState } from '@/components/EmptyState';
+const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: any }[] = [
+  { id: 'All', label: 'All Saved', icon: Compass },
+  { id: 'Movies', label: 'Movies', icon: Film },
+  { id: 'Anime Movies', label: 'Anime', icon: Clapperboard },
+  { id: 'K-Drama', label: 'K-Drama', icon: Sparkles },
+  { id: 'Drama', label: 'Drama', icon: Tv },
+  { id: 'Anime Series', label: 'Series', icon: Flame },
+];
 
 export default function FavoritesScreen() {
   const router = useRouter();
   const themeColors = useTheme();
-  const { language } = useLanguage();
-  const { favorites, toggleFavorite } = useFavorites();
-  const { numCols, cardWidth, cardGap, pagePad, maxContentWidth } = useResponsive();
+  const { language, t } = useLanguage();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
+  const { numCols, cardWidth, cardGap, pagePad, maxContentWidth, heroHeight } = useResponsive();
+
+  const [activeCategory, setActiveCategory] = useState<'All' | MediaCategory>('All');
+
+  const filteredFavorites = activeCategory === 'All' 
+    ? favorites 
+    : favorites.filter(item => item.category === activeCategory);
+
+  const topHeroItem = favorites.length > 0 ? favorites[0] : null;
 
   const getImage = (anime: AnimeItem) => {
     if (anime.image_url) return anime.image_url;
@@ -43,69 +64,155 @@ export default function FavoritesScreen() {
     router.push({ pathname: '/watch', params: { id } });
   };
 
-  const renderCard = ({ item }: { item: AnimeItem }) => (
-    <View style={[styles.card, { backgroundColor: themeColors.backgroundCard, width: cardWidth }]}>
-      <Pressable onPress={() => handleWatch(item.id)} style={styles.imageContainer}>
-        <Image source={{ uri: getImage(item) }} style={styles.thumbnail} resizeMode="cover" />
+  const renderStandardCard = ({ item }: { item: AnimeItem }) => {
+    const favorited = isFavorite(item.id);
 
-        {/* Play Overlay Icon */}
-        <View style={styles.playOverlay}>
-          <View style={[styles.playCircle, { backgroundColor: themeColors.primary }]}>
-            <Play color="#fff" size={16} fill="#fff" />
+    return (
+      <Pressable
+        style={[styles.standardCard, { width: cardWidth }]}
+        onPress={() => handleWatch(item.id)}
+      >
+        <View style={[styles.posterCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, height: cardWidth * 1.45 }]}>
+          <Image source={{ uri: getImage(item) }} style={styles.posterImage} resizeMode="cover" />
+          <View style={styles.cardImageOverlay} />
+
+          {item.category && (
+            <View style={[styles.cardCategoryBadge, { backgroundColor: themeColors.primary }]}>
+              <PrimaryGradient borderRadius={4} />
+              <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
+            </View>
+          )}
+
+          <Pressable
+            style={[
+              styles.cardHeartBtn,
+              {
+                backgroundColor: favorited ? 'rgba(3, 86, 197, 0.35)' : 'rgba(0,0,0,0.5)',
+                borderColor: favorited ? themeColors.primary : 'rgba(255,255,255,0.2)',
+              },
+            ]}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              toggleFavorite(item);
+            }}
+          >
+            <Heart
+              color={favorited ? themeColors.primary : '#FFFFFF'}
+              fill={favorited ? themeColors.primary : 'rgba(0,0,0,0.4)'}
+              size={14}
+            />
+          </Pressable>
+
+          <View style={styles.centerPlayCircle}>
+            <View style={[styles.playCircleInner, { backgroundColor: themeColors.primary }]}>
+              <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
+            </View>
+          </View>
+
+          <View style={styles.epBadge}>
+            <Text style={styles.epBadgeText}>
+              {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
+            </Text>
           </View>
         </View>
 
-        {/* Favorite Heart Button */}
-        <Pressable
-          style={styles.heartButton}
-          onPress={(e) => {
-            e.stopPropagation?.();
-            toggleFavorite(item);
-          }}
-        >
-          <Heart color="#0356C5" fill="#0356C5" size={18} />
-        </Pressable>
-
-        {/* Category + episode badge */}
-        {item.category && (
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{item.category.toUpperCase()}</Text>
-          </View>
-        )}
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
+        <View style={styles.standardCardInfo}>
+          <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
+            {language === 'ku' && item.title_ku ? item.title_ku : item.title}
           </Text>
+          <View style={styles.cardMetaRow}>
+            <Star size={10} color="#FFB800" fill="#FFB800" />
+            <Text style={[styles.cardRatingText, { color: themeColors.textSecondary }]}>9.8</Text>
+            <Text style={[styles.cardMetaDot, { color: themeColors.textSecondary }]}>·</Text>
+            <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
+              {item.genre ?? item.category ?? 'Stream'}
+            </Text>
+          </View>
         </View>
       </Pressable>
-
-      <View style={styles.cardInfo}>
-        <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
-          {language === 'ku' && item.title_ku ? item.title_ku : item.title}
-        </Text>
-        <Text style={[styles.cardGenre, { color: themeColors.textSecondary }]} numberOfLines={1}>
-          {item.genre ?? item.category ?? 'Stream'}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <GlobalNavbar title="My Saved List" showBrandLogo={false} />
+
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
         {favorites.length > 0 ? (
           <FlatList
-            data={favorites}
+            data={filteredFavorites}
             keyExtractor={(item) => String(item.id)}
-            renderItem={renderCard}
+            renderItem={renderStandardCard}
             numColumns={numCols}
-            key={`fav-grid-${numCols}`}
-            contentContainerStyle={{ padding: pagePad, paddingBottom: 40 }}
+            key={`fav-home-grid-${numCols}`}
+            contentContainerStyle={{ padding: pagePad, paddingBottom: 60 }}
             columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
             ListHeaderComponent={
-              <View style={styles.header}>
-                <Text style={[styles.subCount, { color: themeColors.textSecondary }]}>
-                  {favorites.length} {favorites.length === 1 ? 'Title' : 'Titles'} Saved
+              <View style={styles.headerContainer}>
+                {/* 🏷️ Home Page Category Pills Bar */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.categoryScroll}
+                  contentContainerStyle={styles.categoryContent}
+                >
+                  {CATEGORIES.map((cat) => {
+                    const isActive = activeCategory === cat.id;
+                    const count = cat.id === 'All' 
+                      ? favorites.length 
+                      : favorites.filter(f => f.category === cat.id).length;
+                    const Icon = cat.icon;
+
+                    return (
+                      <Pressable
+                        key={cat.id}
+                        onPress={() => setActiveCategory(cat.id)}
+                        style={[
+                          styles.categoryChip,
+                          {
+                            backgroundColor: isActive ? themeColors.primary : themeColors.backgroundCard,
+                            borderColor: isActive ? themeColors.primary : themeColors.border,
+                          },
+                        ]}
+                      >
+                        {isActive && <PrimaryGradient borderRadius={20} />}
+                        <Icon size={12} color={isActive ? '#FFFFFF' : themeColors.textSecondary} />
+                        <Text
+                          style={[
+                            styles.categoryText,
+                            {
+                              color: isActive ? '#FFFFFF' : themeColors.textSecondary,
+                              fontWeight: isActive ? '800' : '600',
+                            },
+                          ]}
+                        >
+                          {cat.label} ({count})
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Section Header */}
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Sparkles color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+                      {activeCategory === 'All' ? 'Saved Titles' : activeCategory}
+                    </Text>
+                  </View>
+                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+                    {filteredFavorites.length} Titles
+                  </Text>
+                </View>
+              </View>
+            }
+            ListEmptyComponent={
+              <View style={[styles.emptyFilterBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+                <Bookmark size={36} color={themeColors.textSecondary} style={{ marginBottom: 8 }} />
+                <Text style={[styles.emptyFilterTitle, { color: themeColors.text }]}>No Saved Titles in {activeCategory}</Text>
+                <Text style={[styles.emptyFilterSub, { color: themeColors.textSecondary }]}>
+                  Select another category filter above or add titles to your watchlist.
                 </Text>
               </View>
             }
@@ -113,7 +220,7 @@ export default function FavoritesScreen() {
         ) : (
           <EmptyState
             icon={Bookmark}
-            title="Your List is Empty"
+            title="Your Watchlist is Empty"
             description="Tap the heart icon on any movie or series to save it to your personal watchlist."
             actionLabel="Explore Catalog"
             onAction={() => router.push('/(tabs)' as any)}
@@ -133,129 +240,254 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  header: {
-    marginBottom: 12,
+  headerContainer: {
+    marginBottom: 16,
+    gap: 16,
   },
-  subCount: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  card: {
-    borderRadius: 12,
+  heroCard: {
+    width: '100%',
+    borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#242436',
-  },
-  imageContainer: {
     position: 'relative',
-    aspectRatio: 2 / 3,
-    backgroundColor: '#12121A',
+    justifyContent: 'flex-end',
   },
-  thumbnail: {
+  heroBackdrop: {
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
   },
-  playOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    opacity: 0.9,
+  heroGradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(7, 7, 10, 0.65)',
   },
-  playCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
+  heroContent: {
+    padding: 16,
+    gap: 8,
+    zIndex: 5,
   },
-  heartButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'center',
+  heroTopBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  categoryBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+  heroBadgeText: {
+    color: '#FFB800',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 26,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
-  categoryBadgeText: {
-    color: '#fff',
-    fontSize: 9,
+  ratingText: {
+    color: '#FFB800',
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.5,
   },
-  badge: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  cardInfo: {
-    padding: 10,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  cardGenre: {
+  metaDot: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 12,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
+  metaText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  emptyIconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    justifyContent: 'center',
+  heroPlayBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginTop: 4,
   },
-  emptyTitle: {
-    fontSize: 22,
+  heroPlayText: {
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '800',
-    marginBottom: 8,
   },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 340,
-    marginBottom: 24,
+  categoryScroll: {
+    maxHeight: 40,
   },
-  browseButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 24,
+  categoryContent: {
+    gap: 8,
+    paddingHorizontal: 2,
   },
-  browseButtonText: {
-    color: '#fff',
-    fontSize: 15,
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  categoryText: {
+    fontSize: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  sectionCount: {
+    fontSize: 12,
     fontWeight: '700',
+  },
+  standardCard: {
+    marginBottom: 12,
+  },
+  posterCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    position: 'relative',
+  },
+  posterImage: {
+    width: '100%',
+    height: '100%',
+  },
+  cardImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  cardCategoryBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 5,
+    overflow: 'hidden',
+  },
+  cardCategoryText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
+  },
+  cardHeartBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    zIndex: 5,
+  },
+  centerPlayCircle: {
+    position: 'absolute',
+    top: '36%',
+    left: '50%',
+    transform: [{ translateX: -16 }, { translateY: -16 }],
+    zIndex: 4,
+  },
+  playCircleInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    opacity: 0.9,
+  },
+  epBadge: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  epBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  standardCardInfo: {
+    paddingTop: 6,
+    paddingHorizontal: 2,
+  },
+  cardTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  cardRatingText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cardMetaDot: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cardMeta: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  emptyFilterBox: {
+    padding: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  emptyFilterTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  emptyFilterSub: {
+    fontSize: 12,
+    textAlign: 'center',
   },
 });

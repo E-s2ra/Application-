@@ -1,11 +1,12 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { GlobalNavbar } from '@/components/GlobalNavbar';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
 import { updateAnime, getEditedMediaOverrides, getDeletedMediaIds } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Check, Lock, Sparkles, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Check, Lock, Sparkles, Plus, Trash2, Film, Link as LinkIcon, Image as ImageIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,7 +20,9 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CATEGORY_OPTIONS: { id: MediaCategory; label: string }[] = [
   { id: 'Movies', label: 'Movies' },
@@ -29,12 +32,16 @@ const CATEGORY_OPTIONS: { id: MediaCategory; label: string }[] = [
   { id: 'Anime Series', label: 'Anime Series' },
 ];
 
+import { useToast } from '@/hooks/useToast';
+
 export default function EditAnimeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const themeColors = useTheme();
-  const { user, profile } = useAuth();
-  const { maxContentWidth } = useResponsive();
+  const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
+  const { profile } = useAuth();
+  const { maxContentWidth, isMobile } = useResponsive();
+  const { showSuccess, showError } = useToast();
 
   const isAdmin = profile?.role === 'admin';
 
@@ -48,6 +55,10 @@ export default function EditAnimeScreen() {
   const [category, setCategory] = useState<MediaCategory>('Movies');
   const [isFeatured, setIsFeatured] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [newEpNum, setNewEpNum] = useState('');
+  const [newEpUrl, setNewEpUrl] = useState('');
+  const [linkError, setLinkError] = useState('');
 
   useEffect(() => {
     async function loadItem() {
@@ -94,10 +105,6 @@ export default function EditAnimeScreen() {
     }
     loadItem();
   }, [id]);
-
-  const [newEpNum, setNewEpNum] = useState('');
-  const [newEpUrl, setNewEpUrl] = useState('');
-  const [linkError, setLinkError] = useState('');
 
   const handleAddLink = () => {
     setLinkError('');
@@ -162,14 +169,13 @@ export default function EditAnimeScreen() {
 
     setSaving(false);
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert(`Changes to "${title}" have been saved and updated for all users! 🎉`);
-      router.replace('/admin');
-    } else {
-      Alert.alert('Updated! 🎉', `"${title}" has been saved and updated for all users.`, [
-        { text: 'Back to Panel', onPress: () => router.replace('/admin') },
-      ]);
+    if (!result.success) {
+      showError(result.error || 'Failed to update media.');
+      return;
     }
+
+    showSuccess(`Changes to "${title}" saved successfully`);
+    router.replace('/admin');
   };
 
   if (loadingInitial) {
@@ -184,20 +190,20 @@ export default function EditAnimeScreen() {
     return (
       <View style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={{ maxWidth: 600, width: '100%', justifyContent: 'center', alignItems: 'center', padding: 24, alignSelf: 'center', flex: 1 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#2E1012', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-            <Lock color="#FF4D4D" size={38} />
+          <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: 'rgba(239, 68, 68, 0.15)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+            <Lock color="#EF4444" size={36} />
           </View>
-          <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 8 }}>
+          <Text style={{ color: themeColors.text, fontSize: 20, fontWeight: '900', textAlign: 'center', marginBottom: 8 }}>
             Access Restricted
           </Text>
-          <Text style={{ color: themeColors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 }}>
-            Only administrators have permission to edit titles on AniFlix.
+          <Text style={{ color: themeColors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 18, marginBottom: 20 }}>
+            Only platform administrators have permission to edit titles on AniFlix.
           </Text>
           <Pressable
-            style={{ backgroundColor: themeColors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 10 }}
+            style={{ backgroundColor: themeColors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
             onPress={() => router.push('/(auth)/login' as any)}
           >
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Log In as Administrator</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}>Log In as Administrator</Text>
           </Pressable>
         </View>
       </View>
@@ -209,176 +215,129 @@ export default function EditAnimeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.container, { backgroundColor: themeColors.background }]}
     >
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { maxWidth: Math.min(maxContentWidth, 750), alignSelf: 'center', width: '100%' },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/admin'))}
-            style={[styles.backBtn, { backgroundColor: themeColors.backgroundElement }]}
-          >
-            <ArrowLeft color={themeColors.text} size={20} />
-          </Pressable>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={[styles.screenTitle, { color: themeColors.text }]}>Edit Media</Text>
-            <Text style={[styles.screenSubtitle, { color: themeColors.textSecondary }]}>
-              Changes will immediately update on all users&apos; screens
-            </Text>
+      <GlobalNavbar title="Edit Media Title" showBrandLogo={false} showBack={true} />
+
+      <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 800) }]}>
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Cover Poster Preview Box */}
+          <View style={[styles.posterPreviewCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+            <Image
+              source={{ uri: imageUrl.trim() || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&q=80' }}
+              style={styles.posterImage}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1, gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <ImageIcon size={14} color={themeColors.primary} />
+                <Text style={[styles.fieldLabel, { color: themeColors.text }]}>COVER POSTER IMAGE URL</Text>
+              </View>
+              <TextInput
+                style={[styles.inputField, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
+                placeholder="https://... (Poster URL)"
+                placeholderTextColor={themeColors.textMuted}
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                autoCapitalize="none"
+              />
+              <Text style={{ fontSize: 10, color: themeColors.textSecondary }}>Live preview updates above as you type URL.</Text>
+            </View>
           </View>
-        </View>
 
-        {/* Title Input */}
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.text }]}>Title *</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: themeColors.backgroundElement,
-                color: themeColors.text,
-                borderColor: themeColors.border,
-              },
-            ]}
-            placeholder="e.g. Solo Leveling Season 2"
-            placeholderTextColor={themeColors.textSecondary}
-            value={title}
-            onChangeText={setTitle}
-          />
-        </View>
+          {/* Title Input */}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: themeColors.text }]}>MEDIA TITLE *</Text>
+            <TextInput
+              style={[styles.inputField, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
+              placeholder="e.g. Solo Leveling Season 2"
+              placeholderTextColor={themeColors.textMuted}
+              value={title}
+              onChangeText={setTitle}
+            />
+          </View>
 
-        {/* Category Picker */}
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.text }]}>Category *</Text>
-          <View style={styles.categoryRow}>
-            {CATEGORY_OPTIONS.map((cat) => {
-              const selected = category === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  onPress={() => setCategory(cat.id)}
-                  style={[
-                    styles.categoryPill,
-                    {
-                      backgroundColor: selected ? themeColors.primary : themeColors.backgroundElement,
-                      borderColor: selected ? themeColors.primary : themeColors.border,
-                    },
-                  ]}
-                >
-                  <Text
+          {/* Category Picker */}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: themeColors.text }]}>CATEGORY *</Text>
+            <View style={styles.categoryChipRow}>
+              {CATEGORY_OPTIONS.map((cat) => {
+                const selected = category === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => setCategory(cat.id)}
                     style={[
-                      styles.categoryLabel,
-                      { color: selected ? '#ffffff' : themeColors.textSecondary },
+                      styles.categoryChip,
+                      {
+                        backgroundColor: selected ? themeColors.primary : themeColors.backgroundElement,
+                        borderColor: selected ? themeColors.primary : themeColors.border,
+                      },
                     ]}
                   >
-                    {cat.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        { color: selected ? '#FFFFFF' : themeColors.textSecondary },
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
 
-        {/* Episodes & Genre */}
-        <View style={styles.row}>
-          <View style={[styles.fieldGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={[styles.label, { color: themeColors.text }]}>Episodes</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: themeColors.backgroundElement,
-                  color: themeColors.text,
-                  borderColor: themeColors.border,
-                },
-              ]}
-              placeholder="e.g. 24"
-              placeholderTextColor={themeColors.textSecondary}
-              value={episodes}
-              onChangeText={setEpisodes}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={[styles.fieldGroup, { flex: 2, marginLeft: 8 }]}>
-            <Text style={[styles.label, { color: themeColors.text }]}>Genre</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: themeColors.backgroundElement,
-                  color: themeColors.text,
-                  borderColor: themeColors.border,
-                },
-              ]}
-              placeholder="e.g. Action, Fantasy"
-              placeholderTextColor={themeColors.textSecondary}
-              value={genre}
-              onChangeText={setGenre}
-            />
-          </View>
-        </View>
-
-        {/* Image URL */}
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.text }]}>Cover Image URL</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: themeColors.backgroundElement,
-                color: themeColors.text,
-                borderColor: themeColors.border,
-              },
-            ]}
-            placeholder="https://..."
-            placeholderTextColor={themeColors.textSecondary}
-            value={imageUrl}
-            onChangeText={setImageUrl}
-            autoCapitalize="none"
-          />
-        </View>
-
-        {/* Episode Link Manager */}
-        <View style={[styles.fieldGroup, { backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#242436', marginBottom: 24 }]}>
-          <Text style={[styles.label, { color: themeColors.text }]}>Add or Update Episode Link</Text>
-          
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-            <View style={{ minWidth: 80, flex: 1 }}>
+          {/* Episodes & Genre Row */}
+          <View style={styles.row}>
+            <View style={[styles.fieldGroup, { flex: 1 }]}>
+              <Text style={[styles.fieldLabel, { color: themeColors.text }]}>EPISODES COUNT</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: themeColors.backgroundElement,
-                    color: themeColors.text,
-                    borderColor: themeColors.border,
-                    marginBottom: 0
-                  },
-                ]}
+                style={[styles.inputField, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
+                placeholder="e.g. 24"
+                placeholderTextColor={themeColors.textMuted}
+                value={episodes}
+                onChangeText={setEpisodes}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={[styles.fieldGroup, { flex: 2 }]}>
+              <Text style={[styles.fieldLabel, { color: themeColors.text }]}>GENRE / TAGS</Text>
+              <TextInput
+                style={[styles.inputField, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
+                placeholder="e.g. Action, Fantasy"
+                placeholderTextColor={themeColors.textMuted}
+                value={genre}
+                onChangeText={setGenre}
+              />
+            </View>
+          </View>
+
+          {/* Episode Link Manager */}
+          <View style={[styles.episodeManagerCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <LinkIcon size={16} color={themeColors.primary} />
+              <Text style={[styles.fieldLabel, { color: themeColors.text, marginBottom: 0 }]}>EPISODE VIDEO LINKS MANAGER</Text>
+            </View>
+
+            <View style={styles.epInputRow}>
+              <TextInput
+                style={[styles.inputField, { width: 70, backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
                 placeholder="Ep #"
-                placeholderTextColor={themeColors.textSecondary}
+                placeholderTextColor={themeColors.textMuted}
                 value={newEpNum}
                 onChangeText={setNewEpNum}
                 keyboardType="number-pad"
                 editable={!saving}
               />
-            </View>
-            <View style={{ minWidth: 180, flex: 3 }}>
               <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: themeColors.backgroundElement,
-                    color: themeColors.text,
-                    borderColor: themeColors.border,
-                    marginBottom: 0
-                  },
-                ]}
-                placeholder="https://...mp4"
-                placeholderTextColor={themeColors.textSecondary}
+                style={[styles.inputField, { flex: 1, backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
+                placeholder="https://...mp4 or .m3u8"
+                placeholderTextColor={themeColors.textMuted}
                 value={newEpUrl}
                 onChangeText={setNewEpUrl}
                 autoCapitalize="none"
@@ -386,100 +345,87 @@ export default function EditAnimeScreen() {
                 editable={!saving}
               />
             </View>
-          </View>
-          
-          {linkError ? <Text style={{ color: '#FF4D4D', fontSize: 12, marginBottom: 8, fontWeight: 'bold' }}>{linkError}</Text> : null}
 
+            {linkError ? <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: '700' }}>{linkError}</Text> : null}
+
+            <Pressable
+              style={[styles.saveEpLinkBtn, { backgroundColor: themeColors.primary }]}
+              onPress={handleAddLink}
+              disabled={saving}
+            >
+              <Plus size={14} color="#FFFFFF" />
+              <Text style={styles.saveEpLinkText}>Save Episode Video Link</Text>
+            </Pressable>
+
+            {episodeLinks.length > 0 && (
+              <View style={{ marginTop: 10 }}>
+                <Text style={{ color: themeColors.textSecondary, fontSize: 10, fontWeight: '800', marginBottom: 6 }}>
+                  ACTIVE EPISODE LINKS ({episodeLinks.length}):
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {episodeLinks.map((link) => (
+                    <View key={link.episode} style={[styles.epChip, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+                      <Text style={[styles.epChipText, { color: themeColors.text }]}>Ep {link.episode}</Text>
+                      <Pressable onPress={() => handleRemoveLink(link.episode)}>
+                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '900', marginLeft: 4 }}>×</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Description */}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: themeColors.text }]}>SYNOPSIS / DESCRIPTION</Text>
+            <TextInput
+              style={[styles.inputField, styles.textArea, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
+              placeholder="Write a brief storyline synopsis..."
+              placeholderTextColor={themeColors.textMuted}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+
+          {/* Hero Featured Switch */}
+          <View style={[styles.switchCard, { backgroundColor: themeColors.backgroundCard, borderColor: isFeatured ? '#FFB800' : themeColors.border }]}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={16} color="#FFB800" />
+                <Text style={[styles.switchTitle, { color: themeColors.text }]}>Feature in Home Hero Carousel</Text>
+              </View>
+              <Text style={[styles.switchSub, { color: themeColors.textSecondary }]}>
+                Pin this title at the very top hero slider on Home screen.
+              </Text>
+            </View>
+            <Switch
+              value={isFeatured}
+              onValueChange={setIsFeatured}
+              trackColor={{ false: '#3A3A3C', true: themeColors.primary }}
+              thumbColor={isFeatured ? '#FFFFFF' : '#F4F3F4'}
+            />
+          </View>
+
+          {/* Primary CTA Submit Button */}
           <Pressable
-            style={{ backgroundColor: themeColors.primary, paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
-            onPress={handleAddLink}
+            style={[styles.submitBtn, { backgroundColor: themeColors.primary, opacity: saving ? 0.7 : 1 }]}
+            onPress={handleSubmit}
             disabled={saving}
           >
-            <Text style={{ color: '#fff', fontWeight: '800' }}>Save Episode Link</Text>
-          </Pressable>
-
-          {episodeLinks.length > 0 && (
-            <View style={{ marginTop: 16 }}>
-              <Text style={{ color: themeColors.textSecondary, fontSize: 12, marginBottom: 8, fontWeight: '700' }}>CURRENTLY ADDED EPISODES:</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {episodeLinks.map((link) => (
-                  <View key={link.episode} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#242436', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', marginRight: 6 }}>Ep {link.episode}</Text>
-                    <Pressable onPress={() => handleRemoveLink(link.episode)}>
-                      <Text style={{ color: '#FF4D4D', fontSize: 16, fontWeight: '900', lineHeight: 16 }}>×</Text>
-                    </Pressable>
-                  </View>
-                ))}
+            {saving ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <View style={styles.submitBtnInner}>
+                <Check size={18} color="#FFFFFF" />
+                <Text style={styles.submitBtnText}>Save Changes & Synchronize</Text>
               </View>
-            </View>
-          )}
-        </View>
-
-        {/* Description */}
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: themeColors.text }]}>Description</Text>
-          <TextInput
-            style={[
-              styles.input,
-              styles.textArea,
-              {
-                backgroundColor: themeColors.backgroundElement,
-                color: themeColors.text,
-                borderColor: themeColors.border,
-              },
-            ]}
-            placeholder="Write a synopsis..."
-            placeholderTextColor={themeColors.textSecondary}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
-        </View>
-
-        {/* Hero Featured Switch */}
-        <View
-          style={[
-            styles.switchRow,
-            {
-              backgroundColor: themeColors.backgroundElement,
-              borderColor: themeColors.border,
-            },
-          ]}
-        >
-          <View style={{ flex: 1, marginRight: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={18} color="#FFB800" />
-              <Text style={[styles.switchTitle, { color: themeColors.text }]}>Feature in Hero Carousel</Text>
-            </View>
-            <Text style={[styles.switchSubtitle, { color: themeColors.textSecondary }]}>
-              Highlights this media at the very top of the Home screen for all users
-            </Text>
-          </View>
-          <Switch
-            value={isFeatured}
-            onValueChange={setIsFeatured}
-            trackColor={{ false: '#3A3A3C', true: themeColors.primary }}
-            thumbColor={isFeatured ? '#ffffff' : '#f4f3f4'}
-          />
-        </View>
-
-        {/* Action Button */}
-        <Pressable
-          style={[
-            styles.submitBtn,
-            { backgroundColor: themeColors.primary, opacity: saving ? 0.7 : 1 },
-          ]}
-          onPress={handleSubmit}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text style={styles.submitBtnText}>Save Changes</Text>
-          )}
-        </Pressable>
-      </ScrollView>
+            )}
+          </Pressable>
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -488,106 +434,173 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  contentWrapper: {
+    flex: 1,
+    width: '100%',
+    alignSelf: 'center',
+  },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 60,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  screenSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  fieldGroup: {
-    marginBottom: 18,
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-    paddingTop: 12,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 6,
-  },
-  categoryIcon: {
-    fontSize: 14,
-  },
-  categoryLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  switchRow: {
+
+  /* HEADER */
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+  },
+
+  scrollContent: {
+    padding: 12,
+    paddingBottom: 60,
+    gap: 12,
+  },
+
+  /* POSTER PREVIEW */
+  posterPreviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 28,
+    gap: 12,
   },
-  switchTitle: {
-    fontSize: 15,
+  posterImage: {
+    width: 56,
+    height: 74,
+    borderRadius: 8,
+  },
+
+  fieldGroup: {
+    gap: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  inputField: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
+  },
+  textArea: {
+    height: 90,
+    textAlignVertical: 'top',
+    paddingTop: 10,
+  },
+
+  /* CATEGORIES */
+  categoryChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  categoryChipText: {
+    fontSize: 12,
     fontWeight: '700',
   },
-  switchSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
+
+  /* EPISODE MANAGER */
+  episodeManagerCard: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
   },
+  epInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  saveEpLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  saveEpLinkText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  epChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  epChipText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  /* SWITCH CARD */
+  switchCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  switchTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  switchSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+
+  /* SUBMIT BUTTON */
   submitBtn: {
-    height: 52,
+    height: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
+  },
+  submitBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   submitBtnText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
   },
 });

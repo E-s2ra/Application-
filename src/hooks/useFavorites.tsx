@@ -8,6 +8,8 @@ import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operati
 import { MediaCategory, AnimeItem } from '@/types';
 export { MediaCategory, AnimeItem };
 
+import { useToast } from '@/hooks/useToast';
+
 type FavoritesContextType = {
   favorites: AnimeItem[];
   isFavorite: (id: string) => boolean;
@@ -21,6 +23,7 @@ const STORAGE_KEY = 'user_anime_favorites_v1';
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { showSuccess, showInfo } = useToast();
   const [favorites, setFavorites] = useState<AnimeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -98,8 +101,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     if (exists) {
       updated = favorites.filter((fav) => String(fav.id) !== String(anime.id));
+      showInfo('Removed from My List');
     } else {
       updated = [anime, ...favorites];
+      showSuccess(`Added "${anime.title}" to My List`);
     }
 
     setFavorites(updated);
@@ -120,7 +125,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
             .insert({ user_id: user.id, anime_id: anime.id });
         }
       } catch (err: any) {
-        throw new Error(`Failed to sync favorite to cloud: ${err.message || err}`);
+        console.warn('Favorite sync error:', err);
       }
     }
   };

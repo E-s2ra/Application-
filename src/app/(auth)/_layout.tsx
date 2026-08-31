@@ -7,15 +7,12 @@ export default function AuthLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: themeColors.backgroundElement,
-        },
-        headerTintColor: themeColors.text,
+        headerShown: false,
         contentStyle: { backgroundColor: themeColors.background },
       }}>
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="signup" options={{ title: 'Create Account', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="forgot-password" options={{ title: 'Reset Password', headerBackTitle: 'Back' }} />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
+      <Stack.Screen name="forgot-password" />
     </Stack>
   );
 }
