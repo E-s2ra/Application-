@@ -9,6 +9,7 @@ import {
   Pressable,
   Platform,
 } from 'react-native';
+import { enableContentProtection, disableContentProtection } from '@/lib/content-protection';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,11 +26,7 @@ import {
   Volume2,
   VolumeX,
   Maximize2,
-  Share2,
-  Check,
   Tv,
-  Film,
-  Sparkles,
   Layers,
   Settings,
 } from 'lucide-react-native';
@@ -72,7 +69,6 @@ export default function WatchScreen() {
   const [selectedQuality, setSelectedQuality] = useState<VideoQuality>('4K (2160p)');
   const [selectedAudio, setSelectedAudio] = useState<AudioTrack>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
-  const [sharedToast, setSharedToast] = useState(false);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
 
   const videoViewRef = useRef<VideoView>(null);
@@ -85,6 +81,14 @@ export default function WatchScreen() {
       p.play();
     }
   });
+
+  // Enable DRM content protection when screen mounts; remove when leaving
+  useEffect(() => {
+    enableContentProtection();
+    return () => {
+      disableContentProtection();
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -278,10 +282,6 @@ export default function WatchScreen() {
 
   const { showSuccess } = useToast();
 
-  const handleShare = () => {
-    showSuccess('Stream link copied to clipboard');
-  };
-
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.9, count: 64 };
 
@@ -310,23 +310,11 @@ export default function WatchScreen() {
           {anime?.title ?? 'AniFlix Cinema'}
         </Text>
 
-        <Pressable
-          style={[styles.headerBtn, { backgroundColor: themeColors.backgroundCard }]}
-          onPress={handleShare}
-          accessibilityRole="button"
-          accessibilityLabel="Share"
-        >
-          <Share2 color={themeColors.text} size={18} />
-        </Pressable>
+        {/* Protected stream — no share/copy allowed */}
+        <View style={styles.headerBtn} />
       </View>
 
-      {/* Share Toast Notification */}
-      {sharedToast && (
-        <View style={[styles.toastBanner, { backgroundColor: themeColors.backgroundCard }]}>
-          <Check color="#00E676" size={15} />
-          <Text style={styles.toastText}>Link copied to clipboard</Text>
-        </View>
-      )}
+
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
@@ -339,6 +327,9 @@ export default function WatchScreen() {
                 style={styles.videoElement}
                 player={player}
                 contentFit="contain"
+                nativeControls={false}
+                allowsFullscreen={false}
+                allowsPictureInPicture={false}
               />
 
               {playbackError && (
@@ -501,13 +492,7 @@ export default function WatchScreen() {
                   </Text>
                 </Pressable>
 
-                <Pressable
-                  style={[styles.shareBtn, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
-                  onPress={handleShare}
-                >
-                  <Share2 color={themeColors.text} size={18} />
-                  <Text style={[styles.shareBtnText, { color: themeColors.text }]}>Share</Text>
-                </Pressable>
+                {/* Share button removed — stream links are protected */}
               </View>
 
               {/* Synopsis Box */}

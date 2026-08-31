@@ -394,13 +394,13 @@ type GamificationContextType = {
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
-const GAMIFICATION_STORAGE_KEY = 'aniflix_gamification_v3';
+const GAMIFICATION_STORAGE_KEY_PREFIX = 'aniflix_gamification_v3';
 
 export function GamificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [coins, setCoins] = useState(450);
-  const [xp, setXp] = useState(580);
-  const [streakDays, setStreakDays] = useState(4);
+  const [coins, setCoins] = useState(0);
+  const [xp, setXp] = useState(0);
+  const [streakDays, setStreakDays] = useState(0);
   const [hasClaimedDailyStreak, setHasClaimedDailyStreak] = useState(false);
   const [canSpinWheel, setCanSpinWheel] = useState(true);
   const [vipDaysRemaining, setVipDaysRemaining] = useState(0);
@@ -439,13 +439,27 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   // Sync with Supabase on user sign-in & load cached state
   useEffect(() => {
+    // Reset all state when user changes (prevents old session leaking into new account)
+    setCoins(0);
+    setXp(0);
+    setStreakDays(0);
+    setVipDaysRemaining(0);
+    setVipExpiresAt(null);
+    setHasClaimedDailyStreak(false);
+    setCanSpinWheel(true);
+
     async function loadData() {
       try {
+        // Use a per-user storage key so accounts never share cached VIP state
+        const storageKey = user?.id
+          ? `${GAMIFICATION_STORAGE_KEY_PREFIX}_${user.id}`
+          : GAMIFICATION_STORAGE_KEY_PREFIX;
+
         let raw: string | null = null;
         if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          raw = localStorage.getItem(GAMIFICATION_STORAGE_KEY);
+          raw = localStorage.getItem(storageKey);
         } else {
-          raw = await AsyncStorage.getItem(GAMIFICATION_STORAGE_KEY);
+          raw = await AsyncStorage.getItem(storageKey);
         }
         if (raw) {
           const parsed = JSON.parse(raw);
@@ -455,20 +469,24 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           if (parsed.hasClaimedDailyStreak !== undefined)
             setHasClaimedDailyStreak(parsed.hasClaimedDailyStreak);
           if (parsed.canSpinWheel !== undefined) setCanSpinWheel(parsed.canSpinWheel);
-          
-          let loadedExpiresAt = parsed.vipExpiresAt;
+
+          // Only restore VIP from cache if the expiry is in the future
+          const loadedExpiresAt = parsed.vipExpiresAt;
           if (loadedExpiresAt) {
             const diffMs = new Date(loadedExpiresAt).getTime() - Date.now();
             const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-            setVipDaysRemaining(days);
-            setVipExpiresAt(loadedExpiresAt);
-          } else if (parsed.vipDaysRemaining) {
-            const exp = new Date();
-            exp.setDate(exp.getDate() + parsed.vipDaysRemaining);
-            const expString = exp.toISOString();
-            setVipExpiresAt(expString);
-            setVipDaysRemaining(parsed.vipDaysRemaining);
+            // Treat as VIP only if still valid
+            if (days > 0) {
+              setVipDaysRemaining(days);
+              setVipExpiresAt(loadedExpiresAt);
+            } else {
+              // Expired — clear it
+              setVipDaysRemaining(0);
+              setVipExpiresAt(null);
+            }
           }
+          // Note: legacy vipDaysRemaining without expiry is intentionally ignored
+          // to avoid permanently granting VIP with no expiration date.
 
           if (parsed.activeThemeId) setActiveThemeId(parsed.activeThemeId);
           if (parsed.unlockedThemeIds) setUnlockedThemeIds(parsed.unlockedThemeIds);
@@ -476,7 +494,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           if (parsed.badges) setBadges(parsed.badges);
         }
 
-        // Live Supabase Sync
+        // Live Supabase Sync — always authoritative over local cache
         if (user?.id && !user.id.startsWith('guest-')) {
           const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2500));
           const syncPromise = (async () => {
@@ -492,12 +510,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
               if (profile.xp !== undefined && profile.xp !== null) setXp(profile.xp);
               if (profile.streak_days !== undefined && profile.streak_days !== null)
                 setStreakDays(profile.streak_days);
-              if (profile.is_vip !== undefined && profile.is_vip !== null) {
-                if (profile.vip_expires_at) {
-                  const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
-                  const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-                  setVipDaysRemaining(days);
-                }
+
+              // Always authoritatively set VIP based on DB — even if is_vip=false
+              if (profile.is_vip === true && profile.vip_expires_at) {
+                const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
+                const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                setVipDaysRemaining(days);
+                setVipExpiresAt(days > 0 ? profile.vip_expires_at : null);
+              } else {
+                // Not VIP or no expiry — clear any stale local state
+                setVipDaysRemaining(0);
+                setVipExpiresAt(null);
               }
             }
 
@@ -526,6 +549,11 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   const persist = async (updates: any, skipDbSync = false) => {
     try {
+      // Always store under the per-user key so accounts don't share state
+      const storageKey = user?.id
+        ? `${GAMIFICATION_STORAGE_KEY_PREFIX}_${user.id}`
+        : GAMIFICATION_STORAGE_KEY_PREFIX;
+
       const stateToSave = {
         coins,
         xp,
@@ -542,9 +570,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       };
       const json = JSON.stringify(stateToSave);
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        localStorage.setItem(GAMIFICATION_STORAGE_KEY, json);
+        localStorage.setItem(storageKey, json);
       } else {
-        await AsyncStorage.setItem(GAMIFICATION_STORAGE_KEY, json);
+        await AsyncStorage.setItem(storageKey, json);
       }
 
       // Sync to Supabase profiles in background
