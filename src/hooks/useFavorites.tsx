@@ -5,25 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
-
-export type MediaCategory = 'Movies' | 'Anime Movies' | 'K-Drama' | 'Drama' | 'Anime Series';
-
-export type AnimeItem = {
-  id: string;
-  title: string;
-  image_url: string | null;
-  video_url?: string | null;
-  video_asset_key?: string | null;
-  episodes: number;
-  genre: string | null;
-  category?: MediaCategory | string;
-  is_featured: boolean;
-  description?: string | null;
-  description_ku?: string | null;
-  title_ku?: string | null;
-  published_at?: string | null;
-  episode_links?: { episode: number; url: string }[];
-};
+import { MediaCategory, AnimeItem } from '@/types';
+export { MediaCategory, AnimeItem };
 
 type FavoritesContextType = {
   favorites: AnimeItem[];

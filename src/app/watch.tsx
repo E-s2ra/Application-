@@ -194,7 +194,7 @@ export default function WatchScreen() {
     let cancelled = false;
 
     // Check if anime already has a direct HTTP/HTTPS link (e.g. Cloudflare R2 or CDN URL)
-    const specificEpisodeUrl = anime.episode_links?.find(e => e.episode === selectedEpisode)?.url?.trim();
+    const specificEpisodeUrl = anime.episode_links?.find((e: any) => e.episode === selectedEpisode)?.url?.trim();
 
     const directUrl =
       (specificEpisodeUrl && specificEpisodeUrl.startsWith('http'))
@@ -549,10 +549,10 @@ export default function WatchScreen() {
             {(() => {
               // Determine which episodes to show buttons for
               const availableEpisodes = anime?.episode_links && anime.episode_links.length > 0
-                ? anime.episode_links.map(l => l.episode).sort((a, b) => a - b)
+                ? anime.episode_links.map((l: any) => l.episode).sort((a: number, b: number) => a - b)
                 : Array.from({ length: anime?.episodes ?? 1 }).map((_, i) => i + 1);
 
-              return availableEpisodes.map((epNum) => {
+              return availableEpisodes.map((epNum: number) => {
                 const isActive = epNum === selectedEpisode;
                 return (
                   <Pressable
