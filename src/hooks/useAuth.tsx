@@ -213,16 +213,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [userId, verifyCurrentDevice]);
 
-  const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const normalized = normalizeEmail(email);
-    const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
+  const signIn = async (inputIdentifier: string, password: string): Promise<{ error: string | null }> => {
+    try {
+      let targetEmail = normalizeEmail(inputIdentifier);
 
-    if (error) {
-      return { error: error.message };
+      // If user entered a username instead of an email (e.g. "esra99san"), resolve their email from profiles
+      if (!isValidEmail(targetEmail)) {
+        const { data: foundProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .ilike('username', targetEmail)
+          .maybeSingle();
+
+        if (foundProfile?.email) {
+          targetEmail = foundProfile.email.toLowerCase();
+        }
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: targetEmail,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: 'Invalid email/username or password. Please check your credentials.' };
+        }
+        if (error.message.includes('Email not confirmed')) {
+          return { error: 'Please check your email inbox and confirm your account before logging in.' };
+        }
+        return { error: error.message };
+      }
+
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        await fetchProfile(data.session.user.id, data.session.user.email);
+        await claimCurrentDevice();
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      console.warn('[useAuth] signIn error:', err);
+      return { error: err.message || 'Network error. Please check your connection and try again.' };
     }
-
-    await claimCurrentDevice();
-    return { error: null };
   };
 
   const signUp = async (
