@@ -1,5 +1,5 @@
 
-import { dockerDb } from './docker-db';
+import { supabase } from './supabase';
 import {
   ADMOB_IDS,
   ANDROID_BANNER_ID,
@@ -47,8 +47,8 @@ export async function recordRewardedAdToSupabase(
       };
     }
 
-    // 1. Try secure RPC function 'claim_rewarded_ad' on Docker Postgres
-    const { data: rpcData, error: rpcError } = await dockerDb.rpc('claim_rewarded_ad', {
+    // 1. Try secure RPC function 'claim_rewarded_ad'
+    const { data: rpcData, error: rpcError } = await supabase.rpc('claim_rewarded_ad', {
       p_ad_unit_id: adUnitId,
       p_reward_type: rewardType,
       p_verification_token: `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -58,8 +58,8 @@ export async function recordRewardedAdToSupabase(
       return { success: true, data: rpcData };
     }
 
-    // 2. Resilient Direct Table Insert & Atomic Update Fallback on Docker Postgres
-    const { error: insertError } = await dockerDb.from('rewarded_ads').insert({
+    // 2. Resilient fallback: direct insert + profile update
+    const { error: insertError } = await supabase.from('rewarded_ads').insert({
       user_id: userId,
       ad_unit_id: adUnitId,
       reward_type: rewardType,
@@ -68,10 +68,10 @@ export async function recordRewardedAdToSupabase(
     });
 
     if (insertError) {
-      console.warn('Docker rewarded_ads insert note:', insertError.message);
+      console.warn('rewarded_ads insert note:', insertError.message);
     }
 
-    const { data: profile } = await dockerDb
+    const { data: profile } = await supabase
       .from('profiles')
       .select('coins, xp, level')
       .eq('id', userId)
@@ -82,7 +82,7 @@ export async function recordRewardedAdToSupabase(
       const newXP = (profile.xp || 0) + ADMOB_REWARDS.rewardedAdXP;
       const newLevel = Math.floor(newXP / 300) + 1;
 
-      await dockerDb
+      await supabase
         .from('profiles')
         .update({
           coins: newCoins,
@@ -110,3 +110,4 @@ export async function recordRewardedAdToSupabase(
     return { success: false, error: err.message };
   }
 }
+
