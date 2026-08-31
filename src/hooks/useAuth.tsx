@@ -88,36 +88,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (supaProfile) {
-        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
-        const currentEmail = providedEmail || user?.email;
-        const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
-        const expectedRole = isAppAdmin ? 'admin' : (supaProfile.role || 'user');
-
-        setProfile({
-          ...(supaProfile as Profile),
-          role: expectedRole,
-        });
+        // Role is sourced exclusively from the database — no client-side override.
+        setProfile(supaProfile as Profile);
       } else {
-        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
-        const currentEmail = providedEmail || user?.email;
-        const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
-
+        // Profile row not yet created (e.g. immediately after signup before trigger fires).
+        // Default to 'user' — never elevate role client-side.
         const fallback: Profile = {
           id: uId,
-          full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User',
-          role: isAppAdmin ? 'admin' : 'user',
+          full_name: providedEmail?.split('@')[0] || 'User',
+          role: 'user',
         };
         setProfile(fallback);
       }
     } catch {
-      const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
-      const currentEmail = providedEmail || user?.email;
-      const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
-
+      // Network error — fallback to minimal non-elevated profile.
       setProfile({
         id: uId,
-        full_name: session?.user?.user_metadata?.full_name || 'User',
-        role: isAppAdmin ? 'admin' : 'user',
+        full_name: 'User',
+        role: 'user',
       });
     }
   };

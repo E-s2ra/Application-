@@ -1,14 +1,14 @@
 import { supabase } from '@/lib/supabase';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { AnimeItem } from '@/types';
-import { DEFAULT_CATALOG } from '@/app/(tabs)/index';
 
 /**
- * MediaService — Encapsulates media catalog queries, overrides, and administrative mutations.
+ * MediaService — Encapsulates media catalog queries and local admin-edit overrides.
  */
 export const MediaService = {
   /**
-   * Fetches active media catalog combining Cloud Supabase rows, local overrides, and fallback catalog items.
+   * Fetches the active media catalog from Supabase, merging any locally-cached admin edits.
+   * If the database is unreachable, returns any available local overrides.
    */
   async getCatalog(): Promise<AnimeItem[]> {
     try {
@@ -27,9 +27,10 @@ export const MediaService = {
         .order('created_at', { ascending: false });
 
       const res = (await Promise.race([fetchPromise, timeoutPromise])) as any;
-      const safeData = (res && res.data && !res.error) ? res.data : [];
+      const safeData: any[] = res?.data && !res.error ? res.data : [];
 
-      const customItems = safeData
+      // Apply deletions and merge any admin-edit overrides
+      const items = safeData
         .filter((item: any) => !deletedIds.includes(item.id))
         .map((item: any) => ({
           ...item,
@@ -37,30 +38,42 @@ export const MediaService = {
           ...(overrides[item.id] || {}),
         })) as AnimeItem[];
 
-      const defaultItems = DEFAULT_CATALOG
-        .filter((d: AnimeItem) => !deletedIds.includes(d.id))
-        .map((d: AnimeItem) => ({ ...d, ...(overrides[d.id] || {}) }));
+      // Prepend locally-created items that are not yet in the DB result
+      const localOnlyItems = Object.values(overrides).filter(
+        (override: any) =>
+          override?.id &&
+          !deletedIds.includes(override.id) &&
+          !safeData.some((d: any) => d.id === override.id)
+      ) as AnimeItem[];
 
-      const newLocalItems = Object.values(overrides)
-        .filter(
-          (override: any) =>
-            !deletedIds.includes(override.id) &&
-            !safeData.some((d: any) => d.id === override.id) &&
-            !DEFAULT_CATALOG.some((d: AnimeItem) => d.id === override.id)
-        ) as AnimeItem[];
-
-      return [...newLocalItems, ...customItems, ...defaultItems];
+      return [...localOnlyItems, ...items];
     } catch (err) {
-      console.warn('[MediaService] Catalog fetch fallback:', err);
-      return DEFAULT_CATALOG;
+      console.warn('[MediaService] Catalog fetch error:', err);
+      return [];
     }
   },
 
   /**
-   * Fetches detailed media item by ID.
+   * Fetches a single media item by ID directly from the database.
    */
   async getMediaById(id: string): Promise<AnimeItem | null> {
-    const catalog = await this.getCatalog();
-    return catalog.find((item) => item.id === id) || null;
+    try {
+      const overrides = await getEditedMediaOverrides();
+
+      const { data, error } = await supabase
+        .from('anime')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error || !data) {
+        // Check local overrides for admin-created items not yet in DB
+        return (overrides[id] as AnimeItem) || null;
+      }
+
+      return { ...data, ...(overrides[id] || {}) } as AnimeItem;
+    } catch {
+      return null;
+    }
   },
 };

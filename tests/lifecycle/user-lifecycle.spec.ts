@@ -8,12 +8,17 @@ test.describe('Real User Lifecycle E2E Test Suite', () => {
     password: `E2EPass123!`,
   };
   const adminUser = {
-    email: 'esra99san@gmail.com',
-    password: 'E20440891esra@@',
+    email: process.env.PLAYWRIGHT_ADMIN_EMAIL || '',
+    password: process.env.PLAYWRIGHT_ADMIN_PASSWORD || '',
   };
 
   test('Full User Lifecycle: Registration -> Normal Features -> Admin VIP Grant -> VIP Unlocked', async ({ page }) => {
     test.setTimeout(120000); // 2 minute test budget for complete E2E lifecycle
+
+    if (!adminUser.email || !adminUser.password) {
+      test.skip(true, 'Admin credentials not set. Set PLAYWRIGHT_ADMIN_EMAIL and PLAYWRIGHT_ADMIN_PASSWORD env vars.');
+      return;
+    }
 
     // ==========================================
     // STEP 1: REGISTER FRESH NEW USER ACCOUNT

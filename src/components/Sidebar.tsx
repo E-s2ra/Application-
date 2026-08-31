@@ -23,10 +23,10 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useTranslation();
   
-  const isAdmin = user?.email?.toLowerCase() === 'esra99san@gmail.com';
+  const isAdmin = profile?.role === 'admin';
 
   const [slideAnim] = useState(new Animated.Value(-300));
 

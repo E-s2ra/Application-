@@ -20,12 +20,13 @@ import { LanguageProvider } from '@/hooks/use-language';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function PrivacyProtection() {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
 
   useEffect(() => {
     if (Platform.OS === 'web' || isLoading) return;
 
-    const isAdmin = user?.email?.toLowerCase() === 'esra99san@gmail.com';
+    // Use database role — not email comparison — as the source of truth.
+    const isAdmin = profile?.role === 'admin';
 
     if (isAdmin) {
       void ScreenCapture.allowScreenCaptureAsync('app-security');
@@ -36,7 +37,7 @@ function PrivacyProtection() {
         if (ScreenCapture.enableAppSwitcherProtectionAsync) void ScreenCapture.enableAppSwitcherProtectionAsync(1);
       }
     }
-  }, [user, isLoading]);
+  }, [user, profile, isLoading]);
 
   return null;
 }

@@ -107,133 +107,35 @@ export async function addAnime(anime: {
     episode_links?: { episode: number; url: string }[];
 }): Promise<AdminOperationResult<any>> {
     try {
-        const videoValue = anime.video_asset_key || null;
+        // All admin CRUD routes through the Edge Function which enforces server-side
+        // admin verification, audit logging, and consistent schema handling.
+        const edgeResult = await callAdminOperation<any>('add_anime', { anime });
 
-        // The local Docker database insert has been removed because dockerDb is now pointing
-        // to the exact same cloud Supabase instance, which was causing duplicate posts.
-
-        // Attempt 1: Standard video_url field in Supabase
-        let { data, error } = await supabase
-            .from('anime')
-            .insert({
-                title: anime.title,
-                description: anime.description || null,
-                image_url: anime.image_url || null,
-                video_url: videoValue,
-                episodes: anime.episodes || 1,
-                genre: anime.genre || null,
-                category: anime.category || 'Anime Series',
-                is_featured: anime.is_featured ?? false,
-                episode_links: anime.episode_links || [],
-            })
-            .select()
-            .single();
-
-        // If error specifically mentions video_url column missing, retry with video_asset_key
-        if (error && (error.message.includes('video_url') || error.message.includes('schema cache'))) {
-            const retryAssetKey = await supabase
-                .from('anime')
-                .insert({
-                    title: anime.title,
-                    description: anime.description || null,
-                    image_url: anime.image_url || null,
-                    video_asset_key: videoValue,
-                    episodes: anime.episodes || 1,
-                    genre: anime.genre || null,
-                    category: anime.category || 'Anime Series',
-                    is_featured: anime.is_featured ?? false,
-                    episode_links: anime.episode_links || [],
-                })
-                .select()
-                .single();
-
-            if (!retryAssetKey.error && retryAssetKey.data) {
-                await saveEditedMediaOverride(retryAssetKey.data.id, retryAssetKey.data);
-                return { success: true, data: retryAssetKey.data };
-            }
-            error = retryAssetKey.error;
+        if (!edgeResult.success) {
+            return {
+                success: false,
+                error: edgeResult.error || 'Failed to publish media. Please check your connection and try again.',
+            };
         }
 
-        // If still failing on column schema cache, insert standard core columns and save override
-        if (error && (error.message.includes('column') || error.message.includes('schema cache'))) {
-            const coreRetry = await supabase
-                .from('anime')
-                .insert({
-                    title: anime.title,
-                    description: anime.description || null,
-                    image_url: anime.image_url || null,
-                    episodes: anime.episodes || 1,
-                    genre: anime.genre || null,
-                    category: anime.category || 'Anime Series',
-                    is_featured: anime.is_featured ?? false,
-                    episode_links: anime.episode_links || [],
-                })
-                .select()
-                .single();
+        const insertedData = Array.isArray(edgeResult.data) ? edgeResult.data[0] : edgeResult.data;
 
-            if (!coreRetry.error && coreRetry.data) {
-                const overrideData = { ...coreRetry.data };
-                if (videoValue) {
-                    overrideData.video_asset_key = videoValue;
-                    overrideData.video_url = videoValue;
-                }
-                await saveEditedMediaOverride(coreRetry.data.id, overrideData);
-                return { success: true, data: overrideData };
-            }
+        // Cache the newly added item locally so it appears immediately in the admin UI
+        // before the next catalog refresh. This is a UI convenience only — the source of
+        // truth is always the database.
+        if (insertedData?.id) {
+            await saveEditedMediaOverride(insertedData.id, {
+                ...insertedData,
+                episode_links: anime.episode_links,
+            });
         }
 
-        if (error) {
-            const edgeResult = await callAdminOperation('add_anime', { anime });
-            if (edgeResult.success && edgeResult.data) {
-                // edgeResult.data might be an array if the Edge function returned raw Supabase insert result
-                const insertedData = Array.isArray(edgeResult.data) ? edgeResult.data[0] : edgeResult.data;
-                const dataId = insertedData?.id;
-                
-                if (dataId) {
-                    // Merge episode_links into the local override so the UI can play the video,
-                    // even if the Edge function hasn't been updated to insert them into Supabase yet.
-                    await saveEditedMediaOverride(dataId, { ...insertedData, episode_links: anime.episode_links });
-                }
-                return { success: true, data: insertedData };
-            } else if (edgeResult.success) {
-                return edgeResult; // Fallback if data is missing
-            }
-            
-            // FINAL FALLBACK: If the user hasn't run the SQL migration and hasn't deployed the edge function,
-            // we will simulate success by saving it to local AsyncStorage overrides so they can see it working!
-            try {
-                const fakeId = `local_${Date.now()}`;
-                const localData = {
-                    id: fakeId,
-                    title: anime.title,
-                    description: anime.description || null,
-                    image_url: anime.image_url || null,
-                    video_asset_key: videoValue,
-                    episodes: anime.episodes || 1,
-                    genre: anime.genre || null,
-                    category: anime.category || 'Anime Series',
-                    is_featured: anime.is_featured ?? false,
-                    episode_links: anime.episode_links,
-                    created_at: new Date().toISOString(),
-                };
-                await saveEditedMediaOverride(fakeId, localData);
-                return { success: true, data: localData };
-            } catch {
-                // Ignore fallback error
-            }
-
-            return { success: false, error: error.message };
-        }
-        
-        // If standard Supabase insert succeeded, save it locally to ensure it bypasses any RLS SELECT restrictions
-        if (data && data.id) {
-            await saveEditedMediaOverride(data.id, { ...data, episode_links: anime.episode_links });
-        }
-        return { success: true, data };
+        return { success: true, data: insertedData };
     } catch (e: any) {
         return { success: false, error: e.message || 'Failed to publish media' };
     }
 }
+
 
 export async function deleteAnime(
     animeId: string

@@ -2,15 +2,37 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.3';
 
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, content-type',
 };
-const ADMIN_EMAIL = 'esra99san@gmail.com';
+
+function getAllowedOrigin(requestOrigin: string | null): string | null {
+    const allowed = (Deno.env.get('ALLOWED_WEB_ORIGINS') ?? '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+    return requestOrigin && allowed.includes(requestOrigin) ? requestOrigin : null;
+}
+
 
 serve(async (req) => {
+    const origin = getAllowedOrigin(req.headers.get('origin'));
+    const responseHeaders = {
+        ...corsHeaders,
+        ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
+        'Content-Type': 'application/json',
+    };
+
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders });
+        return new Response('ok', { headers: { ...corsHeaders, ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}) } });
+    }
+
+    const ADMIN_EMAIL = (Deno.env.get('ADMIN_EMAIL') ?? '').toLowerCase().trim();
+    if (!ADMIN_EMAIL) {
+        return new Response(
+            JSON.stringify({ error: 'Server misconfiguration: ADMIN_EMAIL not set' }),
+            { status: 500, headers: responseHeaders }
+        );
     }
 
     try {
@@ -18,7 +40,7 @@ serve(async (req) => {
         if (!authHeader) {
             return new Response(
                 JSON.stringify({ error: 'Missing authorization header' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 401, headers: responseHeaders }
             );
         }
 
@@ -44,7 +66,7 @@ serve(async (req) => {
         if (userError || !user) {
             return new Response(
                 JSON.stringify({ error: 'Unauthorized' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 401, headers: responseHeaders }
             );
         }
 
@@ -58,7 +80,7 @@ serve(async (req) => {
         if (profileError || !profile || profile.role !== 'admin' || user.email?.toLowerCase() !== ADMIN_EMAIL) {
             return new Response(
                 JSON.stringify({ error: 'Access denied. Admin role required.' }),
-                { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 403, headers: responseHeaders }
             );
         }
 
@@ -272,22 +294,19 @@ serve(async (req) => {
                     throw new Error('Invalid VIP duration days');
                 }
 
-                // Locate user by email in profiles
-                const { data: targetProfile, error: profileLookupError } = await supabaseAdmin
-                    .from('profiles')
-                    .select('id')
-                    .ilike('username', targetEmail)
-                    .maybeSingle();
-
-                let targetUserId = targetProfile?.id;
+                // Look up user in auth.users by email first (most reliable)
+                const { data: authUserList } = await supabaseAdmin.auth.admin.listUsers();
+                const matchedAuthUser = authUserList?.users?.find((u) => u.email?.toLowerCase() === targetEmail);
+                let targetUserId = matchedAuthUser?.id;
 
                 if (!targetUserId) {
-                    // Try auth.users search
-                    const { data: authUserList } = await supabaseAdmin.auth.admin.listUsers();
-                    const matchedUser = authUserList?.users?.find((u) => u.email?.toLowerCase() === targetEmail);
-                    if (matchedUser) {
-                        targetUserId = matchedUser.id;
-                    }
+                    // Fallback: search profiles by email field
+                    const { data: targetProfile } = await supabaseAdmin
+                        .from('profiles')
+                        .select('id')
+                        .ilike('username', targetEmail)
+                        .maybeSingle();
+                    targetUserId = targetProfile?.id;
                 }
 
                 if (!targetUserId) {
@@ -353,7 +372,7 @@ serve(async (req) => {
             default:
                 return new Response(
                     JSON.stringify({ error: 'Unknown action' }),
-                    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                    { status: 400, headers: responseHeaders }
                 );
         }
 
@@ -369,18 +388,18 @@ serve(async (req) => {
 
             return new Response(
                 JSON.stringify({ error: errorMsg }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 400, headers: responseHeaders }
             );
         }
 
         return new Response(
             JSON.stringify({ success: true, data: result }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 200, headers: responseHeaders }
         );
     } catch (error) {
         return new Response(
             JSON.stringify({ error: error.message || 'Internal server error' }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 500, headers: responseHeaders }
         );
     }
 });

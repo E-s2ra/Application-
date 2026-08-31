@@ -9,12 +9,15 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Environment variables - NEVER COMMIT THESE
+# Environment variables - NEVER COMMIT REAL ENV SECRETS
 .env
 .env.local
 .env.*.local
 .env.production
 .env.development
+.env.docker
+.env.test
+!.env.example
 
 # Secrets and credentials
 *.key
@@ -29,50 +32,37 @@ supabase/.temp/
 supabase/.branches/
 supabase/.env.keys
 backups/
-.env.docker
 
-# Native
+# Native & Build Artifacts
 .kotlin/
 *.orig.*
+/ios
+/android
 
-# Metro
+# Playwright Test Artifacts & Reports
+playwright-report/
+test-results/
+
+# Metro & Logs
 .metro-health-check*
-
-# debug
+logs/
+*.log
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
+# OS & IDE
 .DS_Store
-
-# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Logs
-logs/
-*.log
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
+# Typescript
 *.tsbuildinfo
 
-example
-
-# generated native folders
-/ios
-/android
-
-# Large local video files (too big for GitHub - keep local only)
+# Large local assets & binary artifacts
 assets/videos/
-
-# Local Android test-install artifacts
 *.apk
 platform-tools/
 platform-tools-latest-windows.zip
