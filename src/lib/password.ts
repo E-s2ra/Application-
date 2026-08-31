@@ -1,5 +1,5 @@
 export const PASSWORD_REQUIREMENTS = [
-  'More than 4 characters',
+  'At least 8 characters',
   'At least one number (0-9)',
   'At least one symbol (!@#$%^&*)',
 ];
@@ -14,8 +14,8 @@ export function getPasswordRuleChecks(password: string): PasswordRuleCheck[] {
   return [
     {
       id: 'length',
-      label: 'More than 4 characters',
-      passed: password.length > 4,
+      label: 'At least 8 characters',
+      passed: password.length >= 8,
     },
     {
       id: 'number',
@@ -55,7 +55,7 @@ export function evaluatePasswordStrength(password: string): PasswordStrengthInfo
 
   const checks = getPasswordRuleChecks(password);
   const passedCount = checks.filter((c) => c.passed).length;
-  const isExtraStrong = password.length >= 8 && passedCount === 3;
+  const isExtraStrong = password.length >= 10 && passedCount === 3;
 
   if (isExtraStrong) {
     return {
@@ -88,7 +88,7 @@ export function evaluatePasswordStrength(password: string): PasswordStrengthInfo
 }
 
 export function validatePassword(password: string): string | null {
-  if (password.length <= 4) return 'Password must be more than 4 characters.';
+  if (password.length < 8) return 'Password must be at least 8 characters.';
   if (!/\d/.test(password)) return 'Password must include at least one number (0-9).';
   if (!/[^A-Za-z0-9]/.test(password)) return 'Password must include at least one symbol (e.g. !@#$%^&*).';
   return null;

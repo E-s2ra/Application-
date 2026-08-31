@@ -21,6 +21,9 @@ const PLACEHOLDER_IMAGES = [
   'https://picsum.photos/id/1074/800/1200',
 ];
 
+import { Bookmark } from 'lucide-react-native';
+import { EmptyState } from '@/components/EmptyState';
+
 export default function FavoritesScreen() {
   const router = useRouter();
   const themeColors = useTheme();
@@ -108,21 +111,13 @@ export default function FavoritesScreen() {
             }
           />
         ) : (
-          <View style={styles.emptyContainer}>
-            <View style={[styles.emptyIconCircle, { backgroundColor: themeColors.backgroundElement }]}>
-              <Film color={themeColors.primary} size={48} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: themeColors.text }]}>Your List is Empty</Text>
-            <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-              Tap the ❤️ heart icon on any anime, movie, or series to save it here for instant access anytime.
-            </Text>
-            <Pressable
-              style={[styles.browseButton, { backgroundColor: themeColors.primary }]}
-              onPress={() => router.push('/(tabs)' as any)}
-            >
-              <Text style={styles.browseButtonText}>Browse AniFlix</Text>
-            </Pressable>
-          </View>
+          <EmptyState
+            icon={Bookmark}
+            title="Your List is Empty"
+            description="Tap the heart icon on any movie or series to save it to your personal watchlist."
+            actionLabel="Explore Catalog"
+            onAction={() => router.push('/(tabs)' as any)}
+          />
         )}
       </View>
     </View>

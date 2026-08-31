@@ -1,5 +1,6 @@
 /**
- * Modern Anime Streaming Theme Palette (Dark & Light Mode)
+ * AniFlix Production Design Tokens & Theme Palette (Dark & Light Mode)
+ * Human-designed, accessible, native mobile design system.
  */
 import '@/global.css';
 import { Platform } from 'react-native';
@@ -7,47 +8,55 @@ import { Platform } from 'react-native';
 export const Colors = {
   dark: {
     mode: 'dark' as const,
-    background: '#09090E', // Deeper black background
-    backgroundElement: '#161622', // Elements and navigation
-    backgroundCard: '#1C1C26', // Cards and modals
-    backgroundSelected: '#242436',
-    border: '#222232', // Ultra subtle border
-    text: '#FFFFFF',
-    textSecondary: '#8A8A9D', // Cool grey
-    textMuted: '#636375',
-    primary: '#0356C5', // Deep blue
-    primaryHover: '#0D47A1',
-    primaryGlow: 'rgba(3, 86, 197, 0.4)',
-    accent: '#FFB800',
-    accentCyan: '#00D2FF',
-    badgeBackground: 'rgba(0, 0, 0, 0.75)',
-    cardOverlay: 'rgba(9, 9, 14, 0.85)',
+    background: '#0B0D14', // Deep midnight base
+    backgroundElement: '#141724', // Surface container
+    backgroundCard: '#1C2030', // Elevated card / sheet
+    backgroundSelected: '#282E44', // Active selection
+    border: '#262C40', // Crisp subtle border
+    borderFocus: '#0356C5',
+    text: '#F8FAFC', // Slate 50
+    textSecondary: '#94A3B8', // Slate 400
+    textMuted: '#64748B', // Slate 500
+    primary: '#0356C5', // Premium Deep Blue
+    primaryHover: '#024299',
+    primaryGlow: 'rgba(3, 86, 197, 0.25)',
+    accent: '#F59E0B', // Amber 500
+    accentCyan: '#06B6D4', // Cyan 500
+    success: '#10B981', // Emerald 500
+    warning: '#F59E0B',
+    error: '#EF4444', // Red 500
+    badgeBackground: 'rgba(15, 23, 42, 0.85)',
+    cardOverlay: 'rgba(11, 13, 20, 0.90)',
     buttonBackground: '#0356C5',
     buttonText: '#FFFFFF',
-    inputBackground: '#1C1C26',
-    inputBorder: '#222232',
+    inputBackground: '#141724',
+    inputBorder: '#262C40',
   },
   light: {
     mode: 'light' as const,
-    background: '#F3F4F6',
+    background: '#F8FAFC', // Slate 50
     backgroundElement: '#FFFFFF',
     backgroundCard: '#FFFFFF',
-    backgroundSelected: '#E5E7EB',
-    border: '#E5E7EB',
-    text: '#111827',
-    textSecondary: '#4B5563',
-    textMuted: '#9CA3AF',
-    primary: '#0356C5', // Deep blue
-    primaryHover: '#0D47A1',
-    primaryGlow: 'rgba(3, 86, 197, 0.18)',
+    backgroundSelected: '#E2E8F0', // Slate 200
+    border: '#E2E8F0',
+    borderFocus: '#0356C5',
+    text: '#0F172A', // Slate 900
+    textSecondary: '#475569', // Slate 600
+    textMuted: '#94A3B8', // Slate 400
+    primary: '#0356C5',
+    primaryHover: '#024299',
+    primaryGlow: 'rgba(3, 86, 197, 0.15)',
     accent: '#D97706',
-    accentCyan: '#0284C7',
-    badgeBackground: 'rgba(0, 0, 0, 0.06)',
-    cardOverlay: 'rgba(255, 255, 255, 0.92)',
+    accentCyan: '#0891B2',
+    success: '#059669',
+    warning: '#D97706',
+    error: '#DC2626',
+    badgeBackground: 'rgba(241, 245, 249, 0.95)',
+    cardOverlay: 'rgba(255, 255, 255, 0.94)',
     buttonBackground: '#0356C5',
     buttonText: '#FFFFFF',
-    inputBackground: '#F9FAFB',
-    inputBorder: '#D1D5DB',
+    inputBackground: '#FFFFFF',
+    inputBorder: '#CBD5E1',
   },
 } as const;
 
@@ -58,6 +67,7 @@ export type ThemePalette = {
   backgroundCard: string;
   backgroundSelected: string;
   border: string;
+  borderFocus: string;
   text: string;
   textSecondary: string;
   textMuted: string;
@@ -66,6 +76,9 @@ export type ThemePalette = {
   primaryGlow: string;
   accent: string;
   accentCyan: string;
+  success: string;
+  warning: string;
+  error: string;
   badgeBackground: string;
   cardOverlay: string;
   buttonBackground: string;
@@ -98,6 +111,15 @@ export const Fonts = Platform.select({
 });
 
 export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+  huge: 40,
+  // Retain legacy keys for backward compatibility
   half: 2,
   one: 4,
   two: 8,
@@ -105,4 +127,65 @@ export const Spacing = {
   four: 24,
   five: 32,
   six: 64,
+} as const;
+
+export const Radius = {
+  xs: 6,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  full: 9999,
+} as const;
+
+export const IconSize = {
+  xs: 14,
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 28,
+  xxl: 32,
+} as const;
+
+export const Typography = {
+  display: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '700' as const,
+  },
+  h1: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '700' as const,
+  },
+  h2: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600' as const,
+  },
+  h3: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600' as const,
+  },
+  body: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '400' as const,
+  },
+  bodyBold: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600' as const,
+  },
+  small: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400' as const,
+  },
+  caption: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '500' as const,
+  },
 } as const;

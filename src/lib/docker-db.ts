@@ -18,9 +18,12 @@ const SUPABASE_CLOUD_ANON_KEY =
   'sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK';
 
 /**
- * Always use cloud Supabase to avoid network hangs on physical devices.
- * 10.0.2.2 is only reachable from Android Emulator.
+ * @deprecated
+ * dockerDb was a legacy alias pointing to hosted Supabase.
+ * All database operations now use the canonical `supabase` client directly.
+ * This file is retained as a compatibility re-export.
  */
 import { supabase } from './supabase';
 
 export const dockerDb = supabase;
+

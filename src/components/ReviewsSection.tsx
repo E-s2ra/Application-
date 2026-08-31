@@ -34,11 +34,11 @@ interface ReviewsSectionProps {
 }
 
 const RATING_LABELS: Record<number, string> = {
-  1: 'Disappointing 😞',
-  2: 'Fair 😐',
-  3: 'Good 🙂',
-  4: 'Great 😃',
-  5: 'Masterpiece 🤩',
+  1: 'Disappointing',
+  2: 'Fair',
+  3: 'Good',
+  4: 'Great',
+  5: 'Masterpiece',
 };
 
 export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
@@ -174,7 +174,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
       <View style={styles.composerCard}>
         <View style={styles.composerHeader}>
           <Text style={styles.composerTitle}>
-            {userReview ? '✏️ Your Rating (Edit or Update)' : `How was ${mediaTitle || 'this title'}?`}
+            {userReview ? 'Your Rating (Edit or Update)' : `How was ${mediaTitle || 'this title'}?`}
           </Text>
           {userReview && (
             <Pressable
@@ -305,9 +305,9 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                         </Text>
                       </View>
                     )}
-                    <View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <View style={styles.nameRow}>
-                        <Text style={styles.userNameText}>
+                        <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">
                           {rev.userName} {isUserAuthor ? '(You)' : ''}
                         </Text>
                         {rev.isVip && (

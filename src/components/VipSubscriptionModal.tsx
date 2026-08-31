@@ -159,7 +159,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
             {/* VIP Benefits List */}
             <View style={styles.benefitsCard}>
               <Text style={styles.benefitsHeading}>
-                {isKu ? '👑 تایبەتمەندییەکانی ئەندامێتی VIP' : '👑 VIP MEMBERSHIP BENEFITS'}
+                {isKu ? 'تایبەتمەندییەکانی ئەندامێتی VIP' : 'VIP MEMBERSHIP BENEFITS'}
               </Text>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
@@ -452,10 +452,10 @@ const styles = StyleSheet.create({
   },
   planCard: {
     flex: 1,
-    minWidth: '47%',
+    minWidth: 135,
     backgroundColor: '#141420',
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     borderWidth: 2,
     borderColor: '#242436',
     position: 'relative',

@@ -45,16 +45,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useSidebar } from './_layout';
 
-export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: string }[] = [
-  { id: 'All', label: 'All', icon: '🌟' },
-  { id: 'Movies', label: 'Movies', icon: '🎬' },
-  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
-  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
-  { id: 'Drama', label: 'Drama', icon: '🎭' },
-  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
+export const CATEGORIES: { id: 'All' | MediaCategory; label: string }[] = [
+  { id: 'All', label: 'All' },
+  { id: 'Movies', label: 'Movies' },
+  { id: 'Anime Movies', label: 'Anime Movies' },
+  { id: 'K-Drama', label: 'K-Drama' },
+  { id: 'Drama', label: 'Drama' },
+  { id: 'Anime Series', label: 'Anime Series' },
 ];
 
-const GENRES = ['All', '🔥 Trending', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
+const GENRES = ['All', 'Trending', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
 const PLACEHOLDER_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
@@ -174,7 +174,7 @@ export default function HomeScreen() {
 
   // Genre filtered media
   const genreFiltered = categoryFiltered.filter((item) => {
-    if (activeGenre === 'All' || activeGenre === '🔥 Trending') return true;
+    if (activeGenre === 'All' || activeGenre === 'Trending') return true;
     return item.genre?.toLowerCase().includes(activeGenre.toLowerCase());
   });
 

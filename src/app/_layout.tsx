@@ -99,6 +99,7 @@ function RootNavigation({
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         <Stack.Screen name="verified" options={{ headerShown: false }} />
         <Stack.Screen name="fib-payment" options={{ headerShown: false }} />
+        <Stack.Screen name="vip-success" options={{ headerShown: false }} />
       </Stack>
 
       {/* Google AdMob Rewarded Ad Modal */}

@@ -1,5 +1,4 @@
 import { supabase, SUPABASE_URL } from '@/lib/supabase';
-import { dockerDb } from '@/lib/docker-db';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -13,7 +12,7 @@ export type AdminOperationResult<T> = {
  * Calls the admin-operations Edge Function to perform admin actions
  * This ensures all admin operations are logged and verified server-side
  */
-async function callAdminOperation<T>(
+export async function callAdminOperation<T>(
     action: string,
     payload: Record<string, any>
 ): Promise<AdminOperationResult<T>> {
@@ -248,15 +247,7 @@ export async function deleteAnime(
             return { success: true, data: null };
         }
 
-        // 2. Delete related records that reference this anime (comments, favorites handled by CASCADE)
-        try {
-            await supabase.from('comments').delete().eq('movie_id', animeId);
-        } catch (commentDeleteErr: any) {
-            console.warn(`Comment cleanup failed:`, commentDeleteErr);
-        }
-
-        // 3. Perform direct database delete on Supabase
-
+        // 2. Perform direct database delete on Supabase
         const { error } = await supabase
             .from('anime')
             .delete()
@@ -311,6 +302,7 @@ export async function updateAnimeFeatured(
 }
 
 const EDITED_MEDIA_STORAGE_KEY = 'aniflix_edited_media_overrides_v2';
+const OVERRIDE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days
 
 export async function getEditedMediaOverrides(): Promise<Record<string, any>> {
     try {
@@ -320,7 +312,19 @@ export async function getEditedMediaOverrides(): Promise<Record<string, any>> {
         } else {
             json = await AsyncStorage.getItem(EDITED_MEDIA_STORAGE_KEY);
         }
-        return json ? JSON.parse(json) : {};
+        if (!json) return {};
+        const parsed = JSON.parse(json);
+        const valid: Record<string, any> = {};
+        const now = Date.now();
+
+        Object.keys(parsed).forEach((id) => {
+            const item = parsed[id];
+            // Filter out entries older than 7 days if timestamp is present
+            if (!item._savedAt || (now - item._savedAt) < OVERRIDE_TTL_MS) {
+                valid[id] = item;
+            }
+        });
+        return valid;
     } catch {
         return {};
     }
@@ -329,7 +333,11 @@ export async function getEditedMediaOverrides(): Promise<Record<string, any>> {
 export async function saveEditedMediaOverride(animeId: string, updates: Record<string, any>): Promise<void> {
     try {
         const current = await getEditedMediaOverrides();
-        current[animeId] = { ...(current[animeId] || {}), ...updates };
+        current[animeId] = {
+            ...(current[animeId] || {}),
+            ...updates,
+            _savedAt: Date.now(),
+        };
         const json = JSON.stringify(current);
         if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
             localStorage.setItem(EDITED_MEDIA_STORAGE_KEY, json);
@@ -409,12 +417,8 @@ export async function updateAnime(
 
 export async function deleteCommentAsAdmin(commentId: string): Promise<AdminOperationResult<any>> {
     try {
-        const { error } = await supabase.from('comments').delete().eq('id', commentId);
-        if (error) {
-            const edgeResult = await callAdminOperation('delete_comment', { comment: { id: commentId } });
-            if (edgeResult.success) return edgeResult;
-            return { success: false, error: error.message };
-        }
+        const edgeResult = await callAdminOperation('delete_comment', { comment: { id: commentId } });
+        if (edgeResult.success) return edgeResult;
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message || 'Failed to delete comment' };

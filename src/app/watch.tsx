@@ -73,10 +73,12 @@ export default function WatchScreen() {
   // 🍿 Watch-to-Earn: Award Coins & XP during active playback
   useEffect(() => {
     if (!isPlaying) return;
-    const interval = setInterval(() => {
-      const reward = awardWatchTimeReward(1);
-      setEarnedNotification(`🍿 Watching AniFlix: +${reward.coins} Coins & +${reward.xp} XP!`);
-      setTimeout(() => setEarnedNotification(null), 4000);
+    const interval = setInterval(async () => {
+      try {
+        const reward = await awardWatchTimeReward(1);
+        setEarnedNotification(`Watching AniFlix: +${reward.coins} Coins & +${reward.xp} XP`);
+        setTimeout(() => setEarnedNotification(null), 4000);
+      } catch {}
     }, 45000);
 
     return () => clearInterval(interval);
@@ -893,14 +895,17 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   actionBtn: {
     flex: 1,
+    minWidth: 120,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 10,
     gap: 8,
     borderWidth: 1,

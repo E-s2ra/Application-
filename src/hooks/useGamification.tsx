@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { dockerDb } from '@/lib/docker-db';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 
 export type Mission = {
@@ -383,13 +383,13 @@ type GamificationContextType = {
   activeTheme: AppTheme;
   badges: UserBadge[];
   selectSeasonalEvent: (eventId: string) => void;
-  claimDailyStreak: () => { coins: number; xp: number };
-  spinWheel: () => SpinReward;
-  claimMission: (missionId: string) => void;
-  unlockTheme: (themeId: string) => boolean;
+  claimDailyStreak: () => Promise<{ coins: number; xp: number }>;
+  spinWheel: () => Promise<SpinReward>;
+  claimMission: (missionId: string) => Promise<void>;
+  unlockTheme: (themeId: string) => Promise<boolean>;
   equipTheme: (themeId: string) => void;
   activateVIP: (days: number) => void;
-  awardWatchTimeReward: (minutes: number) => { coins: number; xp: number };
+  awardWatchTimeReward: (minutes: number) => Promise<{ coins: number; xp: number }>;
   addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
 };
 
@@ -423,11 +423,11 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const nextLevelXP = level * 300;
 
   const getLevelTitle = (lvl: number) => {
-    if (lvl >= 20) return 'Legendary Cinephile 👑';
-    if (lvl >= 10) return 'Master Streamer ⚡';
-    if (lvl >= 5) return 'Anime VIP 🌟';
-    if (lvl >= 3) return 'Cinema Enthusiast 🎬';
-    return 'Novice Watcher 🍿';
+    if (lvl >= 20) return 'Legendary Cinephile';
+    if (lvl >= 10) return 'Master Streamer';
+    if (lvl >= 5) return 'Anime VIP';
+    if (lvl >= 3) return 'Cinema Enthusiast';
+    return 'Novice Watcher';
   };
 
   const themes: AppTheme[] = THEMES_LIST.map((t) => ({
@@ -476,16 +476,16 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           if (parsed.badges) setBadges(parsed.badges);
         }
 
-        // Live Docker Postgres Sync
-        if (user?.id && !user.id.startsWith('guest-') && Platform.OS !== 'web') {
-          const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
+        // Live Supabase Sync
+        if (user?.id && !user.id.startsWith('guest-')) {
+          const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2500));
           const syncPromise = (async () => {
-            // 1. Fetch Profile from local Docker Postgres
-            const { data: profile } = await dockerDb
+            // Fetch Profile from Supabase
+            const { data: profile } = await supabase
               .from('profiles')
               .select('coins, xp, level, streak_days, is_vip, vip_expires_at')
               .eq('id', user.id)
-              .single();
+              .maybeSingle();
 
             if (profile) {
               if (profile.coins !== undefined && profile.coins !== null) setCoins(profile.coins);
@@ -493,7 +493,6 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
               if (profile.streak_days !== undefined && profile.streak_days !== null)
                 setStreakDays(profile.streak_days);
               if (profile.is_vip !== undefined && profile.is_vip !== null) {
-                // Calculate remaining days from vip_expires_at
                 if (profile.vip_expires_at) {
                   const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
                   const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
@@ -502,9 +501,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
               }
             }
 
-            // 2. Check Daily Logins for today
+            // Check Daily Logins for today
             const todayStr = new Date().toISOString().split('T')[0];
-            const { data: loginData } = await dockerDb
+            const { data: loginData } = await supabase
               .from('daily_logins')
               .select('id, reward_claimed')
               .eq('user_id', user.id)
@@ -548,7 +547,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         await AsyncStorage.setItem(GAMIFICATION_STORAGE_KEY, json);
       }
 
-      // Sync to Docker Postgres profiles in background
+      // Sync to Supabase profiles in background
       if (!skipDbSync && user?.id && !user.id.startsWith('guest-')) {
         const payload: any = { updated_at: new Date().toISOString() };
         if (updates.coins !== undefined) payload.coins = updates.coins;
@@ -565,7 +564,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
             payload.vip_expires_at = exp.toISOString();
           }
         }
-        await dockerDb.from('profiles').update(payload).eq('id', user.id);
+        await supabase.from('profiles').update(payload).eq('id', user.id);
       }
     } catch {}
   };
@@ -581,8 +580,39 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     persist({ coins: newCoins, xp: newXp }, skipDbSync);
   };
 
-  const claimDailyStreak = () => {
+  // Server-Authoritative Daily Streak Claim
+  const claimDailyStreak = async (): Promise<{ coins: number; xp: number }> => {
     if (hasClaimedDailyStreak) return { coins: 0, xp: 0 };
+
+    if (user?.id && !user.id.startsWith('guest-')) {
+      try {
+        const { data, error } = await supabase.rpc('claim_daily_login_reward');
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          const awardedCoins = res.coins_awarded || 0;
+          const awardedXp = res.xp_awarded || 0;
+          const newStreak = res.streak_days || streakDays + 1;
+
+          setCoins(res.new_coins);
+          setXp(res.new_xp);
+          setStreakDays(newStreak);
+          setHasClaimedDailyStreak(true);
+
+          persist({
+            coins: res.new_coins,
+            xp: res.new_xp,
+            streakDays: newStreak,
+            hasClaimedDailyStreak: true,
+          }, true);
+
+          return { coins: awardedCoins, xp: awardedXp };
+        }
+      } catch (err) {
+        console.warn('claim_daily_login_reward RPC error:', err);
+      }
+    }
+
+    // Guest fallback
     const rewardCoins = 60 + streakDays * 15;
     const rewardXP = 90 + streakDays * 20;
     const newStreak = streakDays + 1;
@@ -599,73 +629,63 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       xp: newXp,
       streakDays: newStreak,
       hasClaimedDailyStreak: true,
-    });
-
-    // Call secure RPC 'claim_daily_login_reward'
-    if (user?.id && !user.id.startsWith('guest-')) {
-      dockerDb.rpc('claim_daily_login_reward').then(({ data, error }) => {
-        if (!error && data && (data as any).success) {
-          const res = data as any;
-          if (res.new_coins !== undefined) setCoins(res.new_coins);
-          if (res.new_xp !== undefined) setXp(res.new_xp);
-          if (res.streak_days !== undefined) setStreakDays(res.streak_days);
-        }
-      });
-    }
+    }, true);
 
     return { coins: rewardCoins, xp: rewardXP };
   };
 
-  const spinWheel = (): SpinReward => {
+  // Server-Authoritative Spin Wheel
+  const spinWheel = async (): Promise<SpinReward> => {
+    if (!canSpinWheel) return SPIN_REWARDS[0];
+
+    if (user?.id && !user.id.startsWith('guest-')) {
+      try {
+        const { data, error } = await supabase.rpc('spin_lucky_wheel');
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          const rewardId = String(res.reward_id || '1');
+          const serverReward = SPIN_REWARDS.find((r) => r.id === rewardId) || SPIN_REWARDS[0];
+
+          setCoins(res.new_coins ?? coins);
+          setXp(res.new_xp ?? xp);
+          setCanSpinWheel(false);
+
+          persist({
+            coins: res.new_coins ?? coins,
+            xp: res.new_xp ?? xp,
+            canSpinWheel: false,
+          }, true);
+
+          return serverReward;
+        }
+      } catch (err) {
+        console.warn('spin_lucky_wheel RPC error:', err);
+      }
+    }
+
+    // Guest fallback
     const randomIndex = Math.floor(Math.random() * SPIN_REWARDS.length);
     const reward = SPIN_REWARDS[randomIndex];
 
     let newCoins = coins;
     let newXp = xp;
-    let newVipDays = vipDaysRemaining;
-    let newExpiresAt = vipExpiresAt;
-
     if (reward.type === 'coins') newCoins += reward.amount;
     if (reward.type === 'xp') newXp += reward.amount;
-    if (reward.type === 'vip') {
-      const currentExp = (newExpiresAt && new Date(newExpiresAt).getTime() > Date.now()) 
-          ? new Date(newExpiresAt) 
-          : new Date();
-      currentExp.setDate(currentExp.getDate() + reward.amount);
-      newExpiresAt = currentExp.toISOString();
-      const diffMs = currentExp.getTime() - Date.now();
-      newVipDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    }
 
     setCoins(newCoins);
     setXp(newXp);
-    if (reward.type === 'vip') {
-      setVipDaysRemaining(newVipDays);
-      setVipExpiresAt(newExpiresAt);
-    }
     setCanSpinWheel(false);
 
     persist({
       coins: newCoins,
       xp: newXp,
-      ...(reward.type === 'vip' ? { vipDaysRemaining: newVipDays, vipExpiresAt: newExpiresAt } : {}),
       canSpinWheel: false,
-    });
-
-    // Call secure RPC 'spin_lucky_wheel'
-    if (user?.id && !user.id.startsWith('guest-')) {
-      dockerDb.rpc('spin_lucky_wheel').then(({ data, error }) => {
-        if (!error && data && (data as any).success) {
-          const res = data as any;
-          if (res.new_coins !== undefined) setCoins(res.new_coins);
-          if (res.new_xp !== undefined) setXp(res.new_xp);
-        }
-      });
-    }
+    }, true);
 
     return reward;
   };
 
+  // Server-Authoritative Mission Claim
   const claimMission = async (missionId: string) => {
     const mission = missions.find((m) => m.id === missionId);
     if (!mission || !mission.completed || mission.claimed) return;
@@ -686,17 +706,16 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       missions: updatedMissions,
     });
 
-    // Sync to Docker Postgres user_missions
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
-        const { data: mData } = await dockerDb
+        const { data: mData } = await supabase
           .from('missions')
           .select('id')
           .eq('code', missionId)
           .maybeSingle();
 
         if (mData?.id) {
-          await dockerDb.from('user_missions').upsert({
+          await supabase.from('user_missions').upsert({
             user_id: user.id,
             mission_id: mData.id,
             progress: mission.target,
@@ -709,11 +728,32 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const unlockTheme = (themeId: string): boolean => {
+  // Server-Authoritative Theme Unlock
+  const unlockTheme = async (themeId: string): Promise<boolean> => {
     const targetTheme = THEMES_LIST.find((t) => t.id === themeId);
     if (!targetTheme || unlockedThemeIds.includes(themeId)) return false;
     if (coins < targetTheme.costCoins) return false;
 
+    if (user?.id && !user.id.startsWith('guest-')) {
+      try {
+        const { data, error } = await supabase.rpc('unlock_theme_with_coins', { p_theme_code: themeId });
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          const remaining = res.remaining_coins ?? (coins - targetTheme.costCoins);
+          const newUnlocked = [...unlockedThemeIds, themeId];
+
+          setCoins(remaining);
+          setUnlockedThemeIds(newUnlocked);
+          setActiveThemeId(themeId);
+          persist({ coins: remaining, unlockedThemeIds: newUnlocked, activeThemeId: themeId }, true);
+          return true;
+        }
+      } catch (err) {
+        console.warn('unlock_theme_with_coins error:', err);
+      }
+    }
+
+    // Guest fallback
     const newCoins = coins - targetTheme.costCoins;
     const newUnlocked = [...unlockedThemeIds, themeId];
 
@@ -725,19 +765,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       coins: newCoins,
       unlockedThemeIds: newUnlocked,
       activeThemeId: themeId,
-    });
-
-    // Call secure RPC 'unlock_theme_with_coins'
-    if (user?.id && !user.id.startsWith('guest-')) {
-      dockerDb
-        .rpc('unlock_theme_with_coins', { p_theme_code: themeId })
-        .then(({ data, error }) => {
-          if (!error && data && (data as any).success) {
-            const res = data as any;
-            if (res.remaining_coins !== undefined) setCoins(res.remaining_coins);
-          }
-        });
-    }
+    }, true);
 
     return true;
   };
@@ -762,9 +790,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     setVipExpiresAt(newExpiresAt);
     persist({ vipDaysRemaining: newVipDays, vipExpiresAt: newExpiresAt });
 
-    // Record in Docker Postgres vip_transactions
     if (user?.id && !user.id.startsWith('guest-')) {
-      dockerDb
+      supabase
         .from('vip_transactions')
         .insert({
           user_id: user.id,
@@ -775,7 +802,24 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const awardWatchTimeReward = (minutes: number) => {
+  // Server-Authoritative Watch Time Reward
+  const awardWatchTimeReward = async (minutes: number): Promise<{ coins: number; xp: number }> => {
+    if (user?.id && !user.id.startsWith('guest-')) {
+      try {
+        const { data, error } = await supabase.rpc('record_watch_time_reward', { p_minutes: minutes });
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          setCoins(res.new_coins);
+          setXp(res.new_xp);
+          persist({ coins: res.new_coins, xp: res.new_xp }, true);
+          return { coins: res.coins_awarded, xp: res.xp_awarded };
+        }
+      } catch (err) {
+        console.warn('record_watch_time_reward RPC error:', err);
+      }
+    }
+
+    // Guest fallback
     const coinsEarned = Math.max(10, Math.floor(minutes * 5));
     const xpEarned = Math.max(20, Math.floor(minutes * 10));
     addXPAndCoins(xpEarned, coinsEarned);

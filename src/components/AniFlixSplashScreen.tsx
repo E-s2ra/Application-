@@ -21,7 +21,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const [screenFadeAnim] = useState(() => new Animated.Value(1));
 
   const [loadingText, setLoadingText] = useState(
-    language === 'ku' ? '🎬 دەستپێکردنی جیهانی ئەنیفلیکس...' : '🎬 Initializing AniFlix Universe...'
+    language === 'ku' ? 'دەستپێکردنی جیهانی ئەنیفلیکس...' : 'Initializing AniFlix Universe...'
   );
   const [percent, setPercent] = useState(0);
 
@@ -69,15 +69,15 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
     // 4. Progress percentage and dynamic text updates
     const textT1 = setTimeout(() => {
-      setLoadingText('⚡ Loading 4K streams & catalogs...');
-    }, 1200);
+      setLoadingText('Loading 4K streams & catalogs...');
+    }, 400);
 
     const textT2 = setTimeout(() => {
-      setLoadingText('🍿 Preparing your personalized cinema...');
-    }, 2400);
+      setLoadingText('Preparing your personalized cinema...');
+    }, 1100);
 
     const textT3 = setTimeout(() => {
-      setLoadingText('✨ Welcome to AniFlix!');
+      setLoadingText('Welcome to AniFlix!');
     }, 3600);
 
     const interval = setInterval(() => {

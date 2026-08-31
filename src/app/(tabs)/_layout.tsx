@@ -59,21 +59,21 @@ export default function TabLayout() {
           </Pressable>
         ) : null,
         tabBarStyle: {
-          display: 'none',
-          backgroundColor: themeColors.background,
-          borderTopWidth: 0,
-          elevation: 0,
-          ...(Platform.OS === 'web' ? { boxShadow: 'none' } : { shadowOpacity: 0 }),
+          display: isDesktop ? 'none' : 'flex',
+          backgroundColor: themeColors.backgroundElement,
+          borderTopColor: themeColors.border,
+          borderTopWidth: 1,
+          elevation: 8,
           height: tabBarHeight,
           paddingBottom: tabBarPaddingBottom,
-          paddingTop: 8,
+          paddingTop: 6,
         },
         tabBarActiveTintColor: themeColors.primary,
         tabBarInactiveTintColor: themeColors.textSecondary,
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '700',
-          marginTop: 4,
+          fontWeight: '600',
+          marginTop: 2,
         },
       }}>
       <Tabs.Screen

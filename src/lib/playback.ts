@@ -33,14 +33,12 @@ export async function getPlaybackUrl(animeId: string): Promise<PlaybackResponse>
       if (response.ok) {
         return await response.json() as PlaybackResponse;
       }
-    } catch (err) {
-      // Edge function not deployed or CORS error, fall back gracefully
+      const errData = await response.json().catch(() => null);
+      throw new Error(errData?.error || `Playback request failed with status ${response.status}`);
+    } catch (err: any) {
+      throw new Error(err?.message || 'Unable to authorize playback session.');
     }
   }
 
-  // Fallback for development/demo when backend isn't deployed yet or item is local
-  return {
-    url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    expiresAt: new Date(Date.now() + 300_000).toISOString(),
-  };
+  throw new Error('Invalid playback target or unauthorized access.');
 }

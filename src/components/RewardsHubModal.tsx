@@ -24,6 +24,7 @@ import {
   Calendar,
   Award,
   Crown,
+  Coins,
   Palette,
   ShieldCheck,
   CheckCircle,
@@ -87,15 +88,15 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const levelXPTarget = nextLevelXP - currentLevelBaseXP;
   const xpPercent = Math.min(100, Math.max(0, (levelXPProgress / levelXPTarget) * 100));
 
-  const handleSpinPress = () => {
+  const handleSpinPress = async () => {
     if (isSpinning || !canSpinWheel) return;
     setIsSpinning(true);
     setWonReward(null);
 
-    const targetReward = spinWheel();
+    const targetReward = await spinWheel();
     const targetIdx = SPIN_REWARDS.findIndex((r) => r.id === targetReward.id);
     const sliceAngle = 360 / SPIN_REWARDS.length;
-    const finalDegree = 360 * 5 + (360 - targetIdx * sliceAngle);
+    const finalDegree = 360 * 5 + (360 - (targetIdx < 0 ? 0 : targetIdx) * sliceAngle);
 
     spinAnim.setValue(0);
     Animated.timing(spinAnim, {
@@ -144,9 +145,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Text style={styles.levelTitleText} numberOfLines={1} adjustsFontSizeToFit>{t(levelTitle as any, levelTitle)}</Text>
 
               {isVIP ? (
-                <Pressable style={styles.vipBadge} onPress={() => setShowVipModal(true)}>
-                  <Text style={styles.vipBadgeText}>👑 VIP ({vipDaysRemaining}d)</Text>
-                </Pressable>
+                <View style={styles.vipBadge}>
+                  <Crown size={12} color="#FFB800" style={{ marginRight: 4 }} />
+                  <Text style={styles.vipBadgeText}>VIP ({vipDaysRemaining}d)</Text>
+                </View>
               ) : (
                 <Pressable style={styles.getVipBtn} onPress={() => setShowVipModal(true)}>
                   <Text style={styles.getVipBtnText}>+ Get VIP</Text>
@@ -154,7 +156,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               )}
 
               <View style={styles.coinBadge}>
-                <Text style={styles.coinText}>💰 {coins}</Text>
+                <Coins size={14} color="#FFB800" style={{ marginRight: 4 }} />
+                <Text style={styles.coinText}>{coins} Coins</Text>
               </View>
             </View>
 
@@ -309,7 +312,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                         </View>
                         <View style={styles.rewardTag}>
                           <Text style={styles.rewardTagText}>
-                            +{m.rewardCoins} 💰 · +{m.rewardXP} ⚡
+                            +{m.rewardCoins} Coins · +{m.rewardXP} XP
                           </Text>
                         </View>
                       </View>
@@ -361,7 +364,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             {/* 🎉 SEASONAL EVENTS SELECTOR TAB */}
             {activeTab === 'events' && (
               <View style={styles.eventsListContainer}>
-                <Text style={styles.sectionHeading}>🌟 Seasonal Festival Calendar</Text>
+                <Text style={styles.sectionHeading}>Seasonal Festival Calendar</Text>
                 <Text style={styles.sectionSubtitle}>
                   Choose an active festival to participate in unique quests & earn exclusive badges!
                 </Text>
@@ -422,10 +425,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </View>
             )}
 
-            {/* 🎨 THEMES SHOP TAB */}
+            {/* THEMES SHOP TAB */}
             {activeTab === 'themes' && (
               <View style={styles.themesContainer}>
-                <Text style={styles.sectionHeading}>🎨 AniFlix Cinema Theme Shop</Text>
+                <Text style={styles.sectionHeading}>AniFlix Cinema Theme Shop</Text>
                 <Text style={styles.sectionSubtitle}>
                   Spend your earned AniFlix Coins to unlock and equip custom event themes!
                 </Text>
@@ -473,7 +476,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                                 onPress={() => unlockTheme(th.id)}
                               >
                                 <Text style={styles.buyThemeBtnText}>
-                                  Unlock for 💰 {th.costCoins}
+                                  Unlock for {th.costCoins} Coins
                                 </Text>
                               </Pressable>
                             )}
@@ -486,10 +489,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </View>
             )}
 
-            {/* 🏅 BADGES TAB */}
+            {/* BADGES TAB */}
             {activeTab === 'badges' && (
               <View style={styles.badgesContainer}>
-                <Text style={styles.sectionHeading}>🏅 Achievement Badges</Text>
+                <Text style={styles.sectionHeading}>Achievement Badges</Text>
                 <Text style={styles.sectionSubtitle}>
                   Collect prestige badges by watching movies, building streaks, and reviewing!
                 </Text>
@@ -561,7 +564,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
                 {wonReward && (
                   <View style={styles.wonBanner}>
-                    <Text style={styles.wonTitle}>🎉 You Won {wonReward.label}!</Text>
+                    <Text style={styles.wonTitle}>You Won {wonReward.label}!</Text>
                   </View>
                 )}
 
@@ -577,14 +580,14 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     {isSpinning
                       ? 'Spinning...'
                       : canSpinWheel
-                      ? '🎰 SPIN WHEEL (FREE)'
+                      ? 'SPIN WHEEL (FREE)'
                       : '✓ Spun Today - Come Back Tomorrow!'}
                   </Text>
                 </Pressable>
               </View>
             )}
 
-            {/* 🔥 DAILY STREAK TAB */}
+            {/* DAILY STREAK TAB */}
             {activeTab === 'streak' && (
               <View style={styles.streakContainer}>
                 <View style={styles.streakHeroCard}>
@@ -613,7 +616,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                               <Text style={styles.streakDayNum}>D{day}</Text>
                             )}
                           </View>
-                          <Text style={styles.streakDayReward}>+{60 + day * 15}💰</Text>
+                          <Text style={styles.streakDayReward}>+{60 + day * 15} Coins</Text>
                         </View>
                       );
                     })}

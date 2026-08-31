@@ -20,12 +20,12 @@ import {
   View,
 } from 'react-native';
 
-const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
-  { id: 'Movies', label: 'Movies', icon: '🎬' },
-  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
-  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
-  { id: 'Drama', label: 'Drama', icon: '🎭' },
-  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
+const CATEGORY_OPTIONS: { id: MediaCategory; label: string }[] = [
+  { id: 'Movies', label: 'Movies' },
+  { id: 'Anime Movies', label: 'Anime Movies' },
+  { id: 'K-Drama', label: 'K-Drama' },
+  { id: 'Drama', label: 'Drama' },
+  { id: 'Anime Series', label: 'Anime Series' },
 ];
 
 export default function AddAnimeScreen() {
@@ -208,7 +208,6 @@ export default function AddAnimeScreen() {
                       }
                     }}
                   >
-                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
                     <Text
                       style={[
                         styles.categoryChipText,
@@ -269,8 +268,8 @@ export default function AddAnimeScreen() {
           <View style={[styles.fieldGroup, { backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#242436' }]}>
             <Text style={[styles.label, { color: themeColors.textSecondary }]}>ADD OR UPDATE EPISODE LINK</Text>
             
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-              <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+              <View style={{ minWidth: 80, flex: 1 }}>
                 <TextInput
                   style={[inputStyle, { marginBottom: 0 }]}
                   placeholder="Ep #"
@@ -281,7 +280,7 @@ export default function AddAnimeScreen() {
                   editable={!loading}
                 />
               </View>
-              <View style={{ flex: 3 }}>
+              <View style={{ minWidth: 180, flex: 3 }}>
                 <TextInput
                   style={[inputStyle, { marginBottom: 0 }]}
                   placeholder="https://...mp4"

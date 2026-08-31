@@ -4,7 +4,6 @@ import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { dockerDb } from '@/lib/docker-db';
 import { getDeviceId } from '@/lib/device-session';
 import { isValidEmail, normalizeEmail } from '@/lib/password';
 
@@ -57,11 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const deviceId = deviceIdRef.current ?? await getDeviceId();
       deviceIdRef.current = deviceId;
-      
-      // Skip the RPC call to prevent 404 console errors if the SQL function is not deployed
-      // const { error } = await supabase.rpc('claim_device_session', { p_device_id: deviceId });
-      // return error?.message ?? null;
-      return null;
+
+      const { error } = await supabase.rpc('claim_device_session', { p_device_id: deviceId });
+      return error?.message ?? null;
     } catch {
       return null;
     }
@@ -73,120 +70,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession?.user) return;
 
-      // Skip the RPC call to prevent 404 console errors if the SQL function is not deployed
-      // const { data, error } = await supabase.rpc('is_current_device', { p_device_id: deviceIdRef.current });
-      // if (!error && data === false) {
-      //   await signOutLocally();
-      // }
+      const { data, error } = await supabase.rpc('is_current_device', { p_device_id: deviceIdRef.current });
+      if (!error && data === false) {
+        await signOutLocally();
+      }
     } catch {
       // Ignore network errors
     }
-  }, []);
+  }, [signOutLocally]);
 
   const fetchProfile = async (uId: string, providedEmail?: string) => {
     try {
-      // 1. Try Docker PostgreSQL first
-      let dockerProfile = null;
-      let dockerErr = null;
-      
-      if (Platform.OS !== 'web') {
-        const result = await dockerDb
-          .from('profiles')
-          .select('*')
-          .eq('id', uId)
-          .maybeSingle();
-        dockerProfile = result.data;
-        dockerErr = result.error;
-      }
-
-      if (!dockerErr && dockerProfile) {
-        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
-        const currentEmail = providedEmail || user?.email;
-        const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
-        
-
-        setProfile({
-          ...(dockerProfile as Profile),
-          role: isAppAdmin ? 'admin' : (dockerProfile.role || 'user')
-        });
-        return;
-      }
-
-      // 2. Fetch from Supabase as fallback
       const { data: supaProfile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', uId)
         .maybeSingle();
+
       if (supaProfile) {
         const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
         const currentEmail = providedEmail || user?.email;
         const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
-
-
         const expectedRole = isAppAdmin ? 'admin' : (supaProfile.role || 'user');
 
         setProfile({
           ...(supaProfile as Profile),
-          role: expectedRole
+          role: expectedRole,
         });
-        
-        // We no longer attempt to force-update the Supabase role here.
-        // Role updates should only be performed by a secure backend function.
-
-        // Seed into Docker PostgreSQL for local permanence
-        if (Platform.OS !== 'web') {
-          try {
-            await dockerDb.from('profiles').upsert({
-              id: uId,
-              full_name: supaProfile.full_name,
-              username: supaProfile.username,
-              avatar_url: supaProfile.avatar_url,
-              role: expectedRole,
-              coins: supaProfile.coins || 0,
-              xp: supaProfile.xp || 0,
-              level: supaProfile.level || 1,
-              streak_days: supaProfile.streak_days || 0,
-              is_vip: supaProfile.is_vip || false,
-              vip_expires_at: supaProfile.vip_expires_at,
-            });
-          } catch {}
-        }
       } else {
         const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
         const currentEmail = providedEmail || user?.email;
         const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
-        
-        // Fallback profile if record not yet created
+
         const fallback: Profile = {
           id: uId,
           full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User',
           role: isAppAdmin ? 'admin' : 'user',
         };
         setProfile(fallback);
-        
-        // We skip frontend upserts on Web to avoid 403 Forbidden console errors 
-        // because profiles are typically created by secure backend Postgres triggers.
-        if (Platform.OS !== 'web') {
-          try {
-            await supabase.from('profiles').upsert({
-              id: fallback.id,
-              full_name: fallback.full_name,
-              role: fallback.role,
-            });
-            await dockerDb.from('profiles').upsert({
-              id: uId,
-              full_name: fallback.full_name,
-              role: fallback.role,
-            });
-          } catch {}
-        }
       }
     } catch {
       const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
       const currentEmail = providedEmail || user?.email;
       const isAppAdmin = currentEmail?.toLowerCase() === adminEmail?.toLowerCase();
-      
+
       setProfile({
         id: uId,
         full_name: session?.user?.user_metadata?.full_name || 'User',
@@ -365,8 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (updates: Partial<Profile>): Promise<{ error: string | null }> => {
     if (!user?.id) return { error: 'Not authenticated' };
     try {
-      // 1. Update Docker PostgreSQL
-      await dockerDb
+      const { error } = await supabase
         .from('profiles')
         .update({
           ...updates,
@@ -374,15 +300,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         .eq('id', user.id);
 
-      // 2. Sync to Supabase as fallback
-      supabase
-        .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id)
-        .then(() => {});
+      if (error) return { error: error.message };
 
       setProfile((prev) => (prev ? { ...prev, ...updates } : null));
       return { error: null };

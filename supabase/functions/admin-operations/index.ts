@@ -262,6 +262,71 @@ serve(async (req) => {
                 break;
             }
 
+            case 'grant_vip': {
+                if (!targetUser?.email || !targetUser?.days) {
+                    throw new Error('Missing target email or days');
+                }
+                const targetEmail = String(targetUser.email).trim().toLowerCase();
+                const daysCount = Number(targetUser.days);
+                if (isNaN(daysCount) || daysCount < 1) {
+                    throw new Error('Invalid VIP duration days');
+                }
+
+                // Locate user by email in profiles
+                const { data: targetProfile, error: profileLookupError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id')
+                    .ilike('username', targetEmail)
+                    .maybeSingle();
+
+                let targetUserId = targetProfile?.id;
+
+                if (!targetUserId) {
+                    // Try auth.users search
+                    const { data: authUserList } = await supabaseAdmin.auth.admin.listUsers();
+                    const matchedUser = authUserList?.users?.find((u) => u.email?.toLowerCase() === targetEmail);
+                    if (matchedUser) {
+                        targetUserId = matchedUser.id;
+                    }
+                }
+
+                if (!targetUserId) {
+                    throw new Error(`User with email/username "${targetEmail}" was not found.`);
+                }
+
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + daysCount);
+                const isoExpiry = expiryDate.toISOString();
+
+                const { data: updatedProfile, error: vipGrantError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({
+                        is_vip: true,
+                        vip_expires_at: isoExpiry,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', targetUserId)
+                    .select()
+                    .single();
+
+                if (vipGrantError) {
+                    success = false;
+                    errorMsg = vipGrantError.message;
+                } else {
+                    result = updatedProfile;
+                    await supabaseAdmin.rpc('log_audit_event', {
+                        p_user_id: user.id,
+                        p_action: 'grant_vip',
+                        p_table_name: 'profiles',
+                        p_record_id: targetUserId,
+                        p_record_identifier: targetEmail,
+                        p_new_values: { is_vip: true, vip_expires_at: isoExpiry, days: daysCount },
+                        p_status: 'success',
+                    });
+                }
+                break;
+            }
+
             case 'set_user_suspension': {
                 if (!targetUser?.id || targetUser.id === user.id || typeof targetUser.suspended !== 'boolean') {
                     throw new Error('Invalid user suspension request.');

@@ -20,6 +20,8 @@ import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { DEFAULT_CATALOG, CATEGORIES } from './index';
 import { useResponsive } from '@/hooks/useResponsive';
+import { EmptyState } from '@/components/EmptyState';
+import { MediaCardSkeleton } from '@/components/MediaCardSkeleton';
 
 const GENRES = ['All', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
@@ -205,12 +207,12 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        {/* Main Content Area */}
-        <View style={styles.mainContent}>
-            {/* 🎬 Grid of Results */}
+            {/* Grid of Results */}
             {loading ? (
-              <View style={styles.center}>
-                <ActivityIndicator size="large" color={themeColors.primary} />
+              <View style={[styles.grid, { padding: pagePad, flexDirection: 'row', flexWrap: 'wrap', gap: cardGap }]}>
+                {Array.from({ length: numCols * 3 }).map((_, i) => (
+                  <MediaCardSkeleton key={i} width={cardWidth} height={cardWidth * 1.45} />
+                ))}
               </View>
             ) : (
               <FlatList
@@ -222,20 +224,17 @@ export default function SearchScreen() {
                 columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
                 contentContainerStyle={[styles.grid, { padding: pagePad, paddingTop: 12, paddingBottom: 40 }]}
                 ListEmptyComponent={
-                  <View style={styles.emptyContainer}>
-                    <Sparkles color={themeColors.textSecondary} size={48} />
-                    <Text style={[styles.emptyTitle, { color: themeColors.text }]}>{t('noResults')}</Text>
-                    <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
-                      {t('attemptDifferentSearch')}
-                    </Text>
-                  </View>
+                  <EmptyState
+                    icon={SearchIcon}
+                    title={t('noResults', 'No Results Found')}
+                    description={t('attemptDifferentSearch', 'Try searching with a different title or keyword.')}
+                  />
                 }
               />
             )}
-          </View>
+        </View>
       </View>
-    </View>
-  );
+    );
 }
 
 const styles = StyleSheet.create({

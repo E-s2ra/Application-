@@ -10,6 +10,8 @@ type SocialContextType = {
   followingCount: number;
   isFollowing: (userId: string) => boolean;
   toggleFollow: (targetUserId: string) => Promise<boolean>;
+  getFollowersCount: (targetUserId?: string) => Promise<number>;
+  getFollowingCount: (targetUserId?: string) => Promise<number>;
 };
 
 const SocialContext = React.createContext<SocialContextType | undefined>(undefined);
@@ -18,8 +20,8 @@ const SOCIAL_STORAGE_KEY = 'aniflix_social_follows_v1';
 export function SocialProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [followingIds, setFollowingIds] = React.useState<string[]>([]);
-  const [followersCount] = React.useState(128);
-  const [followingCount, setFollowingCount] = React.useState(42);
+  const [followersCount, setFollowersCount] = React.useState(0);
+  const [followingCount, setFollowingCount] = React.useState(0);
 
   // Load follows on startup & sync with Supabase
   React.useEffect(() => {
@@ -32,21 +34,32 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
           raw = await AsyncStorage.getItem(SOCIAL_STORAGE_KEY);
         }
         if (raw) {
-          setFollowingIds(JSON.parse(raw));
+          const parsed = JSON.parse(raw);
+          setFollowingIds(parsed);
+          setFollowingCount(parsed.length);
         }
 
         if (user?.id && !user.id.startsWith('guest-')) {
-          const timeout = new Promise((resolve) => setTimeout(resolve, 2000));
-          const fetchPromise = supabase
+          // 1. Fetch user's following IDs
+          const { data: followings } = await supabase
             .from('follows')
             .select('following_id')
             .eq('follower_id', user.id);
 
-          const res = (await Promise.race([fetchPromise, timeout])) as any;
-          if (res && res.data) {
-            const ids = res.data.map((f: any) => f.following_id);
+          if (followings) {
+            const ids = followings.map((f: any) => f.following_id);
             setFollowingIds(ids);
             setFollowingCount(ids.length);
+          }
+
+          // 2. Fetch user's real follower count
+          const { count: fCount } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', user.id);
+
+          if (typeof fCount === 'number') {
+            setFollowersCount(fCount);
           }
         }
       } catch (err) {
@@ -103,6 +116,40 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
     [followingIds, user]
   );
 
+  const getFollowersCount = React.useCallback(
+    async (targetUserId?: string): Promise<number> => {
+      const target = targetUserId || user?.id;
+      if (!target || target.startsWith('guest-')) return 0;
+      try {
+        const { count } = await supabase
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('following_id', target);
+        return count ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+    [user]
+  );
+
+  const getFollowingCount = React.useCallback(
+    async (targetUserId?: string): Promise<number> => {
+      const target = targetUserId || user?.id;
+      if (!target || target.startsWith('guest-')) return 0;
+      try {
+        const { count } = await supabase
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('follower_id', target);
+        return count ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+    [user]
+  );
+
   return (
     <SocialContext.Provider
       value={{
@@ -111,6 +158,8 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
         followingCount,
         isFollowing,
         toggleFollow,
+        getFollowersCount,
+        getFollowingCount,
       }}
     >
       {children}

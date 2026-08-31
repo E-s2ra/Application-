@@ -31,10 +31,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const rasediWebhookSecret = Deno.env.get('RASEDI_WEBHOOK_SECRET');
 
-    // Optional webhook signature verification
+    // Mandatory webhook signature verification
     const receivedSecret = req.headers.get('x-webhook-secret') || req.headers.get('x-rasedi-signature');
-    if (rasediWebhookSecret && receivedSecret && receivedSecret !== rasediWebhookSecret) {
-      return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), {
+    if (rasediWebhookSecret && (!receivedSecret || receivedSecret !== rasediWebhookSecret)) {
+      return new Response(JSON.stringify({ error: 'Invalid or missing webhook signature' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

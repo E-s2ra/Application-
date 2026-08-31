@@ -24,6 +24,7 @@ import {
   Tv,
   ChevronRight,
   Flame,
+  Coins,
   Crown,
   Trophy,
   Palette,
@@ -207,15 +208,17 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {/* 📊 Gamification & Social Stats Row */}
+        {/* Gamification & Social Stats Row */}
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
-            <Text style={[styles.statNumber, { color: '#FFD700' }]}>💰 {coins}</Text>
+            <Coins size={16} color="#FFB800" style={{ marginBottom: 4 }} />
+            <Text style={[styles.statNumber, { color: themeColors.text }]}>{coins}</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('coins', 'Coins')}</Text>
           </View>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
-            <Text style={[styles.statNumber, { color: '#FF5722' }]}>🔥 {streakDays}d</Text>
+            <Flame size={16} color="#F97316" style={{ marginBottom: 4 }} />
+            <Text style={[styles.statNumber, { color: themeColors.text }]}>{streakDays}d</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('streak', 'Streak')}</Text>
           </View>
 
@@ -223,15 +226,17 @@ export default function ProfileScreen() {
             style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}
             onPress={() => router.push('/(tabs)/favorites' as any)}
           >
-            <Text style={[styles.statNumber, { color: themeColors.primary }]}>
+            <Heart size={16} color={themeColors.primary} style={{ marginBottom: 4 }} />
+            <Text style={[styles.statNumber, { color: themeColors.text }]}>
               {favorites.length}
             </Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('favorites', 'Favorites')}</Text>
           </Pressable>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard }]}>
-            <Text style={[styles.statNumber, { color: '#00D2FF' }]}>👥 {followingCount}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('following')}</Text>
+            <Users size={16} color="#06B6D4" style={{ marginBottom: 4 }} />
+            <Text style={[styles.statNumber, { color: themeColors.text }]}>{followingCount}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>{t('following', 'Following')}</Text>
           </View>
         </View>
 
@@ -578,28 +583,33 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   statBox: {
     flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    borderRadius: 16,
+    minWidth: 70,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#161622',
     borderWidth: 1,
     borderColor: '#222232',
   },
   statNumber: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFF',
   },
   statLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    color: '#7B7B92',
     marginTop: 2,
+    textAlign: 'center',
   },
   rewardsBanner: {
     marginHorizontal: 16,

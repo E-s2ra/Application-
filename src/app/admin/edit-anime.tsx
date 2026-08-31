@@ -21,12 +21,12 @@ import {
   View,
 } from 'react-native';
 
-const CATEGORY_OPTIONS: { id: MediaCategory; label: string; icon: string }[] = [
-  { id: 'Movies', label: 'Movies', icon: '🎬' },
-  { id: 'Anime Movies', label: 'Anime Movies', icon: '🎌' },
-  { id: 'K-Drama', label: 'K-Drama', icon: '🌸' },
-  { id: 'Drama', label: 'Drama', icon: '🎭' },
-  { id: 'Anime Series', label: 'Anime Series', icon: '⚡' },
+const CATEGORY_OPTIONS: { id: MediaCategory; label: string }[] = [
+  { id: 'Movies', label: 'Movies' },
+  { id: 'Anime Movies', label: 'Anime Movies' },
+  { id: 'K-Drama', label: 'K-Drama' },
+  { id: 'Drama', label: 'Drama' },
+  { id: 'Anime Series', label: 'Anime Series' },
 ];
 
 export default function EditAnimeScreen() {
@@ -269,7 +269,6 @@ export default function EditAnimeScreen() {
                     },
                   ]}
                 >
-                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
                   <Text
                     style={[
                       styles.categoryLabel,
@@ -347,8 +346,8 @@ export default function EditAnimeScreen() {
         <View style={[styles.fieldGroup, { backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#242436', marginBottom: 24 }]}>
           <Text style={[styles.label, { color: themeColors.text }]}>Add or Update Episode Link</Text>
           
-          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-            <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+            <View style={{ minWidth: 80, flex: 1 }}>
               <TextInput
                 style={[
                   styles.input,
@@ -363,10 +362,11 @@ export default function EditAnimeScreen() {
                 placeholderTextColor={themeColors.textSecondary}
                 value={newEpNum}
                 onChangeText={setNewEpNum}
-                keyboardType="numeric"
+                keyboardType="number-pad"
+                editable={!saving}
               />
             </View>
-            <View style={{ flex: 3 }}>
+            <View style={{ minWidth: 180, flex: 3 }}>
               <TextInput
                 style={[
                   styles.input,
@@ -382,6 +382,8 @@ export default function EditAnimeScreen() {
                 value={newEpUrl}
                 onChangeText={setNewEpUrl}
                 autoCapitalize="none"
+                autoCorrect={false}
+                editable={!saving}
               />
             </View>
           </View>

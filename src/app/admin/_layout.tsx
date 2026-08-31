@@ -24,7 +24,7 @@ export default function AdminLayout() {
         headerTintColor: '#ffffff',
         contentStyle: { backgroundColor: themeColors.background },
       }}>
-      <Stack.Screen name="index" options={{ title: '⚡ Admin Panel' }} />
+      <Stack.Screen name="index" options={{ title: 'Admin Panel' }} />
       <Stack.Screen name="add-anime" options={{ title: 'Add New Anime', headerBackTitle: 'Panel' }} />
       <Stack.Screen name="edit-anime" options={{ title: 'Edit Media', headerBackTitle: 'Panel' }} />
     </Stack>

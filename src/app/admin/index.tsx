@@ -1,9 +1,8 @@
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
-import { deleteAnime, updateAnimeFeatured } from '@/lib/admin-operations';
+import { deleteAnime, updateAnimeFeatured, callAdminOperation } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
-import { dockerDb } from '@/lib/docker-db';
 import {
   getPendingManualPayments,
   approveManualPayment,
@@ -77,22 +76,15 @@ export default function AdminPanelScreen() {
     }
     setGrantingVip(true);
     const email = instantEmail.trim().toLowerCase();
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + instantDays);
-    const isoExpiry = expiryDate.toISOString();
 
     try {
-      try {
-        await dockerDb.from('profiles').update({
-          is_vip: true,
-          vip_expires_at: isoExpiry,
-        }).ilike('email', email);
-      } catch (_e) {}
+      const res = await callAdminOperation('grant_vip', {
+        user: { email, days: instantDays },
+      });
 
-      await supabase.from('profiles').update({
-        is_vip: true,
-        vip_expires_at: isoExpiry,
-      }).ilike('email', email);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to grant VIP via admin Edge Function.');
+      }
 
       const successMsg = `VIP activated for ${email} (${instantDays} days)! 🎉`;
       if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(successMsg);
@@ -111,28 +103,15 @@ export default function AdminPanelScreen() {
 
   const fetchAnime = async () => {
     try {
-      const isWeb = Platform.OS === 'web';
-      
       const promises: any[] = [
         supabase
           .from('anime')
           .select('id, title, episodes, genre, category, is_featured')
           .order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
+        supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+        getPendingManualPayments(),
       ];
-
-      if (!isWeb) {
-        promises.push(
-          dockerDb.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
-          dockerDb.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-          getPendingManualPayments()
-        );
-      } else {
-        promises.push(
-          Promise.resolve({ count: 0 }),
-          Promise.resolve({ count: 0 }),
-          Promise.resolve([])
-        );
-      }
 
       promises.push(
         import('@/lib/admin-operations').then(m => m.getEditedMediaOverrides()),
@@ -588,8 +567,10 @@ export default function AdminPanelScreen() {
             renderItem={({ item }) => (
               <View style={styles.approvalCard}>
                 <View style={styles.approvalHeader}>
-                  <View>
-                    <Text style={styles.approvalUserEmail}>{item.metadata?.user_email || 'User'}</Text>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.approvalUserEmail} numberOfLines={1} ellipsizeMode="tail">
+                      {item.metadata?.user_email || 'User'}
+                    </Text>
                     <Text style={styles.approvalPlanTitle}>
                       Plan: <Text style={{ color: '#FFB800', fontWeight: '800' }}>{item.metadata?.plan_title || item.plan_id}</Text> · {item.amount_iqd.toLocaleString()} IQD
                     </Text>
@@ -605,7 +586,9 @@ export default function AdminPanelScreen() {
                 <View style={styles.approvalDetailsBox}>
                   <Text style={styles.approvalDetailRow}>
                     <Text style={styles.detailLabel}>Reference / PIN: </Text>
-                    <Text style={styles.detailValue}>{item.metadata?.transaction_ref || item.metadata?.voucher_pin || item.rasedi_order_id}</Text>
+                    <Text style={styles.detailValue} numberOfLines={1} ellipsizeMode="middle">
+                      {item.metadata?.transaction_ref || item.metadata?.voucher_pin || item.rasedi_order_id}
+                    </Text>
                   </Text>
                   {item.metadata?.sender_phone && (
                     <Text style={styles.approvalDetailRow}>

@@ -18,6 +18,7 @@ export interface ResponsiveInfo {
   height: number;
   bp: Breakpoint;
   isXS: boolean;      // < 480
+  isSmallDevice: boolean; // < 360 (small Android/iPhone)
   isSM: boolean;      // 480-767
   isMD: boolean;      // 768-1023
   isLG: boolean;      // 1024-1279
@@ -58,6 +59,7 @@ export function useResponsive(): ResponsiveInfo {
     width < 1024 ? 'md' :
     width < 1280 ? 'lg' : 'xl';
 
+  const isSmallDevice = width < 360;
   const isXS = bp === 'xs';
   const isSM = bp === 'sm';
   const isMD = bp === 'md';
@@ -71,10 +73,10 @@ export function useResponsive(): ResponsiveInfo {
   const maxContentWidth = Math.min(width, 1400);
 
   // Horizontal page padding
-  const pagePad = isXS ? 12 : isSM ? 16 : isMD ? 24 : 32;
+  const pagePad = isSmallDevice ? 10 : isXS ? 12 : isSM ? 16 : isMD ? 24 : 32;
 
   // Grid card gap
-  const cardGap = isXS ? 10 : isSM ? 12 : isMD ? 16 : 20;
+  const cardGap = isSmallDevice ? 8 : isXS ? 10 : isSM ? 12 : isMD ? 16 : 20;
 
   // Responsive column counts for search/favorites
   const numCols =
@@ -91,6 +93,7 @@ export function useResponsive(): ResponsiveInfo {
 
   // Sizing for horizontal scrolling media rails
   const railCardWidth =
+    isSmallDevice ? 120 :
     isXS ? 135 :
     isSM ? 150 :
     isMD ? 175 :
@@ -103,6 +106,7 @@ export function useResponsive(): ResponsiveInfo {
 
   // Sizing for hero banner
   const heroHeight =
+    isSmallDevice ? 360 :
     isXS ? 390 :
     isSM ? 430 :
     isMD ? 490 :
@@ -113,6 +117,7 @@ export function useResponsive(): ResponsiveInfo {
     height,
     bp,
     isXS,
+    isSmallDevice,
     isSM,
     isMD,
     isLG,

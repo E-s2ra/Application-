@@ -1,5 +1,4 @@
 import { supabase, SUPABASE_URL } from './supabase';
-import { dockerDb } from './docker-db';
 import { Platform } from 'react-native';
 
 export type RasediPlanId = 'vip_1_month' | 'vip_3_months' | 'vip_6_months' | 'vip_1_year';
@@ -46,7 +45,7 @@ export const RASEDI_VIP_PLANS: RasediPlan[] = [
 ];
 
 /**
- * Initiates checkout session with RASEDI and stores pending record in Docker PostgreSQL.
+ * Initiates checkout session with RASEDI and stores pending record in Supabase.
  */
 export async function createRasediCheckout(planId: RasediPlanId): Promise<{
   success: boolean;
@@ -70,15 +69,9 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
 
     const orderId = `aniflix_${session.user.id.slice(0, 8)}_${Date.now()}`;
 
-    // 1. Record pending payment directly into Docker PostgreSQL
+    // 1. Record pending payment into Supabase
     try {
-      await dockerDb.from('profiles').upsert({
-        id: session.user.id,
-        full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-        role: session.user.email?.toLowerCase() === (process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'esra99san@gmail.com').toLowerCase() ? 'admin' : 'user',
-      });
-
-      await dockerDb.from('payments').insert({
+      await supabase.from('payments').insert({
         user_id: session.user.id,
         rasedi_order_id: orderId,
         plan_id: planId,
@@ -93,7 +86,7 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
         },
       });
     } catch (insertErr) {
-      console.warn('Docker payments pending insert note:', insertErr);
+      console.warn('Payments pending insert note:', insertErr);
     }
 
     // 2. Try Edge Function for live RASEDI session
@@ -129,7 +122,8 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
     }
 
     // Official RASEDI Checkout link
-    const rasediCheckoutUrl = `https://checkout.rasedi.com/pay/${orderId}?amount=${plan.priceIQD}&currency=IQD&mode=test`;
+    const mode = process.env.RASEDI_MODE || 'test';
+    const rasediCheckoutUrl = `https://checkout.rasedi.com/pay/${orderId}?amount=${plan.priceIQD}&currency=IQD&mode=${mode}`;
     return {
       success: true,
       paymentUrl: rasediCheckoutUrl,
@@ -141,7 +135,7 @@ export async function createRasediCheckout(planId: RasediPlanId): Promise<{
 }
 
 /**
- * Verifies payment status and activates VIP in Docker PostgreSQL.
+ * Verifies payment status and activates VIP in Supabase.
  */
 export async function verifyRasediPayment(orderId: string): Promise<{
   success: boolean;
@@ -160,15 +154,15 @@ export async function verifyRasediPayment(orderId: string): Promise<{
       return { success: false, error: 'User session not found.' };
     }
 
-    // 1. Check local Docker PostgreSQL payment record
-    const { data: payment } = await dockerDb
+    // 1. Check Supabase payment record
+    const { data: payment } = await supabase
       .from('payments')
       .select('*')
       .eq('rasedi_order_id', orderId)
       .maybeSingle();
 
     if (payment && payment.status === 'completed') {
-      const { data: profile } = await dockerDb
+      const { data: profile } = await supabase
         .from('profiles')
         .select('is_vip, vip_expires_at')
         .eq('id', session.user.id)
@@ -212,7 +206,7 @@ export async function verifyRasediPayment(orderId: string): Promise<{
 
 /**
  * Test/Sandbox Helper: Simulates receiving a verified RASEDI webhook
- * to test VIP activation locally in Docker PostgreSQL.
+ * to test VIP activation locally in Supabase.
  */
 export async function simulateTestPaymentSuccess(orderId: string): Promise<{
   success: boolean;
@@ -221,7 +215,7 @@ export async function simulateTestPaymentSuccess(orderId: string): Promise<{
   vipExpiresAt?: string;
 }> {
   try {
-    const { data: payment } = await dockerDb
+    const { data: payment } = await supabase
       .from('payments')
       .select('*')
       .eq('rasedi_order_id', orderId)
@@ -231,14 +225,14 @@ export async function simulateTestPaymentSuccess(orderId: string): Promise<{
       return { success: false, message: 'Payment order not found in database.' };
     }
 
-    const { data, error } = await dockerDb.rpc('process_verified_rasedi_payment', {
+    const { data, error } = await supabase.rpc('process_verified_rasedi_payment', {
       p_user_id: payment.user_id,
-      p_order_id: payment.rasedi_order_id,
-      p_transaction_id: `tx_sandbox_${Date.now()}`,
+      p_rasedi_order_id: payment.rasedi_order_id,
+      p_rasedi_transaction_id: `tx_sandbox_${Date.now()}`,
       p_plan_id: payment.plan_id,
       p_amount_iqd: payment.amount_iqd,
       p_duration_days: payment.duration_days,
-      p_rasedi_response: { verified_by: 'sandbox_simulator', simulated_at: new Date().toISOString() },
+      p_metadata: { verified_by: 'sandbox_simulator', simulated_at: new Date().toISOString() },
     });
 
     if (error) {
@@ -247,7 +241,7 @@ export async function simulateTestPaymentSuccess(orderId: string): Promise<{
 
     return {
       success: true,
-      message: 'Test payment verified! VIP active in Docker PostgreSQL.',
+      message: 'Test payment verified! VIP active.',
       isVIP: (data as any)?.is_vip ?? true,
       vipExpiresAt: (data as any)?.vip_expires_at,
     };
@@ -284,17 +278,8 @@ export async function submitManualPaymentProof(params: {
 
     const orderId = `manual_${params.method}_${session.user.id.slice(0, 8)}_${Date.now()}`;
 
-    // Ensure user profile exists in Docker PostgreSQL
-    try {
-      await dockerDb.from('profiles').upsert({
-        id: session.user.id,
-        full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-        role: session.user.email?.toLowerCase() === (process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'esra99san@gmail.com').toLowerCase() ? 'admin' : 'user',
-      });
-    } catch {}
-
-    // Record pending manual payment in Docker PostgreSQL
-    const { error: insertErr } = await dockerDb.from('payments').insert({
+    // Record pending manual payment in Supabase
+    const { error: insertErr } = await supabase.from('payments').insert({
       user_id: session.user.id,
       rasedi_order_id: orderId,
       plan_id: params.planId,
@@ -330,7 +315,7 @@ export async function submitManualPaymentProof(params: {
  */
 export async function getPendingManualPayments(): Promise<any[]> {
   try {
-    const { data, error } = await dockerDb
+    const { data, error } = await supabase
       .from('payments')
       .select('*, profiles:user_id(id, full_name, username, role, is_vip, vip_expires_at)')
       .eq('status', 'pending_approval')
@@ -344,11 +329,11 @@ export async function getPendingManualPayments(): Promise<any[]> {
 }
 
 /**
- * Admin function: Approves a manual payment and activates VIP for the user in Docker PostgreSQL.
+ * Admin function: Approves a manual payment and activates VIP for the user in Supabase.
  */
 export async function approveManualPayment(paymentId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data: payment } = await dockerDb
+    const { data: payment } = await supabase
       .from('payments')
       .select('*')
       .eq('id', paymentId)
@@ -358,14 +343,14 @@ export async function approveManualPayment(paymentId: string): Promise<{ success
       return { success: false, error: 'Payment not found.' };
     }
 
-    const { error } = await dockerDb.rpc('process_verified_rasedi_payment', {
+    const { error } = await supabase.rpc('process_verified_rasedi_payment', {
       p_user_id: payment.user_id,
-      p_order_id: payment.rasedi_order_id,
-      p_transaction_id: `approved_manual_${payment.rasedi_order_id}`,
+      p_rasedi_order_id: payment.rasedi_order_id,
+      p_rasedi_transaction_id: `approved_manual_${payment.rasedi_order_id}`,
       p_plan_id: payment.plan_id,
       p_amount_iqd: payment.amount_iqd,
       p_duration_days: payment.duration_days,
-      p_rasedi_response: { approved_by_admin: true, approved_at: new Date().toISOString() },
+      p_metadata: { approved_by_admin: true, approved_at: new Date().toISOString() },
     });
 
     if (error) return { success: false, error: error.message };
@@ -380,7 +365,7 @@ export async function approveManualPayment(paymentId: string): Promise<{ success
  */
 export async function rejectManualPayment(paymentId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await dockerDb
+    const { error } = await supabase
       .from('payments')
       .update({
         status: 'rejected',
