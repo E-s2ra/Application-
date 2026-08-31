@@ -28,6 +28,9 @@ export function ErrorState({
             { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1.0 },
           ]}
           onPress={onRetry}
+          accessibilityRole="button"
+          accessibilityLabel="Retry"
+          accessibilityHint="Try loading this content again"
         >
           <RefreshCw size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
           <Text style={styles.retryText}>Retry</Text>

@@ -130,7 +130,12 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Trophy size={22} color="#FFB800" />
               <Text style={styles.modalTitle}>{t('rewardsHub', 'AniFlix Rewards & Events Hub')}</Text>
             </View>
-            <Pressable style={styles.closeBtn} onPress={onClose}>
+            <Pressable
+              style={styles.closeBtn}
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Close Rewards Hub"
+            >
               <X size={20} color="#FFF" />
             </Pressable>
           </View>
@@ -150,7 +155,13 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   <Text style={styles.vipBadgeText}>VIP ({vipDaysRemaining}d)</Text>
                 </View>
               ) : (
-                <Pressable style={styles.getVipBtn} onPress={() => setShowVipModal(true)}>
+                <Pressable
+                  style={styles.getVipBtn}
+                  onPress={() => setShowVipModal(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Get VIP subscription"
+                  accessibilityHint="Opens the VIP subscription options"
+                >
                   <Text style={styles.getVipBtnText}>+ Get VIP</Text>
                 </Pressable>
               )}
@@ -176,6 +187,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           <Pressable
             style={styles.admobRewardedBtn}
             onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
+            accessibilityRole="button"
+            accessibilityLabel="Watch an ad to earn 100 coins"
+            accessibilityHint="A short video ad will play, then 100 coins will be added to your balance"
           >
             <View style={styles.admobBtnLeft}>
               <View style={styles.admobIconCircle}>

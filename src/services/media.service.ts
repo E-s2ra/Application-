@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { AnimeItem } from '@/types';
+import { logError } from '@/lib/error-logger';
 
 /** Default page size for catalog fetches — keeps initial load fast */
 const CATALOG_PAGE_SIZE = 40;
@@ -61,7 +62,7 @@ export const MediaService = {
 
       return [...localOnlyItems, ...items];
     } catch (err) {
-      console.warn('[MediaService] Catalog fetch error:', err);
+      logError(err, { screen: 'MediaService', action: 'getCatalog' });
       return [];
     }
   },
@@ -87,7 +88,7 @@ export const MediaService = {
 
       return { ...data, ...(overrides[id] || {}) } as AnimeItem;
     } catch (err) {
-      console.warn('[MediaService] getMediaById error:', err);
+      logError(err, { screen: 'MediaService', action: 'getMediaById', extra: { id } });
       return null;
     }
   },

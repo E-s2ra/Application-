@@ -128,7 +128,12 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                 </Text>
               </View>
             </View>
-            <Pressable style={styles.closeBtn} onPress={onClose}>
+            <Pressable
+              style={styles.closeBtn}
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Close VIP subscription modal"
+            >
               <X size={20} color="#FFF" />
             </Pressable>
           </View>
@@ -197,6 +202,9 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                       Platform.OS === 'web' && ({ cursor: 'pointer', userSelect: 'none' } as any),
                     ]}
                     onPress={() => setSelectedPlanId(plan.id)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`${plan.durationDays} day VIP plan — ${plan.priceIQD.toLocaleString()} IQD`}
+                    accessibilityState={{ checked: isSelected }}
                   >
                     {plan.badge && (
                       <View
@@ -243,7 +251,13 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               </View>
 
               {/* WhatsApp Button */}
-              <Pressable style={styles.whatsappBtn} onPress={handleContactWhatsApp}>
+              <Pressable
+                style={styles.whatsappBtn}
+                onPress={handleContactWhatsApp}
+                accessibilityRole="button"
+                accessibilityLabel="Contact via WhatsApp to activate VIP"
+                accessibilityHint="Opens WhatsApp to message the AniFlix support team"
+              >
                 <View style={styles.btnLeftContent}>
                   <View style={styles.whatsappIconCircle}>
                     <MessageSquare size={18} color="#FFF" />
@@ -259,7 +273,13 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               </Pressable>
 
               {/* Telegram Button */}
-              <Pressable style={styles.telegramBtn} onPress={handleContactTelegram}>
+              <Pressable
+                style={styles.telegramBtn}
+                onPress={handleContactTelegram}
+                accessibilityRole="button"
+                accessibilityLabel="Contact via Telegram to activate VIP"
+                accessibilityHint="Opens Telegram to message the AniFlix support team"
+              >
                 <View style={styles.btnLeftContent}>
                   <View style={styles.telegramIconCircle}>
                     <Send size={18} color="#FFF" />

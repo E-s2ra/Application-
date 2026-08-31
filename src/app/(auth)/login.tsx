@@ -67,6 +67,9 @@ export default function LoginScreen() {
           <View style={{ width: '100%', alignItems: 'flex-end', marginBottom: 12 }}>
             <Pressable
               onPress={toggleLanguage}
+              accessibilityRole="button"
+              accessibilityLabel={language === 'ku' ? 'Switch to English' : 'گۆڕین بۆ کوردی'}
+              accessibilityHint="Changes the app language"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -124,6 +127,8 @@ export default function LoginScreen() {
               returnKeyType="next"
               onSubmitEditing={() => passwordInput.current?.focus()}
               blurOnSubmit={false}
+              accessibilityLabel={t('email', 'Email or Username')}
+              accessibilityHint="Enter your email address or username"
             />
             <View style={[styles.passwordWrapper, { backgroundColor: themeColors.backgroundElement }]}>
               <TextInput
@@ -145,6 +150,8 @@ export default function LoginScreen() {
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? (
                   <EyeOff size={20} color={themeColors.textSecondary} />
@@ -153,7 +160,12 @@ export default function LoginScreen() {
                 )}
               </Pressable>
             </View>
-            <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={styles.forgotBtn}>
+            <Pressable
+              onPress={() => router.push('/(auth)/forgot-password')}
+              style={styles.forgotBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('forgotPassword', 'Forgot Password?')}
+            >
               <Text style={[styles.forgotText, { color: themeColors.textSecondary }]}>
                 {t('forgotPassword', 'Forgot Password?')}
               </Text>
@@ -163,6 +175,9 @@ export default function LoginScreen() {
               style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1, overflow: 'hidden' }]}
               onPress={handleLogin}
               disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel={t('signInBtn', 'Sign In')}
+              accessibilityState={{ disabled: loading, busy: loading }}
             >
               <PrimaryGradient borderRadius={12} />
               {loading ? (
@@ -177,7 +192,12 @@ export default function LoginScreen() {
             <Text style={{ color: themeColors.textSecondary }}>
               {t('dontHaveAccount', "Don't have an account?")}{' '}
             </Text>
-            <Pressable onPress={() => router.push('/(auth)/signup')}>
+            <Pressable
+              onPress={() => router.push('/(auth)/signup')}
+              accessibilityRole="button"
+              accessibilityLabel={t('createAccount', 'Sign Up')}
+              accessibilityHint="Navigate to the account creation screen"
+            >
               <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>
                 {t('createAccount', 'Sign Up')}
               </Text>
