@@ -31,6 +31,7 @@ import {
   Film,
   Sparkles,
   Layers,
+  Settings,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { getPlaybackUrl } from '@/lib/playback';
@@ -42,6 +43,9 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { ReviewsSection } from '@/components/ReviewsSection';
 import { useToast } from '@/hooks/useToast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
+import { EpisodeSelector } from '@/components/EpisodeSelector';
+import { PlayerSettingsModal, VideoQuality, AudioTrack } from '@/components/PlayerSettingsModal';
 
 const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -54,6 +58,7 @@ export default function WatchScreen() {
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet } = useResponsive();
   const { language } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
+  const { updateProgress } = useWatchHistory();
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
@@ -63,6 +68,9 @@ export default function WatchScreen() {
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [selectedQuality, setSelectedQuality] = useState<VideoQuality>('4K (2160p)');
+  const [selectedAudio, setSelectedAudio] = useState<AudioTrack>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [sharedToast, setSharedToast] = useState(false);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
@@ -85,6 +93,21 @@ export default function WatchScreen() {
       if (__DEV__) console.warn('[Watch] playbackRate sync error:', err);
     }
   }, [playbackSpeed, player]);
+
+  // Periodic playback progress saver
+  useEffect(() => {
+    if (!anime || !player) return;
+
+    const saveInterval = setInterval(() => {
+      try {
+        if (player.currentTime > 0 && player.duration > 0) {
+          updateProgress(anime, player.currentTime, player.duration, selectedEpisode);
+        }
+      } catch (_e) {}
+    }, 3500);
+
+    return () => clearInterval(saveInterval);
+  }, [anime, player, selectedEpisode, updateProgress]);
 
   useEffect(() => {
     async function loadData() {
@@ -354,6 +377,17 @@ export default function WatchScreen() {
                 </Text>
               </Pressable>
 
+              {/* Stream Quality & Audio Settings Button */}
+              <Pressable
+                style={[styles.pillBtn, { backgroundColor: themeColors.backgroundCard }]}
+                onPress={() => setShowSettingsModal(true)}
+              >
+                <Settings color={themeColors.primary} size={15} />
+                <Text style={[styles.pillBtnText, { color: themeColors.text }]}>
+                  {selectedQuality.split(' ')[0]}
+                </Text>
+              </Pressable>
+
               {/* Mute Button */}
               <Pressable style={styles.controlIconBtn} onPress={handleToggleMute}>
                 {isMuted ? <VolumeX color={themeColors.error} size={18} /> : <Volume2 color={themeColors.textSecondary} size={18} />}
@@ -415,9 +449,11 @@ export default function WatchScreen() {
                     <View style={[styles.catBadge, { backgroundColor: themeColors.primary }]}>
                       <Text style={styles.catBadgeText}>{(anime.category || 'ANIME').toUpperCase()}</Text>
                     </View>
-                    <View style={[styles.hdBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, borderWidth: 1 }]}>
-                      <Text style={[styles.hdBadgeText, { color: themeColors.text }]}>4K ULTRA HD</Text>
-                    </View>
+                    {anime.qualities && anime.qualities.length > 0 && (
+                      <View style={[styles.hdBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, borderWidth: 1 }]}>
+                        <Text style={[styles.hdBadgeText, { color: themeColors.text }]}>{anime.qualities[0].toUpperCase()}</Text>
+                      </View>
+                    )}
                   </View>
 
                   <Text style={[styles.mediaTitleText, { color: themeColors.text }]} numberOfLines={2}>
@@ -425,7 +461,7 @@ export default function WatchScreen() {
                   </Text>
 
                   <Text style={[styles.genreSubText, { color: themeColors.accentCyan || themeColors.primary }]}>
-                    {anime.genre ?? 'Action, Fantasy, Drama'}
+                    {anime.genre ?? 'General'}
                   </Text>
 
                   <View style={styles.statsRow}>
@@ -435,8 +471,12 @@ export default function WatchScreen() {
                     </View>
                     <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
                     <Text style={[styles.epCountText, { color: themeColors.textSecondary }]}>{anime.episodes || 1} EPS</Text>
-                    <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
-                    <Text style={[styles.subLabelText, { color: themeColors.textMuted }]}>SUB & DUB</Text>
+                    {anime.audio_tracks && anime.audio_tracks.length > 0 && (
+                      <>
+                        <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
+                        <Text style={[styles.subLabelText, { color: themeColors.textMuted }]}>{anime.audio_tracks.join(' / ').toUpperCase()}</Text>
+                      </>
+                    )}
                   </View>
                 </View>
               </View>
@@ -485,65 +525,13 @@ export default function WatchScreen() {
             </View>
           )}
 
-          {/* 📑 NETFLIX-STYLE EPISODES LIST */}
-          <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Film color={themeColors.primary} size={18} />
-                <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Episodes ({anime?.episodes ?? 1})</Text>
-              </View>
-              <Text style={[styles.seasonTag, { color: themeColors.textMuted }]}>Season 1</Text>
-            </View>
-
-            <View style={styles.episodesListGrid}>
-              {(() => {
-                const availableEpisodes = anime?.episode_links && anime.episode_links.length > 0
-                  ? anime.episode_links.map((l: any) => l.episode).sort((a: number, b: number) => a - b)
-                  : Array.from({ length: anime?.episodes ?? 1 }).map((_, i) => i + 1);
-
-                return availableEpisodes.map((epNum: number) => {
-                  const isActive = epNum === selectedEpisode;
-                  return (
-                    <Pressable
-                      key={epNum}
-                      style={[
-                        styles.epCardTile,
-                        { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border },
-                        isActive && { borderColor: themeColors.primary, backgroundColor: themeColors.backgroundElement }
-                      ]}
-                      onPress={() => setSelectedEpisode(epNum)}
-                    >
-                      <View style={styles.epTileLeftRow}>
-                        <View style={[
-                          styles.epPlayIconBox,
-                          { backgroundColor: themeColors.backgroundElement },
-                          isActive && { backgroundColor: themeColors.primary }
-                        ]}>
-                          {isActive ? <Play color="#FFFFFF" size={14} fill="#FFFFFF" /> : <Text style={[styles.epTileNumberText, { color: themeColors.textSecondary }]}>{epNum}</Text>}
-                        </View>
-                        
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.epTileTitle, { color: themeColors.text }, isActive && { color: themeColors.primary }]}>
-                            Episode {epNum}
-                          </Text>
-                          <Text style={[styles.epTileMetaText, { color: themeColors.textMuted }]}>24 min · 4K Ultra HD</Text>
-                        </View>
-                      </View>
-
-                      {isActive ? (
-                        <View style={[styles.playingTag, { backgroundColor: themeColors.primaryGlow || 'rgba(3, 86, 197, 0.15)', borderColor: themeColors.primary }]}>
-                          <Sparkles size={12} color={themeColors.primary} />
-                          <Text style={[styles.playingTagText, { color: themeColors.primary }]}>NOW PLAYING</Text>
-                        </View>
-                      ) : (
-                        <Play color={themeColors.textMuted} size={16} />
-                      )}
-                    </Pressable>
-                  );
-                });
-              })()}
-            </View>
-          </View>
+          {/* 🍿 Enhanced Interactive Episode & Season Selector Component */}
+          <EpisodeSelector
+            totalEpisodes={anime?.episodes || 1}
+            selectedEpisode={selectedEpisode}
+            onSelectEpisode={(ep) => setSelectedEpisode(ep)}
+            category={anime?.category}
+          />
 
           {/* 🌟 RECOMMENDATIONS RAIL (Theme-aware Poster Cards) */}
           {recommendations.length > 0 && (
@@ -595,6 +583,23 @@ export default function WatchScreen() {
           <View style={{ height: 80 }} />
         </View>
       </ScrollView>
+
+      {/* ⚙️ Player Quality, Audio & Speed Settings Modal */}
+      <PlayerSettingsModal
+        visible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        playbackSpeed={playbackSpeed}
+        onSelectSpeed={(speed) => {
+          setPlaybackSpeed(speed);
+          try { player.playbackRate = speed; } catch (_e) {}
+        }}
+        availableQualities={anime?.qualities}
+        activeQuality={selectedQuality}
+        onSelectQuality={(q) => setSelectedQuality(q)}
+        availableAudioTracks={anime?.audio_tracks}
+        activeAudio={selectedAudio}
+        onSelectAudio={(a) => setSelectedAudio(a)}
+      />
     </View>
   );
 }

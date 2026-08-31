@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image, Pressable } from 'react-native';
-import { useTheme } from '@/hooks/use-theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme, useColorMode } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
-import { Globe, Sparkles } from 'lucide-react-native';
+import { Globe, Sparkles, Sun, Moon } from 'lucide-react-native';
+import { PrimaryGradient } from '@/components/PrimaryGradient';
 
-const TOTAL_DURATION = 4000; // Exactly 4 seconds
+const TOTAL_DURATION = 3600; // 3.6 seconds smooth launch
 const isNativeDriver = Platform.OS !== 'web';
 
 interface AniFlixSplashScreenProps {
@@ -13,11 +15,14 @@ interface AniFlixSplashScreenProps {
 
 export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const themeColors = useTheme();
-  const { language, toggleLanguage, t } = useLanguage();
+  const { isDark, toggleColorMode } = useColorMode();
+  const { language, toggleLanguage } = useLanguage();
+  const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
+
   const [progressAnim] = useState(() => new Animated.Value(0));
-  const [logoScaleAnim] = useState(() => new Animated.Value(0.75));
+  const [logoScaleAnim] = useState(() => new Animated.Value(0.8));
   const [logoOpacityAnim] = useState(() => new Animated.Value(0));
-  const [glowPulseAnim] = useState(() => new Animated.Value(0.8));
+  const [glowPulseAnim] = useState(() => new Animated.Value(0.85));
   const [screenFadeAnim] = useState(() => new Animated.Value(1));
 
   const [loadingText, setLoadingText] = useState(
@@ -30,13 +35,13 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
     Animated.parallel([
       Animated.timing(logoScaleAnim, {
         toValue: 1,
-        duration: 900,
-        easing: Easing.out(Easing.back(1.5)),
+        duration: 800,
+        easing: Easing.out(Easing.back(1.4)),
         useNativeDriver: isNativeDriver,
       }),
       Animated.timing(logoOpacityAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 700,
         useNativeDriver: isNativeDriver,
       }),
     ]).start();
@@ -45,40 +50,40 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
     Animated.loop(
       Animated.sequence([
         Animated.timing(glowPulseAnim, {
-          toValue: 1.2,
-          duration: 1000,
+          toValue: 1.15,
+          duration: 900,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: isNativeDriver,
         }),
         Animated.timing(glowPulseAnim, {
-          toValue: 0.8,
-          duration: 1000,
+          toValue: 0.85,
+          duration: 900,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: isNativeDriver,
         }),
       ])
     ).start();
 
-    // 3. Progress Bar Animation across 4000ms
+    // 3. Progress Bar Animation
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: TOTAL_DURATION - 400, // 3600ms progress + 400ms fadeout
+      duration: TOTAL_DURATION - 350,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
       useNativeDriver: false,
     }).start();
 
-    // 4. Progress percentage and dynamic text updates
+    // 4. Status Text & Percentage Updates
     const textT1 = setTimeout(() => {
-      setLoadingText('Loading 4K streams & catalogs...');
+      setLoadingText(language === 'ku' ? 'بارکردنی کاتەلۆگەکان...' : 'Loading 4K streams & catalogs...');
     }, 400);
 
     const textT2 = setTimeout(() => {
-      setLoadingText('Preparing your personalized cinema...');
-    }, 1100);
+      setLoadingText(language === 'ku' ? 'ئامادەکردنی سینەما...' : 'Preparing your personalized cinema...');
+    }, 1200);
 
     const textT3 = setTimeout(() => {
-      setLoadingText('Welcome to AniFlix!');
-    }, 3600);
+      setLoadingText(language === 'ku' ? 'بەخێر بێیت بۆ AniFlix!' : 'Welcome to AniFlix!');
+    }, 3200);
 
     const interval = setInterval(() => {
       setPercent((prev) => {
@@ -86,20 +91,20 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
           clearInterval(interval);
           return 100;
         }
-        return Math.min(100, prev + 3);
+        return Math.min(100, prev + 4);
       });
-    }, 100);
+    }, 90);
 
-    // 5. Fade out and transition at exactly 4 seconds
+    // 5. Fade Out & Finish Callback
     const finishTimer = setTimeout(() => {
       Animated.timing(screenFadeAnim, {
         toValue: 0,
-        duration: 400,
+        duration: 350,
         useNativeDriver: isNativeDriver,
       }).start(() => {
         onFinish();
       });
-    }, TOTAL_DURATION - 400);
+    }, TOTAL_DURATION - 350);
 
     return () => {
       clearTimeout(textT1);
@@ -108,8 +113,7 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
       clearTimeout(finishTimer);
       clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [language, onFinish, glowPulseAnim, logoOpacityAnim, logoScaleAnim, progressAnim, screenFadeAnim]);
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -117,30 +121,49 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   });
 
   return (
-    <Animated.View style={[styles.container, { opacity: screenFadeAnim }]}>
-      {/* 🌐 Top Language Switcher on First Screen */}
-      <View style={styles.topBar}>
-        <Pressable
-          style={styles.langPill}
-          onPress={toggleLanguage}
-        >
-          <Globe size={14} color="#00D2FF" />
-          <Text style={styles.langPillText}>
-            {language === 'ku' ? 'کوردی' : 'English'}
-          </Text>
-        </Pressable>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          backgroundColor: themeColors.background,
+          opacity: screenFadeAnim,
+        },
+      ]}
+    >
+      {/* 🌐 Top Bar: Theme & Language Controls */}
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top + 8, 20) }]}>
+        <View style={styles.topActions}>
+          <Pressable
+            style={[styles.themePill, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+            onPress={toggleColorMode}
+          >
+            {isDark ? <Moon size={14} color={themeColors.textSecondary} /> : <Sun size={14} color={themeColors.primary} />}
+          </Pressable>
+
+          <Pressable
+            style={[styles.langPill, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+            onPress={toggleLanguage}
+          >
+            <Globe size={14} color={themeColors.primary} />
+            <Text style={[styles.langPillText, { color: themeColors.text }]}>
+              {language === 'ku' ? 'کوردی' : 'English'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
-      {/* Background Ambience Glow */}
+      {/* 🔮 Dynamic Background Ambient Pulse Glow */}
       <Animated.View
         style={[
           styles.glowCircle,
           {
+            backgroundColor: isDark ? 'rgba(3, 86, 197, 0.18)' : 'rgba(3, 86, 197, 0.10)',
             transform: [{ scale: glowPulseAnim }],
           },
         ]}
       />
 
+      {/* 🎬 Brand Logo & Title Box */}
       <Animated.View
         style={[
           styles.logoContent,
@@ -150,38 +173,43 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
           },
         ]}
       >
-        {/* New 1:1 App Logo Icon */}
-        <Image
-          source={require('../../assets/images/icon.png')}
-          style={styles.logoImage}
-          resizeMode="contain"
-        />
+        <View style={[styles.logoCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+          <Image
+            source={require('../../assets/images/icon.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
 
         {/* Brand Title */}
         <View style={styles.brandTitleRow}>
-          <Text style={styles.brandTextWhite}>Ani</Text>
-          <Text style={styles.brandTextRed}>Flix</Text>
+          <Text style={[styles.brandTextWhite, { color: themeColors.text }]}>ANI</Text>
+          <Text style={[styles.brandTextRed, { color: themeColors.primary }]}>FLIX</Text>
           <Sparkles size={20} color="#FFB800" style={styles.sparkleIcon} />
         </View>
 
-        {/* Subtitle */}
-        <Text style={styles.tagline}>
+        {/* Tagline */}
+        <Text style={[styles.tagline, { color: themeColors.textSecondary }]}>
           {language === 'ku' ? 'جیهانی تایبەتی سینەما و ئەنیمێی تۆ' : 'YOUR ULTIMATE CINEMA & ANIME UNIVERSE'}
         </Text>
       </Animated.View>
 
-      {/* Bottom 4-second Progress & Loader */}
-      <View style={styles.footer}>
-        <View style={styles.progressBarBg}>
-          <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
+      {/* ⏱️ Bottom Progress Loader */}
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}>
+        <View style={[styles.progressBarBg, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+          <Animated.View style={[styles.progressBarFill, { width: progressWidth, backgroundColor: themeColors.primary }]}>
+            <PrimaryGradient borderRadius={3} />
+          </Animated.View>
         </View>
 
         <View style={styles.statusRow}>
-          <Text style={styles.statusText}>{loadingText}</Text>
-          <Text style={styles.percentText}>{percent}%</Text>
+          <Text style={[styles.statusText, { color: themeColors.textSecondary }]}>{loadingText}</Text>
+          <Text style={[styles.percentText, { color: themeColors.primary }]}>{percent}%</Text>
         </View>
 
-        <Text style={styles.durationBadge}>4s Fast Cinema Loader</Text>
+        <Text style={[styles.durationBadge, { color: themeColors.textSecondary }]}>
+          AniFlix Cinema Engine
+        </Text>
       </View>
     </Animated.View>
   );
@@ -196,81 +224,96 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#07070A',
     zIndex: 99999,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    right: 20,
+    zIndex: 10,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  themePill: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  langPillText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   glowCircle: {
     position: 'absolute',
     width: Math.min(width * 0.9, 420),
     height: Math.min(width * 0.9, 420),
     borderRadius: 210,
-    backgroundColor: 'rgba(3, 86, 197, 0.18)',
   },
   logoContent: {
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  logoImage: {
+  logoCard: {
     width: 104,
     height: 104,
-    borderRadius: 24,
-    marginBottom: 20,
-  },
-  iconBadge: {
-    width: 76,
-    height: 76,
-    borderRadius: 22,
-    backgroundColor: '#0356C5',
+    borderRadius: 26,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    boxShadow: '0px 10px 20px rgba(3, 86, 197, 0.5)',
-    elevation: 12,
+    overflow: 'hidden',
   },
-  flameBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#1E1E2C',
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1.5,
-    borderColor: '#FFD700',
+  logoImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 20,
   },
   brandTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   brandTextWhite: {
-    fontSize: 42,
+    fontSize: 40,
     fontWeight: '900',
-    color: '#FFFFFF',
     letterSpacing: 1.5,
   },
   brandTextRed: {
-    fontSize: 42,
+    fontSize: 40,
     fontWeight: '900',
-    color: '#0356C5',
     letterSpacing: 1.5,
   },
   sparkleIcon: {
     marginLeft: 6,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   tagline: {
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 3,
-    color: '#8A8A9E',
-    marginTop: 4,
+    letterSpacing: 2,
+    marginTop: 2,
     textAlign: 'center',
   },
   footer: {
     position: 'absolute',
-    bottom: 50,
+    bottom: 0,
     width: '84%',
     maxWidth: 360,
     alignItems: 'center',
@@ -278,14 +321,13 @@ const styles = StyleSheet.create({
   progressBarBg: {
     width: '100%',
     height: 6,
-    backgroundColor: '#1E1E2C',
     borderRadius: 3,
+    borderWidth: 1,
     overflow: 'hidden',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#0356C5',
     borderRadius: 3,
   },
   statusRow: {
@@ -296,41 +338,17 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    color: '#B0B0C3',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   percentText: {
     fontSize: 12,
-    color: '#0356C5',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   durationBadge: {
     fontSize: 10,
-    color: '#555568',
-    marginTop: 10,
+    marginTop: 8,
     letterSpacing: 1,
     textTransform: 'uppercase',
-  },
-  topBar: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 54 : 32,
-    right: 20,
-    zIndex: 10,
-  },
-  langPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#00D2FF',
-  },
-  langPillText: {
-    color: '#00D2FF',
-    fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

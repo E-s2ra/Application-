@@ -35,14 +35,14 @@ export const Colors = {
   light: {
     mode: 'light' as const,
     background: '#F8FAFC', // Slate 50
-    backgroundElement: '#FFFFFF',
-    backgroundCard: '#FFFFFF',
+    backgroundElement: '#F1F5F9', // Slate 100 crisp inner surface
+    backgroundCard: '#FFFFFF', // Pure white elevated card
     backgroundSelected: '#E2E8F0', // Slate 200
     border: '#E2E8F0',
     borderFocus: '#0356C5',
-    text: '#0F172A', // Slate 900
-    textSecondary: '#475569', // Slate 600
-    textMuted: '#94A3B8', // Slate 400
+    text: '#0F172A', // Slate 900 (High contrast black-slate)
+    textSecondary: '#334155', // Slate 700 (High legibility dark slate)
+    textMuted: '#64748B', // Slate 500
     primary: '#0356C5',
     primaryHover: '#024299',
     primaryGlow: 'rgba(3, 86, 197, 0.15)',
@@ -55,7 +55,7 @@ export const Colors = {
     cardOverlay: 'rgba(255, 255, 255, 0.94)',
     buttonBackground: '#0356C5',
     buttonText: '#FFFFFF',
-    inputBackground: '#FFFFFF',
+    inputBackground: '#F1F5F9',
     inputBorder: '#CBD5E1',
   },
 } as const;

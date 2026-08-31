@@ -29,7 +29,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   const params = useLocalSearchParams();
   const { user, profile, signOut } = useAuth();
   const { t } = useTranslation();
-  const { isVIP } = useGamification();
+  const { isVIP, vipDaysRemaining } = useGamification();
 
   const isAdmin = profile?.role === 'admin';
 
@@ -126,7 +126,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
             <Crown size={11} color={isVIP ? '#FFB800' : themeColors.textSecondary} />
             <Text style={[styles.userRoleText, { color: isVIP ? '#FFB800' : themeColors.textSecondary }]}>
-              {isAdmin ? 'ADMIN' : isVIP ? 'VIP MEMBER' : 'FREE PLAN'}
+              {isAdmin ? 'ADMIN' : isVIP ? `VIP MEMBER (${vipDaysRemaining}d)` : 'FREE PLAN'}
             </Text>
           </View>
         </View>

@@ -52,6 +52,8 @@ type Anime = {
 const CATEGORIES = ['All', 'Movies', 'Anime Movies', 'K-Drama', 'Drama', 'Anime Series'];
 
 import { useToast } from '@/hooks/useToast';
+import { useNotifications } from '@/hooks/useNotifications';
+import { Send, Bell } from 'lucide-react-native';
 
 export default function AdminPanelScreen() {
   const router = useRouter();
@@ -60,6 +62,16 @@ export default function AdminPanelScreen() {
   const { profile } = useAuth();
   const { maxContentWidth, isMobile, width } = useResponsive();
   const { showSuccess, showError, showInfo } = useToast();
+  const { addNotification } = useNotifications();
+
+  const handleBroadcastAnnouncement = async () => {
+    await addNotification({
+      title: 'New 4K Release Announcement',
+      message: 'New high quality movies and anime series uploaded to AniFlix catalog!',
+      type: 'release',
+    });
+    showSuccess('Broadcast announcement sent to all users!');
+  };
 
   const isAdmin = profile?.role === 'admin';
 
@@ -472,12 +484,18 @@ export default function AdminPanelScreen() {
               <Text style={[styles.catalogSubTitle, { color: themeColors.textSecondary }]}>
                 SHOWING {filteredAnimeList.length} OF {animeList.length} TITLES
               </Text>
-              {animeList.length > 0 && (
-                <Pressable onPress={handleClearAll} style={styles.clearBtn}>
-                  <Trash2 color="#EF4444" size={12} />
-                  <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: '800' }}>CLEAR ALL</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable onPress={handleBroadcastAnnouncement} style={[styles.clearBtn, { backgroundColor: 'rgba(3, 86, 197, 0.15)', paddingHorizontal: 10 }]}>
+                  <Send color={themeColors.primary} size={12} />
+                  <Text style={{ color: themeColors.primary, fontSize: 10, fontWeight: '800' }}>ANNOUNCE</Text>
                 </Pressable>
-              )}
+                {animeList.length > 0 && (
+                  <Pressable onPress={handleClearAll} style={styles.clearBtn}>
+                    <Trash2 color="#EF4444" size={12} />
+                    <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: '800' }}>CLEAR ALL</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
 
             {/* Media List */}

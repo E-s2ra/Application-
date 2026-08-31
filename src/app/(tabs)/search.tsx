@@ -247,6 +247,27 @@ export default function SearchScreen() {
               </Pressable>
             )}
           </View>
+
+          {/* 🔥 Trending Searches Quick Tags */}
+          {query.trim().length === 0 && (
+            <View style={styles.trendingWrap}>
+              <View style={styles.trendingHeaderRow}>
+                <Flame size={14} color={themeColors.primary} />
+                <Text style={[styles.trendingTitle, { color: themeColors.textSecondary }]}>TRENDING SEARCHES</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trendingScroll}>
+                {['Solo Leveling', 'Demon Slayer', 'Attack on Titan', 'K-Drama', 'Action Movies', 'Jujutsu Kaisen'].map((tag) => (
+                  <Pressable
+                    key={tag}
+                    onPress={() => setQuery(tag)}
+                    style={[styles.trendingChip, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+                  >
+                    <Text style={[styles.trendingTagText, { color: themeColors.text }]}>{tag}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {loading ? (
@@ -404,6 +425,34 @@ const styles = StyleSheet.create({
   },
   clearBtn: {
     padding: 4,
+  },
+  trendingWrap: {
+    marginTop: 10,
+    gap: 6,
+  },
+  trendingHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  trendingTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  trendingScroll: {
+    gap: 6,
+    paddingVertical: 2,
+  },
+  trendingChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  trendingTagText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   filterContainer: {
     marginBottom: 16,

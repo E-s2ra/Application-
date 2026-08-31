@@ -29,6 +29,8 @@ export interface AnimeItem {
   title_ku?: string | null;
   published_at?: string | null;
   episode_links?: EpisodeLink[];
+  qualities?: string[];
+  audio_tracks?: string[];
 }
 
 export interface ReviewItem {

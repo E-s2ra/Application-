@@ -44,6 +44,8 @@ import { useSidebar } from '@/context/SidebarContext';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 import { AdMobBanner } from '@/components/AdMobBanner';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
+import { RotateCcw, Trash2 } from 'lucide-react-native';
 
 export const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: any }[] = [
   { id: 'All', label: 'All', icon: Compass },
@@ -69,6 +71,7 @@ export default function HomeScreen() {
   const { t, language } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { history: watchHistory, removeFromHistory } = useWatchHistory();
   const { coins, streakDays, isVIP, vipDaysRemaining } = useGamification();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
@@ -555,6 +558,70 @@ export default function HomeScreen() {
         {/* 🍿 Dynamic Rails Content */}
         {activeCategory === 'All' ? (
           <>
+            {/* ⏯️ Continue Watching Rail */}
+            {watchHistory.length > 0 && (
+              <View style={styles.railSection}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <RotateCcw color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Continue Watching</Text>
+                  </View>
+                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+                    {watchHistory.length} Titles
+                  </Text>
+                </View>
+                <FlatList
+                  horizontal
+                  data={watchHistory}
+                  keyExtractor={(item) => `history-${item.animeId}`}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.standardList}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      style={[styles.standardCard, { width: railCardWidth }]}
+                      onPress={() => handleWatch(item.animeId)}
+                    >
+                      <View style={[styles.posterCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, height: railCardHeight }]}>
+                        <Image source={{ uri: item.image_url || PLACEHOLDER_HERO_IMAGES[0] }} style={styles.posterImage} resizeMode="cover" />
+                        <View style={styles.cardImageOverlay} />
+
+                        <View style={styles.centerPlayCircle}>
+                          <View style={[styles.playCircleInner, { backgroundColor: themeColors.primary }]}>
+                            <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
+                          </View>
+                        </View>
+
+                        <Pressable
+                          style={[styles.cardHeartBtn, { backgroundColor: 'rgba(0,0,0,0.6)', borderColor: 'rgba(255,255,255,0.2)' }]}
+                          onPress={(e) => {
+                            e.stopPropagation?.();
+                            removeFromHistory(item.animeId);
+                          }}
+                        >
+                          <Trash2 color="#FF4D4D" size={12} />
+                        </Pressable>
+
+                        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                          <View style={{ height: '100%', width: `${item.progressPercent}%`, backgroundColor: themeColors.primary }} />
+                        </View>
+                      </View>
+
+                      <View style={styles.standardCardInfo}>
+                        <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
+                          {language === 'ku' && item.title_ku ? item.title_ku : item.title}
+                        </Text>
+                        <View style={styles.cardMetaRow}>
+                          <Text style={[styles.cardRatingText, { color: themeColors.primary, fontWeight: '800' }]}>
+                            {item.progressPercent}% Watched
+                          </Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  )}
+                />
+              </View>
+            )}
+
             {/* 🔥 Top 10 Ranked Rail */}
             {allMedia.length > 0 && (
               <View style={styles.railSection}>

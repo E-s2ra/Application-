@@ -188,9 +188,9 @@ export default function ProfileScreen() {
         {/* 🏆 User Level & XP Progress Bar Card */}
         <View style={[styles.levelCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
           <View style={styles.levelCardHeader}>
-            <View style={[styles.levelBadge, { backgroundColor: 'rgba(255, 184, 0, 0.12)', borderColor: '#FFB800' }]}>
-              <Crown size={14} color="#FFB800" />
-              <Text style={styles.levelLabel}>Level {level}</Text>
+            <View style={[styles.levelBadge, { backgroundColor: themeColors.mode === 'light' ? 'rgba(217, 119, 6, 0.12)' : 'rgba(255, 184, 0, 0.12)', borderColor: themeColors.mode === 'light' ? '#D97706' : '#FFB800' }]}>
+              <Crown size={14} color={themeColors.mode === 'light' ? '#D97706' : '#FFB800'} />
+              <Text style={[styles.levelLabel, { color: themeColors.mode === 'light' ? '#D97706' : '#FFB800' }]}>Level {level}</Text>
             </View>
             <Text style={[styles.levelTitle, { color: themeColors.text }]}>{t(levelTitle as any, levelTitle)}</Text>
           </View>
@@ -207,13 +207,13 @@ export default function ProfileScreen() {
         {/* 📊 Gamification Stats Row */}
         <View style={styles.statsGrid}>
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <Coins size={18} color="#FFB800" style={{ marginBottom: 4 }} />
+            <Coins size={18} color={themeColors.mode === 'light' ? '#D97706' : '#FFB800'} style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, { color: themeColors.text }]}>{coins}</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Coins</Text>
           </View>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <Flame size={18} color="#F97316" style={{ marginBottom: 4 }} />
+            <Flame size={18} color={themeColors.mode === 'light' ? '#EA580C' : '#F97316'} style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, { color: themeColors.text }]}>{streakDays}d</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Streak</Text>
           </View>
@@ -230,7 +230,7 @@ export default function ProfileScreen() {
           </Pressable>
 
           <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <Users size={18} color="#06B6D4" style={{ marginBottom: 4 }} />
+            <Users size={18} color={themeColors.mode === 'light' ? '#0891B2' : '#06B6D4'} style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, { color: themeColors.text }]}>{followingCount}</Text>
             <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Following</Text>
           </View>
@@ -297,8 +297,8 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel="FIB VIP Payment"
             >
-              <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
-                <CreditCard color="#38BDF8" size={20} />
+              <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(2, 132, 199, 0.12)' : 'rgba(56, 189, 248, 0.15)' }]}>
+                <CreditCard color={themeColors.mode === 'light' ? '#0284C7' : '#38BDF8'} size={20} />
               </View>
               <View style={styles.menuTextContent}>
                 <Text style={[styles.menuTitle, { color: themeColors.text }]}>
@@ -319,8 +319,8 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel="Quests & Rewards Hub"
           >
-            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
-              <Trophy color="#FFB800" size={20} />
+            <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(217, 119, 6, 0.12)' : 'rgba(255, 184, 0, 0.15)' }]}>
+              <Trophy color={themeColors.mode === 'light' ? '#D97706' : '#FFB800'} size={20} />
             </View>
             <View style={styles.menuTextContent}>
               <Text style={[styles.menuTitle, { color: themeColors.text }]}>{t('rewardsHub', 'Quests & Rewards Hub')}</Text>
@@ -336,8 +336,8 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel="Watch Ad for Coins"
           >
-            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(0, 230, 118, 0.15)' }]}>
-              <Disc3 color="#00E676" size={20} />
+            <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(0, 230, 118, 0.15)' }]}>
+              <Disc3 color={themeColors.mode === 'light' ? '#059669' : '#00E676'} size={20} />
             </View>
             <View style={styles.menuTextContent}>
               <Text style={[styles.menuTitle, { color: themeColors.text }]}>{t('watchAdEarn', 'Watch Ad & Earn Coins')}</Text>
@@ -374,8 +374,8 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel="Switch language"
           >
-            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(6, 182, 212, 0.15)' }]}>
-              <Globe color="#06B6D4" size={20} />
+            <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(8, 145, 178, 0.12)' : 'rgba(6, 182, 212, 0.15)' }]}>
+              <Globe color={themeColors.mode === 'light' ? '#0891B2' : '#06B6D4'} size={20} />
             </View>
             <View style={styles.menuTextContent}>
               <Text style={[styles.menuTitle, { color: themeColors.text }]}>
@@ -390,13 +390,13 @@ export default function ProfileScreen() {
 
           {/* Sign Out Button */}
           <Pressable 
-            style={[styles.signOutBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}
+            style={[styles.signOutBtn, { backgroundColor: themeColors.mode === 'light' ? 'rgba(220, 38, 38, 0.08)' : 'rgba(239, 68, 68, 0.1)', borderColor: themeColors.mode === 'light' ? 'rgba(220, 38, 38, 0.3)' : 'rgba(239, 68, 68, 0.3)' }]}
             onPress={handleLogout}
             accessibilityRole="button"
             accessibilityLabel="Sign out of account"
           >
-            <LogOut color="#EF4444" size={18} />
-            <Text style={styles.signOutText}>{t('signOut', 'Sign Out')}</Text>
+            <LogOut color={themeColors.mode === 'light' ? '#DC2626' : '#EF4444'} size={18} />
+            <Text style={[styles.signOutText, { color: themeColors.mode === 'light' ? '#DC2626' : '#EF4444' }]}>{t('signOut', 'Sign Out')}</Text>
           </Pressable>
 
         </View>
