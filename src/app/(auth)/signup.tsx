@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
@@ -151,7 +152,8 @@ export default function SignUpScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
-        extraScrollHeight={20}
+        extraScrollHeight={120}
+        enableAutomaticScroll={true}
       >
         <View style={styles.centerWrapper}>
           <View
@@ -177,7 +179,7 @@ export default function SignUpScreen() {
                 ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
               </Text>
               <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-                {t('createAccountSubtitle', 'Create your free account to unlock high definition streaming')}
+                Create your free account to unlock high definition streaming
               </Text>
             </View>
 
@@ -376,7 +378,7 @@ export default function SignUpScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.buttonText}>{t('createAccountBtn', 'Create Account')}</Text>
+                  <Text style={styles.buttonText}>Create Account</Text>
                 )}
               </Pressable>
             </View>
@@ -455,7 +457,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
     justifyContent: 'center',
   },
   centerWrapper: {
@@ -541,6 +543,10 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: 14,
     fontWeight: '600',
+    backgroundColor: 'transparent',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
   },
   eyeButton: {
     paddingLeft: 10,

@@ -330,21 +330,23 @@ export default function ProfileScreen() {
           </Pressable>
 
           {/* Watch Ad for Free Coins */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
-            accessibilityRole="button"
-            accessibilityLabel="Watch Ad for Coins"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(0, 230, 118, 0.15)' }]}>
-              <Disc3 color={themeColors.mode === 'light' ? '#059669' : '#00E676'} size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>{t('watchAdEarn', 'Watch Ad & Earn Coins')}</Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>{t('watchAdSub', 'Get +100 Coins instantly per view')}</Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
+          {!isVIP && (
+            <Pressable 
+              style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+              onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
+              accessibilityRole="button"
+              accessibilityLabel="Watch Ad for Coins"
+            >
+              <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(0, 230, 118, 0.15)' }]}>
+                <Disc3 color={themeColors.mode === 'light' ? '#059669' : '#00E676'} size={20} />
+              </View>
+              <View style={styles.menuTextContent}>
+                <Text style={[styles.menuTitle, { color: themeColors.text }]}>{t('watchAdEarn', 'Watch Ad & Earn Coins')}</Text>
+                <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>{t('watchAdSub', 'Get +100 Coins instantly per view')}</Text>
+              </View>
+              <ChevronRight color={themeColors.textSecondary} size={20} />
+            </Pressable>
+          )}
 
           {/* Dark / Light Mode Toggle */}
           <Pressable 

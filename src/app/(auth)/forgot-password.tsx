@@ -186,6 +186,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     borderWidth: 1,
     borderColor: '#242436',
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
   },
   button: {
     height: 52,

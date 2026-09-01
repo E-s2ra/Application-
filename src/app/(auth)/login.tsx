@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
@@ -398,6 +399,10 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: 14,
     fontWeight: '600',
+    backgroundColor: 'transparent',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
   },
   eyeButton: {
     paddingLeft: 10,

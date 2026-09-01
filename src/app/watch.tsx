@@ -42,7 +42,7 @@ import { useToast } from '@/hooks/useToast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { EpisodeSelector } from '@/components/EpisodeSelector';
-import { PlayerSettingsModal, VideoQuality, AudioTrack } from '@/components/PlayerSettingsModal';
+import { PlayerSettingsModal } from '@/components/PlayerSettingsModal';
 
 const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -66,8 +66,8 @@ export default function WatchScreen() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [selectedQuality, setSelectedQuality] = useState<VideoQuality>('4K (2160p)');
-  const [selectedAudio, setSelectedAudio] = useState<AudioTrack>('Kurdish Dubbed');
+  const [selectedQuality, setSelectedQuality] = useState<string>('4K (2160p)');
+  const [selectedAudio, setSelectedAudio] = useState<string>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
 
@@ -128,7 +128,7 @@ export default function WatchScreen() {
           return;
         }
 
-        const defaultMatch = DEFAULT_CATALOG.find((item) => item.id === id);
+        const defaultMatch = DEFAULT_CATALOG.find((item: any) => item.id === id);
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id));
 
         let data = null;
@@ -176,8 +176,13 @@ export default function WatchScreen() {
         const customRecs = safeRecs
           .filter((item: any) => !deletedIds.includes(item.id))
           .map((item: any) => ({ ...(item as AnimeItem), ...(overrides[item.id] || {}) }));
+        
+        const fallbackSimilar = DEFAULT_CATALOG
+          .filter((i: any) => i.id !== id && !deletedIds.includes(i.id))
+          .map((i: any) => ({ ...i, ...(overrides[i.id] || {}) }))
+          .sort(() => 0.5 - Math.random());
 
-        setRecommendations(customRecs.length > 0 ? customRecs : DEFAULT_CATALOG.filter((i) => i.id !== id).slice(0, 6));
+        setRecommendations(customRecs.length > 0 ? customRecs : fallbackSimilar.slice(0, 6));
       } catch (e) {
         console.warn('[Watch] Error loading media data:', e);
         setPlaybackError('Failed to load media details.');
@@ -328,8 +333,6 @@ export default function WatchScreen() {
                 player={player}
                 contentFit="contain"
                 nativeControls={false}
-                allowsFullscreen={false}
-                allowsPictureInPicture={false}
               />
 
               {playbackError && (
@@ -658,7 +661,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   videoErrorBox: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(10, 10, 15, 0.94)',

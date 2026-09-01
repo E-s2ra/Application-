@@ -461,41 +461,7 @@ export default function HomeScreen() {
       >
         <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
 
-        {/* 🏷️ Horizontal Category Filter Bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryContainer}
-        >
-          {CATEGORIES.map((cat) => {
-            const isSelected = activeCategory === cat.id;
-            const CatIcon = cat.icon;
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => setActiveCategory(cat.id)}
-                style={[
-                  styles.categoryPill,
-                  {
-                    backgroundColor: isSelected ? themeColors.primary : themeColors.backgroundElement,
-                    borderColor: isSelected ? themeColors.primary : themeColors.border,
-                  },
-                ]}
-              >
-                {isSelected && <PrimaryGradient borderRadius={20} />}
-                <CatIcon size={14} color={isSelected ? '#FFFFFF' : themeColors.textSecondary} />
-                <Text
-                  style={[
-                    styles.categoryPillText,
-                    { color: isSelected ? '#FFFFFF' : themeColors.textSecondary },
-                  ]}
-                >
-                  {getCategoryLabel(cat.id, cat.label)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+
 
         {/* 🎬 Native Touch-Swipeable Hero Slider Banner */}
         {featured.length > 0 && (
@@ -622,103 +588,24 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* 🔥 Top 10 Ranked Rail */}
+            {/* 🍿 Unified Published Media Grid */}
             {allMedia.length > 0 && (
-              <View style={styles.railSection}>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Flame color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Top 10 Trending</Text>
-                  </View>
-                </View>
-                <FlatList
-                  horizontal
-                  data={allMedia.slice(0, 10)}
-                  keyExtractor={(item) => `ranked-${item.id}`}
-                  renderItem={renderRankedCard}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.rankedList}
-                />
-              </View>
-            )}
-
-            {/* 🎬 Movies Rail */}
-            {moviesRail.length > 0 && (
-              <View style={styles.railSection}>
+              <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
                     <Film color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Blockbuster Movies</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>All Published Shows</Text>
                   </View>
+                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>{allMedia.length} Titles</Text>
                 </View>
-                <FlatList
-                  horizontal
-                  data={moviesRail}
-                  keyExtractor={(item) => `movie-${item.id}`}
-                  renderItem={renderStandardCard}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </View>
-            )}
 
-            {/* 🍿 Anime Movies Rail */}
-            {animeMoviesRail.length > 0 && (
-              <View style={styles.railSection}>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Clapperboard color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Anime Feature Films</Text>
-                  </View>
+                <View style={styles.gridWrap}>
+                  {allMedia.map((item) => (
+                    <View key={`grid-all-${item.id}`}>
+                      {renderStandardCard({ item })}
+                    </View>
+                  ))}
                 </View>
-                <FlatList
-                  horizontal
-                  data={animeMoviesRail}
-                  keyExtractor={(item) => `animemovie-${item.id}`}
-                  renderItem={renderStandardCard}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </View>
-            )}
-
-            {/* 📺 K-Drama Rail */}
-            {kdramaRail.length > 0 && (
-              <View style={styles.railSection}>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Tv color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Popular K-Dramas</Text>
-                  </View>
-                </View>
-                <FlatList
-                  horizontal
-                  data={kdramaRail}
-                  keyExtractor={(item) => `kdrama-${item.id}`}
-                  renderItem={renderStandardCard}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
-              </View>
-            )}
-
-            {/* ✨ Anime Series Rail */}
-            {animeSeriesRail.length > 0 && (
-              <View style={styles.railSection}>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Sparkles color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Anime Series</Text>
-                  </View>
-                </View>
-                <FlatList
-                  horizontal
-                  data={animeSeriesRail}
-                  keyExtractor={(item) => `animeseries-${item.id}`}
-                  renderItem={renderStandardCard}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.standardList}
-                />
               </View>
             )}
 
@@ -771,10 +658,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 📢 Google AdMob Platform-Specific Banner Ad */}
-        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
 
-        </View>
 
         <View style={{ height: 40 }} />
       </View>
@@ -1106,7 +990,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   cardImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
     backgroundColor: 'rgba(0,0,0,0.25)',
   },
   centerPlayCircle: {

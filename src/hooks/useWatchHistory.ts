@@ -62,10 +62,10 @@ export function useWatchHistory() {
         const newItem: WatchHistoryItem = {
           animeId: String(anime.id),
           title: anime.title,
-          title_ku: anime.title_ku,
+          title_ku: anime.title_ku ?? undefined,
           image_url: anime.image_url || '',
-          category: anime.category,
-          genre: anime.genre,
+          category: anime.category ?? undefined,
+          genre: anime.genre ?? undefined,
           currentTime: Math.floor(currentTime),
           duration: Math.floor(duration),
           progressPercent,

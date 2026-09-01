@@ -20,19 +20,12 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-/**
- * Session storage implementation for native platforms.
- * AsyncStorage is used to prevent Android 2048-byte limit crashes associated with Expo SecureStore.
- */
-const nativeSessionStorage = {
-  getItem: (key: string) => AsyncStorage.getItem(key),
-  setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
-  removeItem: (key: string) => AsyncStorage.removeItem(key),
-};
+// Session storage implementation relies on AsyncStorage for native platforms.
+// We pass AsyncStorage directly to Supabase as recommended in their official React Native documentation.
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: Platform.OS === 'web' ? undefined : nativeSessionStorage,
+    storage: Platform.OS === 'web' ? undefined : AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',

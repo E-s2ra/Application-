@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const DEVICE_ID_KEY = 'device-session-id-v1';
@@ -18,12 +18,10 @@ export async function getDeviceId(): Promise<string> {
     return deviceId;
   }
 
-  const existingId = await SecureStore.getItemAsync(DEVICE_ID_KEY);
+  const existingId = await AsyncStorage.getItem(DEVICE_ID_KEY);
   if (existingId) return existingId;
 
   const deviceId = Crypto.randomUUID();
-  await SecureStore.setItemAsync(DEVICE_ID_KEY, deviceId, {
-    keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-  });
+  await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
   return deviceId;
 }

@@ -81,8 +81,8 @@ export const OFFICIAL_CONTACT_CHANNELS = {
 };
 
 export function createWhatsAppVipMessage(planName: string, priceIQD: number, userEmail?: string): string {
-  const accountInfo = userEmail ? `\n• My Account: ${userEmail}` : '';
-  const message = `👋 Hello AniFlix Support!\nI would like to subscribe to AniFlix VIP Sovereign:\n• Plan: ${planName}\n• Price: ${priceIQD.toLocaleString()} IQD${accountInfo}\n\nPlease guide me on how to complete my payment. Thank you!`;
+  const accountInfo = userEmail ? ` (Account: ${userEmail})` : '';
+  const message = `Hi AniFlix! I want to subscribe to VIP ${planName} - ${priceIQD.toLocaleString()} IQD${accountInfo}`;
   return `https://wa.me/${OFFICIAL_CONTACT_CHANNELS.whatsappNumber}?text=${encodeURIComponent(message)}`;
 }
 

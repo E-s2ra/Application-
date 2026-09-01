@@ -184,26 +184,28 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           </View>
 
           {/* 📺 AdMob Rewarded Ads Instant Coins Button */}
-          <Pressable
-            style={styles.admobRewardedBtn}
-            onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
-            accessibilityRole="button"
-            accessibilityLabel="Watch an ad to earn 100 coins"
-            accessibilityHint="A short video ad will play, then 100 coins will be added to your balance"
-          >
-            <View style={styles.admobBtnLeft}>
-              <View style={styles.admobIconCircle}>
-                <Film size={16} color="#FFB800" />
+          {!isVIP && (
+            <Pressable
+              style={styles.admobRewardedBtn}
+              onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
+              accessibilityRole="button"
+              accessibilityLabel="Watch an ad to earn 100 coins"
+              accessibilityHint="A short video ad will play, then 100 coins will be added to your balance"
+            >
+              <View style={styles.admobBtnLeft}>
+                <View style={styles.admobIconCircle}>
+                  <Film size={16} color="#FFB800" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.admobBtnTitle}>{t('watchAdEarn')}</Text>
+                  <Text style={styles.admobBtnSub}>{t('watchAdSub')}</Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.admobBtnTitle}>{t('watchAdEarn')}</Text>
-                <Text style={styles.admobBtnSub}>{t('watchAdSub')}</Text>
+              <View style={styles.admobRewardPill}>
+                <Text style={styles.admobRewardPillText}>+100 💰</Text>
               </View>
-            </View>
-            <View style={styles.admobRewardPill}>
-              <Text style={styles.admobRewardPillText}>+100 💰</Text>
-            </View>
-          </Pressable>
+            </Pressable>
+          )}
 
           {/* Navigation Tabs */}
           <ScrollView

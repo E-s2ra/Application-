@@ -253,12 +253,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   heroBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     width: '100%',
     height: '100%',
   },
   heroGradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: 'rgba(7, 7, 10, 0.65)',
   },
   heroContent: {
@@ -387,7 +395,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   cardImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: 'rgba(0,0,0,0.25)',
   },
   cardCategoryBadge: {

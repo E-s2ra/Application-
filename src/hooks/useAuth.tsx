@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const deviceIdRef = useRef<string | null>(null);
+  const claimingDeviceRef = useRef(false);
   const router = useRouter();
   const userId = session?.user?.id;
 
@@ -61,11 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return error?.message ?? null;
     } catch {
       return null;
+    } finally {
+      claimingDeviceRef.current = false;
     }
   }, []);
 
   const verifyCurrentDevice = useCallback(async () => {
-    if (!deviceIdRef.current) return;
+    if (!deviceIdRef.current || claimingDeviceRef.current) return;
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession?.user) return;
@@ -121,16 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function initAuth() {
       try {
-        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) =>
-          setTimeout(() => resolve({ data: { session: null } }), 3000)
-        );
-
-        const result = (await Promise.race([
-          supabase.auth.getSession(),
-          timeoutPromise,
-        ])) as { data: { session: Session | null } };
-
-        const sbSession = result?.data?.session ?? null;
+        const { data: { session: sbSession } } = await supabase.auth.getSession();
 
         if (isMounted) {
           setSession(sbSession);
@@ -230,12 +224,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      claimingDeviceRef.current = true;
       const { data, error } = await supabase.auth.signInWithPassword({
         email: targetEmail,
         password,
       });
 
       if (error) {
+        claimingDeviceRef.current = false;
         if (error.message.includes('Invalid login credentials')) {
           return { error: 'Invalid email/username or password. Please check your credentials.' };
         }
@@ -246,10 +242,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.session) {
+        await claimCurrentDevice();
         setSession(data.session);
         setUser(data.session.user);
         await fetchProfile(data.session.user.id, data.session.user.email);
-        await claimCurrentDevice();
       }
 
       return { error: null };
@@ -268,6 +264,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isValidEmail(normalizedEmail)) {
       return { error: 'Enter a valid email address.', needsEmailVerification: false };
     }
+    
+    claimingDeviceRef.current = true;
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,
@@ -278,7 +276,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           : 'aniflix://verified'
       },
     });
-    if (error) return { error: error.message, needsEmailVerification: false };
+    
+    if (error) {
+      claimingDeviceRef.current = false;
+      return { error: error.message, needsEmailVerification: false };
+    }
     
     if (data.session) {
       await claimCurrentDevice();

@@ -30,21 +30,20 @@ export default function FibPaymentScreen() {
   };
 
   const handleContactWhatsApp = async () => {
-    const url = createWhatsAppVipMessage(
-      getPlanDurationLabel(selectedPlan.id),
-      selectedPlan.priceIQD,
-      user?.email
-    );
+    const message = `Hi AniFlix! I want to subscribe to VIP ${getPlanDurationLabel(selectedPlan.id)} - ${selectedPlan.priceIQD.toLocaleString()} IQD${user?.email ? ` (Account: ${user?.email})` : ''}`;
+    const appUrl = `whatsapp://send?phone=${OFFICIAL_CONTACT_CHANNELS.whatsappNumber}&text=${encodeURIComponent(message)}`;
+    const webUrl = `https://wa.me/${OFFICIAL_CONTACT_CHANNELS.whatsappNumber}?text=${encodeURIComponent(message)}`;
+    
     try {
-      const supported = await Linking.canOpenURL(url);
+      const supported = await Linking.canOpenURL(appUrl);
       if (supported) {
-        await Linking.openURL(url);
+        await Linking.openURL(appUrl);
       } else {
-        await Linking.openURL(`https://wa.me/${OFFICIAL_CONTACT_CHANNELS.whatsappNumber}`);
+        await Linking.openURL(webUrl);
       }
     } catch (_err) {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.open(url, '_blank');
+        window.open(webUrl, '_blank');
       } else {
         Alert.alert('Contact Support', `WhatsApp: ${OFFICIAL_CONTACT_CHANNELS.whatsappDisplay}`);
       }

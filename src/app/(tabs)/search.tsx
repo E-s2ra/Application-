@@ -91,11 +91,11 @@ export default function SearchScreen() {
           })) as AnimeItem[];
           
         const defaultItems = DEFAULT_CATALOG
-          .filter((d) => !deletedIds.includes(d.id))
-          .map((d) => ({ ...d, ...(overrides[d.id] || {}) }));
+          .filter((d: any) => !deletedIds.includes(d.id))
+          .map((d: any) => ({ ...d, ...(overrides[d.id] || {}) }));
           
         const newLocalItems = Object.values(overrides)
-          .filter((override: any) => !deletedIds.includes(override.id) && !safeData.some((d: any) => d.id === override.id) && !DEFAULT_CATALOG.some(d => d.id === override.id)) as AnimeItem[];
+          .filter((override: any) => !deletedIds.includes(override.id) && !safeData.some((d: any) => d.id === override.id) && !DEFAULT_CATALOG.some((d: any) => d.id === override.id)) as AnimeItem[];
 
         // Deduplicate combined list by unique ID
         const seenIds = new Set<string>();
@@ -248,26 +248,7 @@ export default function SearchScreen() {
             )}
           </View>
 
-          {/* 🔥 Trending Searches Quick Tags */}
-          {query.trim().length === 0 && (
-            <View style={styles.trendingWrap}>
-              <View style={styles.trendingHeaderRow}>
-                <Flame size={14} color={themeColors.primary} />
-                <Text style={[styles.trendingTitle, { color: themeColors.textSecondary }]}>TRENDING SEARCHES</Text>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trendingScroll}>
-                {['Solo Leveling', 'Demon Slayer', 'Attack on Titan', 'K-Drama', 'Action Movies', 'Jujutsu Kaisen'].map((tag) => (
-                  <Pressable
-                    key={tag}
-                    onPress={() => setQuery(tag)}
-                    style={[styles.trendingChip, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-                  >
-                    <Text style={[styles.trendingTagText, { color: themeColors.text }]}>{tag}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+
         </View>
 
         {loading ? (
@@ -287,78 +268,7 @@ export default function SearchScreen() {
             columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
             ListHeaderComponent={
               <View style={styles.filterContainer}>
-                {/* 🍿 CATEGORY TABS RAIL */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.categoryContent}
-                >
-                  {CATEGORIES.map((cat) => {
-                    const isActive = selectedCategory === cat.id;
-                    const Icon = cat.icon;
 
-                    return (
-                      <Pressable
-                        key={cat.id}
-                        onPress={() => setSelectedCategory(cat.id)}
-                        style={[
-                          styles.categoryChip,
-                          {
-                            backgroundColor: isActive ? themeColors.primary : themeColors.backgroundCard,
-                            borderColor: isActive ? themeColors.primary : themeColors.border,
-                          },
-                        ]}
-                      >
-                        {isActive && <PrimaryGradient borderRadius={20} />}
-                        <Icon size={12} color={isActive ? '#FFFFFF' : themeColors.textSecondary} />
-                        <Text
-                          style={[
-                            styles.categoryText,
-                            {
-                              color: isActive ? '#FFFFFF' : themeColors.textSecondary,
-                              fontWeight: isActive ? '800' : '600',
-                            },
-                          ]}
-                        >
-                          {cat.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-
-                {/* 🎭 GENRE SUB-FILTERS RAIL */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.genreContent}
-                >
-                  {GENRES.map((g) => {
-                    const isActive = selectedGenre === g;
-                    return (
-                      <Pressable
-                        key={g}
-                        onPress={() => setSelectedGenre(g)}
-                        style={[
-                          styles.genreChip,
-                          {
-                            backgroundColor: isActive ? 'rgba(3, 86, 197, 0.15)' : 'transparent',
-                            borderColor: isActive ? themeColors.primary : themeColors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.genreText,
-                            { color: isActive ? themeColors.primary : themeColors.textSecondary, fontWeight: isActive ? '800' : '500' },
-                          ]}
-                        >
-                          {g}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
 
                 {/* 📊 RESULT HEADER */}
                 <View style={styles.sectionHeader}>
@@ -523,7 +433,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   cardImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: 'rgba(0,0,0,0.25)',
   },
   cardCategoryBadge: {
