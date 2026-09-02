@@ -446,7 +446,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <View style={styles.themesContainer}>
                 <Text style={styles.sectionHeading}>AniFlix Cinema Theme Shop</Text>
                 <Text style={styles.sectionSubtitle}>
-                  Spend your earned AniFlix Coins to unlock and equip custom event themes!
+                  Spend your earned AniFlix Coins to unlock Movies, Episodes, and custom app themes!
                 </Text>
 
                 <View style={styles.themesGrid}>

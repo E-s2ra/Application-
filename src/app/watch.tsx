@@ -29,6 +29,7 @@ import {
   Tv,
   Layers,
   Settings,
+  Lock,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { getPlaybackUrl } from '@/lib/playback';
@@ -43,6 +44,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { EpisodeSelector } from '@/components/EpisodeSelector';
 import { PlayerSettingsModal } from '@/components/PlayerSettingsModal';
+import { useGamification } from '@/hooks/useGamification';
+import { useAdMob } from '@/hooks/useAdMob';
 
 const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -56,6 +59,8 @@ export default function WatchScreen() {
   const { language } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { updateProgress } = useWatchHistory();
+  const { unlockedMediaIds, unlockMedia, coins, isVIP } = useGamification();
+  const { showRewardedAd } = useAdMob();
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
@@ -235,8 +240,26 @@ export default function WatchScreen() {
     };
   }, [anime, selectedEpisode]);
 
+  const isMovie = anime?.category === 'Movies';
+  const unlockCost = isMovie ? 125 : 80;
+  const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
+  const isUnlocked = isVIP || (unlockKey && unlockedMediaIds.includes(unlockKey));
+
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  const handleUnlockMedia = async () => {
+    if (!anime) return;
+    setIsUnlocking(true);
+    const success = await unlockMedia(anime.id, isMovie ? undefined : selectedEpisode, unlockCost);
+    setIsUnlocking(false);
+    if (!success) {
+      showSuccess('Not enough coins to unlock!');
+    }
+  };
+
   const handlePlayPause = () => {
     if (!player) return;
+    if (!isUnlocked) return;
     if (isPlaying) {
       player.pause();
       setIsPlaying(false);
@@ -327,19 +350,66 @@ export default function WatchScreen() {
           {/* 🎬 Clean Cinema Video Frame */}
           <View style={styles.playerWrapper}>
             <View style={[styles.videoBox, (isDesktop || isTablet) && styles.videoBoxDesktop]}>
-              <VideoView
-                ref={videoViewRef}
-                style={styles.videoElement}
-                player={player}
-                contentFit="contain"
-                nativeControls={false}
-              />
-
-              {playbackError && (
-                <View style={styles.videoErrorBox}>
-                  <Tv color={themeColors.error} size={32} />
-                  <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
+              {!isUnlocked && anime ? (
+                <View style={styles.paywallOverlay}>
+                  <View style={styles.paywallContent}>
+                    <View style={styles.lockIconCircle}>
+                      <Lock color="#FFB800" size={32} />
+                    </View>
+                    <Text style={styles.paywallTitle}>Unlock {isMovie ? 'Movie' : `Episode ${selectedEpisode}`}</Text>
+                    <Text style={styles.paywallDesc}>
+                      {isMovie 
+                        ? 'Unlock this full 4K movie permanently to watch anytime.' 
+                        : 'Unlock this episode permanently to watch anytime.'}
+                    </Text>
+                    
+                    {coins >= unlockCost ? (
+                      <Pressable 
+                        style={styles.unlockBtn} 
+                        onPress={handleUnlockMedia}
+                        disabled={isUnlocking}
+                      >
+                        <Text style={styles.unlockBtnText}>
+                          {isUnlocking ? 'Unlocking...' : `Unlock Now (${unlockCost} 💰)`}
+                        </Text>
+                      </Pressable>
+                    ) : (
+                      <View style={{ width: '100%', alignItems: 'center', gap: 12 }}>
+                        <Pressable 
+                          style={[styles.unlockBtn, styles.unlockBtnDisabled]} 
+                          disabled={true}
+                        >
+                          <Text style={styles.unlockBtnTextDisabled}>
+                            Not Enough Coins ({coins}/{unlockCost})
+                          </Text>
+                        </Pressable>
+                        <Pressable 
+                          style={styles.earnMoreBtn} 
+                          onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
+                        >
+                          <Text style={styles.earnMoreBtnText}>Watch Ad to Earn +100 💰</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
                 </View>
+              ) : (
+                <>
+                  <VideoView
+                    ref={videoViewRef}
+                    style={styles.videoElement}
+                    player={player}
+                    contentFit="contain"
+                    nativeControls={false}
+                  />
+
+                  {playbackError && (
+                    <View style={styles.videoErrorBox}>
+                      <Tv color={themeColors.error} size={32} />
+                      <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
+                    </View>
+                  )}
+                </>
               )}
             </View>
 
@@ -674,6 +744,74 @@ const styles = StyleSheet.create({
   videoErrorText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  paywallOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    padding: 24,
+  },
+  paywallContent: {
+    alignItems: 'center',
+    maxWidth: 320,
+  },
+  lockIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  paywallTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  paywallDesc: {
+    color: '#A0A0A0',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 18,
+  },
+  unlockBtn: {
+    backgroundColor: '#FFB800',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  unlockBtnText: {
+    color: '#000000',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  unlockBtnDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  unlockBtnTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  earnMoreBtn: {
+    paddingVertical: 12,
+  },
+  earnMoreBtnText: {
+    color: '#FFB800',
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   /* CONTROLS ROW */

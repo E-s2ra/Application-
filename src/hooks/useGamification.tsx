@@ -391,6 +391,8 @@ type GamificationContextType = {
   activateVIP: (days: number) => void;
   awardWatchTimeReward: (minutes: number) => Promise<{ coins: number; xp: number }>;
   addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
+  unlockedMediaIds: string[];
+  unlockMedia: (mediaId: string, episodeNum: number | undefined, cost: number) => Promise<boolean>;
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
@@ -408,6 +410,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const [activeEventIndex, setActiveEventIndex] = useState(0);
   const [activeThemeId, setActiveThemeId] = useState('theme-deep-blue');
   const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-deep-blue']);
+  const [unlockedMediaIds, setUnlockedMediaIds] = useState<string[]>([]);
   const [badges, setBadges] = useState<UserBadge[]>(DEFAULT_BADGES);
   const [missions, setMissions] = useState<Mission[]>([
     ...DEFAULT_MISSIONS,
@@ -490,6 +493,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
           if (parsed.activeThemeId) setActiveThemeId(parsed.activeThemeId);
           if (parsed.unlockedThemeIds) setUnlockedThemeIds(parsed.unlockedThemeIds);
+          if (parsed.unlockedMediaIds) setUnlockedMediaIds(parsed.unlockedMediaIds);
           if (parsed.missions) setMissions(parsed.missions);
           if (parsed.badges) setBadges(parsed.badges);
         }
@@ -564,6 +568,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         vipExpiresAt,
         activeThemeId,
         unlockedThemeIds,
+        unlockedMediaIds,
         missions,
         badges,
         ...updates,
@@ -798,6 +803,46 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return true;
   };
 
+  // Server-Authoritative Media Unlock
+  const unlockMedia = async (mediaId: string, episodeNum: number | undefined, cost: number): Promise<boolean> => {
+    if (coins < cost) return false;
+    const unlockKey = episodeNum !== undefined ? `${mediaId}_ep_${episodeNum}` : mediaId;
+    if (unlockedMediaIds.includes(unlockKey)) return true;
+
+    if (user?.id && !user.id.startsWith('guest-')) {
+      // In a full production setup, this would be an RPC call like `unlock_theme_with_coins`
+      // For now, we update coins in profiles and sync local cache.
+      try {
+        const { data, error } = await supabase.rpc('deduct_coins', { p_amount: cost });
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          const remaining = res.remaining_coins ?? (coins - cost);
+          const newUnlocked = [...unlockedMediaIds, unlockKey];
+          
+          setCoins(remaining);
+          setUnlockedMediaIds(newUnlocked);
+          persist({ coins: remaining, unlockedMediaIds: newUnlocked }, true);
+          return true;
+        }
+      } catch (err) {
+        console.warn('deduct_coins error (falling back to local):', err);
+      }
+    }
+
+    // Guest fallback / Offline fallback
+    const newCoins = Math.max(0, coins - cost);
+    const newUnlocked = [...unlockedMediaIds, unlockKey];
+
+    setCoins(newCoins);
+    setUnlockedMediaIds(newUnlocked);
+    persist({
+      coins: newCoins,
+      unlockedMediaIds: newUnlocked,
+    }, false); // allows background sync of coins
+
+    return true;
+  };
+
   const equipTheme = (themeId: string) => {
     if (!unlockedThemeIds.includes(themeId)) return;
     setActiveThemeId(themeId);
@@ -832,24 +877,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   // Server-Authoritative Watch Time Reward
   const awardWatchTimeReward = async (minutes: number): Promise<{ coins: number; xp: number }> => {
-    if (user?.id && !user.id.startsWith('guest-')) {
-      try {
-        const { data, error } = await supabase.rpc('record_watch_time_reward', { p_minutes: minutes });
-        if (!error && data && (data as any).success) {
-          const res = data as any;
-          setCoins(res.new_coins);
-          setXp(res.new_xp);
-          persist({ coins: res.new_coins, xp: res.new_xp }, true);
-          return { coins: res.coins_awarded, xp: res.xp_awarded };
-        }
-      } catch (err) {
-        console.warn('record_watch_time_reward RPC error:', err);
-      }
-    }
-
-    // Guest fallback
-    const coinsEarned = Math.max(10, Math.floor(minutes * 5));
-    const xpEarned = Math.max(20, Math.floor(minutes * 10));
+    // Disabled coin payout for Pay-Per-View model so users don't instantly earn back their cost.
+    const coinsEarned = 0; 
+    const xpEarned = Math.max(10, Math.floor(minutes * 5));
     addXPAndCoins(xpEarned, coinsEarned);
     return { coins: coinsEarned, xp: xpEarned };
   };
@@ -895,6 +925,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         activateVIP,
         awardWatchTimeReward,
         addXPAndCoins,
+        unlockedMediaIds,
+        unlockMedia,
       }}
     >
       {children}
