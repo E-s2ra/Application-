@@ -181,10 +181,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           {!isVIP && (
             <Pressable
               style={styles.admobRewardedBtn}
-              onPress={() => showRewardedAd({ rewardCoins: 10, rewardType: 'coins' })}
+              onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
               accessibilityRole="button"
-              accessibilityLabel="Watch an ad to earn 10 coins"
-              accessibilityHint="A short video ad will play, then 10 coins will be added to your balance"
+              accessibilityLabel="Watch an ad to earn 12 coins"
+              accessibilityHint="A short video ad will play, then 12 coins will be added to your balance"
             >
               <View style={styles.admobBtnLeft}>
                 <View style={styles.admobIconCircle}>
@@ -196,7 +196,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 </View>
               </View>
               <View style={styles.admobRewardPill}>
-                <Text style={styles.admobRewardPillText}>+10 💰</Text>
+                <Text style={styles.admobRewardPillText}>+12 💰</Text>
               </View>
             </Pressable>
           )}

@@ -333,7 +333,7 @@ export default function ProfileScreen() {
           {!isVIP && (
             <Pressable 
               style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-              onPress={() => showRewardedAd({ rewardCoins: 100, rewardType: 'coins' })}
+              onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
               accessibilityRole="button"
               accessibilityLabel="Watch Ad for Coins"
             >

@@ -41,7 +41,7 @@ export const ADMOB_IDS = {
 };
 
 export const ADMOB_REWARDS = {
-  rewardedAdCoins: 100,
-  rewardedAdXP: 150,
+  rewardedAdCoins: 12,
+  rewardedAdXP: 50,
   minCooldownSeconds: 15,
 };

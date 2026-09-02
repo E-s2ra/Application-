@@ -12,11 +12,16 @@
     },
     "android": {
       "package": "com.e2sra.aniflix",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#151718",
         "foregroundImage": "./assets/images/android-icon-foreground-safe.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "INTERNET",
+        "com.google.android.gms.permission.AD_ID"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -29,12 +34,19 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0B0D14",
-          "image": "./assets/images/transparent-splash.png",
-          "imageWidth": 1
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200
         }
       ],
       "expo-video",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6508988701499376~6377749194",
+          "iosAppId": "ca-app-pub-6508988701499376~4682307965"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

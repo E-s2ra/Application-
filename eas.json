@@ -16,6 +16,31 @@
         "EXPO_PUBLIC_ADMOB_IOS_BANNER_ID": "ca-app-pub-6508988701499376/5312079535",
         "EXPO_PUBLIC_ADMOB_IOS_REWARDED_ID": "ca-app-pub-6508988701499376/3978816560"
       }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://zkbprmyxwjfznsucyuvi.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_gw13qL5Hs7d2o0gLP0FOuQ_siBOh5VK",
+        "EXPO_PUBLIC_ADMIN_EMAIL": "esra99san@gmail.com",
+        "EXPO_PUBLIC_ADMOB_ANDROID_APP_ID": "ca-app-pub-6508988701499376~6377749194",
+        "EXPO_PUBLIC_ADMOB_ANDROID_BANNER_ID": "ca-app-pub-6508988701499376/8868181169",
+        "EXPO_PUBLIC_ADMOB_ANDROID_REWARDED_ID": "ca-app-pub-6508988701499376/4443363765",
+        "EXPO_PUBLIC_ADMOB_IOS_APP_ID": "ca-app-pub-6508988701499376~4682307965",
+        "EXPO_PUBLIC_ADMOB_IOS_BANNER_ID": "ca-app-pub-6508988701499376/5312079535",
+        "EXPO_PUBLIC_ADMOB_IOS_REWARDED_ID": "ca-app-pub-6508988701499376/3978816560"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
+      }
     }
   }
 }
