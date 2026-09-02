@@ -309,8 +309,6 @@ export default function WatchScreen() {
     }
   };
 
-  const { showSuccess } = useToast();
-
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.9, count: 64 };
 
