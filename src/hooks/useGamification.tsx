@@ -62,12 +62,12 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '15 Coins', icon: '💰', type: 'coins', amount: 15, color: '#FFB800' },
-  { id: '2', label: '100 XP', icon: '⚡', type: 'xp', amount: 100, color: '#00D2FF' },
+  { id: '1', label: '10 Coins', icon: '💰', type: 'coins', amount: 10, color: '#FFB800' },
+  { id: '2', label: '50 XP', icon: '⚡', type: 'xp', amount: 50, color: '#00D2FF' },
   { id: '3', label: '1-Day VIP Pass', icon: '👑', type: 'vip', amount: 1, color: '#9C27B0' },
-  { id: '4', label: '30 Coins', icon: '💰', type: 'coins', amount: 30, color: '#FF9800' },
-  { id: '5', label: '250 XP', icon: '⚡', type: 'xp', amount: 250, color: '#00E676' },
-  { id: '6', label: '100 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 100, color: '#0356C5' },
+  { id: '4', label: '20 Coins', icon: '💰', type: 'coins', amount: 20, color: '#FF9800' },
+  { id: '5', label: '100 XP', icon: '⚡', type: 'xp', amount: 100, color: '#00E676' },
+  { id: '6', label: '50 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 50, color: '#0356C5' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -306,7 +306,7 @@ const DEFAULT_MISSIONS: Mission[] = [
     id: 'm-daily-1',
     title: 'Daily Cinema Explorer',
     description: 'Stream any movie or anime for 10+ minutes',
-    rewardCoins: 30,
+    rewardCoins: 20,
     rewardXP: 50,
     target: 1,
     current: 1,
@@ -318,7 +318,7 @@ const DEFAULT_MISSIONS: Mission[] = [
     id: 'm-daily-2',
     title: 'Critique & Rate',
     description: 'Rate any movie or write a community review',
-    rewardCoins: 40,
+    rewardCoins: 25,
     rewardXP: 60,
     target: 1,
     current: 1,
@@ -330,7 +330,7 @@ const DEFAULT_MISSIONS: Mission[] = [
     id: 'm-daily-3',
     title: 'Curator',
     description: 'Add 2 new titles to your watchlist',
-    rewardCoins: 25,
+    rewardCoins: 15,
     rewardXP: 40,
     target: 2,
     current: 1,
@@ -646,8 +646,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
 
     // Guest fallback
-    const rewardCoins = Math.min(100, 50 + streakDays * 25);
-    const rewardXP = Math.min(200, 90 + streakDays * 20);
+    const rewardCoins = Math.min(30, 10 + streakDays * 10);
+    const rewardXP = Math.min(100, 50 + streakDays * 10);
     const newStreak = streakDays + 1;
     const newCoins = coins + rewardCoins;
     const newXp = xp + rewardXP;

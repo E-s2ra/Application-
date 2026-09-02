@@ -385,9 +385,9 @@ export default function WatchScreen() {
                         </Pressable>
                         <Pressable 
                           style={styles.earnMoreBtn} 
-                          onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
+                          onPress={() => showRewardedAd({ rewardCoins: 10, rewardType: 'coins' })}
                         >
-                          <Text style={styles.earnMoreBtnText}>Watch Ad to Earn +12 💰</Text>
+                          <Text style={styles.earnMoreBtnText}>Watch Ad to Earn +10 💰</Text>
                         </Pressable>
                       </View>
                     )}
