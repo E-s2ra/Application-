@@ -702,7 +702,7 @@ export default function WatchScreen() {
           setPlaybackSpeed(speed);
           try { player.playbackRate = speed; } catch (_e) {}
         }}
-        availableQualities={anime?.qualities?.map(q => (q.includes('4K') || q.includes('1080p')) ? `${q} 👑` : q)}
+        availableQualities={(anime?.qualities?.length ? anime.qualities : ['4K', '1080p', '720p', '480p']).map(q => (q.includes('4K') || q.includes('1080p')) ? `${q} 👑` : q)}
         activeQuality={selectedQuality}
         onSelectQuality={(q) => {
           if (q.includes('👑') && !isVIP) {
