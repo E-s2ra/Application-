@@ -1,9 +1,11 @@
+// @ts-nocheck
 const Jimp = require('jimp');
 const fs = require('fs');
+const path = require('path');
 
 async function removeBackground() {
-  const inputPath = '../assets/images/icon.png';
-  const outputPath = '../assets/images/icon_transparent.png';
+  const inputPath = path.join(__dirname, '../assets/images/icon.png');
+  const outputPath = path.join(__dirname, '../assets/images/icon_transparent.png');
 
   console.log('Loading image...');
   const image = await Jimp.read(inputPath);

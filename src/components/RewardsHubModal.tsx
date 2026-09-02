@@ -76,9 +76,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   } = useGamification();
 
   const [activeTab, setActiveTab] = useState<
-    'missions' | 'spin' | 'streak' | 'events' | 'themes' | 'badges'
-  >('missions');
-  const [missionFilter, setMissionFilter] = useState<'all' | 'daily' | 'weekly' | 'event'>('all');
+    'spin' | 'streak' | 'themes' | 'badges'
+  >('spin');
 
   const [spinAnim] = useState(() => new Animated.Value(0));
   const [isSpinning, setIsSpinning] = useState(false);
@@ -113,11 +112,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const spinRotation = spinAnim.interpolate({
     inputRange: [0, 360],
     outputRange: ['0deg', '360deg'],
-  });
-
-  const filteredMissions = missions.filter((m) => {
-    if (missionFilter === 'all') return true;
-    return m.category === missionFilter;
   });
 
   return (
@@ -215,30 +209,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             contentContainerStyle={styles.tabsRow}
           >
             <Pressable
-              style={[styles.tabBtn, activeTab === 'missions' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('missions')}
-            >
-              <Zap size={14} color={activeTab === 'missions' ? '#FFF' : '#8C8CA2'} />
-              <Text
-                style={[styles.tabBtnText, activeTab === 'missions' && styles.tabBtnTextActive]}
-              >
-                {t('missions')}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.tabBtn, activeTab === 'events' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('events')}
-            >
-              <Sparkles size={14} color={activeTab === 'events' ? '#FFF' : '#8C8CA2'} />
-              <Text
-                style={[styles.tabBtnText, activeTab === 'events' && styles.tabBtnTextActive]}
-              >
-                {t('events')}
-              </Text>
-            </Pressable>
-
-            <Pressable
               style={[styles.tabBtn, activeTab === 'spin' && styles.tabBtnActive]}
               onPress={() => setActiveTab('spin')}
             >
@@ -293,154 +263,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={true}
           >
-            {/* 🎯 MISSIONS TAB */}
-            {activeTab === 'missions' && (
-              <View>
-                <View style={styles.subfilterRow}>
-                  {(['all', 'daily', 'weekly', 'event'] as const).map((cat) => (
-                    <Pressable
-                      key={cat}
-                      style={[
-                        styles.subfilterChip,
-                        missionFilter === cat && styles.subfilterChipActive,
-                      ]}
-                      onPress={() => setMissionFilter(cat)}
-                    >
-                      <Text
-                        style={[
-                          styles.subfilterText,
-                          missionFilter === cat && styles.subfilterTextActive,
-                        ]}
-                      >
-                        {t(cat as any, cat).toUpperCase()}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <View style={styles.missionsList}>
-                  {filteredMissions.map((m) => (
-                    <View key={m.id} style={styles.missionCard}>
-                      <View style={styles.missionHeader}>
-                        <View style={styles.missionTitleBox}>
-                          <Text style={styles.missionTitle}>{t(m.title as any, m.title)}</Text>
-                          <Text style={styles.missionDesc}>{t(m.description as any, m.description)}</Text>
-                        </View>
-                        <View style={styles.rewardTag}>
-                          <Text style={styles.rewardTagText}>
-                            +{m.rewardCoins} Coins · +{m.rewardXP} XP
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.missionFooter}>
-                        <View style={styles.missionProgressBox}>
-                          <View style={styles.missionTrack}>
-                            <View
-                              style={[
-                                styles.missionFill,
-                                {
-                                  width: `${Math.min(100, (m.current / m.target) * 100)}%`,
-                                },
-                              ]}
-                            />
-                          </View>
-                          <Text style={styles.progressCounter}>
-                            {m.current} / {m.target}
-                          </Text>
-                        </View>
-
-                        {m.claimed ? (
-                          <View style={styles.claimedBadge}>
-                            <Check size={12} color="#00E676" />
-                            <Text style={styles.claimedText}>Claimed</Text>
-                          </View>
-                        ) : (
-                          <Pressable
-                            style={[
-                              styles.claimBtn,
-                              !m.completed && styles.claimBtnDisabled,
-                              m.completed && { backgroundColor: themeColors.primary },
-                            ]}
-                            disabled={!m.completed}
-                            onPress={() => claimMission(m.id)}
-                          >
-                            <Text style={styles.claimBtnText}>
-                              {m.completed ? t('claimReward') : t('inProgress')}
-                            </Text>
-                          </Pressable>
-                        )}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* 🎉 SEASONAL EVENTS SELECTOR TAB */}
-            {activeTab === 'events' && (
-              <View style={styles.eventsListContainer}>
-                <Text style={styles.sectionHeading}>Seasonal Festival Calendar</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Choose an active festival to participate in unique quests & earn exclusive badges!
-                </Text>
-
-                {allEvents.map((evt) => {
-                  const isActive = activeEvent.id === evt.id;
-                  return (
-                    <View
-                      key={evt.id}
-                      style={[
-                        styles.eventCardItem,
-                        isActive && { borderColor: evt.themeColor, borderWidth: 1.5 },
-                      ]}
-                    >
-                      <Image source={{ uri: evt.bannerImage }} style={styles.eventCardImage} />
-                      <View style={styles.eventCardBody}>
-                        <View style={styles.eventMetaRow}>
-                          <View
-                            style={[
-                              styles.eventLiveTag,
-                              { backgroundColor: isActive ? '#0356C5' : '#222232' },
-                            ]}
-                          >
-                            <Text style={styles.eventLiveTagText}>
-                              {isActive ? '🔥 ACTIVE EVENT' : '📅 UPCOMING EVENT'}
-                            </Text>
-                          </View>
-                          <Text style={[styles.eventBadgeRewardText, { color: evt.themeColor }]}>
-                            {evt.badgeIcon} {evt.badgeName}
-                          </Text>
-                        </View>
-
-                        <Text style={styles.eventCardTitle}>{evt.title}</Text>
-                        <Text style={styles.eventCardSubtitle}>{evt.subtitle}</Text>
-
-                        <View style={styles.eventCardFooter}>
-                          <Text style={styles.eventMultiplierText}>
-                            ⚡ {evt.bonusMultiplier}x Coin & XP Multiplier
-                          </Text>
-                          <Pressable
-                            style={[
-                              styles.eventSelectBtn,
-                              isActive
-                                ? { backgroundColor: '#1E1E2C', borderColor: evt.themeColor }
-                                : { backgroundColor: '#0356C5' },
-                            ]}
-                            onPress={() => selectSeasonalEvent(evt.id)}
-                          >
-                            <Text style={styles.eventSelectBtnText}>
-                              {isActive ? '✓ Selected' : 'Activate Event'}
-                            </Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
             {/* THEMES SHOP TAB */}
             {activeTab === 'themes' && (
               <View style={styles.themesContainer}>

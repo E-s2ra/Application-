@@ -525,17 +525,18 @@ export default function HomeScreen() {
         {activeCategory === 'All' ? (
           <>
             {/* ⏯️ Continue Watching Rail */}
-            {watchHistory.length > 0 && (
-              <View style={styles.railSection}>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <RotateCcw color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Continue Watching</Text>
-                  </View>
-                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                    {watchHistory.length} Titles
-                  </Text>
+            <View style={styles.railSection}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <RotateCcw color={themeColors.primary} size={18} />
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Continue Watching</Text>
                 </View>
+                <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+                  {watchHistory.length} Titles
+                </Text>
+              </View>
+              
+              {watchHistory.length > 0 ? (
                 <FlatList
                   horizontal
                   data={watchHistory}
@@ -558,13 +559,13 @@ export default function HomeScreen() {
                         </View>
 
                         <Pressable
-                          style={[styles.cardHeartBtn, { backgroundColor: 'rgba(0,0,0,0.6)', borderColor: 'rgba(255,255,255,0.2)' }]}
+                          style={[styles.cardHeartBtn, { backgroundColor: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.3)' }]}
                           onPress={(e) => {
                             e.stopPropagation?.();
                             removeFromHistory(item.animeId);
                           }}
                         >
-                          <Trash2 color="#FF4D4D" size={12} />
+                          <Trash2 color="#FF4D4D" size={14} />
                         </Pressable>
 
                         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, backgroundColor: 'rgba(255,255,255,0.2)' }}>
@@ -585,8 +586,14 @@ export default function HomeScreen() {
                     </Pressable>
                   )}
                 />
-              </View>
-            )}
+              ) : (
+                <View style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
+                  <Text style={{ color: themeColors.textSecondary, fontSize: 14 }}>
+                    You have no unfinished movies or series.
+                  </Text>
+                </View>
+              )}
+            </View>
 
             {/* 🍿 Unified Published Media Grid */}
             {allMedia.length > 0 && (
