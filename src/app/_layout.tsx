@@ -60,8 +60,9 @@ function AuthGuard({ onReady }: { onReady: () => void }) {
 
     const inAuthGroup = segments[0] === '(auth)';
     const isPasswordRecovery = String(segments[0]) === 'reset-password';
+    const isVerified = String(segments[0]) === 'verified';
 
-    if (!session && !inAuthGroup && !isPasswordRecovery) {
+    if (!session && !inAuthGroup && !isPasswordRecovery && !isVerified) {
       router.replace('/(auth)/login');
     } else if (session && inAuthGroup) {
       router.replace('/(tabs)');

@@ -180,6 +180,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
       const code = params.get('code');
+      const type = params.get('type');
+
+      // Explicitly route to the correct screen regardless of Expo Router's path parsing
+      if (type === 'recovery') {
+        router.replace('/reset-password');
+      } else if (type === 'signup') {
+        router.replace('/verified');
+      }
 
       if (accessToken && refreshToken) {
         await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
@@ -191,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void Linking.getInitialURL().then(restoreRecoverySession);
     const subscription = Linking.addEventListener('url', ({ url }) => void restoreRecoverySession(url));
     return () => subscription.remove();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!userId) return;
@@ -277,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: { full_name: fullName.trim() },
         emailRedirectTo: Platform.OS === 'web' && typeof window !== 'undefined' 
           ? `${window.location.origin}/verified` 
-          : 'aniflix://verified'
+          : Linking.createURL('/verified')
       },
     });
     
@@ -301,7 +309,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
-    let redirectTo = 'aniflix://reset-password';
+    let redirectTo = Linking.createURL('/reset-password');
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       redirectTo = `${window.location.origin}/reset-password`;
     }
