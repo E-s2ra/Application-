@@ -646,8 +646,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
 
     // Guest fallback
-    const rewardCoins = 60 + streakDays * 15;
-    const rewardXP = 90 + streakDays * 20;
+    const rewardCoins = Math.min(100, 50 + streakDays * 25);
+    const rewardXP = Math.min(200, 90 + streakDays * 20);
     const newStreak = streakDays + 1;
     const newCoins = coins + rewardCoins;
     const newXp = xp + rewardXP;

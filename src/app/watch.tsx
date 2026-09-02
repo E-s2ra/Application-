@@ -241,7 +241,7 @@ export default function WatchScreen() {
   }, [anime, selectedEpisode]);
 
   const isMovie = anime?.category === 'Movies';
-  const unlockCost = isMovie ? 125 : 80;
+  const unlockCost = isMovie ? 120 : 80;
   const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
   const isUnlocked = isVIP || (unlockKey && unlockedMediaIds.includes(unlockKey));
 
@@ -385,9 +385,9 @@ export default function WatchScreen() {
                         </Pressable>
                         <Pressable 
                           style={styles.earnMoreBtn} 
-                          onPress={() => showRewardedAd({ rewardCoins: 25, rewardType: 'coins' })}
+                          onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
                         >
-                          <Text style={styles.earnMoreBtnText}>Watch Ad to Earn +25 💰</Text>
+                          <Text style={styles.earnMoreBtnText}>Watch Ad to Earn +12 💰</Text>
                         </Pressable>
                       </View>
                     )}
