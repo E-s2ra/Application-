@@ -62,12 +62,12 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FFB800' },
+  { id: '1', label: '15 Coins', icon: '💰', type: 'coins', amount: 15, color: '#FFB800' },
   { id: '2', label: '100 XP', icon: '⚡', type: 'xp', amount: 100, color: '#00D2FF' },
   { id: '3', label: '1-Day VIP Pass', icon: '👑', type: 'vip', amount: 1, color: '#9C27B0' },
-  { id: '4', label: '150 Coins', icon: '💰', type: 'coins', amount: 150, color: '#FF9800' },
+  { id: '4', label: '30 Coins', icon: '💰', type: 'coins', amount: 30, color: '#FF9800' },
   { id: '5', label: '250 XP', icon: '⚡', type: 'xp', amount: 250, color: '#00E676' },
-  { id: '6', label: '500 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 500, color: '#0356C5' },
+  { id: '6', label: '100 Coins (Jackpot!)', icon: '💎', type: 'coins', amount: 100, color: '#0356C5' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
