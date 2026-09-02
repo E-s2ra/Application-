@@ -23,21 +23,12 @@ type AdMobContextType = {
 
 const AdMobContext = createContext<AdMobContextType | undefined>(undefined);
 
-// Conditionally import the real AdMob SDK (only available on native builds)
-let RewardedAd: any = null;
-let RewardedAdEventType: any = null;
-let AdEventType: any = null;
-let TestIds: any = null;
+import { AdMobProxy } from '@/lib/admob-proxy';
 
-try {
-  const RNMA = require('react-native-google-mobile-ads');
-  RewardedAd = RNMA.RewardedAd;
-  RewardedAdEventType = RNMA.RewardedAdEventType;
-  AdEventType = RNMA.AdEventType;
-  TestIds = RNMA.TestIds;
-} catch (e) {
-  // SDK not available (web or dev mode without native build)
-  console.log('[AdMob] react-native-google-mobile-ads not available, using fallback modal');
+const { RewardedAd, RewardedAdEventType, AdEventType, TestIds, isAvailable } = AdMobProxy;
+
+if (!isAvailable) {
+  console.log('[AdMob] react-native-google-mobile-ads not available (web/dev), using fallback modal');
 }
 
 export function AdMobProvider({ children }: { children: React.ReactNode }) {
