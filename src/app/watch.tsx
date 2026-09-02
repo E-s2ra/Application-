@@ -67,6 +67,7 @@ export default function WatchScreen() {
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
 
   // Player state
+  const [isLayoutFullscreen, setIsLayoutFullscreen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(Platform.OS !== 'web');
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
@@ -300,6 +301,11 @@ export default function WatchScreen() {
   };
 
   const handleFullscreen = async () => {
+    if (Platform.OS === 'web') {
+      setIsLayoutFullscreen(!isLayoutFullscreen);
+      return;
+    }
+
     try {
       if (videoViewRef.current?.enterFullscreen) {
         await videoViewRef.current.enterFullscreen();
@@ -347,8 +353,8 @@ export default function WatchScreen() {
         <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
           
           {/* 🎬 Clean Cinema Video Frame */}
-          <View style={styles.playerWrapper}>
-            <View style={[styles.videoBox, (isDesktop || isTablet) && styles.videoBoxDesktop]}>
+          <View style={[styles.playerWrapper, isLayoutFullscreen && styles.playerWrapperFullscreen]}>
+            <View style={[styles.videoBox, (isDesktop || isTablet) && styles.videoBoxDesktop, isLayoutFullscreen && styles.videoBoxFullscreen]}>
               {!isUnlocked && anime ? (
                 <View style={styles.paywallOverlay}>
                   <View style={styles.paywallContent}>
@@ -460,7 +466,7 @@ export default function WatchScreen() {
 
               {/* Fullscreen Button */}
               <Pressable style={styles.controlIconBtn} onPress={handleFullscreen}>
-                <Maximize2 color={themeColors.textSecondary} size={18} />
+                {isLayoutFullscreen ? <Minimize2 color={themeColors.textSecondary} size={18} /> : <Maximize2 color={themeColors.textSecondary} size={18} />}
               </Pressable>
             </View>
 
@@ -722,6 +728,16 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#000000',
   },
+  playerWrapperFullscreen: {
+    ...(Platform.OS === 'web' ? { position: 'fixed' as any } : { position: 'absolute' }),
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 9999,
+    backgroundColor: '#000',
+  },
   videoBox: {
     width: '100%',
     aspectRatio: 16 / 9,
@@ -731,7 +747,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   videoBoxDesktop: {
-    maxHeight: 520,
+    maxHeight: 600,
+  },
+  videoBoxFullscreen: {
+    flex: 1,
+    height: '100%',
+    maxHeight: 'none',
+    aspectRatio: undefined,
   },
   videoElement: {
     width: '100%',
@@ -1091,10 +1113,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   recPosterCard: {
-    borderRadius: 10,
+    borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    position: 'relative',
   },
   recPosterImg: {
     width: '100%',
