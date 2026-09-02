@@ -61,6 +61,7 @@ export default function WatchScreen() {
   const { updateProgress } = useWatchHistory();
   const { unlockedMediaIds, unlockMedia, coins, isVIP } = useGamification();
   const { showRewardedAd } = useAdMob();
+  const { showSuccess, showError } = useToast();
 
   const [anime, setAnime] = useState<AnimeItem | null>(null);
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
@@ -71,7 +72,7 @@ export default function WatchScreen() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [selectedQuality, setSelectedQuality] = useState<string>('4K (2160p)');
+  const [selectedQuality, setSelectedQuality] = useState<string>('Auto');
   const [selectedAudio, setSelectedAudio] = useState<string>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
@@ -651,9 +652,15 @@ export default function WatchScreen() {
           setPlaybackSpeed(speed);
           try { player.playbackRate = speed; } catch (_e) {}
         }}
-        availableQualities={anime?.qualities}
+        availableQualities={anime?.qualities?.map(q => q.includes('4K') ? `${q} 👑` : q)}
         activeQuality={selectedQuality}
-        onSelectQuality={(q) => setSelectedQuality(q)}
+        onSelectQuality={(q) => {
+          if (q.includes('👑') && !isVIP) {
+            showError('4K Quality is exclusive to VIP members!');
+            return;
+          }
+          setSelectedQuality(q);
+        }}
         availableAudioTracks={anime?.audio_tracks}
         activeAudio={selectedAudio}
         onSelectAudio={(a) => setSelectedAudio(a)}
