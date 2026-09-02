@@ -78,6 +78,7 @@ export default function WatchScreen() {
   const [selectedAudio, setSelectedAudio] = useState<string>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
+  const [showControls, setShowControls] = useState(true);
 
   const videoViewRef = useRef<VideoView>(null);
   const [videoSource, setVideoSource] = useState<any>(null);
@@ -97,6 +98,21 @@ export default function WatchScreen() {
       disableContentProtection();
     };
   }, []);
+
+  // Auto-hide controls after 3 seconds of inactivity
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (showControls && isPlaying) {
+      timeout = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+    return () => clearTimeout(timeout);
+  }, [showControls, isPlaying]);
+
+  const handleTapVideo = () => {
+    setShowControls(prev => !prev);
+  };
 
   useEffect(() => {
     try {
@@ -400,7 +416,7 @@ export default function WatchScreen() {
                   </View>
                 </View>
               ) : (
-                <>
+                <Pressable style={styles.videoOverlayContainer} onPress={handleTapVideo}>
                   <VideoView
                     ref={videoViewRef}
                     style={styles.videoElement}
@@ -415,60 +431,61 @@ export default function WatchScreen() {
                       <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
                     </View>
                   )}
-                </>
+
+                  {/* YouTube Style Overlay */}
+                  {showControls && (
+                    <Pressable style={styles.youtubeOverlay} onPress={handleTapVideo}>
+                      {/* Top Bar - Settings */}
+                      <View style={styles.youtubeTopBar}>
+                        <View style={{ flex: 1 }} />
+                        <Pressable style={styles.youtubeSettingsBtn} onPress={(e) => { e.stopPropagation(); setShowSettingsModal(true); }}>
+                          <Settings color="#fff" size={24} />
+                        </Pressable>
+                      </View>
+
+                      {/* Center Play/Pause & Skip */}
+                      <View style={styles.youtubeCenterBar}>
+                        <Pressable style={styles.youtubeSkipBtn} onPress={(e) => { e.stopPropagation(); handleSeekBackward10(); }}>
+                          <RotateCcw color="#fff" size={32} />
+                        </Pressable>
+                        <Pressable style={styles.youtubePlayBtn} onPress={(e) => { e.stopPropagation(); handlePlayPause(); }}>
+                          <View style={styles.youtubePlayBtnBg}>
+                            {isPlaying ? <Pause color="#fff" size={36} fill="#fff" /> : <Play color="#fff" size={36} fill="#fff" style={{ marginLeft: 4 }} />}
+                          </View>
+                        </Pressable>
+                        <Pressable style={styles.youtubeSkipBtn} onPress={(e) => { e.stopPropagation(); handleSeekForward10(); }}>
+                          <RotateCw color="#fff" size={32} />
+                        </Pressable>
+                      </View>
+
+                      {/* Bottom Bar - Scrubber & Fullscreen */}
+                      <View style={styles.youtubeBottomBar}>
+                        <View style={styles.youtubeTimeRow}>
+                           <Text style={styles.youtubeTimeText}>
+                             {/* Time info not readily available from expo-video without custom hook, but we have a dummy for UI */}
+                           </Text>
+                        </View>
+                        <View style={styles.youtubeControlsRow}>
+                          <Pressable style={styles.youtubeIconBtn} onPress={(e) => { e.stopPropagation(); handleToggleMute(); }}>
+                            {isMuted ? <VolumeX color="#fff" size={24} /> : <Volume2 color="#fff" size={24} />}
+                          </Pressable>
+                          
+                          <View style={{ flex: 1 }} />
+                          
+                          {/* Speed Toggle */}
+                          <Pressable style={styles.youtubeIconBtn} onPress={(e) => { e.stopPropagation(); setShowSpeedMenu(!showSpeedMenu); }}>
+                            <Text style={styles.youtubeSpeedText}>{playbackSpeed}x</Text>
+                          </Pressable>
+
+                          <Pressable style={styles.youtubeIconBtn} onPress={(e) => { e.stopPropagation(); handleFullscreen(); }}>
+                            {isLayoutFullscreen ? <Minimize2 color="#fff" size={24} /> : <Maximize2 color="#fff" size={24} />}
+                          </Pressable>
+                        </View>
+                      </View>
+                    </Pressable>
+                  )}
+                </Pressable>
               )}
-            </View>
-
-            {/* Sleek Minimalist Controls Bar */}
-            <View style={[styles.controlsRow, { backgroundColor: themeColors.backgroundElement, borderBottomColor: themeColors.border }]}>
-              <Pressable style={styles.controlIconBtn} onPress={handleSeekBackward10}>
-                <RotateCcw color={themeColors.textSecondary} size={18} />
-              </Pressable>
-
-              <Pressable style={styles.playPauseBtn} onPress={handlePlayPause}>
-                <PrimaryGradient borderRadius={20} />
-                <View style={{ zIndex: 10 }}>
-                  {isPlaying ? <Pause color="#FFFFFF" size={18} fill="#FFFFFF" /> : <Play color="#FFFFFF" size={18} fill="#FFFFFF" />}
-                </View>
-              </Pressable>
-
-              <Pressable style={styles.controlIconBtn} onPress={handleSeekForward10}>
-                <RotateCw color={themeColors.textSecondary} size={18} />
-              </Pressable>
-
-              <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
-
-              {/* Speed Menu Toggle */}
-              <Pressable
-                style={[styles.pillBtn, { backgroundColor: themeColors.backgroundCard }, showSpeedMenu && styles.pillBtnActive]}
-                onPress={() => setShowSpeedMenu(!showSpeedMenu)}
-              >
-                <Gauge color={showSpeedMenu ? themeColors.primary : themeColors.textSecondary} size={15} />
-                <Text style={[styles.pillBtnText, { color: showSpeedMenu ? themeColors.primary : themeColors.textSecondary }]}>
-                  {playbackSpeed}x
-                </Text>
-              </Pressable>
-
-              {/* Stream Quality & Audio Settings Button */}
-              <Pressable
-                style={[styles.pillBtn, { backgroundColor: themeColors.backgroundCard }]}
-                onPress={() => setShowSettingsModal(true)}
-              >
-                <Settings color={themeColors.primary} size={15} />
-                <Text style={[styles.pillBtnText, { color: themeColors.text }]}>
-                  {selectedQuality.split(' ')[0]}
-                </Text>
-              </Pressable>
-
-              {/* Mute Button */}
-              <Pressable style={styles.controlIconBtn} onPress={handleToggleMute}>
-                {isMuted ? <VolumeX color={themeColors.error} size={18} /> : <Volume2 color={themeColors.textSecondary} size={18} />}
-              </Pressable>
-
-              {/* Fullscreen Button */}
-              <Pressable style={styles.controlIconBtn} onPress={handleFullscreen}>
-                {isLayoutFullscreen ? <Minimize2 color={themeColors.textSecondary} size={18} /> : <Maximize2 color={themeColors.textSecondary} size={18} />}
-              </Pressable>
             </View>
 
             {/* Speed Selector Menu */}
@@ -753,8 +770,81 @@ const styles = StyleSheet.create({
   videoBoxFullscreen: {
     flex: 1,
     height: '100%',
-    maxHeight: 'none',
+    maxHeight: undefined,
     aspectRatio: undefined,
+  },
+  videoOverlayContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  youtubeOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'space-between',
+    padding: 16,
+    zIndex: 100,
+  },
+  youtubeTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  youtubeSettingsBtn: {
+    padding: 8,
+  },
+  youtubeCenterBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 40,
+  },
+  youtubeSkipBtn: {
+    padding: 10,
+    opacity: 0.9,
+  },
+  youtubePlayBtn: {
+    padding: 10,
+  },
+  youtubePlayBtnBg: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  youtubeBottomBar: {
+    flexDirection: 'column',
+    gap: 10,
+  },
+  youtubeTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
+  youtubeTimeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  youtubeControlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  youtubeIconBtn: {
+    padding: 8,
+  },
+  youtubeSpeedText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   videoElement: {
     width: '100%',
