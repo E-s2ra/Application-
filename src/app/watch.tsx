@@ -650,11 +650,11 @@ export default function WatchScreen() {
           setPlaybackSpeed(speed);
           try { player.playbackRate = speed; } catch (_e) {}
         }}
-        availableQualities={anime?.qualities?.map(q => q.includes('4K') ? `${q} 👑` : q)}
+        availableQualities={anime?.qualities?.map(q => (q.includes('4K') || q.includes('1080p')) ? `${q} 👑` : q)}
         activeQuality={selectedQuality}
         onSelectQuality={(q) => {
           if (q.includes('👑') && !isVIP) {
-            showError('4K Quality is exclusive to VIP members!');
+            showError('High Quality streams are exclusive to VIP members!');
             return;
           }
           setSelectedQuality(q);
