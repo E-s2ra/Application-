@@ -67,7 +67,7 @@ export default function WatchScreen() {
   const [recommendations, setRecommendations] = useState<AnimeItem[]>([]);
 
   // Player state
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(Platform.OS !== 'web');
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
@@ -420,7 +420,9 @@ export default function WatchScreen() {
 
               <Pressable style={styles.playPauseBtn} onPress={handlePlayPause}>
                 <PrimaryGradient borderRadius={20} />
-                {isPlaying ? <Pause color="#FFFFFF" size={18} fill="#FFFFFF" /> : <Play color="#FFFFFF" size={18} fill="#FFFFFF" />}
+                <View style={{ zIndex: 10 }}>
+                  {isPlaying ? <Pause color="#FFFFFF" size={18} fill="#FFFFFF" /> : <Play color="#FFFFFF" size={18} fill="#FFFFFF" />}
+                </View>
               </Pressable>
 
               <Pressable style={styles.controlIconBtn} onPress={handleSeekForward10}>
