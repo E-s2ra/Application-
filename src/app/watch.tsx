@@ -8,7 +8,9 @@ import {
   ScrollView,
   Pressable,
   Platform,
+  StatusBar
 } from 'react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { enableContentProtection, disableContentProtection } from '@/lib/content-protection';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -81,6 +83,7 @@ export default function WatchScreen() {
   const [showControls, setShowControls] = useState(true);
 
   const videoViewRef = useRef<VideoView>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
   const [videoSource, setVideoSource] = useState<any>(null);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
 
@@ -318,19 +321,37 @@ export default function WatchScreen() {
   };
 
   const handleFullscreen = async () => {
-    if (Platform.OS === 'web') {
-      setIsLayoutFullscreen(!isLayoutFullscreen);
-      return;
+    const nextFullscreen = !isLayoutFullscreen;
+    setIsLayoutFullscreen(nextFullscreen);
+
+    if (nextFullscreen && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: false });
     }
 
-    try {
-      if (videoViewRef.current?.enterFullscreen) {
-        await videoViewRef.current.enterFullscreen();
+    if (Platform.OS !== 'web') {
+      try {
+        if (nextFullscreen) {
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+          StatusBar.setHidden(true);
+        } else {
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+          StatusBar.setHidden(false);
+        }
+      } catch (e) {
+        console.log('Orientation lock failed:', e);
       }
-    } catch {
-      setPlaybackError('Failed to toggle fullscreen.');
     }
   };
+
+  // Cleanup orientation on unmount
+  useEffect(() => {
+    return () => {
+      if (Platform.OS !== 'web') {
+        ScreenOrientation.unlockAsync().catch(() => {});
+        StatusBar.setHidden(false);
+      }
+    };
+  }, []);
 
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.9, count: 64 };
@@ -366,7 +387,12 @@ export default function WatchScreen() {
 
 
 
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={{ flex: 1 }} 
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={!isLayoutFullscreen}
+      >
         <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
           
           {/* 🎬 Clean Cinema Video Frame */}
@@ -684,6 +710,7 @@ export default function WatchScreen() {
             return;
           }
           setSelectedQuality(q);
+          showSuccess(`Stream quality set to ${q}`);
         }}
         availableAudioTracks={anime?.audio_tracks}
         activeAudio={selectedAudio}
