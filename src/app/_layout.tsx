@@ -43,7 +43,7 @@ function PrivacyProtection() {
 }
 
 function AuthGuard({ onReady }: { onReady: () => void }) {
-  const { session, isLoading } = useAuth();
+  const { session, profile, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -55,6 +55,8 @@ function AuthGuard({ onReady }: { onReady: () => void }) {
 
   useEffect(() => {
     if (isLoading) return;
+    // Wait for profile to be fully loaded if there is an active session before navigating
+    if (session && !profile) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     const isPasswordRecovery = String(segments[0]) === 'reset-password';
@@ -64,7 +66,7 @@ function AuthGuard({ onReady }: { onReady: () => void }) {
     } else if (session && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [session, isLoading, segments, router]);
+  }, [session, profile, isLoading, segments, router]);
 
   return null;
 }

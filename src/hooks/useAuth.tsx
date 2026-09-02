@@ -130,14 +130,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(sbSession);
           setUser(sbSession?.user ?? null);
           if (sbSession?.user) {
-            fetchProfile(sbSession.user.id, sbSession.user.email).finally(() => {
-              if (isMounted) setIsLoading(false);
-            });
-          } else {
-            setIsLoading(false);
+            await fetchProfile(sbSession.user.id, sbSession.user.email);
           }
         }
-      } catch {
+      } catch (error) {
+        console.warn('[useAuth] initAuth error:', error);
+      } finally {
         if (isMounted) setIsLoading(false);
       }
     }
@@ -145,18 +143,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     // Listen for real-time auth changes from Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (_event === 'PASSWORD_RECOVERY') {
         router.replace('/reset-password');
       }
-      if (isMounted) {
+      
+      if (!isMounted) return;
+
+      if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED') {
         setSession(newSession);
         setUser(newSession?.user ?? null);
-        if (newSession?.user) {
-          fetchProfile(newSession.user.id, newSession.user.email);
-        } else {
-          setProfile(null);
-        }
+      } else if (_event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      }
+
+      // Only fetch profile explicitly on SIGNED_IN. initAuth handles the initial app load.
+      if (_event === 'SIGNED_IN' && newSession?.user) {
+        await fetchProfile(newSession.user.id, newSession.user.email);
       }
     });
 
@@ -243,13 +248,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.session) {
         await claimCurrentDevice();
-        setSession(data.session);
-        setUser(data.session.user);
-        await fetchProfile(data.session.user.id, data.session.user.email);
+        // State updates and profile fetching are automatically handled by the onAuthStateChange listener
       }
 
       return { error: null };
     } catch (err: any) {
+      claimingDeviceRef.current = false;
       console.warn('[useAuth] signIn error:', err);
       return { error: err.message || 'Network error. Please check your connection and try again.' };
     }
