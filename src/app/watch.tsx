@@ -26,6 +26,7 @@ import {
   Volume2,
   VolumeX,
   Maximize2,
+  Minimize2,
   Tv,
   Layers,
   Settings,
