@@ -30,8 +30,12 @@ export type RewardedAdResult = {
 };
 
 /**
- * Securely records a completed rewarded ad session into Supabase 'rewarded_ads' table
- * and atomically credits verified coins and XP via secure RPC 'claim_rewarded_ad'.
+ * Securely records a completed rewarded ad session via the server-side
+ * 'claim_rewarded_ad' SECURITY DEFINER RPC.
+ * 
+ * FIX CRITICAL-04: Removed the fallback direct-UPDATE path that bypassed
+ * server validation and was vulnerable to TOCTOU race conditions.
+ * The RPC is the single authoritative reward path.
  */
 export async function recordRewardedAdToSupabase(
   userId: string,
@@ -47,64 +51,23 @@ export async function recordRewardedAdToSupabase(
       };
     }
 
-    // 1. Try secure RPC function 'claim_rewarded_ad'
+    // Use the secure SECURITY DEFINER RPC as the single authoritative path
     const { data: rpcData, error: rpcError } = await supabase.rpc('claim_rewarded_ad', {
       p_ad_unit_id: adUnitId,
       p_reward_type: rewardType,
-      p_verification_token: `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     });
 
-    if (!rpcError && rpcData && (rpcData as any).success) {
+    if (rpcError) {
+      console.warn('[AdMob] claim_rewarded_ad RPC error:', rpcError.message);
+      return { success: false, error: rpcError.message };
+    }
+
+    if (rpcData && (rpcData as any).success) {
       return { success: true, data: rpcData };
     }
 
-    // 2. Resilient fallback: direct insert + profile update
-    const { error: insertError } = await supabase.from('rewarded_ads').insert({
-      user_id: userId,
-      ad_unit_id: adUnitId,
-      reward_type: rewardType,
-      reward_coins: rewardCoins,
-      watched_at: new Date().toISOString(),
-    });
-
-    if (insertError) {
-      console.warn('rewarded_ads insert note:', insertError.message);
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('coins, xp, level')
-      .eq('id', userId)
-      .single();
-
-    if (profile) {
-      const newCoins = (profile.coins || 0) + rewardCoins;
-      const newXP = (profile.xp || 0) + ADMOB_REWARDS.rewardedAdXP;
-      const newLevel = Math.floor(newXP / 300) + 1;
-
-      await supabase
-        .from('profiles')
-        .update({
-          coins: newCoins,
-          xp: newXP,
-          level: newLevel,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
-
-      return {
-        success: true,
-        data: {
-          reward_coins: rewardCoins,
-          reward_xp: ADMOB_REWARDS.rewardedAdXP,
-          new_coins: newCoins,
-          new_xp: newXP,
-          new_level: newLevel,
-        },
-      };
-    }
-
-    return { success: true };
+    // RPC returned but without success flag
+    return { success: false, error: 'Reward claim was not granted by server.' };
   } catch (err: any) {
     console.warn('Error recording rewarded ad in Supabase:', err);
     return { success: false, error: err.message };

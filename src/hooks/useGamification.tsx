@@ -326,7 +326,7 @@ type GamificationContextType = {
   claimMission: (missionId: string) => Promise<void>;
   unlockTheme: (themeId: string) => Promise<boolean>;
   equipTheme: (themeId: string) => void;
-  activateVIP: (days: number) => void;
+  activateVIP: (days: number, coinCost?: number) => Promise<void>;
   awardWatchTimeReward: (minutes: number) => Promise<{ coins: number; xp: number }>;
   addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
   unlockedMediaIds: string[];
@@ -489,7 +489,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     loadData();
   }, [user]);
 
-  const persist = async (updates: any, skipDbSync = false) => {
+  const persist = async (updates: any, _skipDbSync = false) => {
     try {
       // Always store under the per-user key so accounts don't share state
       const storageKey = user?.id
@@ -518,26 +518,15 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         await AsyncStorage.setItem(storageKey, json);
       }
 
-      // Sync to Supabase profiles in background
-      if (!skipDbSync && user?.id && !user.id.startsWith('guest-')) {
-        const payload: any = { updated_at: new Date().toISOString() };
-        if (updates.coins !== undefined) payload.coins = updates.coins;
-        if (updates.xp !== undefined) {
-          payload.xp = updates.xp;
-          payload.level = Math.floor(updates.xp / 300) + 1;
-        }
-        if (updates.streakDays !== undefined) payload.streak_days = updates.streakDays;
-        if (updates.vipDaysRemaining !== undefined) {
-          payload.is_vip = updates.vipDaysRemaining > 0;
-          if (updates.vipDaysRemaining > 0) {
-            const exp = new Date();
-            exp.setDate(exp.getDate() + updates.vipDaysRemaining);
-            payload.vip_expires_at = exp.toISOString();
-          }
-        }
-        await supabase.from('profiles').update(payload).eq('id', user.id);
-      }
-    } catch {}
+      // FIX CRITICAL-01: Removed direct UPDATE of coins/xp/level/streak/vip
+      // to Supabase profiles. All economic mutations MUST go through
+      // SECURITY DEFINER RPCs (claim_daily_login_reward, claim_rewarded_ad,
+      // spin_lucky_wheel, claim_mission_reward, deduct_coins, etc.).
+      // persist() now only saves to local cache for UI state.
+    } catch (err) {
+      // FIX MED-03: Log errors instead of silently swallowing them
+      console.warn('[Gamification] persist error:', err);
+    }
   };
 
   const addXPAndCoins = (xpGain: number, coinsGain: number, skipDbSync = false) => {
@@ -656,47 +645,52 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return reward;
   };
 
-  // Server-Authoritative Mission Claim
+  // FIX CRITICAL-06: Server-Authoritative Mission Claim via RPC
   const claimMission = async (missionId: string) => {
     const mission = missions.find((m) => m.id === missionId);
     if (!mission || !mission.completed || mission.claimed) return;
 
+    if (user?.id && !user.id.startsWith('guest-')) {
+      try {
+        const { data, error } = await supabase.rpc('claim_mission_reward', {
+          p_mission_code: missionId,
+        });
+
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          setCoins(res.new_coins);
+          setXp(res.new_xp);
+          const updatedMissions = missions.map((m) =>
+            m.id === missionId ? { ...m, claimed: true } : m
+          );
+          setMissions(updatedMissions);
+          persist({ coins: res.new_coins, xp: res.new_xp, missions: updatedMissions });
+          return;
+        } else if (data && (data as any).reason === 'already_claimed') {
+          // Already claimed server-side — update local state to match
+          const updatedMissions = missions.map((m) =>
+            m.id === missionId ? { ...m, claimed: true } : m
+          );
+          setMissions(updatedMissions);
+          persist({ missions: updatedMissions });
+          return;
+        }
+        console.warn('claim_mission_reward error:', error?.message);
+      } catch (err) {
+        console.warn('claim_mission_reward RPC error:', err);
+      }
+    }
+
+    // Guest fallback: credit locally only
     const newCoins = coins + mission.rewardCoins;
     const newXp = xp + mission.rewardXP;
     const updatedMissions = missions.map((m) =>
       m.id === missionId ? { ...m, claimed: true } : m
     );
-
     setCoins(newCoins);
     setXp(newXp);
     setMissions(updatedMissions);
-
-    persist({
-      coins: newCoins,
-      xp: newXp,
-      missions: updatedMissions,
-    });
-
-    if (user?.id && !user.id.startsWith('guest-')) {
-      try {
-        const { data: mData } = await supabase
-          .from('missions')
-          .select('id')
-          .eq('code', missionId)
-          .maybeSingle();
-
-        if (mData?.id) {
-          await supabase.from('user_missions').upsert({
-            user_id: user.id,
-            mission_id: mData.id,
-            progress: mission.target,
-            completed: true,
-            claimed: true,
-            claimed_at: new Date().toISOString(),
-          });
-        }
-      } catch {}
-    }
+    persist({ coins: newCoins, xp: newXp, missions: updatedMissions });
   };
 
   // Server-Authoritative Theme Unlock
@@ -741,42 +735,41 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return true;
   };
 
-  // Server-Authoritative Media Unlock
+  // FIX CRITICAL-07: Server-Authoritative Media Unlock via deduct_coins RPC
   const unlockMedia = async (mediaId: string, episodeNum: number | undefined, cost: number): Promise<boolean> => {
     if (coins < cost) return false;
     const unlockKey = episodeNum !== undefined ? `${mediaId}_ep_${episodeNum}` : mediaId;
     if (unlockedMediaIds.includes(unlockKey)) return true;
 
     if (user?.id && !user.id.startsWith('guest-')) {
-      // In a full production setup, this would be an RPC call like `unlock_theme_with_coins`
-      // For now, we update coins in profiles and sync local cache.
       try {
         const { data, error } = await supabase.rpc('deduct_coins', { p_amount: cost });
         if (!error && data && (data as any).success) {
           const res = data as any;
           const remaining = res.remaining_coins ?? (coins - cost);
           const newUnlocked = [...unlockedMediaIds, unlockKey];
-          
+
           setCoins(remaining);
           setUnlockedMediaIds(newUnlocked);
-          persist({ coins: remaining, unlockedMediaIds: newUnlocked }, true);
+          persist({ coins: remaining, unlockedMediaIds: newUnlocked });
           return true;
         }
+        // RPC failed — do NOT fallback to local deduction for authenticated users
+        console.warn('deduct_coins RPC failed:', error?.message || 'Unknown error');
+        return false;
       } catch (err) {
-        console.warn('deduct_coins error (falling back to local):', err);
+        console.warn('deduct_coins error:', err);
+        return false;
       }
     }
 
-    // Guest fallback / Offline fallback
+    // Guest-only fallback: local deduction (no real economy)
     const newCoins = Math.max(0, coins - cost);
     const newUnlocked = [...unlockedMediaIds, unlockKey];
 
     setCoins(newCoins);
     setUnlockedMediaIds(newUnlocked);
-    persist({
-      coins: newCoins,
-      unlockedMediaIds: newUnlocked,
-    }, false); // allows background sync of coins
+    persist({ coins: newCoins, unlockedMediaIds: newUnlocked });
 
     return true;
   };
@@ -787,7 +780,34 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     persist({ activeThemeId: themeId });
   };
 
-  const activateVIP = (days: number) => {
+  // FIX HIGH-06: Server-Authoritative VIP Activation via RPC
+  const activateVIP = async (days: number, coinCost: number = 0) => {
+    if (user?.id && !user.id.startsWith('guest-')) {
+      try {
+        const { data, error } = await supabase.rpc('activate_vip_with_coins', {
+          p_days: days,
+          p_coin_cost: coinCost,
+        });
+
+        if (!error && data && (data as any).success) {
+          const res = data as any;
+          const vipDays = res.vip_days ?? days;
+          const expiresAt = res.vip_expires_at;
+          const remaining = res.remaining_coins;
+
+          if (remaining !== undefined) setCoins(remaining);
+          setVipDaysRemaining(vipDays);
+          setVipExpiresAt(expiresAt);
+          persist({ coins: remaining, vipDaysRemaining: vipDays, vipExpiresAt: expiresAt });
+          return;
+        }
+        console.warn('activate_vip_with_coins error:', error?.message);
+      } catch (err) {
+        console.warn('activate_vip_with_coins RPC error:', err);
+      }
+    }
+
+    // Guest fallback: local-only VIP (no real economy)
     const currentExp = (vipExpiresAt && new Date(vipExpiresAt).getTime() > Date.now()) 
         ? new Date(vipExpiresAt) 
         : new Date();
@@ -800,17 +820,6 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     setVipDaysRemaining(newVipDays);
     setVipExpiresAt(newExpiresAt);
     persist({ vipDaysRemaining: newVipDays, vipExpiresAt: newExpiresAt });
-
-    if (user?.id && !user.id.startsWith('guest-')) {
-      supabase
-        .from('vip_transactions')
-        .insert({
-          user_id: user.id,
-          type: 'coins_purchase',
-          duration: days,
-        })
-        .then(() => {});
-    }
   };
 
   // Server-Authoritative Watch Time Reward

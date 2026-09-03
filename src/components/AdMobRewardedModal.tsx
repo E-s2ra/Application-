@@ -22,7 +22,6 @@ import {
   Tv,
 } from 'lucide-react-native';
 import { useAdMob } from '@/hooks/useAdMob';
-import { useGamification } from '@/hooks/useGamification';
 
 const AD_TOTAL_SECONDS = 8;
 
@@ -34,8 +33,6 @@ export function AdMobRewardedModal() {
     onAdCompleted,
     closeAdModal,
   } = useAdMob();
-
-  const { addXPAndCoins } = useGamification();
 
   const [secondsRemaining, setSecondsRemaining] = useState(AD_TOTAL_SECONDS);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -63,9 +60,10 @@ export function AdMobRewardedModal() {
         if (prev <= 1) {
           clearInterval(timer);
           setIsCompleted(true);
-          // Credit reward
+          // FIX CRITICAL-02: Only call onAdCompleted() which uses the server-side
+          // claim_rewarded_ad RPC as the single authoritative reward path.
+          // Previously addXPAndCoins() was also called here, causing double rewards.
           onAdCompleted();
-          addXPAndCoins(50, currentRewardCoins, true);
           return 0;
         }
         return prev - 1;
@@ -73,7 +71,7 @@ export function AdMobRewardedModal() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isAdModalVisible, onAdCompleted, addXPAndCoins, currentRewardCoins, progressAnim]);
+  }, [isAdModalVisible, onAdCompleted, currentRewardCoins, progressAnim]);
 
   if (!isAdModalVisible) return null;
 
