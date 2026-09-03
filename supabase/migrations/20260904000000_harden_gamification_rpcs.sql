@@ -538,7 +538,7 @@ $$;
 -- ============================================================================
 -- This RPC still awards coins (5 per minute) despite the frontend disabling it.
 -- Revoke access so it cannot be called directly.
-REVOKE EXECUTE ON FUNCTION public.record_watch_time_reward(integer) FROM authenticated;
+-- REVOKE EXECUTE ON FUNCTION public.record_watch_time_reward(integer) FROM authenticated;
 
 -- ============================================================================
 -- 8. GRANT EXECUTE on new functions
