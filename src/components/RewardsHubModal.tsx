@@ -73,6 +73,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     claimMission,
     unlockTheme,
     equipTheme,
+    addXPAndCoins,
   } = useGamification();
 
   const [activeTab, setActiveTab] = useState<
