@@ -459,7 +459,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                               <Text style={styles.streakDayNum}>D{day}</Text>
                             )}
                           </View>
-                          <Text style={styles.streakDayReward}>+{60 + day * 15} Coins</Text>
+                          <Text style={styles.streakDayReward}>+15 Coins</Text>
                         </View>
                       );
                     })}
@@ -476,7 +476,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     <Text style={styles.claimStreakBtnText}>
                       {hasClaimedDailyStreak
                         ? '✓ Today Claimed - Return Tomorrow!'
-                        : `Claim Today (+${60 + streakDays * 15} Coins, +${90 + streakDays * 20} XP)`}
+                        : `Claim Today (+15 Coins, +${150 + Math.min(streakDays, 7) * 50} XP)`}
                     </Text>
                   </Pressable>
                 </View>

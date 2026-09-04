@@ -52,4 +52,10 @@ end;
 $$;
 
 revoke execute on function public.before_user_created(jsonb) from public, anon, authenticated;
-grant execute on function public.before_user_created(jsonb) to supabase_auth_admin;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.before_user_created(jsonb) TO supabase_auth_admin;';
+  END IF;
+END
+$$;

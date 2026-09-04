@@ -28,12 +28,14 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_record_id ON public.audit_logs(record_
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Only service role can insert audit logs
+DROP POLICY IF EXISTS "audit_logs_insert_service_role" ON public.audit_logs;
 CREATE POLICY "audit_logs_insert_service_role"
   ON public.audit_logs FOR INSERT
   TO service_role
   WITH CHECK (true);
 
 -- Only service role can read audit logs (never directly from client)
+DROP POLICY IF EXISTS "audit_logs_select_service_role" ON public.audit_logs;
 CREATE POLICY "audit_logs_select_service_role"
   ON public.audit_logs FOR SELECT
   TO service_role

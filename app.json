@@ -31,6 +31,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.3.0"
+          }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#0B0D14",
@@ -55,9 +63,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "81668aec-c344-4b87-bd86-9ccc0d43ea9f"
+        "projectId": "5ed87f19-67d1-44dd-849d-ed39f301ea76"
       }
     },
-    "owner": "es334ra"
+    "owner": "e2sras-team"
   }
 }

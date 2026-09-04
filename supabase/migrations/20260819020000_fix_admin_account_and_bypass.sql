@@ -9,6 +9,7 @@
 -- Actual user creation and role assignment must be done securely via backend
 
 -- Ensure the profiles table enforces admin role constraints
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS check_role_values;
 ALTER TABLE public.profiles 
 ADD CONSTRAINT check_role_values CHECK (role IN ('user', 'admin'));
 

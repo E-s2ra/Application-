@@ -24,15 +24,13 @@ GRANT SELECT (
   description,
   image_url,
   episodes,
-  episode_links,
   genre,
   category,
   is_featured,
   created_at,
   updated_at,
   views,
-  rating,
-  published_at
+  rating
 )
   ON public.anime TO anon, authenticated;
 
@@ -41,8 +39,8 @@ GRANT SELECT (
 -- Edge Function using the service role, not via direct client GRANT.
 REVOKE INSERT, UPDATE ON TABLE public.anime FROM authenticated;
 
-GRANT INSERT (title, description, image_url, video_asset_key, episodes, episode_links, genre, category, is_featured, published_at)
+GRANT INSERT (title, description, image_url, video_asset_key, episodes, genre, category, is_featured)
   ON public.anime TO authenticated;
 
-GRANT UPDATE (title, description, image_url, video_asset_key, episodes, episode_links, genre, category, is_featured, published_at)
+GRANT UPDATE (title, description, image_url, video_asset_key, episodes, genre, category, is_featured)
   ON public.anime TO authenticated;
