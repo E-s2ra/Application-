@@ -38,6 +38,7 @@
           }
         }
       ],
+      ["./plugins/withKotlinVersion", "2.3.0"],
       [
         "expo-splash-screen",
         {
