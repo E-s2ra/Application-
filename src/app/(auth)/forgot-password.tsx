@@ -28,6 +28,7 @@ export default function ForgotPasswordScreen() {
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleReset = async () => {
     if (!email.trim()) {
@@ -47,11 +48,7 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-    Alert.alert(
-      'Reset Link Sent',
-      'If an AniFlix account uses this email, a secure password-reset link will arrive shortly. Check your inbox and spam folder.',
-      [{ text: 'OK', onPress: () => (router.canGoBack() ? router.back() : router.replace('/(auth)/login')) }],
-    );
+    setIsSuccess(true);
   };
 
   return (
@@ -84,33 +81,47 @@ export default function ForgotPasswordScreen() {
             </Text>
           </View>
 
-          <View style={styles.form}>
-            <TextInput
-              style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-              placeholder="Your Account Email"
-              placeholderTextColor={themeColors.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={setEmail}
-              editable={!loading}
-              returnKeyType="send"
-              onSubmitEditing={() => void handleReset()}
-            />
+          {isSuccess ? (
+            <View style={[styles.form, { alignItems: 'center', paddingVertical: 16 }]}>
+              <Text style={{ color: '#4ade80', fontSize: 16, fontWeight: '600', textAlign: 'center', marginBottom: 16, lineHeight: 24 }}>
+                Check your email to reset your password!
+              </Text>
+              <Pressable
+                style={[styles.button, { backgroundColor: themeColors.primary, width: '100%' }]}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/login'))}
+              >
+                <Text style={styles.buttonText}>Return to Login</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.form}>
+              <TextInput
+                style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
+                placeholder="Your Account Email"
+                placeholderTextColor={themeColors.textSecondary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={email}
+                onChangeText={setEmail}
+                editable={!loading}
+                returnKeyType="send"
+                onSubmitEditing={() => void handleReset()}
+              />
 
-            <Pressable
-              style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
-              onPress={handleReset}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Send Reset Link</Text>
-              )}
-            </Pressable>
-          </View>
+              <Pressable
+                style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
+                onPress={handleReset}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Send Reset Link</Text>
+                )}
+              </Pressable>
+            </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -63,11 +63,11 @@ export type UserBadge = {
 
 export const SPIN_REWARDS: SpinReward[] = [
   { id: '1', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FFB800' },
-  { id: '2', label: '50 XP', icon: '⚡', type: 'xp', amount: 50, color: '#00D2FF' },
-  { id: '3', label: '1-Day VIP Pass', icon: '👑', type: 'vip', amount: 1, color: '#9C27B0' },
+  { id: '2', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#00D2FF' },
+  { id: '3', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#9C27B0' },
   { id: '4', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FF9800' },
-  { id: '5', label: '100 XP', icon: '⚡', type: 'xp', amount: 100, color: '#00E676' },
-  { id: '6', label: '50 Coins', icon: '💎', type: 'coins', amount: 50, color: '#0356C5' },
+  { id: '5', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#00E676' },
+  { id: '6', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#0356C5' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -541,14 +541,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           const awardedXp = res.xp_awarded || 0;
           const newStreak = res.streak_days || streakDays + 1;
 
-          setCoins(res.new_coins);
-          setXp(res.new_xp);
+          const updatedCoins = res.new_coins ?? (coins + awardedCoins);
+          const updatedXp = res.new_xp ?? (xp + awardedXp);
+
           setStreakDays(newStreak);
+          setCoins(updatedCoins);
+          setXp(updatedXp);
           setHasClaimedDailyStreak(true);
 
           persist({
-            coins: res.new_coins,
-            xp: res.new_xp,
+            coins: updatedCoins,
+            xp: updatedXp,
             streakDays: newStreak,
             hasClaimedDailyStreak: true,
           }, true);
@@ -561,7 +564,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
 
     // Guest fallback (matches backend math exactly)
-    const rewardCoins = 15;
+    const rewardCoins = 10;
     const rewardXP = 150 + Math.min(streakDays, 7) * 50;
     const newStreak = streakDays + 1;
     const newCoins = coins + rewardCoins;
@@ -591,16 +594,18 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         const { data, error } = await supabase.rpc('spin_lucky_wheel');
         if (!error && data && (data as any).success) {
           const res = data as any;
-          const rewardId = String(res.reward_id || '1');
-          const serverReward = SPIN_REWARDS.find((r) => r.id === rewardId) || SPIN_REWARDS[0];
+          const serverReward = SPIN_REWARDS.find((r) => r.type === res.reward_type && r.amount === res.reward_value) || SPIN_REWARDS[0];
 
-          setCoins(res.new_coins ?? coins);
-          setXp(res.new_xp ?? xp);
+          const updatedCoins = res.new_coins ?? (coins + (serverReward.type === 'coins' ? serverReward.amount : 0));
+          const updatedXp = res.new_xp ?? (xp + (serverReward.type === 'xp' ? serverReward.amount : 0));
+
+          setCoins(updatedCoins);
+          setXp(updatedXp);
           setCanSpinWheel(false);
 
           persist({
-            coins: res.new_coins ?? coins,
-            xp: res.new_xp ?? xp,
+            coins: updatedCoins,
+            xp: updatedXp,
             canSpinWheel: false,
           }, true);
 
@@ -646,13 +651,16 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
         if (!error && data && (data as any).success) {
           const res = data as any;
-          setCoins(res.new_coins);
-          setXp(res.new_xp);
+          const updatedCoins = res.new_coins ?? (coins + mission.rewardCoins);
+          const updatedXp = res.new_xp ?? (xp + mission.rewardXP);
+          
+          setCoins(updatedCoins);
+          setXp(updatedXp);
           const updatedMissions = missions.map((m) =>
             m.id === missionId ? { ...m, claimed: true } : m
           );
           setMissions(updatedMissions);
-          persist({ coins: res.new_coins, xp: res.new_xp, missions: updatedMissions });
+          persist({ coins: updatedCoins, xp: updatedXp, missions: updatedMissions });
           return;
         } else if (data && (data as any).reason === 'already_claimed') {
           // Already claimed server-side — update local state to match
@@ -816,9 +824,15 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         const { data, error } = await supabase.rpc('record_watch_time_reward', { p_minutes: minutes });
         if (!error && data && (data as any).success) {
           const res = data as any;
-          setCoins(res.new_coins);
-          setXp(res.new_xp);
-          persist({ coins: res.new_coins, xp: res.new_xp });
+          const awardedCoins = res.coins_awarded || 0;
+          const awardedXp = res.xp_awarded || 0;
+          
+          const updatedCoins = res.new_coins || coins + awardedCoins;
+          const updatedXp = res.new_xp || xp + awardedXp;
+
+          setCoins(updatedCoins);
+          setXp(updatedXp);
+          persist({ coins: updatedCoins, xp: updatedXp });
           return { coins: res.coins_awarded || 0, xp: res.xp_awarded || 0 };
         }
         console.warn('record_watch_time_reward error:', error?.message);
