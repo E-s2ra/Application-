@@ -14,9 +14,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
-import { ShieldCheck, ArrowLeft } from 'lucide-react-native';
+import { ShieldCheck, ArrowLeft, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useToast } from '@/hooks/useToast';
 import { isValidEmail, normalizeEmail } from '@/lib/password';
 
 export default function ForgotPasswordScreen() {
@@ -30,25 +31,42 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { showError, showSuccess } = useToast();
+
   const handleReset = async () => {
+    setErrorMessage(null);
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address.');
+      const msg = 'Please enter your email address.';
+      setErrorMessage(msg);
+      showError(msg);
       return;
     }
     if (!isValidEmail(normalizeEmail(email))) {
-      Alert.alert('Check your email', 'Enter a valid email address.');
+      const msg = 'Enter a valid email address.';
+      setErrorMessage(msg);
+      showError(msg);
       return;
     }
     setLoading(true);
-    const { error } = await resetPassword(normalizeEmail(email));
-    setLoading(false);
+    try {
+      const { error } = await resetPassword(normalizeEmail(email));
+      if (error) {
+        setErrorMessage(error);
+        showError(error);
+        setLoading(false);
+        return;
+      }
 
-    if (error) {
-      Alert.alert('Error', error);
-      return;
+      setIsSuccess(true);
+      showSuccess('Check your email to reset your password!');
+    } catch (err: any) {
+      const msg = err.message || 'An unexpected error occurred. Please try again.';
+      setErrorMessage(msg);
+      showError(msg);
+    } finally {
+      setLoading(false);
     }
-
-    setIsSuccess(true);
   };
 
   return (
@@ -95,6 +113,13 @@ export default function ForgotPasswordScreen() {
             </View>
           ) : (
             <View style={styles.form}>
+              {errorMessage && (
+                <View style={styles.errorContainer}>
+                  <AlertCircle color="#ef4444" size={16} />
+                  <Text style={styles.errorText}>{errorMessage}</Text>
+                </View>
+              )}
+
               <TextInput
                 style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
                 placeholder="Your Account Email"
@@ -211,5 +236,20 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+    gap: 8,
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,
+    flex: 1,
   },
 });

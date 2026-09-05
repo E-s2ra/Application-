@@ -263,7 +263,7 @@ export default function WatchScreen() {
   }, [anime, selectedEpisode]);
 
   const isMovie = anime?.category === 'Movies';
-  const unlockCost = isMovie ? 125 : 80;
+  const unlockCost = isMovie ? 120 : 80;
   const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
   const isUnlocked = isVIP || (unlockKey && unlockedMediaIds.includes(unlockKey));
 
@@ -275,7 +275,7 @@ export default function WatchScreen() {
     const success = await unlockMedia(anime.id, isMovie ? undefined : selectedEpisode, unlockCost);
     setIsUnlocking(false);
     if (!success) {
-      showSuccess('Not enough coins to unlock!');
+      showError('Server error: Failed to unlock media.');
     }
   };
 

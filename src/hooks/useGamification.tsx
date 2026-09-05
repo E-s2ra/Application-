@@ -569,7 +569,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
 
     // Guest fallback (matches backend math exactly)
-    const rewardCoins = 10;
+    const rewardCoins = 15;
     const rewardXP = 150 + Math.min(streakDays, 7) * 50;
     const newStreak = streakDays + 1;
     const newCoins = coins + rewardCoins;
