@@ -431,7 +431,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
             // Fetch Profile from Supabase
             const { data: profile } = await supabase
               .from('profiles')
-              .select('coins, xp, level, streak_days, is_vip, vip_expires_at')
+              .select('coins, xp, level, streak_days, is_vip, vip_expires_at, unlocked_media_ids')
               .eq('id', user.id)
               .maybeSingle();
 
@@ -440,6 +440,11 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
               if (profile.xp !== undefined && profile.xp !== null) setXp(profile.xp);
               if (profile.streak_days !== undefined && profile.streak_days !== null)
                 setStreakDays(profile.streak_days);
+
+              // Load unlocked media from server — authoritative over local cache
+              if (Array.isArray((profile as any).unlocked_media_ids)) {
+                setUnlockedMediaIds((profile as any).unlocked_media_ids);
+              }
 
               // Always authoritatively set VIP based on DB — even if is_vip=false
               if (profile.is_vip === true && profile.vip_expires_at) {
@@ -731,7 +736,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return true;
   };
 
-  // FIX CRITICAL-07: Server-Authoritative Media Unlock via deduct_coins RPC
+  // FIX CRITICAL-07: Server-Authoritative Media Unlock via unlock_media_with_coins RPC
   const unlockMedia = async (mediaId: string, episodeNum: number | undefined, cost: number): Promise<boolean> => {
     if (coins < cost) return false;
     const unlockKey = episodeNum !== undefined ? `${mediaId}_ep_${episodeNum}` : mediaId;
@@ -739,22 +744,23 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
-        const { data, error } = await supabase.rpc('deduct_coins', { p_amount: cost });
+        const { data, error } = await supabase.rpc('unlock_media_with_coins', { p_unlock_key: unlockKey, p_cost: cost });
         if (!error && data && (data as any).success) {
           const res = data as any;
           const remaining = res.remaining_coins ?? (coins - cost);
-          const newUnlocked = [...unlockedMediaIds, unlockKey];
+          // Use server-returned list if available, otherwise append locally
+          const serverUnlocked = Array.isArray(res.unlocked_media_ids) ? res.unlocked_media_ids : [...unlockedMediaIds, unlockKey];
 
           setCoins(remaining);
-          setUnlockedMediaIds(newUnlocked);
-          persist({ coins: remaining, unlockedMediaIds: newUnlocked });
+          setUnlockedMediaIds(serverUnlocked);
+          persist({ coins: remaining, unlockedMediaIds: serverUnlocked });
           return true;
         }
         // RPC failed — do NOT fallback to local deduction for authenticated users
-        console.warn('deduct_coins RPC failed:', error?.message || 'Unknown error');
+        console.warn('unlock_media_with_coins RPC failed:', error?.message || 'Unknown error');
         return false;
       } catch (err) {
-        console.warn('deduct_coins error:', err);
+        console.warn('unlock_media_with_coins error:', err);
         return false;
       }
     }
