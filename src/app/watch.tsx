@@ -263,7 +263,8 @@ export default function WatchScreen() {
   }, [anime, selectedEpisode]);
 
   const isMovie = anime?.category === 'Movies' || anime?.category === 'Anime Movies';
-  const unlockCost = isMovie ? 125 : 80;
+  const isKDrama = anime?.category === 'K-Drama';
+  const unlockCost = isMovie ? 125 : isKDrama ? 100 : 80;
   const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
   const isUnlocked = isVIP || (unlockKey && unlockedMediaIds.includes(unlockKey));
 
