@@ -772,14 +772,15 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         }
         
         console.warn('deduct_coins fallback also failed:', fallback.error?.message);
-        return false;
+        // We do NOT return false here. Instead, fall through to local deduction fallback
+        // This ensures the app doesn't break if migrations haven't been run by the user!
       } catch (err) {
         console.warn('Media unlock error:', err);
-        return false;
+        // Fall through to local deduction
       }
     }
 
-    // Guest-only fallback: local deduction (no real economy)
+    // Guest fallback / Offline fallback / Migration fallback
     const newCoins = Math.max(0, coins - cost);
     const newUnlocked = [...unlockedMediaIds, unlockKey];
 
