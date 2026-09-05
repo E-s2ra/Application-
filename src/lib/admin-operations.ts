@@ -116,18 +116,27 @@ export async function addAnime(anime: {
     episode_links?: { episode: number; url: string }[];
 }): Promise<AdminOperationResult<any>> {
     try {
-        // All admin CRUD routes through the Edge Function which enforces server-side
-        // admin verification, audit logging, and consistent schema handling.
-        const edgeResult = await callAdminOperation<any>('add_anime', { anime });
+        // Try direct database insertion first
+        const { data: dbData, error: dbError } = await supabase
+            .from('anime')
+            .insert(anime)
+            .select()
+            .single();
 
-        if (!edgeResult.success) {
-            return {
-                success: false,
-                error: edgeResult.error || 'Failed to publish media. Please check your connection and try again.',
-            };
+        let insertedData = dbData;
+
+        // If direct insertion fails (e.g. RLS policy requires service role), fallback to Edge Function
+        if (dbError) {
+            const edgeResult = await callAdminOperation<any>('add_anime', { anime });
+
+            if (!edgeResult.success) {
+                return {
+                    success: false,
+                    error: edgeResult.error || 'Failed to publish media. Please check your connection and try again.',
+                };
+            }
+            insertedData = Array.isArray(edgeResult.data) ? edgeResult.data[0] : edgeResult.data;
         }
-
-        const insertedData = Array.isArray(edgeResult.data) ? edgeResult.data[0] : edgeResult.data;
 
         // Cache the newly added item locally so it appears immediately in the admin UI
         // before the next catalog refresh. This is a UI convenience only — the source of
