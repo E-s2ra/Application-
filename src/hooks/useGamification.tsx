@@ -748,7 +748,6 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         if (!error && data && (data as any).success) {
           const res = data as any;
           const remaining = res.remaining_coins ?? (coins - cost);
-          // Use server-returned list if available, otherwise append locally
           const serverUnlocked = Array.isArray(res.unlocked_media_ids) ? res.unlocked_media_ids : [...unlockedMediaIds, unlockKey];
 
           setCoins(remaining);
@@ -756,11 +755,26 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           persist({ coins: remaining, unlockedMediaIds: serverUnlocked });
           return true;
         }
-        // RPC failed — do NOT fallback to local deduction for authenticated users
-        console.warn('unlock_media_with_coins RPC failed:', error?.message || 'Unknown error');
+        
+        console.warn('unlock_media_with_coins RPC failed, falling back to deduct_coins:', error?.message);
+        
+        // Fallback to older deduct_coins RPC if the new one isn't deployed yet
+        const fallback = await supabase.rpc('deduct_coins', { p_amount: cost });
+        if (!fallback.error && fallback.data && (fallback.data as any).success) {
+          const fallbackRes = fallback.data as any;
+          const remaining = fallbackRes.remaining_coins ?? (coins - cost);
+          const newUnlocked = [...unlockedMediaIds, unlockKey];
+
+          setCoins(remaining);
+          setUnlockedMediaIds(newUnlocked);
+          persist({ coins: remaining, unlockedMediaIds: newUnlocked });
+          return true;
+        }
+        
+        console.warn('deduct_coins fallback also failed:', fallback.error?.message);
         return false;
       } catch (err) {
-        console.warn('unlock_media_with_coins error:', err);
+        console.warn('Media unlock error:', err);
         return false;
       }
     }
