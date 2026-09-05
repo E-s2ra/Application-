@@ -62,12 +62,12 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '10 Coins', icon: '💰', type: 'coins', amount: 10, color: '#FFB800' },
+  { id: '1', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FFB800' },
   { id: '2', label: '50 XP', icon: '⚡', type: 'xp', amount: 50, color: '#00D2FF' },
   { id: '3', label: '1-Day VIP Pass', icon: '👑', type: 'vip', amount: 1, color: '#9C27B0' },
-  { id: '4', label: '10 Coins', icon: '💰', type: 'coins', amount: 10, color: '#FF9800' },
+  { id: '4', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FF9800' },
   { id: '5', label: '100 XP', icon: '⚡', type: 'xp', amount: 100, color: '#00E676' },
-  { id: '6', label: '10 Coins', icon: '💎', type: 'coins', amount: 10, color: '#0356C5' },
+  { id: '6', label: '50 Coins', icon: '💎', type: 'coins', amount: 50, color: '#0356C5' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -240,18 +240,6 @@ export const DEFAULT_BADGES: UserBadge[] = [
 ];
 
 const DEFAULT_MISSIONS: Mission[] = [
-  {
-    id: 'm-daily-1',
-    title: 'Daily Cinema Explorer',
-    description: 'Stream any movie or anime for 10+ minutes',
-    rewardCoins: 10,
-    rewardXP: 50,
-    target: 1,
-    current: 1,
-    completed: true,
-    claimed: false,
-    category: 'daily',
-  },
   {
     id: 'm-daily-2',
     title: 'Critique & Rate',
