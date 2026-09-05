@@ -192,12 +192,6 @@ export default function SearchScreen() {
               <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
             </View>
           </View>
-
-          <View style={styles.epBadge}>
-            <Text style={styles.epBadgeText}>
-              {item.episodes > 1 ? `${item.episodes} EPS` : 'MOVIE'}
-            </Text>
-          </View>
         </View>
 
         <View style={styles.standardCardInfo}>
