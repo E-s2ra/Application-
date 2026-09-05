@@ -559,13 +559,26 @@ export default function HomeScreen() {
                         </View>
 
                         <Pressable
-                          style={[styles.cardHeartBtn, { backgroundColor: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.3)' }]}
+                          style={[
+                            styles.cardHeartBtn, 
+                            { 
+                              backgroundColor: isFavorite(item.animeId) ? 'rgba(3, 86, 197, 0.3)' : 'rgba(0,0,0,0.5)', 
+                              borderColor: isFavorite(item.animeId) ? themeColors.primary : 'rgba(255,255,255,0.2)' 
+                            }
+                          ]}
                           onPress={(e) => {
                             e.stopPropagation?.();
-                            removeFromHistory(item.animeId);
+                            const fullItem = allMedia.find(a => a.id === item.animeId);
+                            if (fullItem) {
+                              toggleFavorite(fullItem);
+                            }
                           }}
                         >
-                          <Trash2 color="#FF4D4D" size={14} />
+                          <Heart 
+                            color={isFavorite(item.animeId) ? themeColors.primary : '#FFFFFF'} 
+                            fill={isFavorite(item.animeId) ? themeColors.primary : 'rgba(0,0,0,0.4)'}
+                            size={14} 
+                          />
                         </Pressable>
 
                         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, backgroundColor: 'rgba(255,255,255,0.2)' }}>
