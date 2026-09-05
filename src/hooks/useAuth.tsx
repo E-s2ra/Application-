@@ -285,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: { full_name: fullName.trim() },
         emailRedirectTo: Platform.OS === 'web' && typeof window !== 'undefined' 
           ? `${window.location.origin}/verified` 
-          : Linking.createURL('/verified')
+          : 'aniflix://verified'
       },
     });
     
@@ -309,7 +309,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
-    let redirectTo = Linking.createURL('/reset-password');
+    let redirectTo = 'aniflix://reset-password';
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       redirectTo = `${window.location.origin}/reset-password`;
     }
