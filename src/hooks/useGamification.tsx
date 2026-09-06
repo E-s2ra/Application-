@@ -317,6 +317,7 @@ type GamificationContextType = {
   activateVIP: (days: number) => Promise<void>;
   awardWatchTimeReward: (minutes: number) => Promise<{ coins: number; xp: number }>;
   addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
+  refreshGamification: () => Promise<void>;
   unlockedMediaIds: string[];
   unlockMedia: (mediaId: string, episodeNum: number | undefined, cost: number, category?: string) => Promise<boolean>;
 };
@@ -331,6 +332,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const [streakDays, setStreakDays] = useState(0);
   const [hasClaimedDailyStreak, setHasClaimedDailyStreak] = useState(false);
   const [canSpinWheel, setCanSpinWheel] = useState(true);
+  const [isVipFlag, setIsVipFlag] = useState(false);
   const [vipDaysRemaining, setVipDaysRemaining] = useState(0);
   const [vipExpiresAt, setVipExpiresAt] = useState<string | null>(null);
   const [activeEventIndex, setActiveEventIndex] = useState(0);
@@ -344,7 +346,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   ]);
 
   const activeEvent = SEASONAL_EVENTS[activeEventIndex] || SEASONAL_EVENTS[0];
-  const isVIP = vipDaysRemaining > 0;
+  const isVIP = isVipFlag || vipDaysRemaining > 0 || (vipExpiresAt !== null && new Date(vipExpiresAt).getTime() > Date.now());
 
   // Level Computation: Every 300 XP = 1 Level
   const level = Math.floor(xp / 300) + 1;
@@ -446,14 +448,40 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
                 setUnlockedMediaIds((profile as any).unlocked_media_ids);
               }
 
-              // Always authoritatively set VIP based on DB — even if is_vip=false
-              if (profile.is_vip === true && profile.vip_expires_at) {
+              // Authoritatively set VIP based on DB (supporting both explicit expiration dates & perpetual VIP)
+              if (profile.is_vip === true) {
+                setIsVipFlag(true);
+                if (!profile.vip_expires_at) {
+                  // Perpetual / Lifetime VIP (e.g. granted manually by admin without explicit expiry)
+                  setVipDaysRemaining(999);
+                  setVipExpiresAt(null);
+                } else {
+                  const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
+                  if (diffMs > 0) {
+                    const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                    setVipDaysRemaining(days);
+                    setVipExpiresAt(profile.vip_expires_at);
+                  } else {
+                    // Expiration date has passed
+                    setIsVipFlag(false);
+                    setVipDaysRemaining(0);
+                    setVipExpiresAt(null);
+                  }
+                }
+              } else if (profile.vip_expires_at) {
                 const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
-                const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-                setVipDaysRemaining(days);
-                setVipExpiresAt(days > 0 ? profile.vip_expires_at : null);
+                if (diffMs > 0) {
+                  const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                  setIsVipFlag(true);
+                  setVipDaysRemaining(days);
+                  setVipExpiresAt(profile.vip_expires_at);
+                } else {
+                  setIsVipFlag(false);
+                  setVipDaysRemaining(0);
+                  setVipExpiresAt(null);
+                }
               } else {
-                // Not VIP or no expiry — clear any stale local state
+                setIsVipFlag(false);
                 setVipDaysRemaining(0);
                 setVipExpiresAt(null);
               }
@@ -883,6 +911,65 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
+  const refreshGamification = async () => {
+    if (!user?.id || user.id.startsWith('guest-')) return;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('coins, xp, level, streak_days, is_vip, vip_expires_at, unlocked_media_ids')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        if (profile.coins !== undefined && profile.coins !== null) setCoins(profile.coins);
+        if (profile.xp !== undefined && profile.xp !== null) setXp(profile.xp);
+        if (profile.streak_days !== undefined && profile.streak_days !== null)
+          setStreakDays(profile.streak_days);
+
+        if (Array.isArray((profile as any).unlocked_media_ids)) {
+          setUnlockedMediaIds((profile as any).unlocked_media_ids);
+        }
+
+        if (profile.is_vip === true) {
+          setIsVipFlag(true);
+          if (!profile.vip_expires_at) {
+            setVipDaysRemaining(999);
+            setVipExpiresAt(null);
+          } else {
+            const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
+            if (diffMs > 0) {
+              const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+              setVipDaysRemaining(days);
+              setVipExpiresAt(profile.vip_expires_at);
+            } else {
+              setIsVipFlag(false);
+              setVipDaysRemaining(0);
+              setVipExpiresAt(null);
+            }
+          }
+        } else if (profile.vip_expires_at) {
+          const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
+          if (diffMs > 0) {
+            const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            setIsVipFlag(true);
+            setVipDaysRemaining(days);
+            setVipExpiresAt(profile.vip_expires_at);
+          } else {
+            setIsVipFlag(false);
+            setVipDaysRemaining(0);
+            setVipExpiresAt(null);
+          }
+        } else {
+          setIsVipFlag(false);
+          setVipDaysRemaining(0);
+          setVipExpiresAt(null);
+        }
+      }
+    } catch (e) {
+      console.warn('[useGamification] refreshGamification error:', e);
+    }
+  };
+
   return (
     <GamificationContext.Provider
       value={{
@@ -912,6 +999,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         activateVIP,
         awardWatchTimeReward,
         addXPAndCoins,
+        refreshGamification,
         unlockedMediaIds,
         unlockMedia,
       }}
