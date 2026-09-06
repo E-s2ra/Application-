@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
-import { Settings, Check, X, Shield, Gauge, Volume2, Globe, Sparkles } from 'lucide-react-native';
+import { Settings, Check, X, Crown, Lock } from 'lucide-react-native';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
+
+// Qualities that require VIP
+const VIP_ONLY_QUALITIES = ['4K Ultra HD', '4K', '2160p', '1080p', 'Full HD', '1080'];
 
 interface PlayerSettingsModalProps {
   visible: boolean;
@@ -15,7 +18,10 @@ interface PlayerSettingsModalProps {
   availableAudioTracks?: string[];
   activeAudio?: string;
   onSelectAudio?: (a: string) => void;
+  isVIP?: boolean;
+  onOpenVipModal?: () => void;
 }
+
 
 const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -30,6 +36,8 @@ export function PlayerSettingsModal({
   availableAudioTracks = [],
   activeAudio = 'Default Audio',
   onSelectAudio,
+  isVIP = false,
+  onOpenVipModal,
 }: PlayerSettingsModalProps) {
   const themeColors = useTheme();
   const [quality, setQuality] = useState<string>(activeQuality);
@@ -45,7 +53,15 @@ export function PlayerSettingsModal({
     ? availableAudioTracks
     : ['Default Audio'];
 
+  const isVipQuality = (q: string) =>
+    VIP_ONLY_QUALITIES.some(vq => q.toLowerCase().includes(vq.toLowerCase()));
+
   const handleQualityChange = (q: string) => {
+    if (isVipQuality(q) && !isVIP) {
+      // Non-VIP: open VIP modal instead
+      onOpenVipModal?.();
+      return;
+    }
     setQuality(q);
     if (onSelectQuality) onSelectQuality(q);
   };
@@ -80,6 +96,7 @@ export function PlayerSettingsModal({
             <View style={styles.optionsWrap}>
               {qualityList.map((q) => {
                 const isSelected = quality === q || (q.startsWith('Auto') && quality === 'Auto');
+                const isVipLocked = isVipQuality(q) && !isVIP;
                 return (
                   <Pressable
                     key={q}
@@ -88,18 +105,35 @@ export function PlayerSettingsModal({
                       styles.optionItem,
                       {
                         backgroundColor: isSelected ? 'rgba(3, 86, 197, 0.15)' : themeColors.backgroundCard,
-                        borderColor: isSelected ? themeColors.primary : themeColors.border,
+                        borderColor: isVipLocked ? '#FFB800' : isSelected ? themeColors.primary : themeColors.border,
                       },
                     ]}
                   >
-                    <Text style={[styles.optionText, { color: isSelected ? themeColors.primary : themeColors.text, fontWeight: isSelected ? '800' : '600' }]}>
+                    <Text style={[styles.optionText, { color: isVipLocked ? '#FFB800' : isSelected ? themeColors.primary : themeColors.text, fontWeight: isSelected ? '800' : '600' }]}>
                       {q}
                     </Text>
-                    {isSelected && <Check size={16} color={themeColors.primary} />}
+                    {isVipLocked ? (
+                      <View style={styles.vipLockBadge}>
+                        <Crown size={11} color="#FFB800" />
+                        <Text style={styles.vipLockText}>VIP</Text>
+                      </View>
+                    ) : isSelected ? (
+                      <Check size={16} color={themeColors.primary} />
+                    ) : null}
                   </Pressable>
                 );
               })}
             </View>
+
+            {/* VIP quality note for non-VIP users */}
+            {!isVIP && (
+              <Pressable onPress={onOpenVipModal} style={styles.vipQualityNote}>
+                <Crown size={12} color="#FFB800" />
+                <Text style={styles.vipQualityNoteText}>
+                  Upgrade to VIP for 4K Ultra HD & Full HD 1080p
+                </Text>
+              </Pressable>
+            )}
 
             <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
@@ -251,5 +285,37 @@ const styles = StyleSheet.create({
   },
   speedText: {
     fontSize: 12,
+  },
+  vipLockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255,184,0,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,184,0,0.5)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  vipLockText: {
+    color: '#FFB800',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  vipQualityNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,184,0,0.08)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginTop: 4,
+  },
+  vipQualityNoteText: {
+    color: '#FFB800',
+    fontSize: 11,
+    fontWeight: '700',
+    flex: 1,
   },
 });

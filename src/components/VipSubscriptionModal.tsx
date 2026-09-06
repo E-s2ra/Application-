@@ -168,13 +168,25 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
                 <Text style={styles.benefitText}>
-                  {isKu ? '١٠٠٪ بێ هیچ ڕیکلامێک و پەخشی ڕاستەوخۆ' : '100% Commercial-Free & Ad-Free Streaming'}
+                  {isKu ? '١٠٠٪ بێ هیچ ڕیکلامێک و پەخشی ڕاستەوخۆ' : '100% Ad-Free — No interruptions, ever'}
+                </Text>
+              </View>
+              <View style={styles.benefitRow}>
+                <Check size={16} color="#FFB800" />
+                <Text style={[styles.benefitText, { color: '#FFB800' }]}>
+                  {isKu ? '🎬 کوالیتی 4K Ultra HD — بە بەرزترین خێرایی' : '🎬 4K Ultra HD Quality (VIP Exclusive)'}
+                </Text>
+              </View>
+              <View style={styles.benefitRow}>
+                <Check size={16} color="#FFB800" />
+                <Text style={[styles.benefitText, { color: '#FFB800' }]}>
+                  {isKu ? '📺 Full HD 1080p — کوالیتی بەرز' : '📺 Full HD 1080p Quality (VIP Exclusive)'}
                 </Text>
               </View>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
                 <Text style={styles.benefitText}>
-                  {isKu ? 'کوالیتی بێ وێنەی Ultra HD 4K بە بەرزترین خێرایی' : 'Ultra HD 4K & Uncapped Master Bitrate'}
+                  {isKu ? '🔓 گشت ناوەرۆکەکان کراوەن — بێ کۆین' : '🔓 All Content Unlocked — No coins needed'}
                 </Text>
               </View>
               <View style={styles.benefitRow}>

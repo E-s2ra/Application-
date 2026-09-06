@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
-import { CheckCircle2, Loader2 } from 'lucide-react-native';
+import { CheckCircle2, Loader2, ArrowRight, LogIn } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function VerifiedScreen() {
@@ -10,6 +10,7 @@ export default function VerifiedScreen() {
   const themeColors = useTheme();
   const { session } = useAuth();
   const [dots, setDots] = useState('');
+  const [showFallback, setShowFallback] = useState(false);
 
   // Animate dots while waiting for redirect
   useEffect(() => {
@@ -19,12 +20,20 @@ export default function VerifiedScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  // Show fallback navigation button after 3 seconds if no session is active
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!session) setShowFallback(true);
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, [session]);
+
   // Wait for the auth session to establish, then redirect to tabs
   useEffect(() => {
     if (session) {
       const timer = setTimeout(() => {
         router.replace('/(tabs)');
-      }, 1500);
+      }, 1200);
       return () => clearTimeout(timer);
     }
   }, [session, router]);
@@ -37,12 +46,33 @@ export default function VerifiedScreen() {
         <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
           Your account has been successfully verified.
         </Text>
-        <View style={styles.loadingContainer}>
-          <Loader2 color={themeColors.textSecondary} size={20} style={styles.spinner} />
-          <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>
-            Redirecting you to the app{dots}
-          </Text>
-        </View>
+
+        {!showFallback || session ? (
+          <View style={styles.loadingContainer}>
+            <Loader2 color={themeColors.textSecondary} size={20} style={styles.spinner} />
+            <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>
+              Redirecting you to the app{dots}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.actionContainer}>
+            <Pressable
+              style={[styles.button, { backgroundColor: themeColors.primary }]}
+              onPress={() => router.replace('/(auth)/login')}
+            >
+              <LogIn color="#FFF" size={18} />
+              <Text style={styles.buttonText}>Sign In to Account</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.secondaryButton, { borderColor: themeColors.border }]}
+              onPress={() => router.replace('/(tabs)')}
+            >
+              <Text style={[styles.secondaryButtonText, { color: themeColors.textSecondary }]}>Continue to Home</Text>
+              <ArrowRight color={themeColors.textSecondary} size={16} />
+            </Pressable>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -64,19 +94,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
+    marginBottom: 28,
+    lineHeight: 22,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -88,6 +118,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  spinner: {
+  spinner: {},
+  actionContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  button: {
+    height: 48,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

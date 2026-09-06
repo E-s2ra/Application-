@@ -263,7 +263,8 @@ export default function WatchScreen() {
   }, [anime, selectedEpisode]);
 
   const isMovie = anime?.category === 'Movies' || anime?.category === 'Anime Movies';
-  const isKDrama = anime?.category === 'K-Drama';
+  const isKDrama = anime?.category === 'K-Drama' || anime?.category === 'Drama';
+  const animeCategory = anime?.category ?? 'Anime';
   const unlockCost = isMovie ? 125 : isKDrama ? 100 : 80;
   const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
   const isUnlocked = isVIP || (unlockKey && unlockedMediaIds.includes(unlockKey));
@@ -273,10 +274,11 @@ export default function WatchScreen() {
   const handleUnlockMedia = async () => {
     if (!anime) return;
     setIsUnlocking(true);
-    const success = await unlockMedia(anime.id, isMovie ? undefined : selectedEpisode, unlockCost);
+    // Pass category so server reads the authoritative cost from content_cost_registry
+    const success = await unlockMedia(anime.id, isMovie ? undefined : selectedEpisode, unlockCost, animeCategory);
     setIsUnlocking(false);
     if (!success) {
-      showError('Server error: Failed to unlock media.');
+      showError('Not enough coins or server error. Try watching an ad to earn more!');
     }
   };
 
@@ -400,46 +402,101 @@ export default function WatchScreen() {
           <View style={[styles.playerWrapper, isLayoutFullscreen && styles.playerWrapperFullscreen]}>
             <View style={[styles.videoBox, (isDesktop || isTablet) && styles.videoBoxDesktop, isLayoutFullscreen && styles.videoBoxFullscreen]}>
               {!isUnlocked && anime ? (
+                // ═══════════════════════════════════════════════
+                // PREMIUM LOCK PAYWALL OVERLAY
+                // ═══════════════════════════════════════════════
                 <View style={styles.paywallOverlay}>
+                  {/* Blurred background thumbnail */}
+                  {anime.image_url && (
+                    <Image
+                      source={{ uri: anime.image_url }}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode="cover"
+                      blurRadius={8}
+                    />
+                  )}
+                  {/* Dark gradient veil */}
+                  <View style={styles.paywallVeil} />
+
                   <View style={styles.paywallContent}>
+                    {/* Lock icon */}
                     <View style={styles.lockIconCircle}>
-                      <Lock color="#FFB800" size={32} />
+                      <Lock color="#FFB800" size={30} />
                     </View>
-                    <Text style={styles.paywallTitle}>Unlock {isMovie ? 'Movie' : `Episode ${selectedEpisode}`}</Text>
-                    <Text style={styles.paywallDesc}>
-                      {isMovie 
-                        ? 'Unlock this full 4K movie permanently to watch anytime.' 
-                        : 'Unlock this episode permanently to watch anytime.'}
+
+                    {/* Title */}
+                    <Text style={styles.paywallTitle}>
+                      {isMovie
+                        ? `🎬 ${anime.title}`
+                        : `📺 Episode ${selectedEpisode} — ${anime.title}`}
                     </Text>
-                    
+
+                    {/* Category pill */}
+                    <View style={styles.paywallCategoryPill}>
+                      <Text style={styles.paywallCategoryText}>
+                        {isMovie ? '🎥 Movie' : isKDrama ? '🇰🇷 K-Drama / Drama' : '⚡ Anime'}
+                      </Text>
+                    </View>
+
+                    {/* Cost badge */}
+                    <View style={styles.paywallCostRow}>
+                      <Text style={styles.paywallCostLabel}>Unlock Cost</Text>
+                      <View style={styles.paywallCostBadge}>
+                        <Text style={styles.paywallCostAmount}>{unlockCost} 💰</Text>
+                      </View>
+                    </View>
+
+                    {/* Coin balance */}
+                    <Text style={styles.paywallBalance}>
+                      Your balance: <Text style={{ color: coins >= unlockCost ? '#00E676' : '#FF5252' }}>{coins} 💰</Text>
+                    </Text>
+
+                    {/* Primary action */}
                     {coins >= unlockCost ? (
-                      <Pressable 
-                        style={styles.unlockBtn} 
+                      <Pressable
+                        style={styles.unlockBtn}
                         onPress={handleUnlockMedia}
                         disabled={isUnlocking}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Unlock for ${unlockCost} coins`}
                       >
                         <Text style={styles.unlockBtnText}>
-                          {isUnlocking ? 'Unlocking...' : `Unlock Now (${unlockCost} 💰)`}
+                          {isUnlocking ? '⏳ Unlocking...' : `🔓 Unlock for ${unlockCost} 💰`}
                         </Text>
                       </Pressable>
                     ) : (
-                      <View style={{ width: '100%', alignItems: 'center', gap: 12 }}>
-                        <Pressable 
-                          style={[styles.unlockBtn, styles.unlockBtnDisabled]} 
+                      <>
+                        <Pressable
+                          style={[styles.unlockBtn, styles.unlockBtnDisabled]}
                           disabled={true}
                         >
                           <Text style={styles.unlockBtnTextDisabled}>
-                            Not Enough Coins ({coins}/{unlockCost})
+                            🔒 Need {unlockCost - coins} more coins
                           </Text>
                         </Pressable>
-                        <Pressable 
-                          style={styles.earnMoreBtn} 
-                          onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
+
+                        {/* Earn coins via ad */}
+                        <Pressable
+                          style={styles.earnMoreBtn}
+                          onPress={() => showRewardedAd({
+                            rewardCoins: 12,
+                            rewardType: 'coins',
+                            onRewarded: () => showSuccess('You earned 12 💰 — keep watching ads!'),
+                          })}
+                          accessibilityRole="button"
+                          accessibilityLabel="Watch an ad to earn 12 coins"
                         >
-                          <Text style={styles.earnMoreBtnText}>Watch Ad to Earn +12 💰</Text>
+                          <Text style={styles.earnMoreBtnText}>📺 Watch Ad → Earn +12 💰</Text>
                         </Pressable>
-                      </View>
+                      </>
                     )}
+
+                    {/* VIP upsell strip */}
+                    <View style={styles.vipUpsellStrip}>
+                      <Text style={styles.vipUpsellText}>
+                        👑 VIP members watch everything free — Ad-Free + 4K Ultra HD
+                      </Text>
+                    </View>
                   </View>
                 </View>
               ) : (
@@ -703,19 +760,20 @@ export default function WatchScreen() {
           setPlaybackSpeed(speed);
           try { player.playbackRate = speed; } catch (_e) {}
         }}
-        availableQualities={(anime?.qualities?.length ? anime.qualities : ['4K', '1080p', '720p', '480p']).map(q => (q.includes('4K') || q.includes('1080p')) ? `${q} 👑` : q)}
+        availableQualities={anime?.qualities?.length ? anime.qualities : ['4K Ultra HD', '1080p Full HD', '720p HD', '480p SD']}
         activeQuality={selectedQuality}
         onSelectQuality={(q) => {
-          if (q.includes('👑') && !isVIP) {
-            showError('High Quality streams are exclusive to VIP members!');
-            return;
-          }
           setSelectedQuality(q);
           showSuccess(`Stream quality set to ${q}`);
         }}
         availableAudioTracks={anime?.audio_tracks}
         activeAudio={selectedAudio}
         onSelectAudio={(a) => setSelectedAudio(a)}
+        isVIP={isVIP}
+        onOpenVipModal={() => {
+          setShowSettingsModal(false);
+          setShowVipModal(true);
+        }}
       />
     </View>
   );
@@ -895,35 +953,28 @@ const styles = StyleSheet.create({
   },
   paywallOverlay: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    top: 0, bottom: 0, left: 0, right: 0,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
     padding: 24,
+    overflow: 'hidden',
   },
   paywallContent: {
     alignItems: 'center',
     maxWidth: 320,
+    width: '100%',
   },
   lockIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255, 184, 0, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: 'rgba(255, 184, 0, 0.18)',
+    borderWidth: 1.5, borderColor: 'rgba(255,184,0,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 14,
   },
   paywallTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '900',
-    marginBottom: 8,
-    textAlign: 'center',
+    color: '#FFFFFF', fontSize: 17, fontWeight: '900',
+    marginBottom: 8, textAlign: 'center', lineHeight: 22,
   },
   paywallDesc: {
     color: '#A0A0A0',
@@ -946,20 +997,62 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   unlockBtnDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
   },
   unlockBtnTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 15,
-    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.45)',
+    fontSize: 15, fontWeight: '800',
   },
   earnMoreBtn: {
-    paddingVertical: 12,
+    marginTop: 10,
+    backgroundColor: 'rgba(3, 86, 197, 0.22)',
+    borderWidth: 1, borderColor: '#0356C5',
+    paddingVertical: 12, paddingHorizontal: 20,
+    borderRadius: 12, width: '100%', alignItems: 'center',
   },
   earnMoreBtnText: {
-    color: '#FFB800',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#00D2FF', fontSize: 14, fontWeight: '800',
+  },
+  paywallVeil: {
+    position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.78)',
+  },
+  paywallCategoryPill: {
+    backgroundColor: 'rgba(255,184,0,0.15)',
+    borderWidth: 1, borderColor: 'rgba(255,184,0,0.4)',
+    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
+    marginBottom: 14,
+  },
+  paywallCategoryText: {
+    color: '#FFB800', fontSize: 11, fontWeight: '800', letterSpacing: 0.5,
+  },
+  paywallCostRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6,
+  },
+  paywallCostLabel: {
+    color: '#A0A0B8', fontSize: 13, fontWeight: '600',
+  },
+  paywallCostBadge: {
+    backgroundColor: '#1C1C28', borderWidth: 1, borderColor: '#FFB800',
+    borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
+  },
+  paywallCostAmount: {
+    color: '#FFD700', fontSize: 15, fontWeight: '900',
+  },
+  paywallBalance: {
+    color: '#A0A0B8', fontSize: 12, fontWeight: '600', marginBottom: 18,
+  },
+  vipUpsellStrip: {
+    marginTop: 14,
+    backgroundColor: 'rgba(156, 39, 176, 0.2)',
+    borderWidth: 1, borderColor: 'rgba(156, 39, 176, 0.5)',
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8,
+    width: '100%',
+  },
+  vipUpsellText: {
+    color: '#CE93D8', fontSize: 11, fontWeight: '700',
+    textAlign: 'center', lineHeight: 16,
   },
 
   /* CONTROLS ROW */

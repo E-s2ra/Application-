@@ -39,6 +39,30 @@ test.describe('Authentication & Protected Routes', () => {
     expect(bodyText).toMatch(/Sign Up|Create Account|Register/i);
   });
 
+  test('Forgot Password: Direct navigation renders form and validates email', async ({ page }) => {
+    await page.goto('/(auth)/forgot-password');
+    await page.waitForTimeout(1500);
+
+    const bodyText = await page.innerText('body');
+    expect(bodyText).toMatch(/Reset Password|AniFlix email/i);
+  });
+
+  test('Reset Password: Direct access without session shows warning & fallback button', async ({ page }) => {
+    await page.goto('/reset-password');
+    await page.waitForTimeout(1500);
+
+    const bodyText = await page.innerText('body');
+    expect(bodyText).toMatch(/Choose a new password|reset link from your email/i);
+  });
+
+  test('Email Verified: Direct access loads confirmation screen', async ({ page }) => {
+    await page.goto('/verified');
+    await page.waitForTimeout(1500);
+
+    const bodyText = await page.innerText('body');
+    expect(bodyText).toMatch(/Email Verified/i);
+  });
+
   test('Protected Route Guard: Direct access to /profile redirects unauthenticated user', async ({ page }) => {
     await page.goto('/(tabs)/profile');
     await page.waitForTimeout(2500);

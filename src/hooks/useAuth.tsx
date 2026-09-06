@@ -1,11 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
-import * as Linking from 'expo-linking';
-import { useRouter } from 'expo-router';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
 import { getDeviceId } from '@/lib/device-session';
 import { isValidEmail, normalizeEmail } from '@/lib/password';
+import { supabase } from '@/lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AppState, Platform } from 'react-native';
 
 export type Profile = {
   id: string;
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (_event === 'PASSWORD_RECOVERY') {
         router.replace('/reset-password');
       }
-      
+
       if (!isMounted) return;
 
       if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED') {
@@ -175,24 +175,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const restoreRecoverySession = async (url: string | null) => {
       if (!url) return;
-      const hash = url.includes('#') ? url.slice(url.indexOf('#') + 1) : '';
-      const params = new URLSearchParams(hash || url.split('?')[1] || '');
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      const code = params.get('code');
-      const type = params.get('type');
 
-      // Explicitly route to the correct screen regardless of Expo Router's path parsing
-      if (type === 'recovery') {
-        router.replace('/reset-password');
-      } else if (type === 'signup') {
-        router.replace('/verified');
+      // Extract params from both query string and hash fragment
+      const queryPart = url.includes('?') ? url.split('?')[1].split('#')[0] : '';
+      const hashPart = url.includes('#') ? url.slice(url.indexOf('#') + 1) : '';
+
+      const queryParams = new URLSearchParams(queryPart);
+      const hashParams = new URLSearchParams(hashPart);
+
+      const getParam = (key: string) => queryParams.get(key) || hashParams.get(key);
+
+      const accessToken = getParam('access_token');
+      const refreshToken = getParam('refresh_token');
+      const code = getParam('code');
+      const tokenHash = getParam('token_hash');
+      const type = getParam('type');
+
+      // First establish/restore the session before navigating
+      try {
+        if (accessToken && refreshToken) {
+          await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        } else if (code) {
+          await supabase.auth.exchangeCodeForSession(code);
+        } else if (tokenHash && type) {
+          await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any });
+        }
+      } catch (err) {
+        console.warn('[useAuth] Link session restoration failed:', err);
       }
 
-      if (accessToken && refreshToken) {
-        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-      } else if (code) {
-        await supabase.auth.exchangeCodeForSession(code);
+      // Then route to the appropriate screen
+      const isRecovery = type === 'recovery' || url.includes('reset-password');
+      const isSignup = type === 'signup' || type === 'email_verification' || url.includes('verified');
+
+      if (isRecovery) {
+        router.replace('/reset-password');
+      } else if (isSignup) {
+        router.replace('/verified');
       }
     };
 
@@ -276,24 +295,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isValidEmail(normalizedEmail)) {
       return { error: 'Enter a valid email address.', needsEmailVerification: false };
     }
-    
+
     claimingDeviceRef.current = true;
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,
-      options: { 
+      options: {
         data: { full_name: fullName.trim() },
         emailRedirectTo: Platform.OS === 'web' && typeof window !== 'undefined'
           ? `${window.location.origin}/verified`
           : Linking.createURL('verified'),
       },
     });
-    
+
     if (error) {
       claimingDeviceRef.current = false;
       return { error: error.message, needsEmailVerification: false };
     }
-    
+
     if (data.session) {
       await claimCurrentDevice();
     }

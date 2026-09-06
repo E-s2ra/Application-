@@ -318,7 +318,7 @@ type GamificationContextType = {
   awardWatchTimeReward: (minutes: number) => Promise<{ coins: number; xp: number }>;
   addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
   unlockedMediaIds: string[];
-  unlockMedia: (mediaId: string, episodeNum: number | undefined, cost: number) => Promise<boolean>;
+  unlockMedia: (mediaId: string, episodeNum: number | undefined, cost: number, category?: string) => Promise<boolean>;
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
@@ -568,7 +568,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    // Guest fallback (matches backend math exactly)
+    // Guest fallback — 15 coins per day (matches backend exactly)
     const rewardCoins = 15;
     const rewardXP = 150 + Math.min(streakDays, 7) * 50;
     const newStreak = streakDays + 1;
@@ -736,15 +736,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return true;
   };
 
-  // FIX CRITICAL-07: Server-Authoritative Media Unlock via unlock_media_with_coins RPC
-  const unlockMedia = async (mediaId: string, episodeNum: number | undefined, cost: number): Promise<boolean> => {
+  // Server-Authoritative Media Unlock via unlock_media_with_coins RPC
+  // category is used by the server to look up the authoritative cost — prevents cost spoofing
+  const unlockMedia = async (mediaId: string, episodeNum: number | undefined, cost: number, category = 'Anime'): Promise<boolean> => {
     if (coins < cost) return false;
     const unlockKey = episodeNum !== undefined ? `${mediaId}_ep_${episodeNum}` : mediaId;
     if (unlockedMediaIds.includes(unlockKey)) return true;
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
-        const { data, error } = await supabase.rpc('unlock_media_with_coins', { p_unlock_key: unlockKey, p_cost: cost });
+        // Use new category-based RPC (server reads cost from content_cost_registry)
+        const { data, error } = await supabase.rpc('unlock_media_with_coins', { p_unlock_key: unlockKey, p_category: category });
         if (!error && data && (data as any).success) {
           const res = data as any;
           const remaining = res.remaining_coins ?? (coins - cost);

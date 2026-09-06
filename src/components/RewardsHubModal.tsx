@@ -197,7 +197,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.admobBtnTitle}>{t('watchAdEarn')}</Text>
-                  <Text style={styles.admobBtnSub}>{t('watchAdSub')}</Text>
+                  <Text style={styles.admobBtnSub}>Unlimited ads per day — earn 12 💰 each watch!</Text>
                 </View>
               </View>
               <View style={styles.admobRewardPill}>
@@ -205,6 +205,36 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </View>
             </Pressable>
           )}
+
+          {/* 📊 How to Earn Coins info strip */}
+          <View style={styles.earnInfoStrip}>
+            <Text style={styles.earnInfoTitle}>💰 Daily Coin Sources</Text>
+            <View style={styles.earnInfoRow}>
+              <View style={styles.earnInfoItem}>
+                <Text style={styles.earnInfoValue}>+12</Text>
+                <Text style={styles.earnInfoLabel}>Per Ad</Text>
+                <Text style={styles.earnInfoSub}>Unlimited</Text>
+              </View>
+              <View style={styles.earnInfoDivider} />
+              <View style={styles.earnInfoItem}>
+                <Text style={styles.earnInfoValue}>+15</Text>
+                <Text style={styles.earnInfoLabel}>Daily Streak</Text>
+                <Text style={styles.earnInfoSub}>Once/day</Text>
+              </View>
+              <View style={styles.earnInfoDivider} />
+              <View style={styles.earnInfoItem}>
+                <Text style={styles.earnInfoValue}>+50</Text>
+                <Text style={styles.earnInfoLabel}>Lucky Spin</Text>
+                <Text style={styles.earnInfoSub}>Once/day</Text>
+              </View>
+              <View style={styles.earnInfoDivider} />
+              <View style={styles.earnInfoItem}>
+                <Text style={styles.earnInfoValue}>+15</Text>
+                <Text style={styles.earnInfoLabel}>Sticker</Text>
+                <Text style={styles.earnInfoSub}>Mission</Text>
+              </View>
+            </View>
+          </View>
 
           {/* Navigation Tabs */}
           <ScrollView
@@ -1258,5 +1288,54 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '800',
     fontSize: 14,
+  },
+  earnInfoStrip: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    backgroundColor: '#0E0E1A',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1E1E30',
+    padding: 12,
+    gap: 8,
+  },
+  earnInfoTitle: {
+    color: '#FFB800',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  earnInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  earnInfoItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 1,
+  },
+  earnInfoValue: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  earnInfoLabel: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  earnInfoSub: {
+    color: '#00E676',
+    fontSize: 9,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  earnInfoDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#1E1E30',
   },
 });
