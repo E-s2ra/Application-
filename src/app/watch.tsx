@@ -49,6 +49,7 @@ import { EpisodeSelector } from '@/components/EpisodeSelector';
 import { PlayerSettingsModal } from '@/components/PlayerSettingsModal';
 import { useGamification } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
+import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 
 const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -76,6 +77,7 @@ export default function WatchScreen() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState<string>('Auto');
   const [selectedAudio, setSelectedAudio] = useState<string>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
@@ -410,7 +412,7 @@ export default function WatchScreen() {
                   {anime.image_url && (
                     <Image
                       source={{ uri: anime.image_url }}
-                      style={StyleSheet.absoluteFillObject}
+                      style={StyleSheet.absoluteFill}
                       resizeMode="cover"
                       blurRadius={8}
                     />
@@ -774,6 +776,11 @@ export default function WatchScreen() {
           setShowSettingsModal(false);
           setShowVipModal(true);
         }}
+      />
+
+      <VipSubscriptionModal
+        visible={showVipModal}
+        onClose={() => setShowVipModal(false)}
       />
     </View>
   );
