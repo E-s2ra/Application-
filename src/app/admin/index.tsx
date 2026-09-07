@@ -2,7 +2,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
-import { deleteAnime, updateAnimeFeatured, callAdminOperation } from '@/lib/admin-operations';
+import { deleteAnime, updateAnimeFeatured, callAdminOperation, grantVipUser } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
@@ -99,12 +99,10 @@ export default function AdminPanelScreen() {
     const email = instantEmail.trim().toLowerCase();
 
     try {
-      const res = await callAdminOperation('grant_vip', {
-        user: { email, days: instantDays },
-      });
+      const res = await grantVipUser(email, instantDays);
 
       if (!res.success) {
-        throw new Error(res.error || 'Failed to grant VIP via admin Edge Function.');
+        throw new Error(res.error || 'Failed to grant VIP.');
       }
 
       showSuccess(`VIP activated for ${email} (${instantDays} days)`);

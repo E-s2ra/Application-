@@ -1,4 +1,4 @@
-import { callAdminOperation } from '@/lib/admin-operations';
+import { grantVipUser } from '@/lib/admin-operations';
 
 /**
  * VipService — Admin VIP grant operations.
@@ -6,17 +6,15 @@ import { callAdminOperation } from '@/lib/admin-operations';
  */
 export const VipService = {
   /**
-   * Invokes Admin Edge Function to grant VIP status to a user by email.
+   * Invokes Admin Edge Function (with DB fallback) to grant VIP status to a user by email/username.
    * Used from the Admin Panel → VIP Approvals tab.
    */
   async grantVipAccess(userEmail: string, durationDays: number): Promise<{ success: boolean; message?: string }> {
-    const res = await callAdminOperation<{ success: boolean; message: string }>('grant_vip', {
-      user: { email: userEmail, days: durationDays },
-    });
+    const res = await grantVipUser(userEmail, durationDays);
 
     if (res.error) {
       return { success: false, message: res.error };
     }
-    return { success: true, message: res.data?.message };
+    return { success: true, message: res.data?.message || `VIP granted to ${userEmail} (${durationDays} days)` };
   },
 };

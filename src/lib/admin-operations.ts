@@ -370,3 +370,119 @@ export async function signOutAllOtherDevices(
         };
     }
 }
+
+/**
+ * Grants VIP status to a user by email, username, or ID.
+ * Tries Edge Function first, then SECURITY DEFINER RPC functions, and finally direct DB update.
+ */
+export async function grantVipUser(
+    emailOrUsername: string,
+    days: number = 30
+): Promise<AdminOperationResult<any>> {
+    const targetInput = emailOrUsername.trim().toLowerCase();
+    if (!targetInput) {
+        return { success: false, error: 'Email or username is required.' };
+    }
+
+    // 1. Attempt via Edge Function first
+    const edgeResult = await callAdminOperation<any>('grant_vip', {
+        user: { email: targetInput, days },
+    });
+
+    if (edgeResult.success) {
+        return edgeResult;
+    }
+
+    // 2. Attempt via SECURITY DEFINER RPC function 'admin_grant_vip_by_identifier'
+    try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('admin_grant_vip_by_identifier', {
+            p_target: targetInput,
+            p_days: days,
+        });
+
+        if (!rpcError && rpcData) {
+            return {
+                success: true,
+                data: rpcData,
+            };
+        }
+    } catch (_rpcErr) {
+        // Fall through to lookup + fallback RPC
+    }
+
+    // 3. Fallback: Search profiles table first by email or username
+    try {
+        let { data: targetProfile } = await supabase
+            .from('profiles')
+            .select('id, email, username, is_vip, vip_expires_at')
+            .or(`email.ilike.${targetInput},username.ilike.${targetInput}`)
+            .maybeSingle();
+
+        if (!targetProfile) {
+            // Check if input is a valid UUID matching user ID
+            const { data: idProfile } = await supabase
+                .from('profiles')
+                .select('id, email, username, is_vip, vip_expires_at')
+                .eq('id', targetInput)
+                .maybeSingle();
+            targetProfile = idProfile;
+        }
+
+        if (!targetProfile) {
+            return {
+                success: false,
+                error: `User with email/username "${targetInput}" was not found in registered profiles.`,
+            };
+        }
+
+        // Try SECURITY DEFINER RPC by UUID
+        try {
+            const { data: uuidRpcData, error: uuidRpcError } = await supabase.rpc('admin_grant_vip', {
+                p_target_user_id: targetProfile.id,
+                p_days: days,
+            });
+
+            if (!uuidRpcError && uuidRpcData) {
+                return {
+                    success: true,
+                    data: uuidRpcData,
+                };
+            }
+        } catch (_uuidRpcErr) {
+            // Fall through to direct table update
+        }
+
+        const currentExpiry = targetProfile.vip_expires_at ? new Date(targetProfile.vip_expires_at).getTime() : 0;
+        const baseTime = Math.max(Date.now(), isNaN(currentExpiry) ? 0 : currentExpiry);
+        const newExpiryIso = new Date(baseTime + days * 24 * 60 * 60 * 1000).toISOString();
+
+        const { data: updatedData, error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                is_vip: true,
+                vip_expires_at: newExpiryIso,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', targetProfile.id)
+            .select()
+            .single();
+
+        if (updateError) {
+            return {
+                success: false,
+                error: updateError.message || 'Failed to update user VIP status in database.',
+            };
+        }
+
+        return {
+            success: true,
+            data: updatedData || { message: `VIP granted for ${days} days` },
+        };
+    } catch (err: any) {
+        return {
+            success: false,
+            error: err.message || 'An error occurred while granting VIP status.',
+        };
+    }
+}
+

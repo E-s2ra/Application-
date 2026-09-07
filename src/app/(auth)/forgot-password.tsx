@@ -60,6 +60,8 @@ export default function ForgotPasswordScreen() {
 
       setIsSuccess(true);
       showSuccess('Check your email to reset your password!');
+      setEmail('');
+      setErrorMessage(null);
     } catch (err: any) {
       const msg = err.message || 'An unexpected error occurred. Please try again.';
       setErrorMessage(msg);

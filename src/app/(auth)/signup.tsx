@@ -101,6 +101,13 @@ export default function SignUpScreen() {
       return;
     }
 
+    // Clear form inputs after successful submission
+    setFullName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setErrorMessage(null);
+
     if (needsEmailVerification) {
       const msg = t('checkEmailVerification', 'Account created! Please check your email inbox to verify your account.');
       setInfoMessage(msg);

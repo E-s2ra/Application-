@@ -61,6 +61,9 @@ export default function LoginScreen() {
       showError(error);
     } else {
       showSuccess('Welcome back to AniFlix');
+      setEmail('');
+      setPassword('');
+      setErrorMessage(null);
       router.replace('/(tabs)');
     }
   };

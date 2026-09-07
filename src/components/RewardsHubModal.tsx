@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,35 +8,119 @@ import {
   ScrollView,
   Animated,
   Easing,
-  Dimensions,
-  Image,
   Platform,
+  Dimensions,
 } from 'react-native';
+import Svg, { Path, G, Text as SvgText, Circle } from 'react-native-svg';
 import { useTheme } from '@/hooks/use-theme';
 import {
   X,
   Flame,
-  Zap,
   Gift,
   Sparkles,
   Trophy,
-  Check,
-  Calendar,
   Award,
   Crown,
   Coins,
   Palette,
-  ShieldCheck,
   CheckCircle,
   Film,
-  Clock,
-  LogOut,
+  Zap,
+  ChevronRight,
+  Info,
 } from 'lucide-react-native';
 import { useGamification, SPIN_REWARDS, SpinReward } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
 import { VipSubscriptionModal } from './VipSubscriptionModal';
-import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/use-language';
+import { PrimaryGradient } from '@/components/PrimaryGradient';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function LuckyWheelSvg({ rewards }: { rewards: SpinReward[] }) {
+  const size = 220;
+  const center = size / 2;
+  const radius = center - 4;
+  const numSlices = rewards.length;
+  const sliceAngle = 360 / numSlices;
+
+  const sliceColors = [
+    { bg: '#261F0B', border: '#FFB800' },
+    { bg: '#0A2228', border: '#00D2FF' },
+    { bg: '#220A28', border: '#E040FB' },
+    { bg: '#28160A', border: '#FF9800' },
+    { bg: '#0A2819', border: '#00E676' },
+    { bg: '#0A1628', border: '#0356C5' },
+  ];
+
+  return (
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {/* Outer Border Circle */}
+      <Circle cx={center} cy={center} r={center - 2} fill="#131626" stroke="#FFB800" strokeWidth={4} />
+
+      <G>
+        {rewards.map((r, i) => {
+          const startAngle = i * sliceAngle - 90;
+          const endAngle = (i + 1) * sliceAngle - 90;
+          const midAngle = startAngle + sliceAngle / 2;
+
+          const rad1 = (startAngle * Math.PI) / 180;
+          const rad2 = (endAngle * Math.PI) / 180;
+          const radMid = (midAngle * Math.PI) / 180;
+
+          const x1 = center + radius * Math.cos(rad1);
+          const y1 = center + radius * Math.sin(rad1);
+          const x2 = center + radius * Math.cos(rad2);
+          const y2 = center + radius * Math.sin(rad2);
+
+          const pathData = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
+
+          const textRadius = radius * 0.62;
+          const tx = center + textRadius * Math.cos(radMid);
+          const ty = center + textRadius * Math.sin(radMid);
+
+          const palette = sliceColors[i % sliceColors.length];
+
+          return (
+            <G key={r.id}>
+              {/* Wedge Sector Path */}
+              <Path d={pathData} fill={palette.bg} stroke="#FFB800" strokeWidth={1.5} />
+
+              {/* Icon Emoji */}
+              <SvgText
+                x={tx}
+                y={ty - 6}
+                fill="#FFFFFF"
+                fontSize={16}
+                fontWeight="bold"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+              >
+                {r.icon}
+              </SvgText>
+
+              {/* Label Text */}
+              <SvgText
+                x={tx}
+                y={ty + 10}
+                fill={r.color || palette.border}
+                fontSize={10}
+                fontWeight="bold"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+              >
+                {r.label}
+              </SvgText>
+            </G>
+          );
+        })}
+      </G>
+
+      {/* Center Golden Hub */}
+      <Circle cx={center} cy={center} r={24} fill="#0A0C14" stroke="#FFD700" strokeWidth={3} />
+    </Svg>
+  );
+}
 
 interface RewardsHubModalProps {
   visible: boolean;
@@ -46,9 +130,10 @@ interface RewardsHubModalProps {
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
   const { t } = useLanguage();
-  const { user } = useAuth();
   const { showRewardedAd } = useAdMob();
   const [showVipModal, setShowVipModal] = useState(false);
+  const [showSourcesInfo, setShowSourcesInfo] = useState(false);
+
   const {
     coins,
     xp,
@@ -61,31 +146,24 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     canSpinWheel,
     vipDaysRemaining,
     isVIP,
-    activeEvent,
-    allEvents,
-    missions,
     themes,
     activeTheme,
     badges,
-    selectSeasonalEvent,
     claimDailyStreak,
     spinWheel,
-    claimMission,
     unlockTheme,
     equipTheme,
     addXPAndCoins,
   } = useGamification();
 
-  const [activeTab, setActiveTab] = useState<
-    'spin' | 'streak' | 'themes' | 'badges'
-  >('spin');
+  const [activeTab, setActiveTab] = useState<'spin' | 'streak' | 'themes' | 'badges'>('spin');
 
   const [spinAnim] = useState(() => new Animated.Value(0));
   const [isSpinning, setIsSpinning] = useState(false);
   const [wonReward, setWonReward] = useState<SpinReward | null>(null);
 
   const levelXPProgress = xp - currentLevelBaseXP;
-  const levelXPTarget = nextLevelXP - currentLevelBaseXP;
+  const levelXPTarget = Math.max(1, nextLevelXP - currentLevelBaseXP);
   const xpPercent = Math.min(100, Math.max(0, (levelXPProgress / levelXPTarget) * 100));
 
   const handleSpinPress = async () => {
@@ -116,210 +194,337 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   });
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalCard, { backgroundColor: '#0C0C12' }]}>
-          {/* Header */}
+        <View style={styles.modalCard}>
+          {/* 👑 Top Glass Header */}
           <View style={styles.modalHeader}>
-            <View style={styles.headerLeft}>
-              <Trophy size={22} color="#FFB800" />
-              <Text style={styles.modalTitle}>{t('rewardsHub', 'AniFlix Rewards & Events Hub')}</Text>
+            <View style={styles.headerTitleRow}>
+              <View style={styles.headerIconGlow}>
+                <Trophy size={20} color="#FFB800" />
+              </View>
+              <View>
+                <Text style={styles.modalTitle}>Rewards & Events Hub</Text>
+                <Text style={styles.modalSubtitle}>Earn coins, level up & unlock exclusive themes</Text>
+              </View>
             </View>
-            <Pressable
-              style={styles.closeBtn}
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Close Rewards Hub"
-            >
-              <X size={20} color="#FFF" />
+
+            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
+              <X size={18} color="#A0A0B8" />
             </Pressable>
           </View>
 
-          {/* User Level, Coins & VIP Status Bar */}
-          <View style={styles.userStatusBanner}>
+          {/* 📊 User Status & XP Bar */}
+          <View style={styles.statusCard}>
             <View style={styles.statusRow}>
-              <View style={styles.levelBadge}>
-                <Crown size={14} color="#FFB800" />
-                <Text style={styles.levelText}>{t('level')} {level}</Text>
-              </View>
-              <Text style={styles.levelTitleText} numberOfLines={1} adjustsFontSizeToFit>{t(levelTitle as any, levelTitle)}</Text>
-
-              {isVIP ? (
-                <View style={styles.vipBadge}>
-                  <Crown size={12} color="#FFB800" style={{ marginRight: 4 }} />
-                  <Text style={styles.vipBadgeText}>VIP ({vipDaysRemaining}d)</Text>
+              <View style={styles.userProfileInfo}>
+                <View style={styles.levelBadge}>
+                  <Crown size={13} color="#FFD700" />
+                  <Text style={styles.levelBadgeText}>LVL {level}</Text>
                 </View>
-              ) : (
-                <Pressable
-                  style={styles.getVipBtn}
-                  onPress={() => setShowVipModal(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Get VIP subscription"
-                  accessibilityHint="Opens the VIP subscription options"
-                >
-                  <Text style={styles.getVipBtnText}>+ Get VIP</Text>
-                </Pressable>
-              )}
+                <Text style={styles.levelTitleText} numberOfLines={1}>
+                  {t(levelTitle as any, levelTitle)}
+                </Text>
+              </View>
 
-              <View style={styles.coinBadge}>
-                <Coins size={14} color="#FFB800" style={{ marginRight: 4 }} />
-                <Text style={styles.coinText}>{coins} Coins</Text>
+              <View style={styles.statsRightGroup}>
+                {isVIP ? (
+                  <View style={styles.vipBadge}>
+                    <Crown size={12} color="#E040FB" />
+                    <Text style={styles.vipBadgeText}>VIP ({vipDaysRemaining}d)</Text>
+                  </View>
+                ) : (
+                  <Pressable style={styles.getVipBtn} onPress={() => setShowVipModal(true)}>
+                    <Crown size={12} color="#FFB800" />
+                    <Text style={styles.getVipBtnText}>Get VIP</Text>
+                  </Pressable>
+                )}
+
+                <View style={styles.coinPill}>
+                  <Coins size={14} color="#FFB800" />
+                  <Text style={styles.coinPillText}>{coins.toLocaleString()} Coins</Text>
+                </View>
               </View>
             </View>
 
-            {/* Level XP Progress Bar */}
-            <View style={styles.xpProgressContainer}>
+            {/* XP Progress Bar */}
+            <View style={styles.xpBarSection}>
               <View style={styles.xpTrack}>
                 <View style={[styles.xpFill, { width: `${xpPercent}%` }]} />
               </View>
-              <Text style={styles.xpSubtext}>
-                {levelXPProgress} / {levelXPTarget} {t('xpToLevel')} {level + 1}
-              </Text>
-            </View>
-          </View>
-
-          {/* 📺 AdMob Rewarded Ads Instant Coins Button */}
-          {!isVIP && (
-            <Pressable
-              style={styles.admobRewardedBtn}
-              onPress={() => showRewardedAd({ 
-                rewardCoins: 12, 
-                rewardType: 'coins',
-                onRewarded: () => addXPAndCoins(50, 12, true)
-              })}
-              accessibilityRole="button"
-              accessibilityLabel="Watch an ad to earn 12 coins"
-              accessibilityHint="A short video ad will play, then 12 coins will be added to your balance"
-            >
-              <View style={styles.admobBtnLeft}>
-                <View style={styles.admobIconCircle}>
-                  <Film size={16} color="#FFB800" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.admobBtnTitle}>{t('watchAdEarn')}</Text>
-                  <Text style={styles.admobBtnSub}>Unlimited ads per day — earn 12 💰 each watch!</Text>
-                </View>
-              </View>
-              <View style={styles.admobRewardPill}>
-                <Text style={styles.admobRewardPillText}>12 💰</Text>
-              </View>
-            </Pressable>
-          )}
-
-          {/* 📊 How to Earn Coins info strip */}
-          <View style={styles.earnInfoStrip}>
-            <Text style={styles.earnInfoTitle}>💰 Daily Coin Sources</Text>
-            <View style={styles.earnInfoRow}>
-              <View style={styles.earnInfoItem}>
-                <Text style={styles.earnInfoValue}>+12</Text>
-                <Text style={styles.earnInfoLabel}>Per Ad</Text>
-                <Text style={styles.earnInfoSub}>Unlimited</Text>
-              </View>
-              <View style={styles.earnInfoDivider} />
-              <View style={styles.earnInfoItem}>
-                <Text style={styles.earnInfoValue}>+15</Text>
-                <Text style={styles.earnInfoLabel}>Daily Streak</Text>
-                <Text style={styles.earnInfoSub}>Once/day</Text>
-              </View>
-              <View style={styles.earnInfoDivider} />
-              <View style={styles.earnInfoItem}>
-                <Text style={styles.earnInfoValue}>+50</Text>
-                <Text style={styles.earnInfoLabel}>Lucky Spin</Text>
-                <Text style={styles.earnInfoSub}>Once/day</Text>
-              </View>
-              <View style={styles.earnInfoDivider} />
-              <View style={styles.earnInfoItem}>
-                <Text style={styles.earnInfoValue}>+15</Text>
-                <Text style={styles.earnInfoLabel}>Sticker</Text>
-                <Text style={styles.earnInfoSub}>Mission</Text>
+              <View style={styles.xpInfoRow}>
+                <Text style={styles.xpTextLeft}>{levelXPProgress} / {levelXPTarget} XP</Text>
+                <Text style={styles.xpTextRight}>Level {level + 1} Unlocks</Text>
               </View>
             </View>
           </View>
 
-          {/* Navigation Tabs */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tabsScrollView}
-            contentContainerStyle={styles.tabsRow}
-          >
-            <Pressable
-              style={[styles.tabBtn, activeTab === 'spin' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('spin')}
-            >
-              <Gift size={14} color={activeTab === 'spin' ? '#FFF' : '#8C8CA2'} />
-              <Text
-                style={[styles.tabBtnText, activeTab === 'spin' && styles.tabBtnTextActive]}
+          {/* 💰 Compact Daily Sources Banner & Ad Action */}
+          <View style={styles.dailySourcesBar}>
+            <View style={styles.sourcesHeaderRow}>
+              <Pressable
+                style={styles.sourcesToggleBtn}
+                onPress={() => setShowSourcesInfo(!showSourcesInfo)}
               >
-                {t('luckySpin')}
-              </Text>
-            </Pressable>
+                <Zap size={14} color="#FFB800" />
+                <Text style={styles.sourcesTitle}>Daily Coin Sources</Text>
+                <Info size={12} color="#8E8EA4" />
+              </Pressable>
 
-            <Pressable
-              style={[styles.tabBtn, activeTab === 'streak' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('streak')}
-            >
-              <Flame size={14} color={activeTab === 'streak' ? '#FFF' : '#8C8CA2'} />
-              <Text
-                style={[styles.tabBtnText, activeTab === 'streak' && styles.tabBtnTextActive]}
+              {!isVIP && (
+                <Pressable
+                  style={styles.watchAdCompactBtn}
+                  onPress={() =>
+                    showRewardedAd({
+                      rewardCoins: 12,
+                      rewardType: 'coins',
+                      onRewarded: () => addXPAndCoins(50, 12, true),
+                    })
+                  }
+                >
+                  <Film size={13} color="#FFF" />
+                  <Text style={styles.watchAdBtnText}>Watch Ad (+12 💰)</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {showSourcesInfo && (
+              <View style={styles.sourcesChipsGrid}>
+                <View style={styles.sourceChip}>
+                  <Text style={styles.sourceChipValue}>+12 💰</Text>
+                  <Text style={styles.sourceChipLabel}>Per Ad (Unlimited)</Text>
+                </View>
+                <View style={styles.sourceChip}>
+                  <Text style={styles.sourceChipValue}>+15 💰</Text>
+                  <Text style={styles.sourceChipLabel}>Daily Streak</Text>
+                </View>
+                <View style={styles.sourceChip}>
+                  <Text style={styles.sourceChipValue}>+50 💰</Text>
+                  <Text style={styles.sourceChipLabel}>Lucky Spin</Text>
+                </View>
+                <View style={styles.sourceChip}>
+                  <Text style={styles.sourceChipValue}>+15 💰</Text>
+                  <Text style={styles.sourceChipLabel}>Missions</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* 🎯 Tab Selector Segment */}
+          <View style={styles.navTabsWrapper}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navTabsRow}>
+              <Pressable
+                style={[styles.tabSegment, activeTab === 'spin' && styles.tabSegmentActive]}
+                onPress={() => setActiveTab('spin')}
               >
-                {t('streak')} ({streakDays}{t('days', 'd')})
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.tabBtn, activeTab === 'themes' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('themes')}
-            >
-              <Palette size={14} color={activeTab === 'themes' ? '#FFF' : '#8C8CA2'} />
-              <Text
-                style={[styles.tabBtnText, activeTab === 'themes' && styles.tabBtnTextActive]}
-              >
-                Theme Shop
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.tabBtn, activeTab === 'badges' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('badges')}
-            >
-              <Award size={14} color={activeTab === 'badges' ? '#FFF' : '#8C8CA2'} />
-              <Text
-                style={[styles.tabBtnText, activeTab === 'badges' && styles.tabBtnTextActive]}
-              >
-                {t('badges')}
-              </Text>
-            </Pressable>
-          </ScrollView>
-
-          {/* Tab Content */}
-          <ScrollView
-            style={styles.contentScrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={true}
-          >
-            {/* THEMES SHOP TAB */}
-            {activeTab === 'themes' && (
-              <View style={styles.themesContainer}>
-                <Text style={styles.sectionHeading}>AniFlix Cinema Theme Shop</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Spend your earned AniFlix Coins to unlock Movies, Episodes, and custom app themes!
+                <Gift size={15} color={activeTab === 'spin' ? '#FFF' : '#7D7D9A'} />
+                <Text style={[styles.tabSegmentText, activeTab === 'spin' && styles.tabSegmentTextActive]}>
+                  Lucky Spin
                 </Text>
+              </Pressable>
 
-                <View style={styles.themesGrid}>
+              <Pressable
+                style={[styles.tabSegment, activeTab === 'streak' && styles.tabSegmentActive]}
+                onPress={() => setActiveTab('streak')}
+              >
+                <Flame size={15} color={activeTab === 'streak' ? '#FF5722' : '#7D7D9A'} />
+                <Text style={[styles.tabSegmentText, activeTab === 'streak' && styles.tabSegmentTextActive]}>
+                  Streak ({streakDays}d)
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.tabSegment, activeTab === 'themes' && styles.tabSegmentActive]}
+                onPress={() => setActiveTab('themes')}
+              >
+                <Palette size={15} color={activeTab === 'themes' ? '#00D2FF' : '#7D7D9A'} />
+                <Text style={[styles.tabSegmentText, activeTab === 'themes' && styles.tabSegmentTextActive]}>
+                  Theme Shop
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.tabSegment, activeTab === 'badges' && styles.tabSegmentActive]}
+                onPress={() => setActiveTab('badges')}
+              >
+                <Award size={15} color={activeTab === 'badges' ? '#FFB800' : '#7D7D9A'} />
+                <Text style={[styles.tabSegmentText, activeTab === 'badges' && styles.tabSegmentTextActive]}>
+                  Badges
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+
+          {/* 📜 Main Content Area */}
+          <ScrollView style={styles.mainScrollView} contentContainerStyle={styles.mainScrollContent}>
+            {/* 🎡 LUCKY SPIN TAB */}
+            {activeTab === 'spin' && (
+              <View style={styles.spinSection}>
+                <View style={styles.sectionHeaderCenter}>
+                  <Text style={styles.heroTitle}>Daily Lucky Cinema Wheel</Text>
+                  <Text style={styles.heroSubtitle}>
+                    Spin once every day for free Coins, XP, and VIP Passes!
+                  </Text>
+                </View>
+
+                {/* 🎡 Outer Wheel Container with Perimeter Lights */}
+                <View style={styles.wheelOuterContainer}>
+                  {/* Perimeter Light Bulbs */}
+                  {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg, index) => (
+                    <View
+                      key={deg}
+                      style={[
+                        styles.wheelLightBulb,
+                        {
+                          transform: [
+                            { rotate: `${deg}deg` },
+                            { translateY: -114 },
+                          ],
+                          backgroundColor: index % 2 === 0 ? '#FFB800' : '#00D2FF',
+                        },
+                      ]}
+                    />
+                  ))}
+
+                  {/* Golden Pointer Pin */}
+                  <View style={styles.wheelPointerTriangle} />
+
+                  {/* Animated Wheel Body */}
+                  <Animated.View
+                    style={{
+                      width: 220,
+                      height: 220,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      transform: [{ rotate: spinRotation }],
+                    }}
+                  >
+                    <LuckyWheelSvg rewards={SPIN_REWARDS} />
+                  </Animated.View>
+                </View>
+
+                {/* Winner Celebration Banner */}
+                {wonReward && (
+                  <View style={[styles.wonRewardBanner, { borderColor: wonReward.color || '#FFB800' }]}>
+                    <Sparkles size={18} color={wonReward.color || '#FFD700'} />
+                    <Text style={[styles.wonRewardText, { color: wonReward.color || '#FFD700' }]}>
+                      🎉 Congratulations! You won {wonReward.label}!
+                    </Text>
+                  </View>
+                )}
+
+                {/* Wheel Rewards Pool Legend Grid */}
+                <View style={styles.prizesLegendBox}>
+                  <Text style={styles.prizesLegendTitle}>AVAILABLE PRIZES ON WHEEL</Text>
+                  <View style={styles.prizesGrid}>
+                    {SPIN_REWARDS.map((r) => (
+                      <View key={r.id} style={[styles.prizeChip, { borderColor: `${r.color}50` }]}>
+                        <Text style={styles.prizeChipIcon}>{r.icon}</Text>
+                        <Text style={[styles.prizeChipText, { color: r.color }]}>{r.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Spin CTA Button */}
+                <Pressable
+                  style={[
+                    styles.spinPrimaryBtn,
+                    (!canSpinWheel || isSpinning) && styles.spinPrimaryBtnDisabled,
+                  ]}
+                  disabled={!canSpinWheel || isSpinning}
+                  onPress={handleSpinPress}
+                >
+                  <PrimaryGradient borderRadius={14} />
+                  <Text style={styles.spinPrimaryBtnText}>
+                    {isSpinning
+                      ? '⚡ Spinning Wheel...'
+                      : canSpinWheel
+                      ? '🎡 SPIN WHEEL NOW (FREE)'
+                      : '✓ Spun Today - Return Tomorrow!'}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* 🔥 STREAK TAB */}
+            {activeTab === 'streak' && (
+              <View style={styles.streakSection}>
+                <View style={styles.streakHeroCard}>
+                  <View style={styles.streakFlameCircle}>
+                    <Flame size={36} color="#FF5722" />
+                  </View>
+                  <Text style={styles.streakTitle}>{streakDays} DAY STREAK!</Text>
+                  <Text style={styles.streakDesc}>
+                    Log in daily to keep your streak alive and earn scaling coin rewards.
+                  </Text>
+
+                  <View style={styles.streakGrid}>
+                    {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                      const isReached = day <= streakDays;
+                      const isCurrent = day === streakDays;
+                      return (
+                        <View key={day} style={styles.streakDayCell}>
+                          <View
+                            style={[
+                              styles.streakBadgeCircle,
+                              isReached && styles.streakBadgeReached,
+                              isCurrent && styles.streakBadgeCurrent,
+                            ]}
+                          >
+                            {isReached ? (
+                              <Flame size={14} color="#FFF" />
+                            ) : (
+                              <Text style={styles.streakDayNum}>D{day}</Text>
+                            )}
+                          </View>
+                          <Text style={styles.streakCoinReward}>+15 💰</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  <Pressable
+                    style={[
+                      styles.claimStreakBtn,
+                      hasClaimedDailyStreak && styles.claimStreakBtnDisabled,
+                    ]}
+                    disabled={hasClaimedDailyStreak}
+                    onPress={claimDailyStreak}
+                  >
+                    <PrimaryGradient borderRadius={12} />
+                    <Text style={styles.claimStreakBtnText}>
+                      {hasClaimedDailyStreak
+                        ? '✓ Today Claimed - Come Back Tomorrow!'
+                        : `Claim Today (+15 Coins, +${150 + Math.min(streakDays, 7) * 50} XP)`}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+
+            {/* 🎨 THEME SHOP TAB */}
+            {activeTab === 'themes' && (
+              <View style={styles.themesSection}>
+                <View style={styles.sectionHeaderLeft}>
+                  <Text style={styles.sectionTitle}>AniFlix Cinema Themes</Text>
+                  <Text style={styles.sectionSub}>Custom accent colors and styles for your app</Text>
+                </View>
+
+                <View style={styles.themesCardsList}>
                   {themes.map((th) => {
                     const isEquipped = activeTheme.id === th.id;
                     const canAfford = coins >= th.costCoins;
                     return (
-                      <View key={th.id} style={styles.themeCard}>
-                        <View style={[styles.themeColorBar, { backgroundColor: th.primary }]} />
-                        <View style={styles.themeContent}>
-                          <View style={styles.themeTitleRow}>
+                      <View key={th.id} style={styles.themeCardItem}>
+                        <View style={[styles.themeAccentStripe, { backgroundColor: th.primary }]} />
+                        <View style={styles.themeCardContent}>
+                          <View style={styles.themeHeaderRow}>
                             <Text style={styles.themeName}>{th.name}</Text>
                             {isEquipped && (
-                              <View style={styles.equippedBadge}>
+                              <View style={styles.equippedPill}>
                                 <CheckCircle size={11} color="#00E676" />
-                                <Text style={styles.equippedText}>Equipped</Text>
+                                <Text style={styles.equippedPillText}>Active</Text>
                               </View>
                             )}
                           </View>
@@ -328,28 +533,22 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                           <View style={styles.themeActionRow}>
                             {th.isUnlocked ? (
                               <Pressable
-                                style={[
-                                  styles.equipBtn,
-                                  isEquipped && styles.equipBtnActive,
-                                ]}
+                                style={[styles.themeBtn, isEquipped && styles.themeBtnActive]}
                                 disabled={isEquipped}
                                 onPress={() => equipTheme(th.id)}
                               >
-                                <Text style={styles.equipBtnText}>
-                                  {isEquipped ? 'Active Theme' : 'Equip Theme'}
+                                <Text style={styles.themeBtnText}>
+                                  {isEquipped ? 'Equipped' : 'Equip Theme'}
                                 </Text>
                               </Pressable>
                             ) : (
                               <Pressable
-                                style={[
-                                  styles.buyThemeBtn,
-                                  !canAfford && styles.buyThemeBtnDisabled,
-                                ]}
+                                style={[styles.themeBuyBtn, !canAfford && styles.themeBuyBtnDisabled]}
                                 disabled={!canAfford}
                                 onPress={() => unlockTheme(th.id)}
                               >
-                                <Text style={styles.buyThemeBtnText}>
-                                  Unlock for {th.costCoins} Coins
+                                <Text style={styles.themeBuyBtnText}>
+                                  Unlock for {th.costCoins} 💰
                                 </Text>
                               </Pressable>
                             )}
@@ -362,153 +561,41 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </View>
             )}
 
-            {/* BADGES TAB */}
+            {/* 🏆 BADGES TAB */}
             {activeTab === 'badges' && (
-              <View style={styles.badgesContainer}>
-                <Text style={styles.sectionHeading}>Achievement Badges</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Collect prestige badges by watching movies, building streaks, and reviewing!
-                </Text>
+              <View style={styles.badgesSection}>
+                <View style={styles.sectionHeaderLeft}>
+                  <Text style={styles.sectionTitle}>Prestige Badges</Text>
+                  <Text style={styles.sectionSub}>Unlock badges as you watch, review & streak</Text>
+                </View>
 
-                <View style={styles.badgesList}>
+                <View style={styles.badgesGrid}>
                   {badges.map((b) => (
                     <View
                       key={b.id}
-                      style={[styles.badgeItemCard, !b.isUnlocked && styles.badgeItemLocked]}
+                      style={[styles.badgeCard, !b.isUnlocked && styles.badgeCardLocked]}
                     >
                       <View
                         style={[
-                          styles.badgeIconCircle,
-                          { backgroundColor: b.isUnlocked ? '#1E1E2C' : '#14141E' },
+                          styles.badgeIconBox,
+                          { backgroundColor: b.isUnlocked ? '#1E1E2E' : '#14141F' },
                         ]}
                       >
                         <Text style={styles.badgeEmoji}>{b.icon}</Text>
                       </View>
-                      <View style={styles.badgeInfoBox}>
-                        <View style={styles.badgeNameRow}>
-                          <Text style={styles.badgeTitle}>{t(b.title as any, b.title)}</Text>
+                      <View style={styles.badgeTextDetails}>
+                        <View style={styles.badgeTitleRow}>
+                          <Text style={styles.badgeTitleText}>{t(b.title as any, b.title)}</Text>
                           {b.isUnlocked ? (
-                            <Text style={styles.unlockedDate}>✓ {b.unlockedAt}</Text>
+                            <Text style={styles.unlockedTag}>✓ Unlocked</Text>
                           ) : (
-                            <Text style={styles.lockedTag}>🔒 {t('locked', 'Locked')}</Text>
+                            <Text style={styles.lockedTag}>🔒 Locked</Text>
                           )}
                         </View>
-                        <Text style={styles.badgeDesc}>{t(b.description as any, b.description)}</Text>
+                        <Text style={styles.badgeDescText}>{t(b.description as any, b.description)}</Text>
                       </View>
                     </View>
                   ))}
-                </View>
-              </View>
-            )}
-
-            {/* 🎡 LUCKY SPIN TAB */}
-            {activeTab === 'spin' && (
-              <View style={styles.spinContainer}>
-                <Text style={styles.spinHeaderTitle}>Daily Lucky Cinema Wheel</Text>
-                <Text style={styles.spinHeaderSubtitle}>
-                  Spin once every day for free Coins, XP, and VIP Passes!
-                </Text>
-
-                <View style={styles.wheelWrapper}>
-                  <View style={styles.pointerTriangle} />
-                  <Animated.View
-                    style={[
-                      styles.wheelCircle,
-                      { transform: [{ rotate: spinRotation }] },
-                    ]}
-                  >
-                    {SPIN_REWARDS.map((r, i) => (
-                      <View
-                        key={r.id}
-                        style={[
-                          styles.wheelSlice,
-                          { transform: [{ rotate: `${i * 60}deg` }] },
-                        ]}
-                      >
-                        <Text style={styles.sliceIcon}>{r.icon}</Text>
-                        <Text style={styles.sliceLabel}>{r.label.split(' ')[0]}</Text>
-                      </View>
-                    ))}
-                  </Animated.View>
-                  <View style={styles.wheelCenterHub}>
-                    <Sparkles size={18} color="#FFB800" />
-                  </View>
-                </View>
-
-                {wonReward && (
-                  <View style={styles.wonBanner}>
-                    <Text style={styles.wonTitle}>You Won {wonReward.label}!</Text>
-                  </View>
-                )}
-
-                <Pressable
-                  style={[
-                    styles.spinActionBtn,
-                    (!canSpinWheel || isSpinning) && styles.spinActionBtnDisabled,
-                  ]}
-                  disabled={!canSpinWheel || isSpinning}
-                  onPress={handleSpinPress}
-                >
-                  <Text style={styles.spinActionBtnText}>
-                    {isSpinning
-                      ? 'Spinning...'
-                      : canSpinWheel
-                      ? 'SPIN WHEEL (FREE)'
-                      : '✓ Spun Today - Come Back Tomorrow!'}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-
-            {/* DAILY STREAK TAB */}
-            {activeTab === 'streak' && (
-              <View style={styles.streakContainer}>
-                <View style={styles.streakHeroCard}>
-                  <Flame size={44} color="#FF5722" />
-                  <Text style={styles.streakDaysCount}>{streakDays} DAY STREAK</Text>
-                  <Text style={styles.streakSubtitle}>
-                    Watch movies & log in daily to build your streak multiplier!
-                  </Text>
-
-                  <View style={styles.streakRoadmap}>
-                    {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-                      const isReached = day <= streakDays;
-                      const isCurrent = day === streakDays;
-                      return (
-                        <View key={day} style={styles.streakDayCol}>
-                          <View
-                            style={[
-                              styles.streakDayCircle,
-                              isReached && styles.streakDayReached,
-                              isCurrent && styles.streakDayCurrent,
-                            ]}
-                          >
-                            {isReached ? (
-                              <Flame size={14} color="#FFF" />
-                            ) : (
-                              <Text style={styles.streakDayNum}>D{day}</Text>
-                            )}
-                          </View>
-                          <Text style={styles.streakDayReward}>+15 Coins</Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-
-                  <Pressable
-                    style={[
-                      styles.claimStreakBtn,
-                      hasClaimedDailyStreak && styles.claimStreakBtnClaimed,
-                    ]}
-                    disabled={hasClaimedDailyStreak}
-                    onPress={claimDailyStreak}
-                  >
-                    <Text style={styles.claimStreakBtnText}>
-                      {hasClaimedDailyStreak
-                        ? '✓ Today Claimed - Return Tomorrow!'
-                        : `Claim Today (+15 Coins, +${150 + Math.min(streakDays, 7) * 50} XP)`}
-                    </Text>
-                  </Pressable>
                 </View>
               </View>
             )}
@@ -524,136 +611,175 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(5, 7, 14, 0.88)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   modalCard: {
     width: '100%',
-    maxWidth: 620,
-    height: '90%',
-    maxHeight: 740,
-    borderRadius: 18,
+    maxWidth: 580,
+    maxHeight: '92%',
+    backgroundColor: '#0F121E',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#262638',
+    borderColor: '#24283C',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
     display: 'flex',
     flexDirection: 'column',
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E1E2C',
+    borderBottomColor: '#1A1E2F',
+    backgroundColor: '#121524',
   },
-  headerLeft: {
+  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+  },
+  headerIconGlow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 184, 0, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 184, 0, 0.25)',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#FFF',
+    color: '#FFFFFF',
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: '#8E8EA6',
+    marginTop: 1,
   },
   closeBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#1E1E2C',
+    backgroundColor: '#1C2032',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A2E44',
   },
-  userStatusBanner: {
-    backgroundColor: '#12121D',
-    padding: 14,
+  statusCard: {
+    backgroundColor: '#141829',
     marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#222234',
+    borderColor: '#252940',
+    gap: 10,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+  },
+  userProfileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
   },
   levelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#282414',
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FFB800',
   },
-  levelText: {
-    color: '#FFB800',
-    fontWeight: '800',
-    fontSize: 12,
+  levelBadgeText: {
+    color: '#FFD700',
+    fontWeight: '900',
+    fontSize: 11,
   },
   levelTitleText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 13,
     flex: 1,
-    marginLeft: 8,
+  },
+  statsRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   vipBadge: {
-    backgroundColor: '#2D1438',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(224, 64, 251, 0.15)',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#9C27B0',
-    marginRight: 6,
+    borderColor: '#E040FB',
   },
   vipBadgeText: {
-    color: '#E1BEE7',
+    color: '#E040FB',
     fontSize: 10,
     fontWeight: '800',
   },
   getVipBtn: {
-    backgroundColor: '#1C1C28',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FFB800',
-    marginRight: 6,
   },
   getVipBtnText: {
     color: '#FFB800',
     fontSize: 10,
     fontWeight: '800',
   },
-  coinBadge: {
-    backgroundColor: '#1C1C28',
+  coinPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#1C2035',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#2D2D42',
+    borderColor: '#2D3250',
   },
-  coinText: {
+  coinPillText: {
     color: '#FFD700',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 12,
   },
-  xpProgressContainer: {
+  xpBarSection: {
     gap: 4,
   },
   xpTrack: {
     width: '100%',
     height: 6,
-    backgroundColor: '#202030',
+    backgroundColor: '#1F243A',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -662,556 +788,168 @@ const styles = StyleSheet.create({
     backgroundColor: '#00D2FF',
     borderRadius: 3,
   },
-  xpSubtext: {
-    fontSize: 11,
-    color: '#76768E',
-    textAlign: 'right',
-  },
-  admobRewardedBtn: {
-    backgroundColor: '#16140D',
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 12,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#3D3418',
+  xpInfoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  admobBtnLeft: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    flex: 1,
-    paddingRight: 8,
   },
-  admobIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#262010',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FFB800',
-  },
-  admobBtnTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  admobBtnSub: {
+  xpTextLeft: {
     fontSize: 10,
-    color: '#A0A0B8',
-    marginTop: 1,
-  },
-  admobRewardPill: {
-    backgroundColor: '#262010',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFB800',
-  },
-  admobRewardPillText: {
-    color: '#FFD700',
-    fontWeight: '800',
-    fontSize: 11,
-  },
-  tabsScrollView: {
-    flexGrow: 0,
-    height: 52,
-    marginVertical: 4,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    alignItems: 'center',
-    gap: 8,
-  },
-  tabBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#13131C',
-    borderWidth: 1,
-    borderColor: '#1D1D2C',
-  },
-  tabBtnActive: {
-    backgroundColor: '#0356C5',
-    borderColor: '#0356C5',
-  },
-  tabBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8C8CA2',
-  },
-  tabBtnTextActive: {
-    color: '#FFF',
-  },
-  contentScrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 48,
-    flexGrow: 1,
-  },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    color: '#8E8EA4',
-    marginBottom: 16,
-  },
-  subfilterRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 14,
-  },
-  subfilterChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: '#151520',
-  },
-  subfilterChipActive: {
-    backgroundColor: '#262638',
-  },
-  subfilterText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#6F6F85',
-  },
-  subfilterTextActive: {
-    color: '#FFF',
-  },
-  missionsList: {
-    gap: 10,
-  },
-  missionCard: {
-    backgroundColor: '#13131D',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#202030',
-  },
-  missionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  missionTitleBox: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  missionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFF',
-    marginBottom: 3,
-  },
-  missionDesc: {
-    fontSize: 12,
-    color: '#8E8EA4',
-  },
-  rewardTag: {
-    backgroundColor: '#1E1E2C',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#2D2D42',
-  },
-  rewardTagText: {
-    fontSize: 11,
-    color: '#FFB800',
-    fontWeight: '700',
-  },
-  missionFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  missionProgressBox: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  missionTrack: {
-    flex: 1,
-    height: 5,
-    backgroundColor: '#202030',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  missionFill: {
-    height: '100%',
-    backgroundColor: '#0356C5',
-    borderRadius: 3,
-  },
-  progressCounter: {
-    fontSize: 11,
-    color: '#707086',
+    color: '#A0A0C0',
     fontWeight: '600',
   },
-  claimBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  claimBtnDisabled: {
-    backgroundColor: '#202030',
-  },
-  claimBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  claimedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  claimedText: {
-    fontSize: 12,
-    color: '#00E676',
-    fontWeight: '700',
-  },
-  eventsListContainer: {
-    gap: 14,
-  },
-  eventCardItem: {
-    backgroundColor: '#13131D',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#242436',
-  },
-  eventCardImage: {
-    width: '100%',
-    height: 120,
-  },
-  eventCardBody: {
-    padding: 14,
-  },
-  eventMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  eventLiveTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  eventLiveTagText: {
-    color: '#FFF',
+  xpTextRight: {
     fontSize: 10,
-    fontWeight: '800',
-  },
-  eventBadgeRewardText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  eventCardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  eventCardSubtitle: {
-    fontSize: 12,
-    color: '#A0A0B8',
-    marginBottom: 12,
-  },
-  eventCardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  eventMultiplierText: {
-    fontSize: 12,
     color: '#00D2FF',
     fontWeight: '700',
   },
-  eventSelectBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  eventSelectBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  themesContainer: {
-    gap: 12,
-  },
-  themesGrid: {
-    gap: 10,
-  },
-  themeCard: {
-    backgroundColor: '#13131D',
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#242436',
-    flexDirection: 'row',
-  },
-  themeColorBar: {
-    width: 8,
-  },
-  themeContent: {
-    flex: 1,
-    padding: 14,
-  },
-  themeTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  themeName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  equippedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,230,118,0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  equippedText: {
-    fontSize: 10,
-    color: '#00E676',
-    fontWeight: '700',
-  },
-  themeDesc: {
-    fontSize: 12,
-    color: '#8E8EA4',
-    marginBottom: 10,
-  },
-  themeActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  equipBtn: {
-    backgroundColor: '#262638',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  equipBtnActive: {
-    backgroundColor: '#1E1E2C',
-    borderWidth: 1,
-    borderColor: '#00E676',
-  },
-  equipBtnText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  buyThemeBtn: {
-    backgroundColor: '#0356C5',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  buyThemeBtnDisabled: {
-    backgroundColor: '#222230',
-  },
-  buyThemeBtnText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  badgesContainer: {
-    gap: 10,
-  },
-  badgesList: {
-    gap: 10,
-  },
-  badgeItemCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#13131D',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#242436',
-    gap: 12,
-  },
-  badgeItemLocked: {
-    opacity: 0.5,
-  },
-  badgeIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2A2A3E',
-  },
-  badgeEmoji: {
-    fontSize: 20,
-  },
-  badgeInfoBox: {
-    flex: 1,
-  },
-  badgeNameRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  badgeTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  unlockedDate: {
-    fontSize: 10,
-    color: '#00E676',
-    fontWeight: '600',
-  },
-  lockedTag: {
-    fontSize: 10,
-    color: '#717188',
-    fontWeight: '700',
-  },
-  badgeDesc: {
-    fontSize: 11,
-    color: '#8E8EA4',
-  },
-  streakContainer: {
-    alignItems: 'center',
-  },
-  streakHeroCard: {
-    width: '100%',
-    backgroundColor: '#13131D',
-    borderRadius: 14,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#242436',
-  },
-  streakDaysCount: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFF',
+  dailySourcesBar: {
+    marginHorizontal: 16,
     marginTop: 8,
-  },
-  streakSubtitle: {
-    fontSize: 12,
-    color: '#8E8EA4',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  streakRoadmap: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 20,
-  },
-  streakDayCol: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  streakDayCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1E1E2C',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#121524',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2E2E42',
+    borderColor: '#202438',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  streakDayReached: {
-    backgroundColor: '#FF5722',
-    borderColor: '#FF5722',
+  sourcesHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  streakDayCurrent: {
-    borderColor: '#FFB800',
-    borderWidth: 2,
+  sourcesToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  streakDayNum: {
+  sourcesTitle: {
     fontSize: 11,
-    color: '#717188',
     fontWeight: '700',
-  },
-  streakDayReward: {
-    fontSize: 10,
     color: '#FFB800',
-    fontWeight: '600',
   },
-  claimStreakBtn: {
-    width: '100%',
+  watchAdCompactBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: '#0356C5',
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  watchAdBtnText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  sourcesChipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1E2F',
+  },
+  sourceChip: {
+    backgroundColor: '#181C2E',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#262A42',
     alignItems: 'center',
   },
-  claimStreakBtnClaimed: {
-    backgroundColor: '#202030',
-  },
-  claimStreakBtnText: {
-    color: '#FFF',
+  sourceChipValue: {
+    color: '#FFD700',
+    fontSize: 11,
     fontWeight: '800',
-    fontSize: 13,
   },
-  spinContainer: {
+  sourceChipLabel: {
+    color: '#8E8EA6',
+    fontSize: 9,
+  },
+  navTabsWrapper: {
+    marginTop: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1E2F',
+  },
+  navTabsRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  tabSegment: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#141728',
+    borderWidth: 1,
+    borderColor: '#22263C',
   },
-  spinHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFF',
-    marginBottom: 4,
+  tabSegmentActive: {
+    backgroundColor: '#0356C5',
+    borderColor: '#0356C5',
   },
-  spinHeaderSubtitle: {
+  tabSegmentText: {
     fontSize: 12,
-    color: '#8E8EA4',
-    textAlign: 'center',
-    marginBottom: 20,
+    fontWeight: '700',
+    color: '#8E8EA6',
   },
-  wheelWrapper: {
-    width: 220,
-    height: 220,
+  tabSegmentTextActive: {
+    color: '#FFFFFF',
+  },
+  mainScrollView: {
+    flex: 1,
+  },
+  mainScrollContent: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+  spinSection: {
+    alignItems: 'center',
+  },
+  sectionHeaderCenter: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  heroTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  heroSubtitle: {
+    fontSize: 11,
+    color: '#8E8EA6',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  wheelOuterContainer: {
+    width: 240,
+    height: 240,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 12,
+    position: 'relative',
   },
-  pointerTriangle: {
+  wheelLightBulb: {
     position: 'absolute',
-    top: -12,
-    zIndex: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    shadowColor: '#FFB800',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  wheelPointerTriangle: {
+    position: 'absolute',
+    top: -10,
+    zIndex: 20,
     width: 0,
     height: 0,
     borderLeftWidth: 10,
@@ -1219,14 +957,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 16,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#FFB800',
+    borderTopColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 8,
   },
   wheelCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: '#1E1E2C',
-    borderWidth: 4,
+    width: 216,
+    height: 216,
+    borderRadius: 108,
+    backgroundColor: '#131626',
+    borderWidth: 5,
     borderColor: '#FFB800',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1235,107 +978,355 @@ const styles = StyleSheet.create({
   wheelSlice: {
     position: 'absolute',
     width: 60,
-    height: 80,
-    top: 10,
+    height: 85,
+    top: 8,
     alignItems: 'center',
   },
+  sliceContentBox: {
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: 'rgba(15, 18, 30, 0.75)',
+  },
   sliceIcon: {
-    fontSize: 20,
+    fontSize: 18,
   },
   sliceLabel: {
     fontSize: 9,
-    color: '#FFF',
+    fontWeight: '800',
+    marginTop: 1,
+  },
+  wheelHubCircle: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#0A0C14',
+    borderWidth: 3,
+    borderColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  wonRewardBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginBottom: 14,
+  },
+  wonRewardText: {
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  prizesLegendBox: {
+    width: '100%',
+    backgroundColor: '#121524',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#22263C',
+    padding: 12,
+    marginBottom: 14,
+  },
+  prizesLegendTitle: {
+    color: '#8E8EA6',
+    fontSize: 10,
+    fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: 0.6,
+  },
+  prizesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  prizeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#181C2E',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  prizeChipIcon: {
+    fontSize: 12,
+  },
+  prizeChipText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  spinPrimaryBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  spinPrimaryBtnDisabled: {
+    opacity: 0.6,
+  },
+  spinPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  streakSection: {},
+  streakHeroCard: {
+    backgroundColor: '#141829',
+    borderRadius: 18,
+    padding: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#24283C',
+  },
+  streakFlameCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 87, 34, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 87, 34, 0.3)',
+    marginBottom: 10,
+  },
+  streakTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  streakDesc: {
+    fontSize: 12,
+    color: '#8E8EA6',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  streakGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 18,
+  },
+  streakDayCell: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  streakBadgeCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1C2032',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2C3048',
+  },
+  streakBadgeReached: {
+    backgroundColor: '#FF5722',
+    borderColor: '#FF5722',
+  },
+  streakBadgeCurrent: {
+    borderColor: '#FFB800',
+    borderWidth: 2,
+  },
+  streakDayNum: {
+    fontSize: 10,
+    color: '#7B7B98',
     fontWeight: '700',
+  },
+  streakCoinReward: {
+    fontSize: 10,
+    color: '#FFB800',
+    fontWeight: '700',
+  },
+  claimStreakBtn: {
+    width: '100%',
+    height: 46,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  claimStreakBtnDisabled: {
+    opacity: 0.6,
+  },
+  claimStreakBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  themesSection: {
+    gap: 12,
+  },
+  sectionHeaderLeft: {
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  sectionSub: {
+    fontSize: 11,
+    color: '#8E8EA6',
     marginTop: 2,
   },
-  wheelCenterHub: {
-    position: 'absolute',
+  themesCardsList: {
+    gap: 10,
+  },
+  themeCardItem: {
+    backgroundColor: '#141829',
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#24283C',
+    flexDirection: 'row',
+  },
+  themeAccentStripe: {
+    width: 6,
+  },
+  themeCardContent: {
+    flex: 1,
+    padding: 14,
+  },
+  themeHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  themeName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  equippedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 230, 118, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  equippedPillText: {
+    fontSize: 10,
+    color: '#00E676',
+    fontWeight: '700',
+  },
+  themeDesc: {
+    fontSize: 12,
+    color: '#8E8EA6',
+    marginBottom: 12,
+  },
+  themeActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  themeBtn: {
+    backgroundColor: '#22263C',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  themeBtnActive: {
+    backgroundColor: '#181C2E',
+    borderWidth: 1,
+    borderColor: '#00E676',
+  },
+  themeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  themeBuyBtn: {
+    backgroundColor: '#0356C5',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  themeBuyBtnDisabled: {
+    backgroundColor: '#1F2338',
+  },
+  themeBuyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  badgesSection: {
+    gap: 12,
+  },
+  badgesGrid: {
+    gap: 10,
+  },
+  badgeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#141829',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#24283C',
+    gap: 12,
+  },
+  badgeCardLocked: {
+    opacity: 0.5,
+  },
+  badgeIconBox: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0C0C12',
-    borderWidth: 3,
-    borderColor: '#FFB800',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  wonBanner: {
-    backgroundColor: '#1E1E2C',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#FFB800',
-    marginVertical: 12,
+    borderColor: '#2A2E44',
   },
-  wonTitle: {
-    color: '#FFD700',
-    fontWeight: '800',
-    fontSize: 14,
+  badgeEmoji: {
+    fontSize: 20,
   },
-  spinActionBtn: {
-    width: '100%',
-    backgroundColor: '#0356C5',
-    paddingVertical: 13,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  spinActionBtnDisabled: {
-    backgroundColor: '#202030',
-  },
-  spinActionBtnText: {
-    color: '#FFF',
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  earnInfoStrip: {
-    marginHorizontal: 16,
-    marginTop: 6,
-    backgroundColor: '#0E0E1A',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E1E30',
-    padding: 12,
-    gap: 8,
-  },
-  earnInfoTitle: {
-    color: '#FFB800',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  earnInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  earnInfoItem: {
+  badgeTextDetails: {
     flex: 1,
+  },
+  badgeTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 1,
+    marginBottom: 2,
   },
-  earnInfoValue: {
-    color: '#FFD700',
-    fontSize: 16,
-    fontWeight: '900',
+  badgeTitleText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  earnInfoLabel: {
-    color: '#FFF',
+  unlockedTag: {
     fontSize: 10,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  earnInfoSub: {
     color: '#00E676',
-    fontSize: 9,
     fontWeight: '700',
-    textAlign: 'center',
   },
-  earnInfoDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: '#1E1E30',
+  lockedTag: {
+    fontSize: 10,
+    color: '#717188',
+    fontWeight: '700',
+  },
+  badgeDescText: {
+    fontSize: 11,
+    color: '#8E8EA6',
   },
 });

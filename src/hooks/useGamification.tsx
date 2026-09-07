@@ -63,12 +63,12 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FFB800' },
-  { id: '2', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#00D2FF' },
-  { id: '3', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#9C27B0' },
-  { id: '4', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#FF9800' },
+  { id: '1', label: '10 Coins', icon: '💰', type: 'coins', amount: 10, color: '#FFB800' },
+  { id: '2', label: '25 Coins', icon: '💰', type: 'coins', amount: 25, color: '#00D2FF' },
+  { id: '3', label: '15 Coins', icon: '💰', type: 'coins', amount: 15, color: '#9C27B0' },
+  { id: '4', label: '40 Coins', icon: '💰', type: 'coins', amount: 40, color: '#FF9800' },
   { id: '5', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#00E676' },
-  { id: '6', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#0356C5' },
+  { id: '6', label: '30 Coins', icon: '💰', type: 'coins', amount: 30, color: '#0356C5' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -600,7 +600,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         const { data, error } = await supabase.rpc('spin_lucky_wheel');
         if (!error && data && (data as any).success) {
           const res = data as any;
-          const serverReward = SPIN_REWARDS.find((r) => r.type === res.reward_type && r.amount === res.reward_value) || SPIN_REWARDS[0];
+          const serverReward = SPIN_REWARDS.find((r) => r.type === res.reward_type && r.amount === res.reward_value)
+            || SPIN_REWARDS[Math.floor(Math.random() * SPIN_REWARDS.length)];
 
           const updatedCoins = res.new_coins ?? (coins + (serverReward.type === 'coins' ? serverReward.amount : 0));
           const updatedXp = res.new_xp ?? (xp + (serverReward.type === 'xp' ? serverReward.amount : 0));
