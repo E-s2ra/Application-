@@ -106,7 +106,7 @@ export default function WatchScreen() {
 
   // Auto-hide controls after 3 seconds of inactivity
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     if (showControls && isPlaying) {
       timeout = setTimeout(() => {
         setShowControls(false);

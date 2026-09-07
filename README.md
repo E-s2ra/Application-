@@ -18,7 +18,7 @@ AniFlix is a production-grade, multi-platform cinema and anime streaming web and
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Expo SDK 57, React Native 0.76, React Native Web 0.21.
+- **Framework**: Expo SDK 57, React Native 0.86, React Native Web 0.21.
 - **Navigation**: Expo Router (File-based routing).
 - **Backend & Auth**: Cloud Supabase (PostgreSQL, Auth, RLS Policies, Edge Functions).
 - **State & Storage**: React Context, AsyncStorage, LocalStorage.
@@ -39,6 +39,7 @@ Application-/
 │   └── DEPLOYMENT.md         # Production web export & Edge Function deployment
 ├── src/
 │   ├── app/                  # Expo Router file-based screens & layouts
+│   ├── features/             # Feature-owned domain logic (VIP, auth, media, rewards)
 │   ├── components/           # Reusable UI components (Modals, Badges, Header)
 │   ├── services/             # Media, VIP, and Reviews service abstractions
 │   ├── hooks/                # Auth, Favorites, and Gamification hooks

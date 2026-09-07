@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
+import { getVipStatus } from '@/features/vip/vip-state';
 
 export type Mission = {
   id: string;
@@ -346,7 +347,14 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   ]);
 
   const activeEvent = SEASONAL_EVENTS[activeEventIndex] || SEASONAL_EVENTS[0];
-  const isVIP = isVipFlag || vipDaysRemaining > 0 || (vipExpiresAt !== null && new Date(vipExpiresAt).getTime() > Date.now());
+  const isVIP = isVipFlag || vipDaysRemaining > 0;
+
+  const applyVipProfile = (profile: { is_vip?: boolean | null; vip_expires_at?: string | null }) => {
+    const vip = getVipStatus(profile);
+    setIsVipFlag(vip.isVIP);
+    setVipDaysRemaining(vip.vipDaysRemaining);
+    setVipExpiresAt(vip.vipExpiresAt);
+  };
 
   // Level Computation: Every 300 XP = 1 Level
   const level = Math.floor(xp / 300) + 1;
@@ -376,6 +384,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     setStreakDays(0);
     setVipDaysRemaining(0);
     setVipExpiresAt(null);
+    setIsVipFlag(false);
     setHasClaimedDailyStreak(false);
     setCanSpinWheel(true);
 
@@ -448,43 +457,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
                 setUnlockedMediaIds((profile as any).unlocked_media_ids);
               }
 
-              // Authoritatively set VIP based on DB (supporting both explicit expiration dates & perpetual VIP)
-              if (profile.is_vip === true) {
-                setIsVipFlag(true);
-                if (!profile.vip_expires_at) {
-                  // Perpetual / Lifetime VIP (e.g. granted manually by admin without explicit expiry)
-                  setVipDaysRemaining(999);
-                  setVipExpiresAt(null);
-                } else {
-                  const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
-                  if (diffMs > 0) {
-                    const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-                    setVipDaysRemaining(days);
-                    setVipExpiresAt(profile.vip_expires_at);
-                  } else {
-                    // Expiration date has passed
-                    setIsVipFlag(false);
-                    setVipDaysRemaining(0);
-                    setVipExpiresAt(null);
-                  }
-                }
-              } else if (profile.vip_expires_at) {
-                const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
-                if (diffMs > 0) {
-                  const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-                  setIsVipFlag(true);
-                  setVipDaysRemaining(days);
-                  setVipExpiresAt(profile.vip_expires_at);
-                } else {
-                  setIsVipFlag(false);
-                  setVipDaysRemaining(0);
-                  setVipExpiresAt(null);
-                }
-              } else {
-                setIsVipFlag(false);
-                setVipDaysRemaining(0);
-                setVipExpiresAt(null);
-              }
+              applyVipProfile(profile);
             }
 
             // Check Daily Logins for today
@@ -930,45 +903,20 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           setUnlockedMediaIds((profile as any).unlocked_media_ids);
         }
 
-        if (profile.is_vip === true) {
-          setIsVipFlag(true);
-          if (!profile.vip_expires_at) {
-            setVipDaysRemaining(999);
-            setVipExpiresAt(null);
-          } else {
-            const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
-            if (diffMs > 0) {
-              const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-              setVipDaysRemaining(days);
-              setVipExpiresAt(profile.vip_expires_at);
-            } else {
-              setIsVipFlag(false);
-              setVipDaysRemaining(0);
-              setVipExpiresAt(null);
-            }
-          }
-        } else if (profile.vip_expires_at) {
-          const diffMs = new Date(profile.vip_expires_at).getTime() - Date.now();
-          if (diffMs > 0) {
-            const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-            setIsVipFlag(true);
-            setVipDaysRemaining(days);
-            setVipExpiresAt(profile.vip_expires_at);
-          } else {
-            setIsVipFlag(false);
-            setVipDaysRemaining(0);
-            setVipExpiresAt(null);
-          }
-        } else {
-          setIsVipFlag(false);
-          setVipDaysRemaining(0);
-          setVipExpiresAt(null);
-        }
+        applyVipProfile(profile);
       }
     } catch (e) {
       console.warn('[useGamification] refreshGamification error:', e);
     }
   };
+
+  useEffect(() => {
+    if (!user?.id || user.id.startsWith('guest-')) return;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refreshGamification();
+    });
+    return () => subscription.remove();
+  }, [user?.id]);
 
   return (
     <GamificationContext.Provider

@@ -266,23 +266,20 @@ serve(async (req) => {
                 }
                 const targetEmail = String(targetUser.email).trim().toLowerCase();
                 const daysCount = Number(targetUser.days);
-                if (isNaN(daysCount) || daysCount < 1) {
+                if (!Number.isInteger(daysCount) || daysCount < 1 || daysCount > 3650) {
                     throw new Error('Invalid VIP duration days');
                 }
 
                 // 1. Search profiles table first by email, username, or user ID
                 let targetUserId: string | undefined;
-                let existingExpiresAt: string | null = null;
-
                 const { data: targetProfile } = await supabaseAdmin
                     .from('profiles')
-                    .select('id, email, username, is_vip, vip_expires_at')
+                    .select('id, email, username')
                     .or(`email.ilike.${targetEmail},username.ilike.${targetEmail},id.eq.${targetEmail}`)
                     .maybeSingle();
 
                 if (targetProfile) {
                     targetUserId = targetProfile.id;
-                    existingExpiresAt = targetProfile.vip_expires_at ?? null;
                 } else {
                     // 2. Fallback: search auth.users list (with large perPage parameter)
                     const { data: authUserList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -294,12 +291,10 @@ serve(async (req) => {
                         // Retrieve profile for this auth user if it exists
                         const { data: matchedProfile } = await supabaseAdmin
                             .from('profiles')
-                            .select('is_vip, vip_expires_at')
+                            .select('id')
                             .eq('id', targetUserId)
                             .maybeSingle();
-                        if (matchedProfile) {
-                            existingExpiresAt = matchedProfile.vip_expires_at ?? null;
-                        }
+                        if (!matchedProfile) targetUserId = undefined;
                     }
                 }
 
@@ -307,32 +302,17 @@ serve(async (req) => {
                     throw new Error(`User with email, username, or ID "${targetEmail}" was not found.`);
                 }
 
-                // Calculate expiry date: extend from existing expiry if currently active, else from now
-                let startDate = new Date();
-                if (existingExpiresAt && new Date(existingExpiresAt).getTime() > Date.now()) {
-                    startDate = new Date(existingExpiresAt);
-                }
-
-                const expiryDate = new Date(startDate);
-                expiryDate.setDate(expiryDate.getDate() + daysCount);
-                const isoExpiry = expiryDate.toISOString();
-
-                const { data: updatedProfile, error: vipGrantError } = await supabaseAdmin
-                    .from('profiles')
-                    .update({
-                        is_vip: true,
-                        vip_expires_at: isoExpiry,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', targetUserId)
-                    .select()
-                    .single();
+                const { data: grantResult, error: vipGrantError } = await supabaseAdmin.rpc('admin_grant_vip', {
+                    p_target_user_id: targetUserId,
+                    p_days: daysCount,
+                });
 
                 if (vipGrantError) {
                     success = false;
                     errorMsg = vipGrantError.message;
                 } else {
-                    result = updatedProfile;
+                    result = grantResult;
+                    const isoExpiry = grantResult?.vip_expires_at;
 
                     // Log to vip_transactions table
                     try {

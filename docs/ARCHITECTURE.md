@@ -38,6 +38,7 @@ This document describes the high-level architecture, directory layout, routing s
 - **`src/hooks/`**: Custom hooks for global app state (`useAuth`, `useFavorites`, `useGamification`).
 - **`src/lib/`**: Supabase client initialization (`supabase.ts`), i18n translation engine (`translations.ts`), and Edge Function RPC callers (`admin-operations.ts`).
 - **`src/types/`**: Shared TypeScript definitions (`index.ts`).
+- **`src/features/`**: Feature-owned domain logic and shared feature contracts. Route files remain in `src/app/` for Expo Router compatibility.
 
 ---
 
@@ -88,3 +89,5 @@ GUEST ──► NORMAL USER ──► VIP SOVEREIGN ──► ADMIN
 - **PostgreSQL Database**: Tables for `anime`, `reviews`, `favorites`, `payments`, and `profiles`.
 - **Row Level Security (RLS)**: Enforced at the database level to ensure users can only modify their own profiles, favorites, and reviews.
 - **Edge Functions (`admin-operations`)**: Serverless function executing privileged admin actions (`grant_vip`, catalog sync) using the Supabase Service Role key securely.
+
+VIP status is server-authoritative: authenticated clients derive active status from `profiles.is_vip` and `profiles.vip_expires_at`. Admin grants use an atomic database function so concurrent grants extend the active expiry safely.

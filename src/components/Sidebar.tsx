@@ -59,16 +59,16 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
 
   const navItems = [
     { label: t('tabHome', 'Home'), icon: Home, route: '/' },
-    { label: t('tabSearch', 'Browse Catalog'), icon: LayoutGrid, route: '/search' },
-    { label: t('tabFavorites', 'My List'), icon: Bookmark, route: '/favorites' },
+    { label: t('tabSearch', 'Browse Catalog'), icon: LayoutGrid, route: '/(tabs)/search' },
+    { label: t('tabFavorites', 'My List'), icon: Bookmark, route: '/(tabs)/favorites' },
   ];
 
   const categories = [
-    { label: t('catMovies', 'Movies'), icon: Film, route: '/search', params: { category: 'Movies' } },
-    { label: t('catAnimeMovies', 'Anime Movies'), icon: Clapperboard, route: '/search', params: { category: 'Anime Movies' } },
-    { label: t('catKDrama', 'K-Drama'), icon: Sparkles, route: '/search', params: { category: 'K-Drama' } },
-    { label: t('catDrama', 'Drama'), icon: Tv, route: '/search', params: { category: 'Drama' } },
-    { label: t('catAnimeSeries', 'Anime Series'), icon: Zap, route: '/search', params: { category: 'Anime Series' } },
+    { label: t('catMovies', 'Movies'), icon: Film, route: '/(tabs)/search', params: { category: 'Movies' } },
+    { label: t('catAnimeMovies', 'Anime Movies'), icon: Clapperboard, route: '/(tabs)/search', params: { category: 'Anime Movies' } },
+    { label: t('catKDrama', 'K-Drama'), icon: Sparkles, route: '/(tabs)/search', params: { category: 'K-Drama' } },
+    { label: t('catDrama', 'Drama'), icon: Tv, route: '/(tabs)/search', params: { category: 'Drama' } },
+    { label: t('catAnimeSeries', 'Anime Series'), icon: Zap, route: '/(tabs)/search', params: { category: 'Anime Series' } },
   ];
 
   const sidebarWidth = 280;
@@ -108,7 +108,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
       <Pressable
         style={[styles.userProfileCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
         onPress={() => {
-          router.push('/profile');
+          router.push('/(tabs)/profile' as any);
           if (!isDesktop) onClose();
         }}
       >

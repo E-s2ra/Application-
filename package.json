@@ -51,7 +51,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit --pretty false",
+    "test:vip": "playwright test tests/vip/vip-state.spec.ts"
   },
   "private": true
 }

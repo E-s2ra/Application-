@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { Radius, Spacing } from '@/constants/theme';
@@ -11,7 +11,7 @@ type MediaCardSkeletonProps = {
 
 export function MediaCardSkeleton({ width = 140, height = 200, style }: MediaCardSkeletonProps) {
   const theme = useTheme();
-  const opacityAnim = useRef(new Animated.Value(0.4)).current;
+  const [opacityAnim] = useState(() => new Animated.Value(0.4));
 
   useEffect(() => {
     const pulse = Animated.loop(
