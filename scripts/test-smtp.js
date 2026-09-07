@@ -28,10 +28,15 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const HOST = process.env.SMTP_HOST;
 const PORT = parseInt(process.env.SMTP_PORT || '587', 10);
-const USER = process.env.SMTP_USER || 'esra2002.netbti@gmail.com';
-const PASS = process.env.SMTP_PASS || 'kolbqyjjacmgovwv';
+const USER = process.env.SMTP_USER;
+const PASS = process.env.SMTP_PASS;
+
+if (!HOST || !USER || !PASS) {
+  console.error('SMTP_HOST, SMTP_USER, and SMTP_PASS must be configured in the environment or .env file.');
+  process.exit(1);
+}
 const TARGET = process.argv[2] || USER;
 
 console.log('=====================================================');
@@ -71,7 +76,7 @@ function handleData(dataStr) {
     const tlsSocket = tls.connect({
       socket: socket,
       servername: HOST,
-      rejectUnauthorized: false
+      rejectUnauthorized: true
     }, () => {
       console.log('[TLS] Encrypted channel established successfully!\n');
       activeSocket = tlsSocket;

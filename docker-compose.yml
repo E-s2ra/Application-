@@ -69,11 +69,11 @@ services:
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
       GOTRUE_MAILER_AUTOCONFIRM: "false"
-      GOTRUE_SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
-      GOTRUE_SMTP_USER: ${SMTP_USER:-esra2002.netbti@gmail.com}
-      GOTRUE_SMTP_PASS: ${SMTP_PASS:-kolbqyjjacmgovwv}
-      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-esra2002.netbti@gmail.com}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:?SMTP_PORT is required}
+      GOTRUE_SMTP_USER: ${SMTP_USER:?SMTP_USER is required}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:?SMTP_PASS is required}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:?SMTP_ADMIN_EMAIL is required}
       GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-AniFlix Support}
     expose:
       - "9999"
