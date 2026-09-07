@@ -34,11 +34,11 @@ import { useAdMob } from '@/hooks/useAdMob';
 import { VipSubscriptionModal } from './VipSubscriptionModal';
 import { useLanguage } from '@/hooks/use-language';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-function LuckyWheelSvg({ rewards }: { rewards: SpinReward[] }) {
-  const size = 220;
+function LuckyWheelSvg({ rewards, size = 210 }: { rewards: SpinReward[]; size?: number }) {
   const center = size / 2;
   const radius = center - 4;
   const numSlices = rewards.length;
@@ -80,6 +80,7 @@ function LuckyWheelSvg({ rewards }: { rewards: SpinReward[] }) {
           const ty = center + textRadius * Math.sin(radMid);
 
           const palette = sliceColors[i % sliceColors.length];
+          const isSmall = size < 190;
 
           return (
             <G key={r.id}>
@@ -89,9 +90,9 @@ function LuckyWheelSvg({ rewards }: { rewards: SpinReward[] }) {
               {/* Icon Emoji */}
               <SvgText
                 x={tx}
-                y={ty - 6}
+                y={ty - (isSmall ? 4 : 6)}
                 fill="#FFFFFF"
-                fontSize={16}
+                fontSize={isSmall ? 13 : 16}
                 fontWeight="bold"
                 textAnchor="middle"
                 alignmentBaseline="middle"
@@ -102,9 +103,9 @@ function LuckyWheelSvg({ rewards }: { rewards: SpinReward[] }) {
               {/* Label Text */}
               <SvgText
                 x={tx}
-                y={ty + 10}
+                y={ty + (isSmall ? 8 : 10)}
                 fill={r.color || palette.border}
-                fontSize={10}
+                fontSize={isSmall ? 8.5 : 10}
                 fontWeight="bold"
                 textAnchor="middle"
                 alignmentBaseline="middle"
@@ -117,7 +118,7 @@ function LuckyWheelSvg({ rewards }: { rewards: SpinReward[] }) {
       </G>
 
       {/* Center Golden Hub */}
-      <Circle cx={center} cy={center} r={24} fill="#0A0C14" stroke="#FFD700" strokeWidth={3} />
+      <Circle cx={center} cy={center} r={size < 190 ? 18 : 24} fill="#0A0C14" stroke="#FFD700" strokeWidth={2.5} />
     </Svg>
   );
 }
@@ -131,8 +132,12 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
   const { t } = useLanguage();
   const { showRewardedAd } = useAdMob();
+  const { width: windowWidth, isXS, isSmallDevice } = useResponsive();
   const [showVipModal, setShowVipModal] = useState(false);
   const [showSourcesInfo, setShowSourcesInfo] = useState(false);
+
+  const wheelSize = isSmallDevice ? 160 : isXS ? 180 : 210;
+  const bulbRadius = Math.round(wheelSize / 2) + 4;
 
   const {
     coins,
@@ -273,7 +278,11 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
               {!isVIP && (
                 <Pressable
-                  style={styles.watchAdCompactBtn}
+                  style={({ pressed }) => [
+                    styles.watchAdCompactBtn,
+                    { backgroundColor: themeColors.primary },
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+                  ]}
                   onPress={() =>
                     showRewardedAd({
                       rewardCoins: 12,
@@ -281,8 +290,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                       onRewarded: () => addXPAndCoins(50, 12, true),
                     })
                   }
+                  accessibilityRole="button"
+                  accessibilityLabel="Watch Rewarded Ad for 12 Coins"
                 >
-                  <Film size={13} color="#FFF" />
+                  <Film size={13} color="#FFFFFF" />
                   <Text style={styles.watchAdBtnText}>Watch Ad (+12 💰)</Text>
                 </Pressable>
               )}
@@ -368,7 +379,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 </View>
 
                 {/* 🎡 Outer Wheel Container with Perimeter Lights */}
-                <View style={styles.wheelOuterContainer}>
+                <View style={[styles.wheelOuterContainer, { width: wheelSize + 24, height: wheelSize + 24 }]}>
                   {/* Perimeter Light Bulbs */}
                   {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg, index) => (
                     <View
@@ -378,7 +389,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                         {
                           transform: [
                             { rotate: `${deg}deg` },
-                            { translateY: -114 },
+                            { translateY: -bulbRadius },
                           ],
                           backgroundColor: index % 2 === 0 ? '#FFB800' : '#00D2FF',
                         },
@@ -392,16 +403,37 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   {/* Animated Wheel Body */}
                   <Animated.View
                     style={{
-                      width: 220,
-                      height: 220,
+                      width: wheelSize,
+                      height: wheelSize,
                       justifyContent: 'center',
                       alignItems: 'center',
                       transform: [{ rotate: spinRotation }],
                     }}
                   >
-                    <LuckyWheelSvg rewards={SPIN_REWARDS} />
+                    <LuckyWheelSvg rewards={SPIN_REWARDS} size={wheelSize} />
                   </Animated.View>
                 </View>
+
+                {/* Spin CTA Button — Positioned directly below wheel for instant access */}
+                <Pressable
+                  style={[
+                    styles.spinPrimaryBtn,
+                    (!canSpinWheel || isSpinning) && styles.spinPrimaryBtnDisabled,
+                  ]}
+                  disabled={!canSpinWheel || isSpinning}
+                  onPress={handleSpinPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="Spin Cinema Wheel"
+                >
+                  <PrimaryGradient borderRadius={14} />
+                  <Text style={styles.spinPrimaryBtnText}>
+                    {isSpinning
+                      ? '⚡ Spinning Wheel...'
+                      : canSpinWheel
+                      ? '🎡 SPIN WHEEL NOW (FREE)'
+                      : '✓ Spun Today - Return Tomorrow!'}
+                  </Text>
+                </Pressable>
 
                 {/* Winner Celebration Banner */}
                 {wonReward && (
@@ -425,25 +457,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     ))}
                   </View>
                 </View>
-
-                {/* Spin CTA Button */}
-                <Pressable
-                  style={[
-                    styles.spinPrimaryBtn,
-                    (!canSpinWheel || isSpinning) && styles.spinPrimaryBtnDisabled,
-                  ]}
-                  disabled={!canSpinWheel || isSpinning}
-                  onPress={handleSpinPress}
-                >
-                  <PrimaryGradient borderRadius={14} />
-                  <Text style={styles.spinPrimaryBtnText}>
-                    {isSpinning
-                      ? '⚡ Spinning Wheel...'
-                      : canSpinWheel
-                      ? '🎡 SPIN WHEEL NOW (FREE)'
-                      : '✓ Spun Today - Return Tomorrow!'}
-                  </Text>
-                </Pressable>
               </View>
             )}
 
@@ -614,12 +627,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 7, 14, 0.88)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 10,
   },
   modalCard: {
     width: '100%',
     maxWidth: 580,
-    maxHeight: '92%',
+    maxHeight: '95%',
     backgroundColor: '#0F121E',
     borderRadius: 24,
     borderWidth: 1,
@@ -928,11 +941,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   wheelOuterContainer: {
-    width: 240,
-    height: 240,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 8,
     position: 'relative',
   },
   wheelLightBulb: {

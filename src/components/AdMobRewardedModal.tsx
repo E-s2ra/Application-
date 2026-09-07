@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,20 +8,22 @@ import {
   Image,
   Animated,
   Easing,
-  Platform,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
 import {
   X,
   Volume2,
   VolumeX,
   Sparkles,
-  Award,
   CheckCircle2,
-  Play,
   Tv,
+  Coins,
+  ShieldCheck,
 } from 'lucide-react-native';
 import { useAdMob } from '@/hooks/useAdMob';
+import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const AD_TOTAL_SECONDS = 8;
 
@@ -29,10 +31,13 @@ export function AdMobRewardedModal() {
   const {
     isAdModalVisible,
     currentRewardCoins,
-    currentRewardType,
     onAdCompleted,
     closeAdModal,
   } = useAdMob();
+
+  const themeColors = useTheme();
+  const { height: windowHeight } = useWindowDimensions();
+  const { isXS, isSmallDevice } = useResponsive();
 
   const [secondsRemaining, setSecondsRemaining] = useState(AD_TOTAL_SECONDS);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -60,9 +65,6 @@ export function AdMobRewardedModal() {
         if (prev <= 1) {
           clearInterval(timer);
           setIsCompleted(true);
-          // FIX CRITICAL-02: Only call onAdCompleted() which uses the server-side
-          // claim_rewarded_ad RPC as the single authoritative reward path.
-          // Previously addXPAndCoins() was also called here, causing double rewards.
           onAdCompleted();
           return 0;
         }
@@ -71,7 +73,7 @@ export function AdMobRewardedModal() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isAdModalVisible, onAdCompleted, currentRewardCoins, progressAnim]);
+  }, [isAdModalVisible, onAdCompleted, progressAnim]);
 
   if (!isAdModalVisible) return null;
 
@@ -80,33 +82,59 @@ export function AdMobRewardedModal() {
     outputRange: ['0%', '100%'],
   });
 
+  const isLandscapeOrShort = windowHeight < 550;
+
   return (
-    <Modal visible={isAdModalVisible} transparent animationType="fade">
+    <Modal visible={isAdModalVisible} transparent animationType="fade" onRequestClose={isCompleted ? closeAdModal : undefined}>
       <View style={styles.overlay}>
-        <View style={styles.adContainer}>
+        <View
+          style={[
+            styles.adContainer,
+            {
+              backgroundColor: themeColors.backgroundCard,
+              borderColor: themeColors.border,
+              maxHeight: isLandscapeOrShort ? '98%' : '90%',
+            },
+          ]}
+        >
           {/* Top AdMob Header Bar */}
-          <View style={styles.topAdBar}>
+          <View style={[styles.topAdBar, { backgroundColor: themeColors.backgroundElement, borderBottomColor: themeColors.border }]}>
             <View style={styles.adBadgeRow}>
-              <View style={styles.adLabel}>
-                <Text style={styles.adLabelText}>Google AdMob</Text>
+              <View style={[styles.adLabel, { backgroundColor: `${themeColors.primary}20`, borderColor: `${themeColors.primary}40` }]}>
+                <ShieldCheck size={12} color={themeColors.primary} />
+                <Text style={[styles.adLabelText, { color: themeColors.primary }]}>SPONSORED</Text>
               </View>
-              <Text style={styles.rewardNotice}>
-                Reward: <Text style={styles.rewardNoticeHighlight}>+{currentRewardCoins} Coins</Text>
-              </Text>
+
+              <View style={styles.rewardPill}>
+                <Coins size={13} color="#FFB800" />
+                <Text style={styles.rewardNoticeText}>
+                  +{currentRewardCoins} Coins
+                </Text>
+              </View>
             </View>
 
             <View style={styles.topRightControls}>
-              <Pressable style={styles.iconBtn} onPress={() => setIsMuted(!isMuted)}>
+              <Pressable
+                style={[styles.iconBtn, { backgroundColor: themeColors.backgroundCard }]}
+                onPress={() => setIsMuted(!isMuted)}
+                accessibilityRole="button"
+                accessibilityLabel={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+              >
                 {isMuted ? (
-                  <VolumeX size={18} color="#FFF" />
+                  <VolumeX size={16} color={themeColors.text} />
                 ) : (
-                  <Volume2 size={18} color="#FFF" />
+                  <Volume2 size={16} color={themeColors.text} />
                 )}
               </Pressable>
 
               {isCompleted ? (
-                <Pressable style={styles.closeBtn} onPress={closeAdModal}>
-                  <X size={18} color="#FFF" />
+                <Pressable
+                  style={[styles.closeBtn, { backgroundColor: themeColors.primary }]}
+                  onPress={closeAdModal}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close Ad Modal"
+                >
+                  <X size={16} color="#FFFFFF" />
                 </Pressable>
               ) : (
                 <View style={styles.countdownBox}>
@@ -117,58 +145,71 @@ export function AdMobRewardedModal() {
           </View>
 
           {/* Progress Bar */}
-          <View style={styles.progressTrack}>
-            <Animated.View style={[styles.progressFill, { width: progressPercent }]} />
+          <View style={[styles.progressTrack, { backgroundColor: themeColors.border }]}>
+            <Animated.View style={[styles.progressFill, { width: progressPercent, backgroundColor: themeColors.primary }]} />
           </View>
 
-          {/* Video / Creative Showcase */}
-          <View style={styles.creativeArea}>
-            <Image
-              source={{
-                uri: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
-              }}
-              style={styles.adImage}
-              resizeMode="cover"
-            />
-            <View style={styles.adOverlayDark} />
+          {/* Scrollable Container for small screens */}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Video / Creative Showcase */}
+            <View style={[styles.creativeArea, isLandscapeOrShort && { height: 180 }]}>
+              <Image
+                source={{
+                  uri: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
+                }}
+                style={styles.adImage}
+                resizeMode="cover"
+              />
+              <View style={styles.adOverlayDark} />
 
-            {/* Ad Content Overlay */}
-            <View style={styles.adHeroContent}>
-              <View style={styles.sponsorRow}>
-                <Tv size={20} color="#00D2FF" />
-                <Text style={styles.sponsorName}>AniFlix Ultra HD Sponsor</Text>
+              {/* Ad Content Overlay */}
+              <View style={styles.adHeroContent}>
+                <View style={styles.sponsorRow}>
+                  <Tv size={18} color="#00D2FF" />
+                  <Text style={styles.sponsorName}>AniFlix Ultra HD Sponsor</Text>
+                </View>
+                <Text style={[styles.adHeadline, isXS && { fontSize: 16, lineHeight: 22 }]}>
+                  Stream Next-Gen Anime & Movies in Pure 4K OLED
+                </Text>
+                {!isLandscapeOrShort && (
+                  <Text style={styles.adSubtext}>
+                    No buffering. Uncapped bandwidth. Available globally on all devices.
+                  </Text>
+                )}
               </View>
-              <Text style={styles.adHeadline}>
-                Stream Next-Gen Anime & Movies in Pure 4K OLED
-              </Text>
-              <Text style={styles.adSubtext}>
-                No buffering. Uncapped bandwidth. Available globally on all devices.
-              </Text>
             </View>
-          </View>
+          </ScrollView>
 
           {/* Reward Status Bottom Banner */}
-          <View style={styles.bottomBanner}>
+          <View style={[styles.bottomBanner, { backgroundColor: themeColors.backgroundElement, borderTopColor: themeColors.border }]}>
             {isCompleted ? (
               <View style={styles.rewardSuccessBox}>
                 <View style={styles.successLeft}>
-                  <CheckCircle2 size={24} color="#00E676" />
-                  <View>
+                  <CheckCircle2 size={22} color="#00E676" />
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.successTitle}>Reward Granted!</Text>
-                    <Text style={styles.successSubtitle}>
-                      +{currentRewardCoins} AniFlix Coins added to your account
+                    <Text style={[styles.successSubtitle, { color: themeColors.textSecondary }]} numberOfLines={1}>
+                      +{currentRewardCoins} AniFlix Coins added to account
                     </Text>
                   </View>
                 </View>
-                <Pressable style={styles.claimButton} onPress={closeAdModal}>
+                <Pressable
+                  style={[styles.claimButton, { backgroundColor: themeColors.primary }]}
+                  onPress={closeAdModal}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.claimButtonText}>Claim & Return</Text>
                 </Pressable>
               </View>
             ) : (
               <View style={styles.waitingBox}>
-                <Sparkles size={18} color="#FFB800" />
-                <Text style={styles.waitingText}>
-                  Watch the full ad to receive your <Text style={{ color: '#FFD700', fontWeight: '800' }}>+{currentRewardCoins} Coins</Text>!
+                <Sparkles size={16} color="#FFB800" />
+                <Text style={[styles.waitingText, { color: themeColors.textSecondary }]}>
+                  Watch full ad for <Text style={{ color: '#FFD700', fontWeight: '800' }}>+{currentRewardCoins} Coins</Text>
                 </Text>
               </View>
             )}
@@ -182,27 +223,27 @@ export function AdMobRewardedModal() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.92)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 14,
   },
   adContainer: {
     width: '100%',
-    maxWidth: 600,
-    backgroundColor: '#0B0B12',
-    borderRadius: 16,
+    maxWidth: 560,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#262638',
     overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
   },
   topAdBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#12121D',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
   adBadgeRow: {
     flexDirection: 'row',
@@ -210,42 +251,50 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   adLabel: {
-    backgroundColor: '#1F1F30',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#2E2E44',
   },
   adLabelText: {
-    color: '#A0A0B8',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  rewardPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 184, 0, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  rewardNoticeText: {
+    color: '#FFD700',
     fontSize: 11,
     fontWeight: '800',
-  },
-  rewardNotice: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  rewardNoticeHighlight: {
-    color: '#FFD700',
-    fontWeight: '900',
   },
   topRightControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   iconBtn: {
-    padding: 6,
-    borderRadius: 20,
-    backgroundColor: '#1C1C2A',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   countdownBox: {
-    backgroundColor: '#262010',
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#FFB800',
   },
@@ -255,106 +304,106 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   closeBtn: {
-    padding: 6,
-    borderRadius: 20,
-    backgroundColor: '#0356C5',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   progressTrack: {
     width: '100%',
     height: 4,
-    backgroundColor: '#202030',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#00E676',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   creativeArea: {
-    height: 320,
+    height: 260,
     position: 'relative',
     justifyContent: 'flex-end',
   },
   adImage: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
   },
   adOverlayDark: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(5, 5, 10, 0.55)',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5, 5, 12, 0.65)',
   },
   adHeroContent: {
-    padding: 20,
+    padding: 16,
     zIndex: 5,
   },
   sponsorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    gap: 6,
+    marginBottom: 4,
   },
   sponsorName: {
     color: '#00D2FF',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   adHeadline: {
-    color: '#FFF',
-    fontSize: 20,
+    color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: '900',
-    lineHeight: 26,
-    marginBottom: 6,
+    lineHeight: 24,
+    marginBottom: 4,
   },
   adSubtext: {
-    color: '#C4C4D8',
-    fontSize: 13,
-    lineHeight: 18,
+    color: '#D0D0E2',
+    fontSize: 12,
+    lineHeight: 16,
   },
   bottomBanner: {
-    padding: 16,
-    backgroundColor: '#12121D',
+    padding: 14,
     borderTopWidth: 1,
-    borderTopColor: '#1F1F30',
   },
   waitingBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 6,
+    gap: 6,
+    paddingVertical: 4,
   },
   waitingText: {
-    color: '#A0A0B8',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   rewardSuccessBox: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 10,
   },
   successLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
   },
   successTitle: {
     color: '#00E676',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
   },
   successSubtitle: {
-    color: '#8E8EA4',
-    fontSize: 12,
+    fontSize: 11,
   },
   claimButton: {
-    backgroundColor: '#0356C5',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   claimButtonText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 12,
   },
 });
+

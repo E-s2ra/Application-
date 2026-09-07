@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { MediaCardSkeleton } from '@/components/MediaCardSkeleton';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
+import { AdMobBanner } from '@/components/AdMobBanner';
 
 const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: any }[] = [
   { id: 'All', label: 'All Categories', icon: Compass },
@@ -277,6 +278,11 @@ export default function SearchScreen() {
                   </Text>
                 </View>
               </View>
+            }
+            ListFooterComponent={
+              filteredList.length > 0 ? (
+                <AdMobBanner placement="search_bottom" style={{ marginTop: 16 }} />
+              ) : null
             }
             ListEmptyComponent={
               <EmptyState

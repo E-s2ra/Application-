@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Platform, Image, Pressable, Linking } from 'react-native';
-import { ADMOB_IDS, ANDROID_BANNER_ID, IOS_BANNER_ID } from '@/constants/admob';
-import { Sparkles, ExternalLink } from 'lucide-react-native';
+import { StyleSheet, View, Text, Platform, Pressable } from 'react-native';
+import { Sparkles, Crown, ArrowRight, ShieldCheck } from 'lucide-react-native';
 import { useGamification } from '@/hooks/useGamification';
+import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { VipSubscriptionModal } from './VipSubscriptionModal';
 
 interface AdMobBannerProps {
@@ -12,58 +13,70 @@ interface AdMobBannerProps {
 
 export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerProps) {
   const [hasError, setHasError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(true);
   const [showVipModal, setShowVipModal] = useState(false);
   const { isVIP } = useGamification();
+  const themeColors = useTheme();
+  const { isXS, isSmallDevice } = useResponsive();
 
   // Commercial-Free Experience for Active VIP Members
-  if (isVIP) return null;
-
-  // Automatically select correct platform Ad Unit ID
-  const adUnitId = Platform.select({
-    android: ANDROID_BANNER_ID,
-    ios: IOS_BANNER_ID,
-    default: ANDROID_BANNER_ID,
-  });
-
-  if (hasError) return null;
+  if (isVIP || hasError) return null;
 
   return (
-    <View style={[styles.bannerContainer, style]}>
-      {/* Ad Label */}
-      <View style={styles.adLabelRow}>
-        <View style={styles.adTag}>
-          <Text style={styles.adTagText}>Ad · Google AdMob</Text>
-        </View>
-        <Text style={styles.adIdText} numberOfLines={1}>
-          {Platform.OS.toUpperCase()} ID: ...{adUnitId.slice(-6)}
-        </Text>
-      </View>
-
-      {/* Banner Creative Display */}
-      <Pressable
-        style={styles.bannerCreative}
-        onPress={() => setShowVipModal(true)}
+    <View style={[styles.wrapper, style]}>
+      <View
+        style={[
+          styles.bannerContainer,
+          {
+            backgroundColor: themeColors.backgroundCard,
+            borderColor: themeColors.border,
+          },
+        ]}
       >
-        <View style={styles.bannerContent}>
-          <View style={styles.iconBox}>
-            <Sparkles size={18} color="#FFB800" />
+        {/* Top Header Tag */}
+        <View style={styles.topBar}>
+          <View style={[styles.sponsorBadge, { backgroundColor: `${themeColors.primary}18`, borderColor: `${themeColors.primary}40` }]}>
+            <Sparkles size={11} color={themeColors.primary} />
+            <Text style={[styles.sponsorBadgeText, { color: themeColors.primary }]}>SPONSORED</Text>
           </View>
-          <View style={styles.textBox}>
-            <Text style={styles.bannerTitle} numberOfLines={1}>
-              AniFlix 4K Ultra VIP Pass
-            </Text>
-            <Text style={styles.bannerSubtitle} numberOfLines={1}>
-              Watch commercial-free with uncapped Dolby sound!
-            </Text>
+
+          <View style={styles.adLabelRight}>
+            <ShieldCheck size={11} color={themeColors.textSecondary} />
+            <Text style={[styles.adLabelText, { color: themeColors.textSecondary }]}>AdMob Verified</Text>
           </View>
         </View>
 
-        <View style={styles.ctaBtn}>
-          <Text style={styles.ctaBtnText}>Get VIP</Text>
-          <ExternalLink size={12} color="#FFF" />
-        </View>
-      </Pressable>
+        {/* Banner Content Card */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.bannerContentRow,
+            { backgroundColor: themeColors.backgroundElement },
+            pressed && { opacity: 0.9, transform: [{ scale: 0.995 }] },
+          ]}
+          onPress={() => setShowVipModal(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Remove Ads with AniFlix VIP"
+        >
+          <View style={styles.leftInfoGroup}>
+            <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 184, 0, 0.15)', borderColor: '#FFB800' }]}>
+              <Crown size={isSmallDevice ? 16 : 18} color="#FFB800" />
+            </View>
+
+            <View style={styles.textGroup}>
+              <Text style={[styles.bannerTitle, { color: themeColors.text }]} numberOfLines={1}>
+                AniFlix Commercial-Free Pass
+              </Text>
+              <Text style={[styles.bannerSubtitle, { color: themeColors.textSecondary }]} numberOfLines={1}>
+                {isXS ? 'Upgrade to VIP for 4K Dolby Stream' : 'Stream uninterrupted in 4K OLED with zero ads & uncapped speed'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.ctaBtn, { backgroundColor: themeColors.primary }]}>
+            <Text style={styles.ctaBtnText}>{isSmallDevice ? 'VIP' : 'Remove Ads'}</Text>
+            <ArrowRight size={12} color="#FFFFFF" />
+          </View>
+        </Pressable>
+      </View>
 
       <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </View>
@@ -71,90 +84,93 @@ export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerPro
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
+    marginVertical: 10,
+  },
   bannerContainer: {
     width: '100%',
-    backgroundColor: '#0F0F18',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#222234',
     padding: 10,
-    marginVertical: 12,
-    alignSelf: 'center',
+    gap: 8,
   },
-  adLabelRow: {
+  topBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
   },
-  adTag: {
-    backgroundColor: '#1E1E2C',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  sponsorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#2C2C40',
   },
-  adTagText: {
-    fontSize: 9,
+  sponsorBadgeText: {
+    fontSize: 10,
     fontWeight: '800',
-    color: '#8A8AA2',
+    letterSpacing: 0.5,
   },
-  adIdText: {
-    fontSize: 9,
-    color: '#55556C',
+  adLabelRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  adLabelText: {
+    fontSize: 10,
     fontWeight: '600',
   },
-  bannerCreative: {
+  bannerContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#161622',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
+    gap: 10,
   },
-  bannerContent: {
+  leftInfoGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
-    paddingRight: 8,
   },
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#262010',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FFB800',
   },
-  textBox: {
+  textGroup: {
     flex: 1,
   },
   bannerTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#FFF',
   },
   bannerSubtitle: {
     fontSize: 11,
-    color: '#8E8EA4',
-    marginTop: 1,
+    marginTop: 2,
   },
   ctaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#0356C5',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
   ctaBtnText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
 });
+

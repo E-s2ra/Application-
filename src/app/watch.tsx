@@ -50,6 +50,7 @@ import { PlayerSettingsModal } from '@/components/PlayerSettingsModal';
 import { useGamification } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
+import { AdMobBanner } from '@/components/AdMobBanner';
 
 const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -59,7 +60,7 @@ export default function WatchScreen() {
   const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getStatsForMedia } = useReviews();
-  const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet } = useResponsive();
+  const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet, pagePad } = useResponsive();
   const { language } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { updateProgress } = useWatchHistory();
@@ -742,6 +743,9 @@ export default function WatchScreen() {
             </View>
           )}
 
+          {/* 📢 Sponsored Banner */}
+          <AdMobBanner placement="watch_bottom" style={{ paddingHorizontal: pagePad, marginTop: 14 }} />
+
           {/* ⭐ COMMUNITY REVIEWS SECTION */}
           {anime && (
             <View style={{ marginTop: 16 }}>
@@ -896,7 +900,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 40,
+    gap: 24,
   },
   youtubeSkipBtn: {
     padding: 10,
@@ -1229,11 +1233,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   shareBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,

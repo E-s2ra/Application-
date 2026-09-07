@@ -43,6 +43,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useSidebar } from '@/context/SidebarContext';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
+import { AdMobBanner } from '@/components/AdMobBanner';
 
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { RotateCcw, Trash2 } from 'lucide-react-native';
@@ -85,6 +86,7 @@ export default function HomeScreen() {
     isDesktop,
     isTablet,
     width,
+    pagePad,
   } = useResponsive();
   
   const { openSidebar } = useSidebar();
@@ -590,6 +592,9 @@ export default function HomeScreen() {
         )}
 
 
+
+        {/* 📢 Sponsored Ad Banner */}
+        <AdMobBanner placement="home_bottom" style={{ paddingHorizontal: pagePad }} />
 
         <View style={{ height: 40 }} />
       </View>
