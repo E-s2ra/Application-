@@ -152,18 +152,11 @@ async function enableNativeProtection(): Promise<Cleanup> {
     // Dynamically import to avoid crashing on web where it's unavailable
     const ScreenCapture = await import('expo-screen-capture');
 
-    // Prevent screenshots and screen recordings
-    await ScreenCapture.preventScreenCaptureAsync();
-
-    // Listen for recording attempts and show a warning overlay
-    const subscription = ScreenCapture.addScreenshotListener(() => {
-      console.warn('[AniFlix DRM] Screenshot attempt detected.');
-      // The OS blurs/blacks out the capture automatically when preventScreenCapture is active.
-    });
+    // Allow screenshots and screen recordings
+    await ScreenCapture.allowScreenCaptureAsync();
 
     return () => {
       ScreenCapture.allowScreenCaptureAsync().catch(() => {});
-      subscription?.remove();
     };
   } catch (e) {
     // expo-screen-capture may not be installed — fail gracefully

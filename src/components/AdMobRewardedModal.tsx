@@ -101,14 +101,16 @@ export function AdMobRewardedModal() {
           <View style={[styles.topAdBar, { backgroundColor: themeColors.backgroundElement, borderBottomColor: themeColors.border }]}>
             <View style={styles.adBadgeRow}>
               <View style={[styles.adLabel, { backgroundColor: `${themeColors.primary}20`, borderColor: `${themeColors.primary}40` }]}>
-                <ShieldCheck size={12} color={themeColors.primary} />
-                <Text style={[styles.adLabelText, { color: themeColors.primary }]}>SPONSORED</Text>
+                <ShieldCheck size={11} color={themeColors.primary} />
+                <Text style={[styles.adLabelText, { color: themeColors.primary }]} numberOfLines={1}>
+                  {isXS ? 'AD' : 'SPONSORED'}
+                </Text>
               </View>
 
               <View style={styles.rewardPill}>
-                <Coins size={13} color="#FFB800" />
-                <Text style={styles.rewardNoticeText}>
-                  +{currentRewardCoins} Coins
+                <Coins size={12} color="#FFB800" />
+                <Text style={styles.rewardNoticeText} numberOfLines={1}>
+                  +{currentRewardCoins} {isXS ? '💰' : 'Coins'}
                 </Text>
               </View>
             </View>
@@ -121,9 +123,9 @@ export function AdMobRewardedModal() {
                 accessibilityLabel={isMuted ? 'Unmute Audio' : 'Mute Audio'}
               >
                 {isMuted ? (
-                  <VolumeX size={16} color={themeColors.text} />
+                  <VolumeX size={15} color={themeColors.text} />
                 ) : (
-                  <Volume2 size={16} color={themeColors.text} />
+                  <Volume2 size={15} color={themeColors.text} />
                 )}
               </Pressable>
 
@@ -138,7 +140,9 @@ export function AdMobRewardedModal() {
                 </Pressable>
               ) : (
                 <View style={styles.countdownBox}>
-                  <Text style={styles.countdownText}>Reward in {secondsRemaining}s</Text>
+                  <Text style={styles.countdownText} numberOfLines={1}>
+                    {isXS ? `${secondsRemaining}s` : `Reward: ${secondsRemaining}s`}
+                  </Text>
                 </View>
               )}
             </View>
@@ -241,20 +245,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
+    gap: 6,
   },
   adBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flex: 1,
+    flexShrink: 1,
   },
   adLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
@@ -269,7 +276,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: 'rgba(255, 184, 0, 0.12)',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
   },
@@ -281,20 +288,21 @@ const styles = StyleSheet.create({
   topRightControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexShrink: 0,
   },
   iconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
   countdownBox: {
     backgroundColor: 'rgba(255, 184, 0, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FFB800',
   },

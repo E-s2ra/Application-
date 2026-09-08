@@ -8,7 +8,10 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  StatusBar
+  StatusBar,
+  Modal,
+  PanResponder,
+  ActivityIndicator,
 } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { enableContentProtection, disableContentProtection } from '@/lib/content-protection';
@@ -24,7 +27,7 @@ import {
   ArrowLeft,
   RotateCw,
   RotateCcw,
-  Gauge,
+  Volume1,
   Volume2,
   VolumeX,
   Maximize2,
@@ -33,6 +36,8 @@ import {
   Layers,
   Settings,
   Lock,
+  SkipForward,
+  Check,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { getPlaybackUrl } from '@/lib/playback';
@@ -52,7 +57,9 @@ import { useAdMob } from '@/hooks/useAdMob';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 import { AdMobBanner } from '@/components/AdMobBanner';
 
-const SPEED_OPTIONS = [0.75, 1.0, 1.25, 1.5, 2.0];
+import { VideoJsPlayer } from '@/components/VideoJsPlayer';
+
+const SPEED_OPTIONS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
 export default function WatchScreen() {
   const { id } = useLocalSearchParams();
@@ -75,6 +82,8 @@ export default function WatchScreen() {
   const [isLayoutFullscreen, setIsLayoutFullscreen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(Platform.OS !== 'web');
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1.0);
+
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -84,6 +93,28 @@ export default function WatchScreen() {
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
   const [showControls, setShowControls] = useState(true);
+
+  // Player timing & aspect ratio states
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [contentFit, setContentFit] = useState<'contain' | 'cover' | 'fill'>('contain');
+  const [progressTrackWidth, setProgressTrackWidth] = useState(240);
+
+  // Gesture states & refs for smooth timeline scrubber & volume dragging
+  const [isDraggingScrubber, setIsDraggingScrubber] = useState(false);
+  const [scrubberDragTime, setScrubberDragTime] = useState<number | null>(null);
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+
+  const scrubberTrackRef = useRef<View>(null);
+  const volumeTrackRef = useRef<View>(null);
+  const scrubberPageXRef = useRef<number>(0);
+  const volumePageXRef = useRef<number>(0);
+  const durationRef = useRef<number>(0);
+  const progressTrackWidthRef = useRef<number>(240);
+  const volumeTrackWidthRef = useRef<number>(70);
+  const ignoreSyncUntilRef = useRef<number>(0);
+  const lastSeekTimeRef = useRef<number>(0);
 
   const videoViewRef = useRef<VideoView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -96,6 +127,11 @@ export default function WatchScreen() {
       p.play();
     }
   });
+
+  const playerRef = useRef(player);
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
 
   // Enable DRM content protection when screen mounts; remove when leaving
   useEffect(() => {
@@ -120,22 +156,232 @@ export default function WatchScreen() {
     setShowControls(prev => !prev);
   };
 
+  // Synchronize playback position & duration from player
   useEffect(() => {
-    try {
-      player.playbackRate = playbackSpeed;
-    } catch (err) {
-      if (__DEV__) console.warn('[Watch] playbackRate sync error:', err);
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
+    const interval = setInterval(() => {
+      try {
+        const p = playerRef.current || player;
+        if (!p) return;
+        if (p.duration && p.duration > 0) {
+          setDuration(p.duration);
+        }
+        if (
+          typeof p.currentTime === 'number' &&
+          !isDraggingScrubber &&
+          Date.now() > ignoreSyncUntilRef.current
+        ) {
+          setCurrentTime(p.currentTime);
+        }
+      } catch (_e) {}
+    }, 300);
+    return () => clearInterval(interval);
+  }, [player, isDraggingScrubber]);
+
+  const formatTime = (secs: number): string => {
+    if (!secs || isNaN(secs) || secs < 0) return '00:00';
+    const totalSecs = Math.floor(secs);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const remainingSecs = totalSecs % 60;
+    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+    if (hours > 0) {
+      return `${hours}:${pad(mins)}:${pad(remainingSecs)}`;
     }
-  }, [playbackSpeed, player]);
+    return `${pad(mins)}:${pad(remainingSecs)}`;
+  };
+
+  useEffect(() => {
+    durationRef.current = duration;
+  }, [duration]);
+
+  const handleSeekTo = (targetTime: number) => {
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
+    try {
+      const dur = durationRef.current || activePlayer.duration || 0;
+      const clamped = Math.max(0, Math.min(targetTime, dur));
+
+      setCurrentTime(clamped);
+      setIsSeeking(true);
+      ignoreSyncUntilRef.current = Date.now() + 2500;
+
+      try {
+        activePlayer.currentTime = clamped;
+      } catch (e) {
+        if (__DEV__) console.warn('[Watch] activePlayer currentTime error:', e);
+      }
+
+      if (isPlaying) {
+        try {
+          activePlayer.play();
+        } catch (_e) {}
+      }
+
+      setTimeout(() => {
+        setIsSeeking(false);
+      }, 500);
+    } catch (e) {
+      setIsSeeking(false);
+      if (__DEV__) console.warn('[Watch] seek error:', e);
+    }
+  };
+
+  const handleSeekToRef = useRef(handleSeekTo);
+  useEffect(() => {
+    handleSeekToRef.current = handleSeekTo;
+  }, [handleSeekTo]);
+
+  const updateScrubberPageX = () => {
+    if (Platform.OS === 'web' && scrubberTrackRef.current) {
+      const rect = (scrubberTrackRef.current as any)?.getBoundingClientRect?.();
+      if (rect) {
+        scrubberPageXRef.current = rect.left;
+        progressTrackWidthRef.current = rect.width;
+        return;
+      }
+    }
+    scrubberTrackRef.current?.measureInWindow((x, _y, width) => {
+      if (width > 0) {
+        scrubberPageXRef.current = x;
+        progressTrackWidthRef.current = width;
+      }
+    });
+  };
+
+  const updateVolumePageX = () => {
+    if (Platform.OS === 'web' && volumeTrackRef.current) {
+      const rect = (volumeTrackRef.current as any)?.getBoundingClientRect?.();
+      if (rect) {
+        volumePageXRef.current = rect.left;
+        volumeTrackWidthRef.current = rect.width;
+        return;
+      }
+    }
+    volumeTrackRef.current?.measureInWindow((x, _y, width) => {
+      if (width > 0) {
+        volumePageXRef.current = x;
+        volumeTrackWidthRef.current = width;
+      }
+    });
+  };
+
+  const getScrubberTargetTime = (pageX: number) => {
+    let trackX = scrubberPageXRef.current;
+    let w = progressTrackWidthRef.current > 0 ? progressTrackWidthRef.current : 240;
+    if (Platform.OS === 'web' && scrubberTrackRef.current) {
+      const rect = (scrubberTrackRef.current as any)?.getBoundingClientRect?.();
+      if (rect) {
+        trackX = rect.left;
+        w = rect.width;
+      }
+    }
+    const touchX = pageX - trackX;
+    const ratio = Math.max(0, Math.min(1, touchX / (w || 1)));
+    const activeP = playerRef.current;
+    const dur = durationRef.current || activeP?.duration || 0;
+    return dur > 0 ? ratio * dur : 0;
+  };
+
+  const getVolumeRatio = (pageX: number) => {
+    const trackX = volumePageXRef.current;
+    const w = volumeTrackWidthRef.current > 0 ? volumeTrackWidthRef.current : 70;
+    const touchX = pageX - trackX;
+    return Math.max(0, Math.min(1, touchX / w));
+  };
+
+  const scrubberPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderGrant: (evt) => {
+        setIsDraggingScrubber(true);
+        updateScrubberPageX();
+        setScrubberDragTime(getScrubberTargetTime(evt.nativeEvent.pageX));
+      },
+      onPanResponderMove: (evt) => {
+        setScrubberDragTime(getScrubberTargetTime(evt.nativeEvent.pageX));
+      },
+      onPanResponderRelease: (evt) => {
+        const targetTime = getScrubberTargetTime(evt.nativeEvent.pageX);
+        handleSeekToRef.current(targetTime);
+        setIsDraggingScrubber(false);
+        setScrubberDragTime(null);
+      },
+      onPanResponderTerminate: () => {
+        setIsDraggingScrubber(false);
+        setScrubberDragTime(null);
+      },
+    })
+  ).current;
+
+  const volumePanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderGrant: (evt) => {
+        setIsDraggingVolume(true);
+        updateVolumePageX();
+        handleVolumeChangeRef.current(getVolumeRatio(evt.nativeEvent.pageX));
+      },
+      onPanResponderMove: (evt) => {
+        handleVolumeChangeRef.current(getVolumeRatio(evt.nativeEvent.pageX));
+      },
+      onPanResponderRelease: (evt) => {
+        handleVolumeChangeRef.current(getVolumeRatio(evt.nativeEvent.pageX));
+        setIsDraggingVolume(false);
+      },
+      onPanResponderTerminate: () => {
+        setIsDraggingVolume(false);
+      },
+    })
+  ).current;
+
+  const displayTime = isDraggingScrubber && scrubberDragTime !== null ? scrubberDragTime : currentTime;
+  const scrubberPercent = duration > 0 ? Math.max(0, Math.min(100, (displayTime / duration) * 100)) : 0;
+  const isLoadingVideo = isSeeking || isDraggingScrubber || player?.status === 'loading' || (player as any)?.isBuffering;
+
+  const handleSkipIntro = () => {
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
+    try {
+      const current = activePlayer.currentTime || 0;
+      const target = Math.min(current + 85, duration || current + 85);
+      handleSeekTo(target);
+      showSuccess('Skipped Intro (+85s) ⏩');
+    } catch (_e) {}
+  };
+
+  const handleNextEpisode = () => {
+    if (!anime) return;
+    const totalEps = anime.episodes || 24;
+    if (selectedEpisode < totalEps) {
+      setSelectedEpisode((prev) => prev + 1);
+      showSuccess(`Loading Episode ${selectedEpisode + 1}... 📺`);
+    } else {
+      showSuccess('You are watching the latest episode!');
+    }
+  };
+
+  const toggleContentFit = () => {
+    setContentFit((prev) => (prev === 'contain' ? 'cover' : prev === 'cover' ? 'fill' : 'contain'));
+  };
 
   // Periodic playback progress saver
   useEffect(() => {
-    if (!anime || !player) return;
+    const activePlayer = playerRef.current || player;
+    if (!anime || !activePlayer) return;
 
     const saveInterval = setInterval(() => {
       try {
-        if (player.currentTime > 0 && player.duration > 0) {
-          updateProgress(anime, player.currentTime, player.duration, selectedEpisode);
+        const p = playerRef.current || player;
+        if (p && p.currentTime > 0 && p.duration > 0) {
+          updateProgress(anime, p.currentTime, p.duration, selectedEpisode);
         }
       } catch (_e) {}
     }, 3500);
@@ -286,36 +532,69 @@ export default function WatchScreen() {
   };
 
   const handlePlayPause = () => {
-    if (!player) return;
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
     if (!isUnlocked) return;
     if (isPlaying) {
-      player.pause();
+      try { activePlayer.pause(); } catch (_e) {}
       setIsPlaying(false);
     } else {
-      player.play();
+      try { activePlayer.play(); } catch (_e) {}
       setIsPlaying(true);
     }
   };
 
+  const handleVolumeChange = (newVol: number) => {
+    const clamped = Math.max(0, Math.min(1, newVol));
+    setVolume(clamped);
+    setIsMuted(clamped === 0);
+    const activePlayer = playerRef.current || player;
+    if (activePlayer) {
+      try {
+        activePlayer.volume = clamped;
+        activePlayer.muted = clamped === 0;
+      } catch (_e) {}
+    }
+  };
+
   const handleToggleMute = () => {
-    if (!player) return;
-    player.muted = !isMuted;
-    setIsMuted(!isMuted);
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
+    if (isMuted || volume === 0) {
+      const restoreVol = volume > 0 ? volume : 1.0;
+      try {
+        activePlayer.muted = false;
+        activePlayer.volume = restoreVol;
+      } catch (_e) {}
+      setIsMuted(false);
+      setVolume(restoreVol);
+    } else {
+      try {
+        activePlayer.muted = true;
+      } catch (_e) {}
+      setIsMuted(true);
+    }
   };
 
   const handleSeekForward10 = () => {
-    if (!player) return;
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
     try {
-      player.currentTime = (player.currentTime || 0) + 10;
+      const current = typeof activePlayer.currentTime === 'number' ? activePlayer.currentTime : currentTime;
+      const target = Math.min((durationRef.current || activePlayer.duration || 0), current + 10);
+      handleSeekTo(target);
     } catch (e) {
       if (__DEV__) console.warn('[Watch] seek forward error:', e);
     }
   };
 
   const handleSeekBackward10 = () => {
-    if (!player) return;
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
     try {
-      player.currentTime = Math.max(0, (player.currentTime || 0) - 10);
+      const current = typeof activePlayer.currentTime === 'number' ? activePlayer.currentTime : currentTime;
+      const target = Math.max(0, current - 10);
+      handleSeekTo(target);
     } catch (e) {
       if (__DEV__) console.warn('[Watch] seek backward error:', e);
     }
@@ -329,12 +608,32 @@ export default function WatchScreen() {
   const handleFullscreen = async () => {
     const nextFullscreen = !isLayoutFullscreen;
     setIsLayoutFullscreen(nextFullscreen);
+    setShowControls(true);
 
     if (nextFullscreen && scrollViewRef.current) {
       scrollViewRef.current.scrollTo({ y: 0, animated: false });
     }
 
-    if (Platform.OS !== 'web') {
+    if (Platform.OS === 'web') {
+      try {
+        if (nextFullscreen) {
+          const docEl = document.documentElement;
+          if (docEl.requestFullscreen) {
+            await docEl.requestFullscreen();
+          } else if ((docEl as any).webkitRequestFullscreen) {
+            await (docEl as any).webkitRequestFullscreen();
+          }
+        } else {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else if ((document as any).webkitFullscreenElement) {
+            await (document as any).webkitExitFullscreen();
+          }
+        }
+      } catch (e) {
+        if (__DEV__) console.warn('[Watch] web fullscreen error:', e);
+      }
+    } else {
       try {
         if (nextFullscreen) {
           await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -348,6 +647,23 @@ export default function WatchScreen() {
       }
     }
   };
+
+  // Sync web fullscreen exit via ESC key or browser gesture
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleFsChange = () => {
+        const isFs = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement;
+        setIsLayoutFullscreen(isFs);
+        setShowControls(true);
+      };
+      document.addEventListener('fullscreenchange', handleFsChange);
+      document.addEventListener('webkitfullscreenchange', handleFsChange);
+      return () => {
+        document.removeEventListener('fullscreenchange', handleFsChange);
+        document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      };
+    }
+  }, []);
 
   // Cleanup orientation on unmount
   useEffect(() => {
@@ -365,397 +681,533 @@ export default function WatchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
-      {/* 🔙 Minimalist Navigation Header Bar */}
-      <View style={[
-        styles.headerBar,
-        {
-          backgroundColor: themeColors.backgroundElement,
-          borderBottomColor: themeColors.border,
-          paddingTop: Math.max(insets.top + 6, 14),
-        }
-      ]}>
-        <Pressable
-          style={[styles.headerBtn, { backgroundColor: themeColors.backgroundCard }]}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-        >
-          <ArrowLeft color={themeColors.text} size={20} />
-        </Pressable>
+      {/* 🔙 Minimalist Navigation Header Bar (Hidden during Fullscreen) */}
+      {!isLayoutFullscreen && (
+        <View style={[
+          styles.headerBar,
+          {
+            backgroundColor: themeColors.backgroundElement,
+            borderBottomColor: themeColors.border,
+            paddingTop: Math.max(insets.top + 6, 14),
+          }
+        ]}>
+          <Pressable
+            style={[styles.headerBtn, { backgroundColor: themeColors.backgroundCard }]}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <ArrowLeft color={themeColors.text} size={20} />
+          </Pressable>
 
-        <Text style={[styles.headerTitle, { color: themeColors.text }]} numberOfLines={1}>
-          {anime?.title ?? 'AniFlix Cinema'}
-        </Text>
+          <Text style={[styles.headerTitle, { color: themeColors.text }]} numberOfLines={1}>
+            {anime?.title ?? 'AniFlix Cinema'}
+          </Text>
 
-        {/* Protected stream — no share/copy allowed */}
-        <View style={styles.headerBtn} />
-      </View>
+          {/* Protected stream — no share/copy allowed */}
+          <View style={styles.headerBtn} />
+        </View>
+      )}
 
 
 
-      <ScrollView 
-        ref={scrollViewRef}
-        style={{ flex: 1 }} 
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={!isLayoutFullscreen}
+      {/* 🎬 PERSISTENT VIDEO PLAYER CONTAINER (NEVER UNMOUNTS VideoView) */}
+      <View
+        style={[
+          styles.playerWrapper,
+          isLayoutFullscreen && styles.playerWrapperFullscreen,
+        ]}
       >
-        <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-          
-          {/* 🎬 Clean Cinema Video Frame */}
-          <View style={[styles.playerWrapper, isLayoutFullscreen && styles.playerWrapperFullscreen]}>
-            <View style={[styles.videoBox, (isDesktop || isTablet) && styles.videoBoxDesktop, isLayoutFullscreen && styles.videoBoxFullscreen]}>
-              {!isUnlocked && anime ? (
-                // ═══════════════════════════════════════════════
-                // PREMIUM LOCK PAYWALL OVERLAY
-                // ═══════════════════════════════════════════════
-                <View style={styles.paywallOverlay}>
-                  {/* Blurred background thumbnail */}
-                  {anime.image_url && (
-                    <Image
-                      source={{ uri: anime.image_url }}
-                      style={StyleSheet.absoluteFill}
-                      resizeMode="cover"
-                      blurRadius={8}
-                    />
-                  )}
-                  {/* Dark gradient veil */}
-                  <View style={styles.paywallVeil} />
+        <View style={[
+          styles.videoBox,
+          isLayoutFullscreen ? styles.videoBoxFullscreen : (!isUnlocked && styles.videoBoxLocked),
+          (!isLayoutFullscreen && (isDesktop || isTablet)) && styles.videoBoxDesktop,
+        ]}>
+          {!isUnlocked && anime ? (
+            // ═══════════════════════════════════════════════
+            // PREMIUM LOCK PAYWALL OVERLAY
+            // ═══════════════════════════════════════════════
+            <View style={styles.paywallOverlay}>
+              {/* Blurred background thumbnail */}
+              {anime.image_url && (
+                <Image
+                  source={{ uri: anime.image_url }}
+                  style={StyleSheet.absoluteFill}
+                  resizeMode="cover"
+                  blurRadius={8}
+                />
+              )}
+              {/* Dark gradient veil */}
+              <View style={styles.paywallVeil} />
 
-                  <View style={styles.paywallContent}>
-                    {/* Lock icon */}
-                    <View style={styles.lockIconCircle}>
-                      <Lock color="#FFB800" size={30} />
-                    </View>
+              <View style={styles.paywallContent}>
+                {/* Lock icon */}
+                <View style={styles.lockIconCircle}>
+                  <Lock color="#FFB800" size={30} />
+                </View>
 
-                    {/* Title */}
-                    <Text style={styles.paywallTitle}>
-                      {isMovie
-                        ? `🎬 ${anime.title}`
-                        : `📺 Episode ${selectedEpisode} — ${anime.title}`}
-                    </Text>
+                {/* Title */}
+                <Text style={styles.paywallTitle}>
+                  {isMovie
+                    ? `🎬 ${anime.title}`
+                    : `📺 Episode ${selectedEpisode} — ${anime.title}`}
+                </Text>
 
-                    {/* Category pill */}
-                    <View style={styles.paywallCategoryPill}>
-                      <Text style={styles.paywallCategoryText}>
-                        {isMovie ? '🎥 Movie' : isKDrama ? '🇰🇷 K-Drama / Drama' : '⚡ Anime'}
-                      </Text>
-                    </View>
+                {/* Category pill */}
+                <View style={styles.paywallCategoryPill}>
+                  <Text style={styles.paywallCategoryText}>
+                    {isMovie ? '🎥 Movie' : isKDrama ? '🇰🇷 K-Drama / Drama' : '⚡ Anime'}
+                  </Text>
+                </View>
 
-                    {/* Cost badge */}
-                    <View style={styles.paywallCostRow}>
-                      <Text style={styles.paywallCostLabel}>Unlock Cost</Text>
-                      <View style={styles.paywallCostBadge}>
-                        <Text style={styles.paywallCostAmount}>{unlockCost} 💰</Text>
-                      </View>
-                    </View>
-
-                    {/* Coin balance */}
-                    <Text style={styles.paywallBalance}>
-                      Your balance: <Text style={{ color: coins >= unlockCost ? '#00E676' : '#FF5252' }}>{coins} 💰</Text>
-                    </Text>
-
-                    {/* Primary action */}
-                    {coins >= unlockCost ? (
-                      <Pressable
-                        style={styles.unlockBtn}
-                        onPress={handleUnlockMedia}
-                        disabled={isUnlocking}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Unlock for ${unlockCost} coins`}
-                      >
-                        <Text style={styles.unlockBtnText}>
-                          {isUnlocking ? '⏳ Unlocking...' : `🔓 Unlock for ${unlockCost} 💰`}
-                        </Text>
-                      </Pressable>
-                    ) : (
-                      <>
-                        <Pressable
-                          style={[styles.unlockBtn, styles.unlockBtnDisabled]}
-                          disabled={true}
-                        >
-                          <Text style={styles.unlockBtnTextDisabled}>
-                            🔒 Need {unlockCost - coins} more coins
-                          </Text>
-                        </Pressable>
-
-                        {/* Earn coins via ad */}
-                        <Pressable
-                          style={styles.earnMoreBtn}
-                          onPress={() => showRewardedAd({
-                            rewardCoins: 12,
-                            rewardType: 'coins',
-                            onRewarded: () => showSuccess('You earned 12 💰 — keep watching ads!'),
-                          })}
-                          accessibilityRole="button"
-                          accessibilityLabel="Watch an ad to earn 12 coins"
-                        >
-                          <Text style={styles.earnMoreBtnText}>📺 Watch Ad → Earn +12 💰</Text>
-                        </Pressable>
-                      </>
-                    )}
-
-                    {/* VIP upsell strip */}
-                    <View style={styles.vipUpsellStrip}>
-                      <Text style={styles.vipUpsellText}>
-                        👑 VIP members watch everything free — Ad-Free + 4K Ultra HD
-                      </Text>
-                    </View>
+                {/* Cost badge */}
+                <View style={styles.paywallCostRow}>
+                  <Text style={styles.paywallCostLabel}>Unlock Cost</Text>
+                  <View style={styles.paywallCostBadge}>
+                    <Text style={styles.paywallCostAmount}>{unlockCost} 💰</Text>
                   </View>
                 </View>
-              ) : (
-                <Pressable style={styles.videoOverlayContainer} onPress={handleTapVideo}>
-                  <VideoView
-                    ref={videoViewRef}
-                    style={styles.videoElement}
-                    player={player}
-                    contentFit="contain"
-                    nativeControls={false}
-                  />
 
-                  {playbackError && (
-                    <View style={styles.videoErrorBox}>
-                      <Tv color={themeColors.error} size={32} />
-                      <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
-                    </View>
-                  )}
+                {/* Coin balance */}
+                <Text style={styles.paywallBalance}>
+                  Your balance: <Text style={{ color: coins >= unlockCost ? '#00E676' : '#FF5252' }}>{coins} 💰</Text>
+                </Text>
 
-                  {/* YouTube Style Overlay */}
-                  {showControls && (
-                    <Pressable style={styles.youtubeOverlay} onPress={handleTapVideo}>
-                      {/* Top Bar - Settings */}
-                      <View style={styles.youtubeTopBar}>
-                        <View style={{ flex: 1 }} />
-                        <Pressable style={styles.youtubeSettingsBtn} onPress={(e) => { e.stopPropagation(); setShowSettingsModal(true); }}>
-                          <Settings color="#fff" size={24} />
-                        </Pressable>
-                      </View>
+                {/* Primary action */}
+                {coins >= unlockCost ? (
+                  <Pressable
+                    style={styles.unlockBtn}
+                    onPress={handleUnlockMedia}
+                    disabled={isUnlocking}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Unlock for ${unlockCost} coins`}
+                  >
+                    <Text style={styles.unlockBtnText}>
+                      {isUnlocking ? '⏳ Unlocking...' : `🔓 Unlock for ${unlockCost} 💰`}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <>
+                    <Pressable
+                      style={[styles.unlockBtn, styles.unlockBtnDisabled]}
+                      disabled={true}
+                    >
+                      <Text style={styles.unlockBtnTextDisabled}>
+                        🔒 Need {unlockCost - coins} more coins
+                      </Text>
+                    </Pressable>
 
-                      {/* Center Play/Pause & Skip */}
-                      <View style={styles.youtubeCenterBar}>
-                        <Pressable style={styles.youtubeSkipBtn} onPress={(e) => { e.stopPropagation(); handleSeekBackward10(); }}>
-                          <RotateCcw color="#fff" size={32} />
-                        </Pressable>
-                        <Pressable style={styles.youtubePlayBtn} onPress={(e) => { e.stopPropagation(); handlePlayPause(); }}>
-                          <View style={styles.youtubePlayBtnBg}>
-                            {isPlaying ? <Pause color="#fff" size={36} fill="#fff" /> : <Play color="#fff" size={36} fill="#fff" style={{ marginLeft: 4 }} />}
-                          </View>
-                        </Pressable>
-                        <Pressable style={styles.youtubeSkipBtn} onPress={(e) => { e.stopPropagation(); handleSeekForward10(); }}>
-                          <RotateCw color="#fff" size={32} />
-                        </Pressable>
-                      </View>
+                    {/* Earn coins via ad */}
+                    <Pressable
+                      style={styles.earnMoreBtn}
+                      onPress={() => showRewardedAd({
+                        rewardCoins: 12,
+                        rewardType: 'coins',
+                        onRewarded: () => showSuccess('You earned 12 💰 — keep watching ads!'),
+                      })}
+                      accessibilityRole="button"
+                      accessibilityLabel="Watch an ad to earn 12 coins"
+                    >
+                      <Text style={styles.earnMoreBtnText}>📺 Watch Ad → Earn +12 💰</Text>
+                    </Pressable>
+                  </>
+                )}
 
-                      {/* Bottom Bar - Scrubber & Fullscreen */}
-                      <View style={styles.youtubeBottomBar}>
-                        <View style={styles.youtubeTimeRow}>
-                           <Text style={styles.youtubeTimeText}>
-                             {/* Time info not readily available from expo-video without custom hook, but we have a dummy for UI */}
-                           </Text>
-                        </View>
-                        <View style={styles.youtubeControlsRow}>
-                          <Pressable style={styles.youtubeIconBtn} onPress={(e) => { e.stopPropagation(); handleToggleMute(); }}>
-                            {isMuted ? <VolumeX color="#fff" size={24} /> : <Volume2 color="#fff" size={24} />}
-                          </Pressable>
-                          
-                          <View style={{ flex: 1 }} />
-                          
-                          {/* Speed Toggle */}
-                          <Pressable style={styles.youtubeIconBtn} onPress={(e) => { e.stopPropagation(); setShowSpeedMenu(!showSpeedMenu); }}>
-                            <Text style={styles.youtubeSpeedText}>{playbackSpeed}x</Text>
-                          </Pressable>
+                {/* VIP upsell strip */}
+                <Pressable
+                  style={styles.vipUpsellStrip}
+                  onPress={() => setShowVipModal(true)}
+                >
+                  <Text style={styles.vipUpsellText}>
+                    👑 VIP members watch everything free — Ad-Free + 4K Ultra HD
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : Platform.OS === 'web' ? (
+            <VideoJsPlayer
+              src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
+              poster={anime?.image_url}
+              title={anime?.title}
+              onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
+            />
+          ) : (
+            <View style={styles.videoOverlayContainer}>
+              <VideoView
+                ref={videoViewRef}
+                style={styles.videoElement}
+                player={player}
+                contentFit={contentFit}
+                nativeControls={false}
+                allowsFullscreen={true}
+              />
 
-                          <Pressable style={styles.youtubeIconBtn} onPress={(e) => { e.stopPropagation(); handleFullscreen(); }}>
-                            {isLayoutFullscreen ? <Minimize2 color="#fff" size={24} /> : <Maximize2 color="#fff" size={24} />}
-                          </Pressable>
-                        </View>
+              {/* Backdrop Pressable to toggle controls when tapping empty video space */}
+              <Pressable
+                style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+                onPress={() => {
+                  setShowControls((prev) => !prev);
+                  setShowSpeedMenu(false);
+                }}
+              />
+
+              {playbackError && (
+                <View style={styles.videoErrorBox} pointerEvents="none">
+                  <Tv color={themeColors.error} size={32} />
+                  <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
+                </View>
+              )}
+
+              {/* Center Play / Loading button when controls are hidden and video is buffering/loading */}
+              {!showControls && isLoadingVideo && !playbackError && (
+                <View style={styles.centerLoadingOverlay} pointerEvents="none">
+                  <View style={styles.youtubePlayBtnBg}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  </View>
+                </View>
+              )}
+
+              {/* Ultra-HD Cinema Player Overlay */}
+              {showControls && (
+                <View
+                  style={[
+                    styles.youtubeOverlay,
+                    isLayoutFullscreen && {
+                      paddingHorizontal: Math.max(insets.left, insets.right, 16),
+                      paddingBottom: Math.max(insets.bottom, 8),
+                      paddingTop: Math.max(insets.top, 8),
+                    }
+                  ]}
+                  pointerEvents="box-none"
+                >
+                  {/* Top Bar - Spacer */}
+                  <View style={styles.youtubeTopBar} pointerEvents="none">
+                    <View style={{ flex: 1 }} />
+                  </View>
+
+                  {/* Center Play/Pause & Skip Buttons */}
+                  <View style={styles.youtubeCenterBar} pointerEvents="auto">
+                    <Pressable
+                      style={styles.youtubeSkipBtn}
+                      onPress={handleSeekBackward10}
+                    >
+                      <View style={styles.skipBtnBox}>
+                        <RotateCcw color="#FFFFFF" size={26} />
+                        <Text style={styles.skipBtnText}>-10s</Text>
                       </View>
                     </Pressable>
-                  )}
-                </Pressable>
+
+                    <Pressable
+                      style={styles.youtubePlayBtn}
+                      onPress={handlePlayPause}
+                    >
+                      <View style={styles.youtubePlayBtnBg}>
+                        {isLoadingVideo ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : isPlaying ? (
+                          <Pause color="#FFFFFF" size={34} fill="#FFFFFF" />
+                        ) : (
+                          <Play color="#FFFFFF" size={34} fill="#FFFFFF" style={{ marginLeft: 4 }} />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.youtubeSkipBtn}
+                      onPress={handleSeekForward10}
+                    >
+                      <View style={styles.skipBtnBox}>
+                        <RotateCw color="#FFFFFF" size={26} />
+                        <Text style={styles.skipBtnText}>+10s</Text>
+                      </View>
+                    </Pressable>
+                  </View>
+
+                  {/* Bottom Bar - Scrubber & Custom Actions */}
+                  <View style={styles.youtubeBottomBar} pointerEvents="auto">
+                    {/* Interactive Scrubber Bar & Timestamp */}
+                    <View style={styles.scrubberRow}>
+                      <View
+                        ref={scrubberTrackRef}
+                        style={styles.scrubberTrack}
+                        onLayout={(e) => {
+                          const w = e.nativeEvent.layout.width;
+                          if (w > 0) {
+                            setProgressTrackWidth(w);
+                            progressTrackWidthRef.current = w;
+                          }
+                        }}
+                        hitSlop={{ top: 16, bottom: 16, left: 10, right: 10 }}
+                        {...scrubberPanResponder.panHandlers}
+                      >
+                        <View
+                          style={[
+                            styles.scrubberFill,
+                            {
+                              width: `${scrubberPercent}%`,
+                            },
+                          ]}
+                          pointerEvents="none"
+                        />
+                        <View
+                          style={[
+                            styles.scrubberDot,
+                            isDraggingScrubber && styles.scrubberDotActive,
+                            {
+                              left: `${scrubberPercent}%`,
+                            },
+                          ]}
+                          pointerEvents="none"
+                        />
+                      </View>
+
+                      <Text style={styles.youtubeTimeText}>
+                        {formatTime(displayTime)} / {formatTime(duration)}
+                      </Text>
+                    </View>
+
+                    {/* Controls Toolbar Row */}
+                    <View style={styles.youtubeControlsRow}>
+                      {/* Volume Control Group (Icon + Slider) */}
+                      <View style={styles.volumeControlGroup}>
+                        <Pressable
+                          style={styles.youtubeIconBtn}
+                          onPress={handleToggleMute}
+                          accessibilityRole="button"
+                          accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
+                        >
+                          {isMuted || volume === 0 ? (
+                            <VolumeX color="#FF5252" size={20} />
+                          ) : volume < 0.5 ? (
+                            <Volume1 color="#FFFFFF" size={20} />
+                          ) : (
+                            <Volume2 color="#FFFFFF" size={20} />
+                          )}
+                        </Pressable>
+
+                        <View
+                          ref={volumeTrackRef}
+                          style={styles.volumeBarTrack}
+                          onLayout={(e) => {
+                            const w = e.nativeEvent.layout.width;
+                            if (w > 0) volumeTrackWidthRef.current = w;
+                          }}
+                          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                          {...volumePanResponder.panHandlers}
+                        >
+                          <View
+                            style={[
+                              styles.volumeBarFill,
+                              { width: `${isMuted ? 0 : volume * 100}%` }
+                            ]}
+                            pointerEvents="none"
+                          />
+                          <View
+                            style={[
+                              styles.volumeBarThumb,
+                              isDraggingVolume && styles.volumeBarThumbActive,
+                              { left: `${isMuted ? 0 : volume * 100}%` }
+                            ]}
+                            pointerEvents="none"
+                          />
+                        </View>
+                      </View>
+
+                      <View style={{ flex: 1 }} />
+
+                      {/* Next Episode Button */}
+                      {!isMovie && (
+                        <Pressable
+                          style={styles.nextEpPillBtn}
+                          onPress={handleNextEpisode}
+                        >
+                          <Text style={styles.nextEpPillText}>Next Ep</Text>
+                          <SkipForward size={13} color="#FFFFFF" />
+                        </Pressable>
+                      )}
+
+                      {/* Settings Gear Button */}
+                      <Pressable
+                        style={styles.youtubeIconBtn}
+                        onPress={() => setShowSettingsModal(true)}
+                      >
+                        <Settings color="#FFFFFF" size={20} />
+                      </Pressable>
+
+                      {/* Fullscreen Toggle */}
+                      <Pressable
+                        style={styles.youtubeIconBtn}
+                        onPress={handleFullscreen}
+                      >
+                        {isLayoutFullscreen ? <Minimize2 color="#FFFFFF" size={20} /> : <Maximize2 color="#FFFFFF" size={20} />}
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
               )}
             </View>
+          )}
+        </View>
+      </View>
 
-            {/* Speed Selector Menu */}
-            {showSpeedMenu && (
-              <View style={[styles.speedMenu, { backgroundColor: themeColors.backgroundElement, borderBottomColor: themeColors.border }]}>
-                <View style={styles.speedRow}>
-                  {SPEED_OPTIONS.map((speed) => {
-                    const isCurrent = playbackSpeed === speed;
-                    return (
-                      <Pressable
-                        key={speed}
-                        style={[
-                          styles.speedChip,
-                          { backgroundColor: themeColors.backgroundCard },
-                          isCurrent && { backgroundColor: themeColors.primary }
-                        ]}
-                        onPress={() => handleSelectSpeed(speed)}
-                      >
-                        <Text style={[
-                          styles.speedChipText,
-                          { color: isCurrent ? '#FFFFFF' : themeColors.textSecondary }
-                        ]}>
-                          {speed === 1.0 ? '1x' : `${speed}x`}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-          </View>
-
-          {/* 🌟 NETFLIX-STYLE MEDIA POSTER HEADER CARD (Theme Colors Preserved) */}
-          {anime && (
-            <View style={[
-              styles.mediaRichCard,
-              { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }
-            ]}>
-              <View style={styles.mediaHeaderFlex}>
-                {/* Poster Artwork Image */}
-                <Image
-                  source={{ uri: anime.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
-                  style={styles.posterThumbnail}
-                  resizeMode="cover"
-                />
-
-                {/* Title & Metadata */}
-                <View style={styles.mediaHeaderInfo}>
-                  <View style={styles.badgeRow}>
-                    <View style={[styles.catBadge, { backgroundColor: themeColors.primary }]}>
-                      <Text style={styles.catBadgeText}>{(anime.category || 'ANIME').toUpperCase()}</Text>
-                    </View>
-                    {anime.qualities && anime.qualities.length > 0 && (
-                      <View style={[styles.hdBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, borderWidth: 1 }]}>
-                        <Text style={[styles.hdBadgeText, { color: themeColors.text }]}>{anime.qualities[0].toUpperCase()}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <Text style={[styles.mediaTitleText, { color: themeColors.text }]} numberOfLines={2}>
-                    {language === 'ku' && anime.title_ku ? anime.title_ku : anime.title}
-                  </Text>
-
-                  <Text style={[styles.genreSubText, { color: themeColors.accentCyan || themeColors.primary }]}>
-                    {anime.genre ?? 'General'}
-                  </Text>
-
-                  <View style={styles.statsRow}>
-                    <View style={styles.ratingBox}>
-                      <Star color="#FFB800" size={13} fill="#FFB800" />
-                      <Text style={styles.ratingVal}>{stats.average.toFixed(1)}</Text>
-                    </View>
-                    <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
-                    <Text style={[styles.epCountText, { color: themeColors.textSecondary }]}>{anime.episodes || 1} EPS</Text>
-                    {anime.audio_tracks && anime.audio_tracks.length > 0 && (
-                      <>
-                        <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
-                        <Text style={[styles.subLabelText, { color: themeColors.textMuted }]}>{anime.audio_tracks.join(' / ').toUpperCase()}</Text>
-                      </>
-                    )}
-                  </View>
-                </View>
-              </View>
-
-              {/* Action CTAs Row */}
-              <View style={styles.richActionRow}>
-                <Pressable
-                  style={[
-                    styles.myListBtn,
-                    { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-                    favorited && { borderColor: themeColors.primary, backgroundColor: 'rgba(3, 86, 197, 0.15)' }
-                  ]}
-                  onPress={() => toggleFavorite(anime)}
-                >
-                  <Heart
-                    color={favorited ? themeColors.primary : themeColors.text}
-                    fill={favorited ? themeColors.primary : 'none'}
-                    size={18}
+      {/* 📜 BELOW-PLAYER SCROLLVIEW (Hidden during Fullscreen) */}
+      {!isLayoutFullscreen && (
+        <ScrollView 
+          ref={scrollViewRef}
+          style={{ flex: 1 }} 
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
+            {/* 🌟 NETFLIX-STYLE MEDIA POSTER HEADER CARD (Theme Colors Preserved) */}
+            {anime && (
+              <View style={[
+                styles.mediaRichCard,
+                { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }
+              ]}>
+                <View style={styles.mediaHeaderFlex}>
+                  {/* Poster Artwork Image */}
+                  <Image
+                    source={{ uri: anime.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
+                    style={styles.posterThumbnail}
+                    resizeMode="cover"
                   />
-                  <Text style={[styles.myListBtnText, { color: favorited ? themeColors.primary : themeColors.text }]}>
-                    {favorited ? 'In My List' : '+ My List'}
+
+                  {/* Title & Metadata */}
+                  <View style={styles.mediaHeaderInfo}>
+                    <View style={styles.badgeRow}>
+                      <View style={[styles.catBadge, { backgroundColor: themeColors.primary }]}>
+                        <Text style={styles.catBadgeText}>{(anime.category || 'ANIME').toUpperCase()}</Text>
+                      </View>
+                      {anime.qualities && anime.qualities.length > 0 && (
+                        <View style={[styles.hdBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, borderWidth: 1 }]}>
+                          <Text style={[styles.hdBadgeText, { color: themeColors.text }]}>{anime.qualities[0].toUpperCase()}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <Text style={[styles.mediaTitleText, { color: themeColors.text }]} numberOfLines={2}>
+                      {language === 'ku' && anime.title_ku ? anime.title_ku : anime.title}
+                    </Text>
+
+                    <Text style={[styles.genreSubText, { color: themeColors.accentCyan || themeColors.primary }]}>
+                      {anime.genre ?? 'General'}
+                    </Text>
+
+                    <View style={styles.statsRow}>
+                      <View style={styles.ratingBox}>
+                        <Star color="#FFB800" size={13} fill="#FFB800" />
+                        <Text style={styles.ratingVal}>{stats.average.toFixed(1)}</Text>
+                      </View>
+                      <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
+                      <Text style={[styles.epCountText, { color: themeColors.textSecondary }]}>{anime.episodes || 1} EPS</Text>
+                      {anime.audio_tracks && anime.audio_tracks.length > 0 && (
+                        <>
+                          <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
+                          <Text style={[styles.subLabelText, { color: themeColors.textMuted }]}>{anime.audio_tracks.join(' / ').toUpperCase()}</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Action CTAs Row */}
+                <View style={styles.richActionRow}>
+                  <Pressable
+                    style={[
+                      styles.myListBtn,
+                      { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+                      favorited && { borderColor: themeColors.primary, backgroundColor: 'rgba(3, 86, 197, 0.15)' }
+                    ]}
+                    onPress={() => toggleFavorite(anime)}
+                  >
+                    <Heart
+                      color={favorited ? themeColors.primary : themeColors.text}
+                      fill={favorited ? themeColors.primary : 'none'}
+                      size={18}
+                    />
+                    <Text style={[styles.myListBtnText, { color: favorited ? themeColors.primary : themeColors.text }]}>
+                      {favorited ? 'In My List' : '+ My List'}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {/* Synopsis Box */}
+                <Pressable
+                  style={[styles.synopsisWrapper, { backgroundColor: themeColors.backgroundElement }]}
+                  onPress={() => setIsExpandedSynopsis(!isExpandedSynopsis)}
+                >
+                  <Text style={[styles.synopsisText, { color: themeColors.textSecondary }]} numberOfLines={isExpandedSynopsis ? undefined : 3}>
+                    {language === 'ku' && anime.description_ku ? anime.description_ku : (anime.description || 'Experience this epic title with master audio and original subtitles.')}
+                  </Text>
+                  <Text style={[styles.readMoreBtn, { color: themeColors.primary }]}>
+                    {isExpandedSynopsis ? 'Show less' : 'Read more...'}
                   </Text>
                 </Pressable>
-
-                {/* Share button removed — stream links are protected */}
               </View>
+            )}
 
-              {/* Synopsis Box */}
-              <Pressable
-                style={[styles.synopsisWrapper, { backgroundColor: themeColors.backgroundElement }]}
-                onPress={() => setIsExpandedSynopsis(!isExpandedSynopsis)}
-              >
-                <Text style={[styles.synopsisText, { color: themeColors.textSecondary }]} numberOfLines={isExpandedSynopsis ? undefined : 3}>
-                  {language === 'ku' && anime.description_ku ? anime.description_ku : (anime.description || 'Experience this epic title with master audio and original subtitles.')}
-                </Text>
-                <Text style={[styles.readMoreBtn, { color: themeColors.primary }]}>
-                  {isExpandedSynopsis ? 'Show less' : 'Read more...'}
-                </Text>
-              </Pressable>
-            </View>
-          )}
+            {/* 🍿 Enhanced Interactive Episode & Season Selector Component */}
+            <EpisodeSelector
+              totalEpisodes={anime?.episodes || 1}
+              selectedEpisode={selectedEpisode}
+              onSelectEpisode={(ep) => setSelectedEpisode(ep)}
+              category={anime?.category}
+            />
 
-          {/* 🍿 Enhanced Interactive Episode & Season Selector Component */}
-          <EpisodeSelector
-            totalEpisodes={anime?.episodes || 1}
-            selectedEpisode={selectedEpisode}
-            onSelectEpisode={(ep) => setSelectedEpisode(ep)}
-            category={anime?.category}
-          />
-
-          {/* 🌟 RECOMMENDATIONS RAIL (Theme-aware Poster Cards) */}
-          {recommendations.length > 0 && (
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Layers color={themeColors.primary} size={18} />
-                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>You Might Also Like</Text>
+            {/* 🌟 RECOMMENDATIONS RAIL (Theme-aware Poster Cards) */}
+            {recommendations.length > 0 && (
+              <View style={styles.sectionContainer}>
+                <View style={styles.sectionHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Layers color={themeColors.primary} size={18} />
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>You Might Also Like</Text>
+                  </View>
                 </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recRail}>
+                  {recommendations.map((item) => (
+                    <Pressable
+                      key={item.id}
+                      style={[styles.recPosterCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, width: railCardWidth }]}
+                      onPress={() => router.push({ pathname: '/watch', params: { id: item.id } })}
+                    >
+                      <Image
+                        source={{ uri: item.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
+                        style={[styles.recPosterImg, { width: railCardWidth, height: railCardHeight }]}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.recBadgeOverlay}>
+                        <Star color="#FFB800" size={10} fill="#FFB800" />
+                        <Text style={styles.recBadgeText}>4.9</Text>
+                      </View>
+                      <View style={styles.recMetaContainer}>
+                        <Text style={[styles.recTitleText, { color: themeColors.text }]} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={[styles.recGenreText, { color: themeColors.textSecondary }]} numberOfLines={1}>
+                          {item.genre ?? 'Anime'}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </ScrollView>
               </View>
+            )}
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recRail}>
-                {recommendations.map((item) => (
-                  <Pressable
-                    key={item.id}
-                    style={[styles.recPosterCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, width: railCardWidth }]}
-                    onPress={() => router.push({ pathname: '/watch', params: { id: item.id } })}
-                  >
-                    <Image
-                      source={{ uri: item.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
-                      style={[styles.recPosterImg, { width: railCardWidth, height: railCardHeight }]}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.recBadgeOverlay}>
-                      <Star color="#FFB800" size={10} fill="#FFB800" />
-                      <Text style={styles.recBadgeText}>4.9</Text>
-                    </View>
-                    <View style={styles.recMetaContainer}>
-                      <Text style={[styles.recTitleText, { color: themeColors.text }]} numberOfLines={1}>
-                        {item.title}
-                      </Text>
-                      <Text style={[styles.recGenreText, { color: themeColors.textSecondary }]} numberOfLines={1}>
-                        {item.genre ?? 'Anime'}
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+            {/* 📢 Sponsored Banner */}
+            <AdMobBanner placement="watch_bottom" style={{ paddingHorizontal: pagePad, marginTop: 14 }} />
 
-          {/* 📢 Sponsored Banner */}
-          <AdMobBanner placement="watch_bottom" style={{ paddingHorizontal: pagePad, marginTop: 14 }} />
+            {/* ⭐ COMMUNITY REVIEWS SECTION */}
+            {anime && (
+              <View style={{ marginTop: 16 }}>
+                <ReviewsSection mediaId={anime.id} mediaTitle={anime.title} />
+              </View>
+            )}
 
-          {/* ⭐ COMMUNITY REVIEWS SECTION */}
-          {anime && (
-            <View style={{ marginTop: 16 }}>
-              <ReviewsSection mediaId={anime.id} mediaTitle={anime.title} />
-            </View>
-          )}
-
-          <View style={{ height: 80 }} />
-        </View>
-      </ScrollView>
+            <View style={{ height: 80 }} />
+          </View>
+        </ScrollView>
+      )}
 
       {/* ⚙️ Player Quality, Audio & Speed Settings Modal */}
       <PlayerSettingsModal
@@ -764,7 +1216,7 @@ export default function WatchScreen() {
         playbackSpeed={playbackSpeed}
         onSelectSpeed={(speed) => {
           setPlaybackSpeed(speed);
-          try { player.playbackRate = speed; } catch (_e) {}
+          try { (playerRef.current || player).playbackRate = speed; } catch (_e) {}
         }}
         availableQualities={anime?.qualities?.length ? anime.qualities : ['4K Ultra HD', '1080p Full HD', '720p HD', '480p SD']}
         activeQuality={selectedQuality}
@@ -849,9 +1301,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 9999,
-    elevation: 9999,
-    backgroundColor: '#000',
+    width: '100%',
+    height: '100%',
+    zIndex: 999999,
+    elevation: 999999,
+    backgroundColor: '#000000',
   },
   videoBox: {
     width: '100%',
@@ -861,14 +1315,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  videoBoxLocked: {
+    aspectRatio: undefined,
+    minHeight: 380,
+  },
   videoBoxDesktop: {
     maxHeight: 600,
   },
   videoBoxFullscreen: {
-    flex: 1,
+    width: '100%',
     height: '100%',
-    maxHeight: undefined,
-    aspectRatio: undefined,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
   },
   videoOverlayContainer: {
     width: '100%',
@@ -883,43 +1347,245 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'transparent',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 4,
     zIndex: 100,
+    elevation: 100,
   },
   youtubeTopBar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    zIndex: 150,
+    elevation: 150,
+  },
+  playerTitleBox: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  playerTitleText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  playerTopRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 160,
+    elevation: 160,
+  },
+  playerPillBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  playerPillBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  playerPillBadgePrimary: {
+    backgroundColor: 'rgba(3, 86, 197, 0.4)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#0356C5',
+  },
+  playerPillBadgePrimaryText: {
+    color: '#00D2FF',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  skipBtnBox: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  skipBtnText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  scrubberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  scrubberTrack: {
+    flex: 1,
+    height: 24,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  scrubberFill: {
+    height: 4,
+    backgroundColor: '#0356C5',
+    borderRadius: 2,
+  },
+  scrubberDot: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#00D2FF',
+    marginTop: -5,
+    marginLeft: -7,
+    shadowColor: '#00D2FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  scrubberDotActive: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    marginTop: -7,
+    marginLeft: -9,
+    backgroundColor: '#FFFFFF',
+  },
+  skipIntroPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 184, 0, 0.18)',
+    borderWidth: 1,
+    borderColor: '#FFB800',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  skipIntroPillText: {
+    color: '#FFD700',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  nextEpPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(3, 86, 197, 0.35)',
+    borderWidth: 1,
+    borderColor: '#0356C5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  nextEpPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   youtubeSettingsBtn: {
-    padding: 8,
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 200,
+    elevation: 200,
   },
   youtubeCenterBar: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 24,
+    zIndex: 150,
+    elevation: 150,
   },
   youtubeSkipBtn: {
     padding: 10,
     opacity: 0.9,
+    zIndex: 160,
+    elevation: 160,
   },
   youtubePlayBtn: {
     padding: 10,
+    zIndex: 170,
+    elevation: 170,
   },
   youtubePlayBtnBg: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  speedPopoverCard: {
+    position: 'absolute',
+    right: 8,
+    bottom: 30,
+    width: 145,
+    backgroundColor: '#0A0E1A',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 6,
+    zIndex: 300,
+    elevation: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+  },
+  speedPopoverHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingBottom: 6,
+    marginBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  speedPopoverTitle: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  speedOptionsList: {
+    flexDirection: 'column',
+    gap: 2,
+  },
+  speedOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  speedOptionActive: {
+    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+  },
+  speedOptionText: {
+    color: '#B0B5C6',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  speedOptionTextActive: {
+    color: '#00D2FF',
+    fontWeight: '800',
+  },
   youtubeBottomBar: {
     flexDirection: 'column',
-    gap: 10,
+    gap: 4,
+    zIndex: 150,
+    elevation: 150,
   },
   youtubeTimeRow: {
     flexDirection: 'row',
@@ -933,10 +1599,11 @@ const styles = StyleSheet.create({
   youtubeControlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   youtubeIconBtn: {
-    padding: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
   },
   youtubeSpeedText: {
     color: '#fff',
@@ -962,13 +1629,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  paywallOverlay: {
+  centerLoadingOverlay: {
     position: 'absolute',
-    top: 0, bottom: 0, left: 0, right: 0,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 150,
+  },
+  paywallOverlay: {
+    width: '100%',
+    minHeight: 380,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    position: 'relative',
     overflow: 'hidden',
   },
   paywallContent: {
@@ -1370,4 +2049,40 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
   },
+
+  /* VOLUME CONTROL STYLES */
+  volumeControlGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  volumeBarTrack: {
+    width: 70,
+    height: 24,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  volumeBarFill: {
+    height: 4,
+    backgroundColor: '#00D2FF',
+    borderRadius: 2,
+  },
+  volumeBarThumb: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    marginTop: -4,
+    marginLeft: -6,
+  },
+  volumeBarThumbActive: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginTop: -6,
+    marginLeft: -8,
+    backgroundColor: '#00D2FF',
+  },
+
 });

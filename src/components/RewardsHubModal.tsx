@@ -28,6 +28,7 @@ import {
   Zap,
   ChevronRight,
   Info,
+  Target,
 } from 'lucide-react-native';
 import { useGamification, SPIN_REWARDS, SpinReward } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
@@ -151,17 +152,21 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     canSpinWheel,
     vipDaysRemaining,
     isVIP,
+    activeEvent,
+    allEvents,
+    missions,
     themes,
     activeTheme,
     badges,
     claimDailyStreak,
     spinWheel,
+    claimMission,
     unlockTheme,
     equipTheme,
     addXPAndCoins,
   } = useGamification();
 
-  const [activeTab, setActiveTab] = useState<'spin' | 'streak' | 'themes' | 'badges'>('spin');
+  const [activeTab, setActiveTab] = useState<'events' | 'spin' | 'streak' | 'themes' | 'badges'>('events');
 
   const [spinAnim] = useState(() => new Animated.Value(0));
   const [isSpinning, setIsSpinning] = useState(false);
@@ -325,6 +330,16 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           <View style={styles.navTabsWrapper}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navTabsRow}>
               <Pressable
+                style={[styles.tabSegment, activeTab === 'events' && styles.tabSegmentActive]}
+                onPress={() => setActiveTab('events')}
+              >
+                <Zap size={15} color={activeTab === 'events' ? '#FFB800' : '#7D7D9A'} />
+                <Text style={[styles.tabSegmentText, activeTab === 'events' && styles.tabSegmentTextActive]}>
+                  Events & Missions
+                </Text>
+              </Pressable>
+
+              <Pressable
                 style={[styles.tabSegment, activeTab === 'spin' && styles.tabSegmentActive]}
                 onPress={() => setActiveTab('spin')}
               >
@@ -368,6 +383,90 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
           {/* 📜 Main Content Area */}
           <ScrollView style={styles.mainScrollView} contentContainerStyle={styles.mainScrollContent}>
+            {/* ⚡ EVENTS & MISSIONS TAB */}
+            {activeTab === 'events' && (
+              <View style={styles.eventsSection}>
+                {/* Active Seasonal Event Banner */}
+                {activeEvent && (
+                  <View style={[styles.eventBannerCard, { borderColor: activeEvent.themeColor || '#FF3D00' }]}>
+                    <View style={styles.eventHeaderRow}>
+                      <View style={[styles.eventBadgeBox, { backgroundColor: `${activeEvent.themeColor || '#FF3D00'}22` }]}>
+                        <Text style={styles.eventBadgeEmoji}>{activeEvent.badgeIcon || '🔥'}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.eventTitleText}>{activeEvent.title}</Text>
+                        <Text style={styles.eventSubText}>{activeEvent.subtitle}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.eventFooterRow}>
+                      <Text style={styles.eventEndDateText}>Ends: {activeEvent.endDate}</Text>
+                      <View style={[styles.eventActivePill, { backgroundColor: activeEvent.themeColor || '#FF3D00' }]}>
+                        <Text style={styles.eventActivePillText}>ACTIVE EVENT</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.sectionHeaderLeft}>
+                  <Text style={styles.sectionTitle}>Daily & Event Missions</Text>
+                  <Text style={styles.sectionSub}>Complete goals to earn Coins, XP & rank up fast</Text>
+                </View>
+
+                <View style={styles.missionsList}>
+                  {missions.map((m) => {
+                    const progress = Math.min(100, Math.max(0, (m.current / m.target) * 100));
+                    return (
+                      <View key={m.id} style={styles.missionCard}>
+                        <View style={styles.missionHeaderRow}>
+                          <View style={styles.missionTitleGroup}>
+                            <Target size={16} color="#FFB800" />
+                            <Text style={styles.missionTitle}>{m.title}</Text>
+                          </View>
+                          <View style={styles.missionRewardPills}>
+                            {m.rewardCoins > 0 && (
+                              <View style={styles.missionCoinPill}>
+                                <Text style={styles.missionCoinText}>+{m.rewardCoins} 💰</Text>
+                              </View>
+                            )}
+                            {m.rewardXP > 0 && (
+                              <View style={styles.missionXpPill}>
+                                <Text style={styles.missionXpText}>+{m.rewardXP} XP</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        <Text style={styles.missionDesc}>{m.description}</Text>
+
+                        <View style={styles.missionActionRow}>
+                          <View style={styles.missionTrackSection}>
+                            <View style={styles.missionTrack}>
+                              <View style={[styles.missionFill, { width: `${progress}%` }]} />
+                            </View>
+                            <Text style={styles.missionProgressText}>
+                              {m.current} / {m.target} ({Math.round(progress)}%)
+                            </Text>
+                          </View>
+
+                          <Pressable
+                            style={[
+                              styles.claimMissionBtn,
+                              (!m.completed || m.claimed) && styles.claimMissionBtnDisabled,
+                            ]}
+                            disabled={!m.completed || m.claimed}
+                            onPress={() => claimMission(m.id)}
+                          >
+                            <Text style={styles.claimMissionBtnText}>
+                              {m.claimed ? '✓ Claimed' : m.completed ? 'Claim' : 'In Progress'}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
             {/* 🎡 LUCKY SPIN TAB */}
             {activeTab === 'spin' && (
               <View style={styles.spinSection}>
@@ -632,7 +731,8 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 580,
-    maxHeight: '95%',
+    height: '88%',
+    maxHeight: 740,
     backgroundColor: '#0F121E',
     borderRadius: 24,
     borderWidth: 1,
@@ -1339,5 +1439,162 @@ const styles = StyleSheet.create({
   badgeDescText: {
     fontSize: 11,
     color: '#8E8EA6',
+  },
+  eventsSection: {
+    gap: 14,
+  },
+  eventBannerCard: {
+    backgroundColor: '#141829',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    gap: 10,
+  },
+  eventHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  eventBadgeBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eventBadgeEmoji: {
+    fontSize: 20,
+  },
+  eventTitleText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  eventSubText: {
+    fontSize: 11,
+    color: '#8E8EA6',
+    marginTop: 2,
+  },
+  eventFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#1F2438',
+  },
+  eventEndDateText: {
+    fontSize: 10,
+    color: '#FFB800',
+    fontWeight: '700',
+  },
+  eventActivePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  eventActivePillText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  missionsList: {
+    gap: 10,
+  },
+  missionCard: {
+    backgroundColor: '#141829',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#24283C',
+    gap: 8,
+  },
+  missionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  missionTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  missionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  missionRewardPills: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  missionCoinPill: {
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  missionCoinText: {
+    color: '#FFD700',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  missionXpPill: {
+    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  missionXpText: {
+    color: '#00D2FF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  missionDesc: {
+    fontSize: 11,
+    color: '#8E8EA6',
+  },
+  missionActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 2,
+  },
+  missionTrackSection: {
+    flex: 1,
+    gap: 4,
+  },
+  missionTrack: {
+    height: 6,
+    backgroundColor: '#1F243A',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  missionFill: {
+    height: '100%',
+    backgroundColor: '#FFB800',
+    borderRadius: 3,
+  },
+  missionProgressText: {
+    fontSize: 10,
+    color: '#8E8EA6',
+    fontWeight: '600',
+  },
+  claimMissionBtn: {
+    backgroundColor: '#0356C5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  claimMissionBtnDisabled: {
+    backgroundColor: '#1F2338',
+    opacity: 0.6,
+  },
+  claimMissionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

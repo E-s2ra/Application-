@@ -25,17 +25,11 @@ function PrivacyProtection() {
   useEffect(() => {
     if (Platform.OS === 'web' || isLoading) return;
 
-    // Use database role — not email comparison — as the source of truth.
-    const isAdmin = profile?.role === 'admin';
-
-    if (isAdmin) {
-      void ScreenCapture.allowScreenCaptureAsync('app-security');
-    } else {
-      void ScreenCapture.preventScreenCaptureAsync('app-security');
-      if (Platform.OS === 'ios') {
-        // @ts-ignore
-        if (ScreenCapture.enableAppSwitcherProtectionAsync) void ScreenCapture.enableAppSwitcherProtectionAsync(1);
-      }
+    // Allow screenshots across the application
+    void ScreenCapture.allowScreenCaptureAsync('app-security').catch(() => {});
+    if (Platform.OS === 'ios') {
+      // @ts-ignore
+      if (ScreenCapture.disableAppSwitcherProtectionAsync) void ScreenCapture.disableAppSwitcherProtectionAsync();
     }
   }, [user, profile, isLoading]);
 
