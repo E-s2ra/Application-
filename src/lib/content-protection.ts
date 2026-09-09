@@ -147,17 +147,20 @@ function enableWebProtection(): Cleanup {
 
 // ─── Native Protection (expo-screen-capture) ─────────────────────────────────
 
-async function enableNativeProtection(): Promise<Cleanup> {
+async function enableNativeProtection(isAdmin = false): Promise<Cleanup> {
   try {
     // Dynamically import to avoid crashing on web where it's unavailable
     const ScreenCapture = await import('expo-screen-capture');
 
-    // Allow screenshots and screen recordings
-    await ScreenCapture.allowScreenCaptureAsync();
-
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
-    };
+    if (isAdmin) {
+      await ScreenCapture.allowScreenCaptureAsync();
+      return () => {};
+    } else {
+      await ScreenCapture.preventScreenCaptureAsync();
+      return () => {
+        ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+      };
+    }
   } catch (e) {
     // expo-screen-capture may not be installed — fail gracefully
     console.warn('[AniFlix DRM] Screen capture protection unavailable:', e);
@@ -173,14 +176,14 @@ let _activeCleanup: Cleanup | null = null;
  * Call on watch screen mount.
  * Applies all available content protections for the current platform.
  */
-export async function enableContentProtection(): Promise<void> {
+export async function enableContentProtection(isAdmin = false): Promise<void> {
   // Ensure no double-init
   if (_activeCleanup) _activeCleanup();
 
   if (Platform.OS === 'web') {
     _activeCleanup = enableWebProtection();
   } else {
-    _activeCleanup = await enableNativeProtection();
+    _activeCleanup = await enableNativeProtection(isAdmin);
   }
 }
 

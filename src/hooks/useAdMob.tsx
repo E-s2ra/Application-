@@ -115,8 +115,16 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isNativeAdAvailable, loadRewardedAd]);
 
+  const { profile } = useAuth();
+
   const showRewardedAd = useCallback(
     async (options?: ShowAdOptions): Promise<boolean> => {
+      // VIP subscribers do not see ads and cannot claim coins
+      if (profile?.is_vip) {
+        console.log('[AdMob] User is VIP — ads are disabled for VIP plan.');
+        return false;
+      }
+
       const coins = options?.rewardCoins ?? ADMOB_REWARDS.rewardedAdCoins;
       const type = options?.rewardType ?? 'coins';
 
@@ -146,7 +154,7 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
       setIsAdModalVisible(true);
       return true;
     },
-    [isNativeAdAvailable]
+    [isNativeAdAvailable, profile?.is_vip]
   );
 
   const onAdCompleted = useCallback(async () => {

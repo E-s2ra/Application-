@@ -25,11 +25,25 @@ function PrivacyProtection() {
   useEffect(() => {
     if (Platform.OS === 'web' || isLoading) return;
 
-    // Allow screenshots across the application
-    void ScreenCapture.allowScreenCaptureAsync('app-security').catch(() => {});
-    if (Platform.OS === 'ios') {
-      // @ts-ignore
-      if (ScreenCapture.disableAppSwitcherProtectionAsync) void ScreenCapture.disableAppSwitcherProtectionAsync();
+    const isAdmin =
+      profile?.role === 'admin' ||
+      user?.email === process.env.EXPO_PUBLIC_ADMIN_EMAIL ||
+      user?.email === 'esra99san@gmail.com';
+
+    if (isAdmin) {
+      // Allow screenshots and recordings for admin users
+      void ScreenCapture.allowScreenCaptureAsync('app-security').catch(() => {});
+      if (Platform.OS === 'ios') {
+        // @ts-ignore
+        if (ScreenCapture.disableAppSwitcherProtectionAsync) void ScreenCapture.disableAppSwitcherProtectionAsync();
+      }
+    } else {
+      // Prevent screenshots and recordings for non-admin users across the app
+      void ScreenCapture.preventScreenCaptureAsync('app-security').catch(() => {});
+      if (Platform.OS === 'ios') {
+        // @ts-ignore
+        if (ScreenCapture.enableAppSwitcherProtectionAsync) void ScreenCapture.enableAppSwitcherProtectionAsync();
+      }
     }
   }, [user, profile, isLoading]);
 

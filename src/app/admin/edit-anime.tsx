@@ -23,6 +23,8 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useToast } from '@/hooks/useToast';
+import { EpisodeLink, VideoSource } from '@/types';
 
 const CATEGORY_OPTIONS: { id: MediaCategory; label: string }[] = [
   { id: 'Movies', label: 'Movies' },
@@ -31,8 +33,6 @@ const CATEGORY_OPTIONS: { id: MediaCategory; label: string }[] = [
   { id: 'Drama', label: 'Drama' },
   { id: 'Anime Series', label: 'Anime Series' },
 ];
-
-import { useToast } from '@/hooks/useToast';
 
 export default function EditAnimeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -50,14 +50,16 @@ export default function EditAnimeScreen() {
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [episodes, setEpisodes] = useState('1');
-  const [episodeLinks, setEpisodeLinks] = useState<{episode: number, url: string}[]>([{episode: 1, url: ''}]);
+  const [episodeLinks, setEpisodeLinks] = useState<EpisodeLink[]>([]);
   const [genre, setGenre] = useState('');
   const [category, setCategory] = useState<MediaCategory>('Movies');
   const [isFeatured, setIsFeatured] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [newEpNum, setNewEpNum] = useState('');
-  const [newEpUrl, setNewEpUrl] = useState('');
+  const [newEpNum, setNewEpNum] = useState('1');
+  const [draftSources, setDraftSources] = useState<{ label: string; url: string; is_default: boolean }[]>([
+    { label: 'Server 1', url: '', is_default: true },
+  ]);
   const [linkError, setLinkError] = useState('');
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function EditAnimeScreen() {
 
         const { data, error } = await supabase
           .from('anime')
-          .select('id, title, description, image_url, video_asset_key, video_url, episodes, genre, category, is_featured')
+          .select('id, title, description, image_url, video_asset_key, video_url, episodes, genre, category, is_featured, episode_links')
           .eq('id', id)
           .single();
 
@@ -91,7 +93,7 @@ export default function EditAnimeScreen() {
           if (animeData.episode_links && Array.isArray(animeData.episode_links)) {
             setEpisodeLinks(animeData.episode_links);
           } else {
-            setEpisodeLinks([{ episode: 1, url: animeData.video_asset_key || animeData.video_url || '' }]);
+            setEpisodeLinks([{ episode: 1, url: animeData.video_asset_key || animeData.video_url || '', sources: [] }]);
           }
 
           setGenre(animeData.genre || '');
@@ -106,36 +108,84 @@ export default function EditAnimeScreen() {
     loadItem();
   }, [id]);
 
-  const handleAddLink = () => {
+  const handleAddDraftSource = () => {
+    setDraftSources((prev) => [
+      ...prev,
+      { label: `Server ${prev.length + 1}`, url: '', is_default: prev.length === 0 },
+    ]);
+  };
+
+  const handleRemoveDraftSource = (index: number) => {
+    setDraftSources((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length > 0 && !next.some((s) => s.is_default)) {
+        next[0].is_default = true;
+      }
+      return next;
+    });
+  };
+
+  const handleUpdateDraftSource = (index: number, field: 'label' | 'url', value: string) => {
+    setDraftSources((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleSetDefaultDraftSource = (index: number) => {
+    setDraftSources((prev) =>
+      prev.map((srcItem, i) => ({
+        ...srcItem,
+        is_default: i === index,
+      }))
+    );
+  };
+
+  const handleAddEpisodeWithSources = () => {
     setLinkError('');
     const cleanNumStr = newEpNum.replace(/\D/g, '');
     const num = parseInt(cleanNumStr, 10);
-    
+
     if (!cleanNumStr || isNaN(num) || num <= 0) {
       setLinkError('Please enter a valid episode number (e.g. 1).');
       return;
     }
-    if (!newEpUrl.trim()) {
-      setLinkError('Please enter a valid video URL.');
+
+    const validSources = draftSources.filter((s) => s.url.trim().length > 0);
+    if (validSources.length === 0) {
+      setLinkError('Please provide at least 1 valid video URL source for this episode.');
       return;
     }
-    
-    setEpisodeLinks(prev => {
-      const next = [...prev];
-      const existingIdx = next.findIndex(l => l.episode === num);
-      if (existingIdx >= 0) {
-        next[existingIdx].url = newEpUrl.trim();
-      } else {
-        next.push({ episode: num, url: newEpUrl.trim() });
-      }
+
+    let defaultSource = validSources.find((s) => s.is_default) || validSources[0];
+
+    const formattedSources: VideoSource[] = validSources.map((s, idx) => ({
+      id: `src_${Date.now()}_${idx}`,
+      label: s.label.trim() || `Server ${idx + 1}`,
+      url: s.url.trim(),
+      is_default: s === defaultSource,
+    }));
+
+    const finalEpLink: EpisodeLink = {
+      episode: num,
+      url: defaultSource.url.trim(),
+      sources: formattedSources,
+    };
+
+    setEpisodeLinks((prev) => {
+      const next = prev.filter((l) => l.episode !== num && l.url.trim().length > 0);
+      next.push(finalEpLink);
       return next.sort((a, b) => a.episode - b.episode);
     });
-    setNewEpNum('');
-    setNewEpUrl('');
+
+    const nextEpNum = String(num + 1);
+    setNewEpNum(nextEpNum);
+    setDraftSources([{ label: 'Server 1', url: '', is_default: true }]);
   };
 
   const handleRemoveLink = (epToRemove: number) => {
-    setEpisodeLinks(prev => prev.filter(l => l.episode !== epToRemove));
+    setEpisodeLinks((prev) => prev.filter((l) => l.episode !== epToRemove));
   };
 
   const handleSubmit = async () => {
@@ -317,60 +367,166 @@ export default function EditAnimeScreen() {
             </View>
           </View>
 
-          {/* Episode Link Manager */}
+          {/* Episode Multi-Source Video Links Manager */}
           <View style={[styles.episodeManagerCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <LinkIcon size={16} color={themeColors.primary} />
-              <Text style={[styles.fieldLabel, { color: themeColors.text, marginBottom: 0 }]}>EPISODE VIDEO LINKS MANAGER</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <LinkIcon size={16} color={themeColors.primary} />
+                <Text style={[styles.fieldLabel, { color: themeColors.text, marginBottom: 0 }]}>EPISODE MULTI-SOURCE MANAGER</Text>
+              </View>
+              <Text style={{ fontSize: 10, color: themeColors.primary, fontWeight: '800' }}>Dynamic Sources</Text>
             </View>
 
-            <View style={styles.epInputRow}>
-              <TextInput
-                style={[styles.inputField, { width: 70, backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
-                placeholder="Ep #"
-                placeholderTextColor={themeColors.textMuted}
-                value={newEpNum}
-                onChangeText={setNewEpNum}
-                keyboardType="number-pad"
-                editable={!saving}
-              />
-              <TextInput
-                style={[styles.inputField, { flex: 1, backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
-                placeholder="https://...mp4 or .m3u8"
-                placeholderTextColor={themeColors.textMuted}
-                value={newEpUrl}
-                onChangeText={setNewEpUrl}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!saving}
-              />
+            <View style={{ gap: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ color: themeColors.text, fontSize: 12, fontWeight: '800' }}>Episode #:</Text>
+                <TextInput
+                  style={[styles.inputField, { width: 70, backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
+                  placeholder="Ep #"
+                  placeholderTextColor={themeColors.textMuted}
+                  value={newEpNum}
+                  onChangeText={setNewEpNum}
+                  keyboardType="number-pad"
+                  editable={!saving}
+                />
+              </View>
+
+              <Text style={{ fontSize: 11, color: themeColors.textSecondary, fontWeight: '800', marginTop: 4 }}>
+                VIDEO SOURCES FOR EPISODE {newEpNum || '?'}:
+              </Text>
+
+              {draftSources.map((srcItem, index) => (
+                <View
+                  key={index}
+                  style={{
+                    backgroundColor: themeColors.backgroundElement,
+                    borderColor: srcItem.is_default ? themeColors.primary : themeColors.border,
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    padding: 10,
+                    gap: 6,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TextInput
+                      style={[styles.inputField, { flex: 1, backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, color: themeColors.text, height: 36, fontSize: 12 }]}
+                      placeholder={`Source Name (e.g. Server ${index + 1})`}
+                      placeholderTextColor={themeColors.textMuted}
+                      value={srcItem.label}
+                      onChangeText={(val) => handleUpdateDraftSource(index, 'label', val)}
+                      editable={!saving}
+                    />
+                    <Pressable
+                      onPress={() => handleSetDefaultDraftSource(index)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        paddingHorizontal: 8,
+                        paddingVertical: 6,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        backgroundColor: srcItem.is_default ? 'rgba(0, 230, 118, 0.15)' : themeColors.backgroundCard,
+                        borderColor: srcItem.is_default ? '#00E676' : themeColors.border,
+                      }}
+                    >
+                      <Check size={12} color={srcItem.is_default ? '#00E676' : themeColors.textMuted} />
+                      <Text style={{ color: srcItem.is_default ? '#00E676' : themeColors.textMuted, fontSize: 10, fontWeight: '800' }}>
+                        {srcItem.is_default ? 'DEFAULT' : 'Set Default'}
+                      </Text>
+                    </Pressable>
+                    {draftSources.length > 1 && (
+                      <Pressable onPress={() => handleRemoveDraftSource(index)} style={{ padding: 4 }}>
+                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '900' }}>×</Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  <TextInput
+                    style={[styles.inputField, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, color: themeColors.text, height: 36, fontSize: 12 }]}
+                    placeholder="https://... (Video Stream URL)"
+                    placeholderTextColor={themeColors.textMuted}
+                    value={srcItem.url}
+                    onChangeText={(val) => handleUpdateDraftSource(index, 'url', val)}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!saving}
+                  />
+                </View>
+              ))}
+
+              <Pressable
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingVertical: 7,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderStyle: 'dashed',
+                  borderColor: themeColors.primary,
+                  backgroundColor: 'rgba(3, 86, 197, 0.08)',
+                }}
+                onPress={handleAddDraftSource}
+                disabled={saving}
+              >
+                <Plus size={13} color={themeColors.primary} />
+                <Text style={{ color: themeColors.primary, fontSize: 11, fontWeight: '800' }}>+ Add Another Source Server</Text>
+              </Pressable>
             </View>
 
-            {linkError ? <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: '700' }}>{linkError}</Text> : null}
+            {linkError ? <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: '700', marginTop: 4 }}>{linkError}</Text> : null}
 
             <Pressable
-              style={[styles.saveEpLinkBtn, { backgroundColor: themeColors.primary }]}
-              onPress={handleAddLink}
+              style={[styles.saveEpLinkBtn, { backgroundColor: themeColors.primary, marginTop: 4 }]}
+              onPress={handleAddEpisodeWithSources}
               disabled={saving}
             >
               <Plus size={14} color="#FFFFFF" />
-              <Text style={styles.saveEpLinkText}>Save Episode Video Link</Text>
+              <Text style={styles.saveEpLinkText}>Save Episode {newEpNum ? `#${newEpNum}` : ''} with Sources</Text>
             </Pressable>
 
-            {episodeLinks.length > 0 && (
+            {episodeLinks.filter((l) => l.url && l.url.trim().length > 0).length > 0 && (
               <View style={{ marginTop: 10 }}>
                 <Text style={{ color: themeColors.textSecondary, fontSize: 10, fontWeight: '800', marginBottom: 6 }}>
-                  ACTIVE EPISODE LINKS ({episodeLinks.length}):
+                  ACTIVE EPISODES ({episodeLinks.filter((l) => l.url && l.url.trim().length > 0).length}):
                 </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {episodeLinks.map((link) => (
-                    <View key={link.episode} style={[styles.epChip, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
-                      <Text style={[styles.epChipText, { color: themeColors.text }]}>Ep {link.episode}</Text>
-                      <Pressable onPress={() => handleRemoveLink(link.episode)}>
-                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '900', marginLeft: 4 }}>×</Text>
-                      </Pressable>
-                    </View>
-                  ))}
+                <View style={{ gap: 6 }}>
+                  {episodeLinks
+                    .filter((l) => l.url && l.url.trim().length > 0)
+                    .map((link) => (
+                      <View
+                        key={link.episode}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: 8,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          backgroundColor: themeColors.backgroundElement,
+                          borderColor: themeColors.border,
+                        }}
+                      >
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={[styles.epChipText, { color: themeColors.text }]}>Episode {link.episode}</Text>
+                            <View style={{ backgroundColor: 'rgba(3, 86, 197, 0.15)', borderWidth: 1, borderColor: themeColors.primary, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+                              <Text style={{ color: themeColors.primary, fontSize: 9, fontWeight: '800' }}>
+                                {link.sources?.length || 1} Source{(link.sources?.length || 1) > 1 ? 's' : ''}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 10, color: themeColors.textSecondary }} numberOfLines={1}>
+                            Default: {link.sources?.find((s) => s.is_default)?.label || link.sources?.[0]?.label || 'Server 1'} ({link.url})
+                          </Text>
+                        </View>
+                        <Pressable onPress={() => handleRemoveLink(link.episode)} style={{ padding: 4 }}>
+                          <Text style={{ color: '#EF4444', fontSize: 16, fontWeight: '900' }}>×</Text>
+                        </Pressable>
+                      </View>
+                    ))}
                 </View>
               </View>
             )}

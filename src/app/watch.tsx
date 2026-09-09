@@ -12,7 +12,9 @@ import {
   Modal,
   PanResponder,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { enableContentProtection, disableContentProtection } from '@/lib/content-protection';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
@@ -51,6 +53,8 @@ import { useToast } from '@/hooks/useToast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { EpisodeSelector } from '@/components/EpisodeSelector';
+import { SourceSelector } from '@/components/SourceSelector';
+import { VideoSource } from '@/types';
 import { PlayerSettingsModal } from '@/components/PlayerSettingsModal';
 import { useGamification } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
@@ -133,11 +137,52 @@ export default function WatchScreen() {
     playerRef.current = player;
   }, [player]);
 
+  const { user, profile } = useAuth();
+  const isAdmin =
+    profile?.role === 'admin' ||
+    user?.email === process.env.EXPO_PUBLIC_ADMIN_EMAIL ||
+    user?.email === 'esra99san@gmail.com';
+
   // Enable DRM content protection when screen mounts; remove when leaving
   useEffect(() => {
-    enableContentProtection();
+    enableContentProtection(isAdmin);
     return () => {
       disableContentProtection();
+    };
+  }, [isAdmin]);
+
+  // Stop background video playback when app is minimized, inactive, or tab hidden
+  useEffect(() => {
+    // 1. Mobile AppState listener
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        try {
+          if (playerRef.current) playerRef.current.pause();
+        } catch (_e) {}
+        setIsPlaying(false);
+      }
+    });
+
+    // 2. Web visibilitychange listener
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        try {
+          if (playerRef.current) playerRef.current.pause();
+          document.querySelectorAll('video').forEach((v) => v.pause());
+        } catch (_e) {}
+        setIsPlaying(false);
+      }
+    };
+
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      appStateSub.remove();
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
     };
   }, []);
 
@@ -468,11 +513,33 @@ export default function WatchScreen() {
     void loadData();
   }, [id]);
 
+  const currentEpLink = anime?.episode_links?.find((e: any) => e.episode === selectedEpisode);
+  const currentEpSources: VideoSource[] = currentEpLink?.sources || [];
+  const [activeSourceId, setActiveSourceId] = useState<string | undefined>(undefined);
+
+  const handleSelectSource = (srcItem: VideoSource) => {
+    setActiveSourceId(srcItem.id);
+    setVideoSource(srcItem.url);
+    setPlaybackError(null);
+    showSuccess(`Switched to ${srcItem.label || 'Server'} 📡`);
+  };
+
   useEffect(() => {
     if (!anime) return;
     let cancelled = false;
 
-    const specificEpisodeUrl = anime.episode_links?.find((e: any) => e.episode === selectedEpisode)?.url?.trim();
+    const epLink = anime.episode_links?.find((e: any) => e.episode === selectedEpisode);
+    const epSources: VideoSource[] = epLink?.sources || [];
+
+    if (epSources.length > 0) {
+      const defaultSrc = epSources.find((s) => s.is_default) || epSources[0];
+      setActiveSourceId(defaultSrc.id);
+      setVideoSource(defaultSrc.url);
+      setPlaybackError(null);
+      return;
+    }
+
+    const specificEpisodeUrl = epLink?.url?.trim();
     const directUrl =
       (specificEpisodeUrl && specificEpisodeUrl.startsWith('http'))
         ? specificEpisodeUrl
@@ -483,6 +550,7 @@ export default function WatchScreen() {
         : null;
 
     if (directUrl) {
+      setActiveSourceId(undefined);
       setVideoSource(directUrl);
       setPlaybackError(null);
       return;
@@ -491,6 +559,7 @@ export default function WatchScreen() {
     void getPlaybackUrl(anime.id)
       .then(({ url }) => {
         if (!cancelled) {
+          setActiveSourceId(undefined);
           setVideoSource(url);
           setPlaybackError(null);
         }
@@ -498,6 +567,7 @@ export default function WatchScreen() {
       .catch(() => {
         if (!cancelled) {
           if (directUrl) {
+            setActiveSourceId(undefined);
             setVideoSource({ uri: directUrl });
             setPlaybackError(null);
           } else {
@@ -829,6 +899,8 @@ export default function WatchScreen() {
               src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
               poster={anime?.image_url}
               title={anime?.title}
+              isVIP={isVIP}
+              onOpenVipModal={() => setShowVipModal(true)}
               onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
             />
           ) : (
@@ -1145,6 +1217,13 @@ export default function WatchScreen() {
                 </Pressable>
               </View>
             )}
+
+            {/* 📡 Dynamic Multi-Source Server Selector Component */}
+            <SourceSelector
+              sources={currentEpSources}
+              activeSourceId={activeSourceId}
+              onSelectSource={handleSelectSource}
+            />
 
             {/* 🍿 Enhanced Interactive Episode & Season Selector Component */}
             <EpisodeSelector

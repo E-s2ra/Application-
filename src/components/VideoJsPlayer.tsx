@@ -40,6 +40,8 @@ export interface VideoJsPlayerProps {
   poster?: string;
   title?: string;
   subtitleTrackUrl?: string;
+  isVIP?: boolean;
+  onOpenVipModal?: () => void;
 
   // Initial State Overrides for Design State Testing
   forcedState?: {
@@ -76,12 +78,15 @@ export function VideoJsPlayer({
   src = SAMPLE_VIDEO,
   poster = SAMPLE_POSTER,
   title = 'Tears of Steel — AniFlix Cinema 4K',
+  isVIP = false,
+  onOpenVipModal,
   forcedState,
   onPlayStateChange,
   onFullscreenChange,
   onTheaterChange,
 }: VideoJsPlayerProps) {
   // Container & Player References
+  const containerRef = useRef<View | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const vjsPlayerRef = useRef<any>(null);
   // isDraggingRef: true while user holds mouse/touch on the scrubber
@@ -771,6 +776,7 @@ export function VideoJsPlayer({
                 {(['Auto', '1080p', '720p', '480p', '360p'] as VideoJsQuality[]).map(
                   (q) => {
                     const isSelected = selectedQuality === q;
+                    const isVipLocked = q === '1080p' && !isVIP;
                     return (
                       <Pressable
                         key={q}
@@ -779,6 +785,10 @@ export function VideoJsPlayer({
                           isSelected && styles.settingsSubItemActive,
                         ]}
                         onPress={() => {
+                          if (isVipLocked) {
+                            onOpenVipModal?.();
+                            return;
+                          }
                           setSelectedQuality(q);
                           setSettingsSubMenu('main');
                         }}
@@ -786,12 +796,16 @@ export function VideoJsPlayer({
                         <Text
                           style={[
                             styles.settingsSubItemText,
-                            isSelected && styles.settingsSubItemTextActive,
+                            isVipLocked ? { color: '#FFB800' } : isSelected ? styles.settingsSubItemTextActive : undefined,
                           ]}
                         >
-                          {q === '1080p' ? '1080p Full HD' : q === '720p' ? '720p HD' : q}
+                          {q === '1080p' ? '1080p Full HD (VIP Only)' : q === '720p' ? '720p HD' : q}
                         </Text>
-                        {isSelected && <Check size={14} color="#00D2FF" />}
+                        {isVipLocked ? (
+                          <Sparkles size={14} color="#FFB800" />
+                        ) : isSelected ? (
+                          <Check size={14} color="#00D2FF" />
+                        ) : null}
                       </Pressable>
                     );
                   }

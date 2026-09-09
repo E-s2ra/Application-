@@ -63,12 +63,12 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '10 Coins', icon: '💰', type: 'coins', amount: 10, color: '#FFB800' },
-  { id: '2', label: '25 Coins', icon: '💰', type: 'coins', amount: 25, color: '#00D2FF' },
-  { id: '3', label: '15 Coins', icon: '💰', type: 'coins', amount: 15, color: '#9C27B0' },
-  { id: '4', label: '40 Coins', icon: '💰', type: 'coins', amount: 40, color: '#FF9800' },
-  { id: '5', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#00E676' },
-  { id: '6', label: '30 Coins', icon: '💰', type: 'coins', amount: 30, color: '#0356C5' },
+  { id: '1', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#00E676' },
+  { id: '2', label: '40 Coins', icon: '💰', type: 'coins', amount: 40, color: '#FF9800' },
+  { id: '3', label: '30 Coins', icon: '💰', type: 'coins', amount: 30, color: '#0356C5' },
+  { id: '4', label: '25 Coins', icon: '💰', type: 'coins', amount: 25, color: '#00D2FF' },
+  { id: '5', label: '15 Coins', icon: '💰', type: 'coins', amount: 15, color: '#9C27B0' },
+  { id: '6', label: '10 Coins', icon: '💰', type: 'coins', amount: 10, color: '#FFB800' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -525,7 +525,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   const addXPAndCoins = (xpGain: number, coinsGain: number, skipDbSync = false) => {
     const multiplier = activeEvent.bonusMultiplier || 1;
-    const finalCoins = Math.round(coinsGain * multiplier);
+    // VIP subscribers cannot earn coins
+    const finalCoins = isVIP ? 0 : Math.round(coinsGain * multiplier);
     const finalXP = Math.round(xpGain * multiplier);
     const newCoins = coins + finalCoins;
     const newXp = xp + finalXP;
@@ -534,20 +535,47 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     persist({ coins: newCoins, xp: newXp }, skipDbSync);
   };
 
-  // Server-Authoritative Daily Streak Claim
+  // Helper for weighted Spin Wheel rewards:
+  // 50 Coins -> 35% chance
+  // 40 Coins -> 30% chance
+  // 30 Coins -> 20% chance
+  // 25 Coins -> 7% chance (rare)
+  // 15 Coins -> 5% chance (rare)
+  // 10 Coins -> 3% chance (very rare)
+  const getWeightedSpinReward = (): SpinReward => {
+    const rand = Math.random() * 100;
+    if (rand < 35) return SPIN_REWARDS.find((r) => r.amount === 50) || SPIN_REWARDS[0];
+    if (rand < 65) return SPIN_REWARDS.find((r) => r.amount === 40) || SPIN_REWARDS[1];
+    if (rand < 85) return SPIN_REWARDS.find((r) => r.amount === 30) || SPIN_REWARDS[2];
+    if (rand < 92) return SPIN_REWARDS.find((r) => r.amount === 25) || SPIN_REWARDS[3];
+    if (rand < 97) return SPIN_REWARDS.find((r) => r.amount === 15) || SPIN_REWARDS[4];
+    return SPIN_REWARDS.find((r) => r.amount === 10) || SPIN_REWARDS[5];
+  };
+
+  // Server-Authoritative Daily Streak Claim (Fixed 15 coins per day)
   const claimDailyStreak = async (): Promise<{ coins: number; xp: number }> => {
     if (hasClaimedDailyStreak) return { coins: 0, xp: 0 };
+
+    if (isVIP) {
+      // VIP subscribers do not get coins
+      const rewardXP = 150;
+      const newStreak = streakDays + 1;
+      setStreakDays(newStreak);
+      setHasClaimedDailyStreak(true);
+      persist({ streakDays: newStreak, hasClaimedDailyStreak: true });
+      return { coins: 0, xp: rewardXP };
+    }
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
         const { data, error } = await supabase.rpc('claim_daily_login_reward');
         if (!error && data && (data as any).success) {
           const res = data as any;
-          const awardedCoins = res.coins_awarded || 0;
-          const awardedXp = res.xp_awarded || 0;
+          const awardedCoins = 15; // Fixed 15 coins per day
+          const awardedXp = res.xp_awarded || 150;
           const newStreak = res.streak_days || streakDays + 1;
 
-          const updatedCoins = res.new_coins ?? (coins + awardedCoins);
+          const updatedCoins = coins + awardedCoins;
           const updatedXp = res.new_xp ?? (xp + awardedXp);
 
           setStreakDays(newStreak);
@@ -569,7 +597,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    // Guest fallback — 15 coins per day (matches backend exactly)
+    // Guest fallback — exactly 15 coins per day
     const rewardCoins = 15;
     const rewardXP = 150 + Math.min(streakDays, 7) * 50;
     const newStreak = streakDays + 1;
@@ -591,20 +619,28 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return { coins: rewardCoins, xp: rewardXP };
   };
 
-  // Server-Authoritative Spin Wheel
+  // Weighted Spin Wheel
   const spinWheel = async (): Promise<SpinReward> => {
     if (!canSpinWheel) return SPIN_REWARDS[0];
+
+    const selectedReward = getWeightedSpinReward();
+
+    if (isVIP) {
+      // VIP subscribers do not get coins
+      setCanSpinWheel(false);
+      persist({ canSpinWheel: false });
+      return { ...selectedReward, label: 'VIP Ad-Free (0 Coins)', amount: 0, type: 'coins' };
+    }
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
         const { data, error } = await supabase.rpc('spin_lucky_wheel');
         if (!error && data && (data as any).success) {
           const res = data as any;
-          const serverReward = SPIN_REWARDS.find((r) => r.type === res.reward_type && r.amount === res.reward_value)
-            || SPIN_REWARDS[Math.floor(Math.random() * SPIN_REWARDS.length)];
+          const serverReward = selectedReward;
 
-          const updatedCoins = res.new_coins ?? (coins + (serverReward.type === 'coins' ? serverReward.amount : 0));
-          const updatedXp = res.new_xp ?? (xp + (serverReward.type === 'xp' ? serverReward.amount : 0));
+          const updatedCoins = coins + serverReward.amount;
+          const updatedXp = res.new_xp ?? xp;
 
           setCoins(updatedCoins);
           setXp(updatedXp);
@@ -623,9 +659,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    // Guest fallback
-    const randomIndex = Math.floor(Math.random() * SPIN_REWARDS.length);
-    const reward = SPIN_REWARDS[randomIndex];
+    // Guest fallback with weighted sampling
+    const reward = selectedReward;
 
     let newCoins = coins;
     let newXp = xp;

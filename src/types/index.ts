@@ -9,9 +9,17 @@ export type MediaCategory =
   | 'Drama'
   | 'Anime Series';
 
+export interface VideoSource {
+  id: string;
+  label: string;
+  url: string;
+  is_default?: boolean;
+}
+
 export interface EpisodeLink {
   episode: number;
   url: string;
+  sources?: VideoSource[];
 }
 
 export interface AnimeItem {

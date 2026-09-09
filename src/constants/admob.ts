@@ -43,5 +43,5 @@ export const ADMOB_IDS = {
 export const ADMOB_REWARDS = {
   rewardedAdCoins: 12,
   rewardedAdXP: 50,
-  minCooldownSeconds: 15,
+  minCooldownSeconds: 0, // Unlimited watching (no cooldown)
 };
