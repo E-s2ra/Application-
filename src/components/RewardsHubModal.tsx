@@ -166,7 +166,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     addXPAndCoins,
   } = useGamification();
 
-  const [activeTab, setActiveTab] = useState<'events' | 'spin' | 'streak' | 'themes' | 'badges'>('events');
+  const [activeTab, setActiveTab] = useState<'spin' | 'streak' | 'themes' | 'badges'>('spin');
 
   const [spinAnim] = useState(() => new Animated.Value(0));
   const [isSpinning, setIsSpinning] = useState(false);
@@ -214,7 +214,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 <Trophy size={20} color="#FFB800" />
               </View>
               <View>
-                <Text style={styles.modalTitle}>Rewards & Events Hub</Text>
+                <Text style={styles.modalTitle}>Rewards Hub</Text>
                 <Text style={styles.modalSubtitle}>Earn coins, level up & unlock exclusive themes</Text>
               </View>
             </View>
@@ -318,10 +318,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   <Text style={styles.sourceChipValue}>+50 💰</Text>
                   <Text style={styles.sourceChipLabel}>Lucky Spin</Text>
                 </View>
-                <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+15 💰</Text>
-                  <Text style={styles.sourceChipLabel}>Missions</Text>
-                </View>
               </View>
             )}
           </View>
@@ -329,16 +325,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           {/* 🎯 Tab Selector Segment */}
           <View style={styles.navTabsWrapper}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navTabsRow}>
-              <Pressable
-                style={[styles.tabSegment, activeTab === 'events' && styles.tabSegmentActive]}
-                onPress={() => setActiveTab('events')}
-              >
-                <Zap size={15} color={activeTab === 'events' ? '#FFB800' : '#7D7D9A'} />
-                <Text style={[styles.tabSegmentText, activeTab === 'events' && styles.tabSegmentTextActive]}>
-                  Events & Missions
-                </Text>
-              </Pressable>
-
               <Pressable
                 style={[styles.tabSegment, activeTab === 'spin' && styles.tabSegmentActive]}
                 onPress={() => setActiveTab('spin')}
@@ -383,90 +369,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
           {/* 📜 Main Content Area */}
           <ScrollView style={styles.mainScrollView} contentContainerStyle={styles.mainScrollContent}>
-            {/* ⚡ EVENTS & MISSIONS TAB */}
-            {activeTab === 'events' && (
-              <View style={styles.eventsSection}>
-                {/* Active Seasonal Event Banner */}
-                {activeEvent && (
-                  <View style={[styles.eventBannerCard, { borderColor: activeEvent.themeColor || '#FF3D00' }]}>
-                    <View style={styles.eventHeaderRow}>
-                      <View style={[styles.eventBadgeBox, { backgroundColor: `${activeEvent.themeColor || '#FF3D00'}22` }]}>
-                        <Text style={styles.eventBadgeEmoji}>{activeEvent.badgeIcon || '🔥'}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.eventTitleText}>{activeEvent.title}</Text>
-                        <Text style={styles.eventSubText}>{activeEvent.subtitle}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.eventFooterRow}>
-                      <Text style={styles.eventEndDateText}>Ends: {activeEvent.endDate}</Text>
-                      <View style={[styles.eventActivePill, { backgroundColor: activeEvent.themeColor || '#FF3D00' }]}>
-                        <Text style={styles.eventActivePillText}>ACTIVE EVENT</Text>
-                      </View>
-                    </View>
-                  </View>
-                )}
-
-                <View style={styles.sectionHeaderLeft}>
-                  <Text style={styles.sectionTitle}>Daily & Event Missions</Text>
-                  <Text style={styles.sectionSub}>Complete goals to earn Coins, XP & rank up fast</Text>
-                </View>
-
-                <View style={styles.missionsList}>
-                  {missions.map((m) => {
-                    const progress = Math.min(100, Math.max(0, (m.current / m.target) * 100));
-                    return (
-                      <View key={m.id} style={styles.missionCard}>
-                        <View style={styles.missionHeaderRow}>
-                          <View style={styles.missionTitleGroup}>
-                            <Target size={16} color="#FFB800" />
-                            <Text style={styles.missionTitle}>{m.title}</Text>
-                          </View>
-                          <View style={styles.missionRewardPills}>
-                            {m.rewardCoins > 0 && (
-                              <View style={styles.missionCoinPill}>
-                                <Text style={styles.missionCoinText}>+{m.rewardCoins} 💰</Text>
-                              </View>
-                            )}
-                            {m.rewardXP > 0 && (
-                              <View style={styles.missionXpPill}>
-                                <Text style={styles.missionXpText}>+{m.rewardXP} XP</Text>
-                              </View>
-                            )}
-                          </View>
-                        </View>
-                        <Text style={styles.missionDesc}>{m.description}</Text>
-
-                        <View style={styles.missionActionRow}>
-                          <View style={styles.missionTrackSection}>
-                            <View style={styles.missionTrack}>
-                              <View style={[styles.missionFill, { width: `${progress}%` }]} />
-                            </View>
-                            <Text style={styles.missionProgressText}>
-                              {m.current} / {m.target} ({Math.round(progress)}%)
-                            </Text>
-                          </View>
-
-                          <Pressable
-                            style={[
-                              styles.claimMissionBtn,
-                              (!m.completed || m.claimed) && styles.claimMissionBtnDisabled,
-                            ]}
-                            disabled={!m.completed || m.claimed}
-                            onPress={() => claimMission(m.id)}
-                          >
-                            <Text style={styles.claimMissionBtnText}>
-                              {m.claimed ? '✓ Claimed' : m.completed ? 'Claim' : 'In Progress'}
-                            </Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-
             {/* 🎡 LUCKY SPIN TAB */}
             {activeTab === 'spin' && (
               <View style={styles.spinSection}>
