@@ -122,9 +122,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               borderColor: toastStyle.border,
               opacity,
               transform: [{ translateY }],
+              pointerEvents: 'none' as const,
             },
           ]}
-          pointerEvents="none"
         >
           <View style={styles.toastContent}>
             {IconComponent && <IconComponent size={16} color={toastStyle.border} />}

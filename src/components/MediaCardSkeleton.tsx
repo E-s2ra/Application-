@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Animated, StyleSheet } from 'react-native';
+import { View, Animated, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { Radius, Spacing } from '@/constants/theme';
 
@@ -14,17 +14,18 @@ export function MediaCardSkeleton({ width = 140, height = 200, style }: MediaCar
   const [opacityAnim] = useState(() => new Animated.Value(0.4));
 
   useEffect(() => {
+    const isNativeDriver = Platform.OS !== 'web';
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(opacityAnim, {
           toValue: 0.8,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: isNativeDriver,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0.4,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: isNativeDriver,
         }),
       ])
     );

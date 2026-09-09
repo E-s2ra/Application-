@@ -924,7 +924,7 @@ export default function WatchScreen() {
               />
 
               {playbackError && (
-                <View style={styles.videoErrorBox} pointerEvents="none">
+                <View style={[styles.videoErrorBox, { pointerEvents: 'none' }]}>
                   <Tv color={themeColors.error} size={32} />
                   <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
                 </View>
@@ -932,7 +932,7 @@ export default function WatchScreen() {
 
               {/* Center Play / Loading button when controls are hidden and video is buffering/loading */}
               {!showControls && isLoadingVideo && !playbackError && (
-                <View style={styles.centerLoadingOverlay} pointerEvents="none">
+                <View style={[styles.centerLoadingOverlay, { pointerEvents: 'none' }]}>
                   <View style={styles.youtubePlayBtnBg}>
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   </View>
@@ -944,21 +944,21 @@ export default function WatchScreen() {
                 <View
                   style={[
                     styles.youtubeOverlay,
+                    { pointerEvents: 'box-none' },
                     isLayoutFullscreen && {
                       paddingHorizontal: Math.max(insets.left, insets.right, 16),
                       paddingBottom: Math.max(insets.bottom, 8),
                       paddingTop: Math.max(insets.top, 8),
                     }
                   ]}
-                  pointerEvents="box-none"
                 >
                   {/* Top Bar - Spacer */}
-                  <View style={styles.youtubeTopBar} pointerEvents="none">
+                  <View style={[styles.youtubeTopBar, { pointerEvents: 'none' }]}>
                     <View style={{ flex: 1 }} />
                   </View>
 
                   {/* Center Play/Pause & Skip Buttons */}
-                  <View style={styles.youtubeCenterBar} pointerEvents="auto">
+                  <View style={[styles.youtubeCenterBar, { pointerEvents: 'auto' }]}>
                     <Pressable
                       style={styles.youtubeSkipBtn}
                       onPress={handleSeekBackward10}
@@ -996,7 +996,7 @@ export default function WatchScreen() {
                   </View>
 
                   {/* Bottom Bar - Scrubber & Custom Actions */}
-                  <View style={styles.youtubeBottomBar} pointerEvents="auto">
+                  <View style={[styles.youtubeBottomBar, { pointerEvents: 'auto' }]}>
                     {/* Interactive Scrubber Bar & Timestamp */}
                     <View style={styles.scrubberRow}>
                       <View
@@ -1017,9 +1017,9 @@ export default function WatchScreen() {
                             styles.scrubberFill,
                             {
                               width: `${scrubberPercent}%`,
+                              pointerEvents: 'none',
                             },
                           ]}
-                          pointerEvents="none"
                         />
                         <View
                           style={[
@@ -1027,9 +1027,9 @@ export default function WatchScreen() {
                             isDraggingScrubber && styles.scrubberDotActive,
                             {
                               left: `${scrubberPercent}%`,
+                              pointerEvents: 'none',
                             },
                           ]}
-                          pointerEvents="none"
                         />
                       </View>
 
@@ -1070,17 +1070,15 @@ export default function WatchScreen() {
                           <View
                             style={[
                               styles.volumeBarFill,
-                              { width: `${isMuted ? 0 : volume * 100}%` }
+                              { width: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
                             ]}
-                            pointerEvents="none"
                           />
                           <View
                             style={[
                               styles.volumeBarThumb,
                               isDraggingVolume && styles.volumeBarThumbActive,
-                              { left: `${isMuted ? 0 : volume * 100}%` }
+                              { left: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
                             ]}
-                            pointerEvents="none"
                           />
                         </View>
                       </View>

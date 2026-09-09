@@ -286,7 +286,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   if (!isOpen && (slideAnim as any)._value === -320) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]} pointerEvents="box-none">
+    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, pointerEvents: 'box-none' as const }]}>
       {isOpen && (
         <Pressable onPress={onClose} style={StyleSheet.absoluteFill}>
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.65)' }]} />

@@ -638,7 +638,7 @@ export function VideoJsPlayer({
             CENTER CONTROLS OVERLAY (-10s | Play/Pause | +10s)
            ═══════════════════════════════════════════════ */}
         {showControls && (
-          <View style={styles.centerControlsOverlay} pointerEvents="box-none">
+          <View style={[styles.centerControlsOverlay, { pointerEvents: 'box-none' }]}>
             {/* -10s Rewind Button */}
             <Pressable
               style={({ pressed }) => [
@@ -696,7 +696,7 @@ export function VideoJsPlayer({
             FLOATING SETTINGS MENU & SUBMENUS
            ═══════════════════════════════════════════════ */}
         {showControls && isSettingsOpen && (
-          <View style={styles.settingsMenuCard} pointerEvents="auto">
+          <View style={[styles.settingsMenuCard, { pointerEvents: 'auto' }]}>
             {/* Submenu Header (when in submenu) */}
             {settingsSubMenu !== 'main' ? (
               <View style={styles.settingsMenuHeader}>
@@ -883,9 +883,9 @@ export function VideoJsPlayer({
             FULL CONTROLS OVERLAY (Top Title & Bottom Control Bar)
            ═══════════════════════════════════════════════ */}
         {showControls && (
-          <View style={styles.controlsOverlayWrapper} pointerEvents="box-none">
+          <View style={[styles.controlsOverlayWrapper, { pointerEvents: 'box-none' }]}>
             {/* Top Bar - Video Badges */}
-            <View style={styles.playerTopHeaderRow} pointerEvents="auto">
+            <View style={[styles.playerTopHeaderRow, { pointerEvents: 'auto' }]}>
               <View style={{ flex: 1 }} />
 
               <View style={styles.playerHeaderBadges}>
@@ -896,7 +896,7 @@ export function VideoJsPlayer({
             </View>
 
             {/* Bottom Bar - Scrubber & Action Controls */}
-            <View style={styles.playerBottomBarWrapper} pointerEvents="auto">
+            <View style={[styles.playerBottomBarWrapper, { pointerEvents: 'auto' }]}>
               {/* Timeline Scrubber Bar with Hover Tooltip Preview */}
               <View style={styles.timelineScrubberContainer}>
                 {/* Hover Timestamp Preview Tooltip */}
@@ -940,11 +940,10 @@ export function VideoJsPlayer({
                   // @ts-ignore
                   onMouseLeave={() => setHoverPosition(null)}
                 >
-                  <View style={styles.scrubberBgTrack} pointerEvents="none" />
+                  <View style={[styles.scrubberBgTrack, { pointerEvents: 'none' }]} />
                   <View
                     style={[
                       styles.scrubberBufferFill,
-                      { width: `${Math.min(100, bufferedProgress * 100)}%` },
                     ]}
                     pointerEvents="none"
                   />

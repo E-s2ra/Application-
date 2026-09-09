@@ -71,8 +71,8 @@ export default function LoginScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* 🔮 Ambient Background Glow Orbs */}
-      <View style={[styles.glowOrbTop, { backgroundColor: themeColors.primary, opacity: 0.18 }]} pointerEvents="none" />
-      <View style={[styles.glowOrbBottom, { backgroundColor: '#00D2FF', opacity: 0.12 }]} pointerEvents="none" />
+      <View style={[styles.glowOrbTop, { backgroundColor: themeColors.primary, opacity: 0.18, pointerEvents: 'none' }]} />
+      <View style={[styles.glowOrbBottom, { backgroundColor: '#00D2FF', opacity: 0.12, pointerEvents: 'none' }]} />
 
       {/* 🌐 Top Bar: Language Switcher Pill */}
       <View style={[styles.topFloatingBar, { paddingTop: Math.max(insets.top + 6, 16) }]}>
