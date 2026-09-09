@@ -1515,10 +1515,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#00D2FF',
     marginTop: -5,
     marginLeft: -7,
-    shadowColor: '#00D2FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 4px rgba(0, 210, 255, 0.8)',
+      },
+      default: {
+        shadowColor: '#00D2FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 4,
+      },
+    }),
     elevation: 4,
   },
   scrubberDotActive: {

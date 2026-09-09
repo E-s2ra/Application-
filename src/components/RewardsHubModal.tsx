@@ -738,10 +738,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#24283C',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.4)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
+      },
+    }),
     elevation: 12,
     display: 'flex',
     flexDirection: 'column',
@@ -1051,10 +1058,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    shadowColor: '#FFB800',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 6px rgba(255, 184, 0, 0.9)',
+      },
+      default: {
+        shadowColor: '#FFB800',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 6,
+      },
+    }),
     elevation: 6,
   },
   wheelPointerTriangle: {
@@ -1069,10 +1083,17 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 6px rgba(255, 215, 0, 0.8)',
+      },
+      default: {
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
+      },
+    }),
     elevation: 8,
   },
   wheelCircle: {
@@ -1119,10 +1140,17 @@ const styles = StyleSheet.create({
     borderColor: '#FFD700',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 8px rgba(255, 215, 0, 0.8)',
+      },
+      default: {
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 8,
+      },
+    }),
     elevation: 8,
   },
   wonRewardBanner: {

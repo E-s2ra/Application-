@@ -944,23 +944,21 @@ export function VideoJsPlayer({
                   <View
                     style={[
                       styles.scrubberBufferFill,
+                      { pointerEvents: 'none' },
                     ]}
-                    pointerEvents="none"
                   />
                   <View
                     style={[
                       styles.scrubberPlayedFill,
-                      { width: `${Math.min(100, progressRatio * 100)}%` },
+                      { width: `${Math.min(100, progressRatio * 100)}%`, pointerEvents: 'none' },
                     ]}
-                    pointerEvents="none"
                   />
                   <View
                     style={[
                       styles.scrubberHandleDot,
-                      { left: `${Math.min(100, progressRatio * 100)}%` },
+                      { left: `${Math.min(100, progressRatio * 100)}%`, pointerEvents: 'none' },
                       dragPreviewTime !== null && styles.scrubberHandleDotDragging,
                     ]}
-                    pointerEvents="none"
                   />
                 </View>
               </View>
@@ -1135,10 +1133,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1F2438',
     position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 12px 20px rgba(0, 0, 0, 0.5)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+      },
+    }),
     elevation: 10,
   },
   playerTheaterMode: {
@@ -1292,6 +1297,18 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 4,
     position: 'relative',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 6px rgba(0, 210, 255, 0.9)',
+      },
+      default: {
+        shadowColor: '#00D2FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 6,
+      },
+    }),
+    elevation: 6,
   },
   hoverTooltipBox: {
     position: 'absolute',

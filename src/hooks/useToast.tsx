@@ -159,10 +159,17 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 24,
     borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 6px 10px rgba(0, 0, 0, 0.35)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+      },
+    }),
     elevation: 12,
     maxWidth: '88%',
   },
