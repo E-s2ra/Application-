@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import {
   StyleSheet,
   View,
@@ -75,7 +75,7 @@ export default function WatchScreen() {
   const { language } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { updateProgress } = useWatchHistory();
-  const { unlockedMediaIds, unlockMedia, coins, isVIP } = useGamification();
+  const { isMediaUnlocked, getUnlockedMediaRemainingDays, unlockMedia, coins, isVIP } = useGamification();
   const { showRewardedAd } = useAdMob();
   const { showSuccess, showError } = useToast();
 
@@ -185,6 +185,21 @@ export default function WatchScreen() {
       }
     };
   }, []);
+
+  // Guarantee video pauses immediately when user navigates away or screen loses focus
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        try {
+          if (playerRef.current) playerRef.current.pause();
+          if (Platform.OS === 'web' && typeof document !== 'undefined') {
+            document.querySelectorAll('video').forEach((v) => v.pause());
+          }
+        } catch (_e) {}
+        setIsPlaying(false);
+      };
+    }, [])
+  );
 
   // Auto-hide controls after 3 seconds of inactivity
   useEffect(() => {
@@ -586,7 +601,8 @@ export default function WatchScreen() {
   const animeCategory = anime?.category ?? 'Anime';
   const unlockCost = isMovie ? 125 : isKDrama ? 100 : 80;
   const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
-  const isUnlocked = isVIP || (unlockKey && unlockedMediaIds.includes(unlockKey));
+  const isUnlocked = isVIP || Boolean(unlockKey && isMediaUnlocked(unlockKey));
+  const remainingUnlockDays = isUnlocked && !isVIP && unlockKey ? getUnlockedMediaRemainingDays(unlockKey) : null;
 
   const [isUnlocking, setIsUnlocking] = useState(false);
 

@@ -43,6 +43,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useSidebar } from '@/context/SidebarContext';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
+import { useAdMob } from '@/hooks/useAdMob';
 import { AdMobBanner } from '@/components/AdMobBanner';
 
 import { useWatchHistory } from '@/hooks/useWatchHistory';
@@ -74,6 +75,7 @@ export default function HomeScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { history: watchHistory, removeFromHistory } = useWatchHistory();
   const { coins, streakDays, isVIP, vipDaysRemaining } = useGamification();
+  const { showRewardedAd } = useAdMob();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
   const {
@@ -514,6 +516,67 @@ export default function HomeScreen() {
                 ))}
               </View>
             )}
+          </View>
+        )}
+
+        {/* 🪙 Watch Rewarded Ad Banner */}
+        {!isVIP && (
+          <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
+            <View
+              style={{
+                backgroundColor: themeColors.backgroundCard,
+                borderColor: themeColors.primary,
+                borderWidth: 1,
+                borderRadius: 14,
+                padding: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(255, 184, 0, 0.15)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Coins color="#FFB800" size={24} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: themeColors.text, fontWeight: '800', fontSize: 14 }}>
+                    Watch Ad & Earn +12 Coins 🪙
+                  </Text>
+                  <Text style={{ color: themeColors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                    Watch a quick video ad to boost your coin balance anytime!
+                  </Text>
+                </View>
+              </View>
+
+              <Pressable
+                style={{
+                  backgroundColor: themeColors.primary,
+                  paddingHorizontal: 14,
+                  paddingVertical: 9,
+                  borderRadius: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginLeft: 8,
+                }}
+                onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
+              >
+                <PrimaryGradient borderRadius={10} />
+                <Sparkles size={14} color="#FFFFFF" />
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>
+                  Watch Ad
+                </Text>
+              </Pressable>
+            </View>
           </View>
         )}
 

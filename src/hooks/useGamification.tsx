@@ -320,11 +320,14 @@ type GamificationContextType = {
   addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
   refreshGamification: () => Promise<void>;
   unlockedMediaIds: string[];
+  unlockedMediaTimestamps: Record<string, number>;
+  isMediaUnlocked: (unlockKey: string | undefined | null) => boolean;
+  getUnlockedMediaRemainingDays: (unlockKey: string | undefined | null) => number | null;
   unlockMedia: (mediaId: string, episodeNum: number | undefined, cost: number, category?: string) => Promise<boolean>;
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
-const GAMIFICATION_STORAGE_KEY_PREFIX = 'aniflix_gamification_v3';
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (1 week) in milliseconds
 
 export function GamificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -340,6 +343,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const [activeThemeId, setActiveThemeId] = useState('theme-deep-blue');
   const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-deep-blue']);
   const [unlockedMediaIds, setUnlockedMediaIds] = useState<string[]>([]);
+  const [unlockedMediaTimestamps, setUnlockedMediaTimestamps] = useState<Record<string, number>>({});
   const [badges, setBadges] = useState<UserBadge[]>(DEFAULT_BADGES);
   const [missions, setMissions] = useState<Mission[]>([
     ...DEFAULT_MISSIONS,
@@ -348,6 +352,45 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   const activeEvent = SEASONAL_EVENTS[activeEventIndex] || SEASONAL_EVENTS[0];
   const isVIP = isVipFlag || vipDaysRemaining > 0;
+
+  const isMediaUnlocked = useCallback(
+    (unlockKey: string | undefined | null): boolean => {
+      if (isVIP) return true;
+      if (!unlockKey) return false;
+
+      const timestamp = unlockedMediaTimestamps[unlockKey];
+      if (timestamp && typeof timestamp === 'number') {
+        const isStillValid = Date.now() - timestamp < ONE_WEEK_MS;
+        return isStillValid;
+      }
+
+      // Legacy fallback for entries saved before timestamp tracking
+      return unlockedMediaIds.includes(unlockKey);
+    },
+    [isVIP, unlockedMediaTimestamps, unlockedMediaIds]
+  );
+
+  const getUnlockedMediaRemainingDays = useCallback(
+    (unlockKey: string | undefined | null): number | null => {
+      if (isVIP) return Infinity;
+      if (!unlockKey) return null;
+
+      const timestamp = unlockedMediaTimestamps[unlockKey];
+      if (timestamp && typeof timestamp === 'number') {
+        const elapsed = Date.now() - timestamp;
+        const remaining = ONE_WEEK_MS - elapsed;
+        if (remaining <= 0) return 0;
+        return Math.max(1, Math.ceil(remaining / (1000 * 60 * 60 * 24)));
+      }
+
+      if (unlockedMediaIds.includes(unlockKey)) {
+        return 7;
+      }
+
+      return null;
+    },
+    [isVIP, unlockedMediaTimestamps, unlockedMediaIds]
+  );
 
   const applyVipProfile = (profile: { is_vip?: boolean | null; vip_expires_at?: string | null }) => {
     const vip = getVipStatus(profile);
@@ -431,6 +474,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           if (parsed.activeThemeId) setActiveThemeId(parsed.activeThemeId);
           if (parsed.unlockedThemeIds) setUnlockedThemeIds(parsed.unlockedThemeIds);
           if (parsed.unlockedMediaIds) setUnlockedMediaIds(parsed.unlockedMediaIds);
+          if (parsed.unlockedMediaTimestamps) setUnlockedMediaTimestamps(parsed.unlockedMediaTimestamps);
           if (parsed.missions) setMissions(parsed.missions);
           if (parsed.badges) setBadges(parsed.badges);
         }
@@ -501,6 +545,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         activeThemeId,
         unlockedThemeIds,
         unlockedMediaIds,
+        unlockedMediaTimestamps,
         missions,
         badges,
         ...updates,
@@ -777,7 +822,10 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const unlockMedia = async (mediaId: string, episodeNum: number | undefined, cost: number, category = 'Anime'): Promise<boolean> => {
     if (coins < cost) return false;
     const unlockKey = episodeNum !== undefined ? `${mediaId}_ep_${episodeNum}` : mediaId;
-    if (unlockedMediaIds.includes(unlockKey)) return true;
+    if (isMediaUnlocked(unlockKey)) return true;
+
+    const now = Date.now();
+    const newTimestamps = { ...unlockedMediaTimestamps, [unlockKey]: now };
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
@@ -790,7 +838,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
           setCoins(remaining);
           setUnlockedMediaIds(serverUnlocked);
-          persist({ coins: remaining, unlockedMediaIds: serverUnlocked });
+          setUnlockedMediaTimestamps(newTimestamps);
+          persist({ coins: remaining, unlockedMediaIds: serverUnlocked, unlockedMediaTimestamps: newTimestamps });
           return true;
         }
         
@@ -805,7 +854,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
           setCoins(remaining);
           setUnlockedMediaIds(newUnlocked);
-          persist({ coins: remaining, unlockedMediaIds: newUnlocked });
+          setUnlockedMediaTimestamps(newTimestamps);
+          persist({ coins: remaining, unlockedMediaIds: newUnlocked, unlockedMediaTimestamps: newTimestamps });
           return true;
         }
         
@@ -824,7 +874,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     setCoins(newCoins);
     setUnlockedMediaIds(newUnlocked);
-    persist({ coins: newCoins, unlockedMediaIds: newUnlocked });
+    setUnlockedMediaTimestamps(newTimestamps);
+    persist({ coins: newCoins, unlockedMediaIds: newUnlocked, unlockedMediaTimestamps: newTimestamps });
 
     return true;
   };

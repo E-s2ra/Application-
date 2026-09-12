@@ -263,6 +263,7 @@ export default function EditAnimeScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       style={[styles.container, { backgroundColor: themeColors.background }]}
     >
       <GlobalNavbar title="Edit Media Title" showBrandLogo={false} showBack={true} />
@@ -273,6 +274,7 @@ export default function EditAnimeScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
         >
           {/* Cover Poster Preview Box */}
           <View style={[styles.posterPreviewCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
@@ -625,7 +627,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     padding: 12,
-    paddingBottom: 60,
+    paddingBottom: 220,
     gap: 12,
   },
 

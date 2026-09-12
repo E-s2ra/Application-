@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Platform } from 'react-native';
 import { useAuth } from './useAuth';
+import { useGamification } from './useGamification';
+import { useToast } from './useToast';
 import { ADMOB_REWARDS, ADMOB_IDS } from '@/constants/admob';
 import { recordRewardedAdToSupabase } from '@/lib/admob';
 
@@ -116,6 +118,8 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
   }, [isNativeAdAvailable, loadRewardedAd]);
 
   const { profile } = useAuth();
+  const { addXPAndCoins } = useGamification();
+  const { showSuccess } = useToast();
 
   const showRewardedAd = useCallback(
     async (options?: ShowAdOptions): Promise<boolean> => {
@@ -163,11 +167,17 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
     // Record to Supabase
     await recordRewardedAdToSupabase(userId, currentRewardCoins, currentRewardType);
 
-    // Trigger local callback
+    // Universally credit coins & XP for any completed ad across the app
+    if (currentRewardType === 'coins' && currentRewardCoins > 0) {
+      addXPAndCoins(50, currentRewardCoins, true);
+      showSuccess(`Earned +${currentRewardCoins} Coins! 💰`);
+    }
+
+    // Trigger custom local callback if provided
     if (onRewardCallback) {
       onRewardCallback(currentRewardCoins);
     }
-  }, [user, currentRewardCoins, currentRewardType, onRewardCallback]);
+  }, [user, currentRewardCoins, currentRewardType, onRewardCallback, addXPAndCoins, showSuccess]);
 
   const closeAdModal = useCallback(() => {
     setIsAdModalVisible(false);
