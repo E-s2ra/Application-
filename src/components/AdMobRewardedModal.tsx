@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -44,11 +44,14 @@ export function AdMobRewardedModal() {
   const [isMuted, setIsMuted] = useState(false);
   const [progressAnim] = useState(() => new Animated.Value(0));
 
+  const hasClaimedRef = useRef(false);
+
   useEffect(() => {
     if (!isAdModalVisible) {
       setSecondsRemaining(AD_TOTAL_SECONDS);
       setIsCompleted(false);
       progressAnim.setValue(0);
+      hasClaimedRef.current = false;
       return;
     }
 
@@ -65,7 +68,10 @@ export function AdMobRewardedModal() {
         if (prev <= 1) {
           clearInterval(timer);
           setIsCompleted(true);
-          onAdCompleted();
+          if (!hasClaimedRef.current) {
+            hasClaimedRef.current = true;
+            onAdCompleted();
+          }
           return 0;
         }
         return prev - 1;
@@ -110,7 +116,7 @@ export function AdMobRewardedModal() {
               <View style={styles.rewardPill}>
                 <Coins size={12} color="#FFB800" />
                 <Text style={styles.rewardNoticeText} numberOfLines={1}>
-                  +{currentRewardCoins} {isXS ? '💰' : 'Coins'}
+                  +{currentRewardCoins} Coins
                 </Text>
               </View>
             </View>

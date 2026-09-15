@@ -549,7 +549,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: themeColors.text, fontWeight: '800', fontSize: 14 }}>
-                    Watch Ad & Earn +12 Coins 🪙
+                    Watch Ad & Earn +12 Coins
                   </Text>
                   <Text style={{ color: themeColors.textSecondary, fontSize: 12, marginTop: 2 }}>
                     Watch a quick video ad to boost your coin balance anytime!

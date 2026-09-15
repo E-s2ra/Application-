@@ -292,14 +292,13 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     showRewardedAd({
                       rewardCoins: 12,
                       rewardType: 'coins',
-                      onRewarded: () => addXPAndCoins(50, 12, true),
                     })
                   }
                   accessibilityRole="button"
                   accessibilityLabel="Watch Rewarded Ad for 12 Coins"
                 >
                   <Film size={13} color="#FFFFFF" />
-                  <Text style={styles.watchAdBtnText}>Watch Ad (+12 💰)</Text>
+                  <Text style={styles.watchAdBtnText}>Watch Ad (+12 Coins)</Text>
                 </Pressable>
               )}
             </View>
@@ -307,15 +306,15 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             {showSourcesInfo && (
               <View style={styles.sourcesChipsGrid}>
                 <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+12 💰</Text>
+                  <Text style={styles.sourceChipValue}>+12 Coins</Text>
                   <Text style={styles.sourceChipLabel}>Per Ad (Unlimited)</Text>
                 </View>
                 <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+15 💰</Text>
+                  <Text style={styles.sourceChipValue}>+15 Coins</Text>
                   <Text style={styles.sourceChipLabel}>Daily Streak</Text>
                 </View>
                 <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+50 💰</Text>
+                  <Text style={styles.sourceChipValue}>+50 Coins</Text>
                   <Text style={styles.sourceChipLabel}>Lucky Spin</Text>
                 </View>
               </View>
@@ -429,9 +428,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   <PrimaryGradient borderRadius={14} />
                   <Text style={styles.spinPrimaryBtnText}>
                     {isSpinning
-                      ? '⚡ Spinning Wheel...'
+                      ? 'Spinning Wheel...'
                       : canSpinWheel
-                      ? '🎡 SPIN WHEEL NOW (FREE)'
+                      ? 'SPIN WHEEL NOW (FREE)'
                       : '✓ Spun Today - Return Tomorrow!'}
                   </Text>
                 </Pressable>
@@ -492,7 +491,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                               <Text style={styles.streakDayNum}>D{day}</Text>
                             )}
                           </View>
-                          <Text style={styles.streakCoinReward}>+15 💰</Text>
+                          <Text style={styles.streakCoinReward}>+15 Coins</Text>
                         </View>
                       );
                     })}
@@ -562,7 +561,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                                 onPress={() => unlockTheme(th.id)}
                               >
                                 <Text style={styles.themeBuyBtnText}>
-                                  Unlock for {th.costCoins} 💰
+                                  Unlock for {th.costCoins} Coins
                                 </Text>
                               </Pressable>
                             )}
@@ -595,7 +594,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                           { backgroundColor: b.isUnlocked ? '#1E1E2E' : '#14141F' },
                         ]}
                       >
-                        <Text style={styles.badgeEmoji}>{b.icon}</Text>
+                        <Award size={20} color={b.isUnlocked ? '#FFB800' : '#666'} />
                       </View>
                       <View style={styles.badgeTextDetails}>
                         <View style={styles.badgeTitleRow}>
@@ -603,7 +602,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                           {b.isUnlocked ? (
                             <Text style={styles.unlockedTag}>✓ Unlocked</Text>
                           ) : (
-                            <Text style={styles.lockedTag}>🔒 Locked</Text>
+                            <Text style={styles.lockedTag}>Locked</Text>
                           )}
                         </View>
                         <Text style={styles.badgeDescText}>{t(b.description as any, b.description)}</Text>

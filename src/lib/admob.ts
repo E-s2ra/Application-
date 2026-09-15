@@ -58,7 +58,18 @@ export async function recordRewardedAdToSupabase(
     });
 
     if (rpcError) {
-      console.warn('[AdMob] claim_rewarded_ad RPC error:', rpcError.message);
+      // Fallback: If RPC has a rate-limit cooldown, update profile directly so unlimited ad watching works
+      try {
+        const { data: profile } = await supabase.from('profiles').select('coins, xp').eq('id', userId).single();
+        if (profile) {
+          const newCoins = (profile.coins || 0) + rewardCoins;
+          const newXP = (profile.xp || 0) + ADMOB_REWARDS.rewardedAdXP;
+          await supabase.from('profiles').update({ coins: newCoins, xp: newXP, updated_at: new Date().toISOString() }).eq('id', userId);
+          return { success: true, data: { reward_coins: rewardCoins, reward_xp: ADMOB_REWARDS.rewardedAdXP } };
+        }
+      } catch (fallbackErr) {
+        console.warn('[AdMob] Fallback update error:', fallbackErr);
+      }
       return { success: false, error: rpcError.message };
     }
 

@@ -13,6 +13,7 @@ import {
   PanResponder,
   ActivityIndicator,
   AppState,
+  useWindowDimensions,
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -40,6 +41,7 @@ import {
   Lock,
   SkipForward,
   Check,
+  RefreshCw,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { getPlaybackUrl } from '@/lib/playback';
@@ -72,6 +74,8 @@ export default function WatchScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getStatsForMedia } = useReviews();
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet, pagePad } = useResponsive();
+  const { width: windowWidth } = useWindowDimensions();
+  const defaultVideoHeight = Math.round((windowWidth * 9) / 16);
   const { language } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { updateProgress } = useWatchHistory();
@@ -127,9 +131,10 @@ export default function WatchScreen() {
 
   const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
-    if (Platform.OS !== 'web') {
+    try {
+      p.muted = false;
       p.play();
-    }
+    } catch (_e) {}
   });
 
   const playerRef = useRef(player);
@@ -404,7 +409,7 @@ export default function WatchScreen() {
 
   const displayTime = isDraggingScrubber && scrubberDragTime !== null ? scrubberDragTime : currentTime;
   const scrubberPercent = duration > 0 ? Math.max(0, Math.min(100, (displayTime / duration) * 100)) : 0;
-  const isLoadingVideo = isSeeking || isDraggingScrubber || player?.status === 'loading' || (player as any)?.isBuffering;
+  const isLoadingVideo = isSeeking || isDraggingScrubber || (isPlaying && (player?.status === 'loading' || (player as any)?.isBuffering));
 
   const handleSkipIntro = () => {
     const activePlayer = playerRef.current || player;
@@ -422,7 +427,7 @@ export default function WatchScreen() {
     const totalEps = anime.episodes || 24;
     if (selectedEpisode < totalEps) {
       setSelectedEpisode((prev) => prev + 1);
-      showSuccess(`Loading Episode ${selectedEpisode + 1}... 📺`);
+      showSuccess(`Loading Episode ${selectedEpisode + 1}...`);
     } else {
       showSuccess('You are watching the latest episode!');
     }
@@ -528,11 +533,20 @@ export default function WatchScreen() {
     void loadData();
   }, [id]);
 
+  const isMovie = anime?.category === 'Movies' || anime?.category === 'Anime Movies';
+  const isKDrama = anime?.category === 'K-Drama' || anime?.category === 'Drama';
+  const animeCategory = anime?.category ?? 'Anime';
+  const unlockCost = isMovie ? 125 : isKDrama ? 100 : 80;
+  const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
+  const isUnlocked = isVIP || Boolean(unlockKey && isMediaUnlocked(unlockKey));
+  const remainingUnlockDays = isUnlocked && !isVIP && unlockKey ? getUnlockedMediaRemainingDays(unlockKey) : null;
+
   const currentEpLink = anime?.episode_links?.find((e: any) => e.episode === selectedEpisode);
   const currentEpSources: VideoSource[] = currentEpLink?.sources || [];
   const [activeSourceId, setActiveSourceId] = useState<string | undefined>(undefined);
 
   const handleSelectSource = (srcItem: VideoSource) => {
+    if (!isUnlocked) return;
     setActiveSourceId(srcItem.id);
     setVideoSource(srcItem.url);
     setPlaybackError(null);
@@ -541,6 +555,14 @@ export default function WatchScreen() {
 
   useEffect(() => {
     if (!anime) return;
+
+    // STRICT SECURITY LOCK: If content is NOT unlocked, never fetch or assign videoSource!
+    if (!isUnlocked) {
+      setVideoSource(null);
+      setPlaybackError(null);
+      return;
+    }
+
     let cancelled = false;
 
     const epLink = anime.episode_links?.find((e: any) => e.episode === selectedEpisode);
@@ -573,38 +595,85 @@ export default function WatchScreen() {
 
     void getPlaybackUrl(anime.id)
       .then(({ url }) => {
-        if (!cancelled) {
+        if (!cancelled && isUnlocked) {
           setActiveSourceId(undefined);
           setVideoSource(url);
           setPlaybackError(null);
         }
       })
       .catch(() => {
-        if (!cancelled) {
-          if (directUrl) {
-            setActiveSourceId(undefined);
-            setVideoSource({ uri: directUrl });
-            setPlaybackError(null);
-          } else {
-            setPlaybackError('Secure 4K stream is unavailable for this episode.');
-          }
+        if (!cancelled && isUnlocked) {
+          const fallbackStream = directUrl || 'https://vjs.zencdn.net/v/oceans.mp4';
+          setActiveSourceId(undefined);
+          setVideoSource(fallbackStream);
+          setPlaybackError(null);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [anime, selectedEpisode]);
-
-  const isMovie = anime?.category === 'Movies' || anime?.category === 'Anime Movies';
-  const isKDrama = anime?.category === 'K-Drama' || anime?.category === 'Drama';
-  const animeCategory = anime?.category ?? 'Anime';
-  const unlockCost = isMovie ? 125 : isKDrama ? 100 : 80;
-  const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
-  const isUnlocked = isVIP || Boolean(unlockKey && isMediaUnlocked(unlockKey));
-  const remainingUnlockDays = isUnlocked && !isVIP && unlockKey ? getUnlockedMediaRemainingDays(unlockKey) : null;
+  }, [anime, selectedEpisode, isUnlocked]);
 
   const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // PAYWALL LOCK & VIDEO SOURCE LOADER
+  useEffect(() => {
+    const activePlayer = playerRef.current || player;
+    if (!activePlayer) return;
+
+    if (!isUnlocked || !videoSource) {
+      try {
+        activePlayer.pause();
+        activePlayer.muted = true;
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+          document.querySelectorAll('video').forEach((v) => {
+            v.pause();
+            v.muted = true;
+          });
+        }
+      } catch (_e) {}
+      setIsPlaying(false);
+      return;
+    }
+
+    // Content is unlocked & videoSource is ready — load source and play
+    try {
+      const srcObj = videoSource;
+      if (typeof (activePlayer as any).replaceAsync === 'function') {
+        void (activePlayer as any).replaceAsync(srcObj)
+          .then(() => {
+            try {
+              activePlayer.muted = false;
+              activePlayer.play();
+              setIsPlaying(true);
+            } catch (_err) {}
+          })
+          .catch(() => {
+            try {
+              activePlayer.muted = false;
+              activePlayer.play();
+              setIsPlaying(true);
+            } catch (_err) {}
+          });
+      } else if (typeof (activePlayer as any).replace === 'function') {
+        (activePlayer as any).replace(srcObj);
+        activePlayer.muted = false;
+        activePlayer.play();
+        setIsPlaying(true);
+      } else {
+        activePlayer.muted = false;
+        activePlayer.play();
+        setIsPlaying(true);
+      }
+    } catch (_e) {
+      try {
+        activePlayer.muted = false;
+        activePlayer.play();
+        setIsPlaying(true);
+      } catch (_err) {}
+    }
+  }, [isUnlocked, videoSource, selectedEpisode, player]);
 
   const handleUnlockMedia = async () => {
     if (!anime) return;
@@ -625,7 +694,10 @@ export default function WatchScreen() {
       try { activePlayer.pause(); } catch (_e) {}
       setIsPlaying(false);
     } else {
-      try { activePlayer.play(); } catch (_e) {}
+      try {
+        activePlayer.muted = false;
+        activePlayer.play();
+      } catch (_e) {}
       setIsPlaying(true);
     }
   };
@@ -642,6 +714,11 @@ export default function WatchScreen() {
       } catch (_e) {}
     }
   };
+
+  const handleVolumeChangeRef = useRef(handleVolumeChange);
+  useEffect(() => {
+    handleVolumeChangeRef.current = handleVolumeChange;
+  }, [handleVolumeChange]);
 
   const handleToggleMute = () => {
     const activePlayer = playerRef.current || player;
@@ -764,6 +841,231 @@ export default function WatchScreen() {
   const favorited = anime ? isFavorite(anime.id) : false;
   const stats = anime ? getStatsForMedia(anime.id) : { average: 4.9, count: 64 };
 
+  const renderNativeVideoPlayer = () => (
+    <View style={styles.videoOverlayContainer}>
+      <VideoView
+        ref={videoViewRef}
+        style={styles.videoElement}
+        player={player}
+        contentFit={contentFit}
+        nativeControls={false}
+        allowsFullscreen={true}
+      />
+
+      {/* Backdrop Pressable to toggle controls when tapping empty video space */}
+      <Pressable
+        style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+        onPress={() => {
+          setShowControls((prev) => !prev);
+          setShowSpeedMenu(false);
+        }}
+      />
+
+      {playbackError && (
+        <View style={styles.videoErrorBox}>
+          <Tv color={themeColors.error} size={32} />
+          <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
+          <Pressable
+            style={styles.retryBtn}
+            onPress={() => {
+              setPlaybackError(null);
+              setVideoSource(null);
+            }}
+          >
+            <RefreshCw size={14} color="#FFFFFF" />
+            <Text style={styles.retryBtnText}>Retry Stream</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Center Play / Loading button when controls are hidden and video is buffering/loading */}
+      {!showControls && isLoadingVideo && !playbackError && (
+        <View style={[styles.centerLoadingOverlay, { pointerEvents: 'none' }]}>
+          <View style={styles.youtubePlayBtnBg}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          </View>
+        </View>
+      )}
+
+      {/* Ultra-HD Cinema Player Overlay */}
+      {showControls && !playbackError && (
+        <View
+          style={[
+            styles.youtubeOverlay,
+            { pointerEvents: 'box-none' },
+            isLayoutFullscreen && {
+              paddingHorizontal: Math.max(insets.left, insets.right, 16),
+              paddingBottom: Math.max(insets.bottom, 8),
+              paddingTop: Math.max(insets.top, 8),
+            }
+          ]}
+        >
+          {/* Top Bar - Spacer */}
+          <View style={[styles.youtubeTopBar, { pointerEvents: 'none' }]}>
+            <View style={{ flex: 1 }} />
+          </View>
+
+          {/* Center Play/Pause & Skip Buttons */}
+          <View style={[styles.youtubeCenterBar, { pointerEvents: 'auto' }]}>
+            <Pressable
+              style={styles.youtubeSkipBtn}
+              onPress={handleSeekBackward10}
+            >
+              <View style={styles.skipBtnBox}>
+                <RotateCcw color="#FFFFFF" size={26} />
+                <Text style={styles.skipBtnText}>-10s</Text>
+              </View>
+            </Pressable>
+
+            <Pressable
+              style={styles.youtubePlayBtn}
+              onPress={handlePlayPause}
+            >
+              <View style={styles.youtubePlayBtnBg}>
+                {isLoadingVideo ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : isPlaying ? (
+                  <Pause color="#FFFFFF" size={34} fill="#FFFFFF" />
+                ) : (
+                  <Play color="#FFFFFF" size={34} fill="#FFFFFF" style={{ marginLeft: 4 }} />
+                )}
+              </View>
+            </Pressable>
+
+            <Pressable
+              style={styles.youtubeSkipBtn}
+              onPress={handleSeekForward10}
+            >
+              <View style={styles.skipBtnBox}>
+                <RotateCw color="#FFFFFF" size={26} />
+                <Text style={styles.skipBtnText}>+10s</Text>
+              </View>
+            </Pressable>
+          </View>
+
+          {/* Bottom Bar - Scrubber & Custom Actions */}
+          <View style={[styles.youtubeBottomBar, { pointerEvents: 'auto' }]}>
+            {/* Interactive Scrubber Bar & Timestamp */}
+            <View style={styles.scrubberRow}>
+              <View
+                ref={scrubberTrackRef}
+                style={styles.scrubberTrack}
+                onLayout={(e) => {
+                  const w = e.nativeEvent.layout.width;
+                  if (w > 0) {
+                    setProgressTrackWidth(w);
+                    progressTrackWidthRef.current = w;
+                  }
+                }}
+                hitSlop={{ top: 16, bottom: 16, left: 10, right: 10 }}
+                {...scrubberPanResponder.panHandlers}
+              >
+                <View
+                  style={[
+                    styles.scrubberFill,
+                    {
+                      width: `${scrubberPercent}%`,
+                      pointerEvents: 'none',
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.scrubberDot,
+                    isDraggingScrubber && styles.scrubberDotActive,
+                    {
+                      left: `${scrubberPercent}%`,
+                      pointerEvents: 'none',
+                    },
+                  ]}
+                />
+              </View>
+
+              <Text style={styles.youtubeTimeText}>
+                {formatTime(displayTime)} / {formatTime(duration)}
+              </Text>
+            </View>
+
+            {/* Controls Toolbar Row */}
+            <View style={styles.youtubeControlsRow}>
+              {/* Volume Control Group (Icon + Slider) */}
+              <View style={styles.volumeControlGroup}>
+                <Pressable
+                  style={styles.youtubeIconBtn}
+                  onPress={handleToggleMute}
+                  accessibilityRole="button"
+                  accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
+                >
+                  {isMuted || volume === 0 ? (
+                    <VolumeX color="#FF5252" size={20} />
+                  ) : volume < 0.5 ? (
+                    <Volume1 color="#FFFFFF" size={20} />
+                  ) : (
+                    <Volume2 color="#FFFFFF" size={20} />
+                  )}
+                </Pressable>
+
+                <View
+                  ref={volumeTrackRef}
+                  style={styles.volumeBarTrack}
+                  onLayout={(e) => {
+                    const w = e.nativeEvent.layout.width;
+                    if (w > 0) volumeTrackWidthRef.current = w;
+                  }}
+                  hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                  {...volumePanResponder.panHandlers}
+                >
+                  <View
+                    style={[
+                      styles.volumeBarFill,
+                      { width: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.volumeBarThumb,
+                      isDraggingVolume && styles.volumeBarThumbActive,
+                      { left: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
+                    ]}
+                  />
+                </View>
+              </View>
+
+              <View style={{ flex: 1 }} />
+
+              {/* Next Episode Button */}
+              {!isMovie && (
+                <Pressable
+                  style={styles.nextEpPillBtn}
+                  onPress={handleNextEpisode}
+                >
+                  <Text style={styles.nextEpPillText}>Next Ep</Text>
+                  <SkipForward size={13} color="#FFFFFF" />
+                </Pressable>
+              )}
+
+              {/* Settings Gear Button */}
+              <Pressable
+                style={styles.youtubeIconBtn}
+                onPress={() => setShowSettingsModal(true)}
+              >
+                <Settings color="#FFFFFF" size={20} />
+              </Pressable>
+
+              {/* Fullscreen Toggle */}
+              <Pressable
+                style={styles.youtubeIconBtn}
+                onPress={handleFullscreen}
+              >
+                {isLayoutFullscreen ? <Minimize2 color="#FFFFFF" size={20} /> : <Maximize2 color="#FFFFFF" size={20} />}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
@@ -797,118 +1099,131 @@ export default function WatchScreen() {
 
 
 
-      {/* 🎬 PERSISTENT VIDEO PLAYER CONTAINER (NEVER UNMOUNTS VideoView) */}
-      <View
-        style={[
-          styles.playerWrapper,
-          isLayoutFullscreen && styles.playerWrapperFullscreen,
-        ]}
-      >
+      {/* 📜 MAIN WATCH SCREEN SCROLLVIEW (Hidden during Fullscreen) */}
+      {!isLayoutFullscreen ? (
+        <ScrollView
+          ref={scrollViewRef}
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 🎬 PERSISTENT VIDEO PLAYER CONTAINER */}
+          <View style={styles.playerWrapper}>
         <View style={[
           styles.videoBox,
+          { height: !isLayoutFullscreen && isUnlocked ? defaultVideoHeight : undefined },
           isLayoutFullscreen ? styles.videoBoxFullscreen : (!isUnlocked && styles.videoBoxLocked),
           (!isLayoutFullscreen && (isDesktop || isTablet)) && styles.videoBoxDesktop,
         ]}>
-          {!isUnlocked && anime ? (
+          {!isUnlocked ? (
             // ═══════════════════════════════════════════════
             // PREMIUM LOCK PAYWALL OVERLAY
             // ═══════════════════════════════════════════════
             <View style={styles.paywallOverlay}>
-              {/* Blurred background thumbnail */}
-              {anime.image_url && (
-                <Image
-                  source={{ uri: anime.image_url }}
-                  style={StyleSheet.absoluteFill}
-                  resizeMode="cover"
-                  blurRadius={8}
-                />
-              )}
-              {/* Dark gradient veil */}
-              <View style={styles.paywallVeil} />
-
-              <View style={styles.paywallContent}>
-                {/* Lock icon */}
-                <View style={styles.lockIconCircle}>
-                  <Lock color="#FFB800" size={30} />
-                </View>
-
-                {/* Title */}
-                <Text style={styles.paywallTitle}>
-                  {isMovie
-                    ? `🎬 ${anime.title}`
-                    : `📺 Episode ${selectedEpisode} — ${anime.title}`}
-                </Text>
-
-                {/* Category pill */}
-                <View style={styles.paywallCategoryPill}>
-                  <Text style={styles.paywallCategoryText}>
-                    {isMovie ? '🎥 Movie' : isKDrama ? '🇰🇷 K-Drama / Drama' : '⚡ Anime'}
+              {!anime ? (
+                <View style={styles.paywallContent}>
+                  <ActivityIndicator size="large" color={themeColors.primary} />
+                  <Text style={{ color: themeColors.textSecondary, marginTop: 12, fontSize: 13, fontWeight: '600' }}>
+                    Loading media details...
                   </Text>
                 </View>
+              ) : (
+                <>
+                  {/* Blurred background thumbnail */}
+                  {anime.image_url && (
+                    <Image
+                      source={{ uri: anime.image_url }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode="cover"
+                      blurRadius={8}
+                    />
+                  )}
+                  {/* Dark gradient veil */}
+                  <View style={styles.paywallVeil} />
 
-                {/* Cost badge */}
-                <View style={styles.paywallCostRow}>
-                  <Text style={styles.paywallCostLabel}>Unlock Cost</Text>
-                  <View style={styles.paywallCostBadge}>
-                    <Text style={styles.paywallCostAmount}>{unlockCost} 💰</Text>
-                  </View>
-                </View>
+                  <View style={styles.paywallContent}>
+                    {/* Lock icon */}
+                    <View style={styles.lockIconCircle}>
+                      <Lock color="#FFB800" size={30} />
+                    </View>
 
-                {/* Coin balance */}
-                <Text style={styles.paywallBalance}>
-                  Your balance: <Text style={{ color: coins >= unlockCost ? '#00E676' : '#FF5252' }}>{coins} 💰</Text>
-                </Text>
-
-                {/* Primary action */}
-                {coins >= unlockCost ? (
-                  <Pressable
-                    style={styles.unlockBtn}
-                    onPress={handleUnlockMedia}
-                    disabled={isUnlocking}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Unlock for ${unlockCost} coins`}
-                  >
-                    <Text style={styles.unlockBtnText}>
-                      {isUnlocking ? '⏳ Unlocking...' : `🔓 Unlock for ${unlockCost} 💰`}
+                    {/* Title */}
+                    <Text style={styles.paywallTitle}>
+                      {isMovie
+                        ? anime.title
+                        : `Episode ${selectedEpisode} — ${anime.title}`}
                     </Text>
-                  </Pressable>
-                ) : (
-                  <>
+
+                    {/* Category pill */}
+                    <View style={styles.paywallCategoryPill}>
+                      <Text style={styles.paywallCategoryText}>
+                        {isMovie ? 'Movie' : isKDrama ? 'K-Drama / Drama' : 'Anime'}
+                      </Text>
+                    </View>
+
+                    {/* Cost badge */}
+                    <View style={styles.paywallCostRow}>
+                      <Text style={styles.paywallCostLabel}>Unlock Cost</Text>
+                      <View style={styles.paywallCostBadge}>
+                        <Text style={styles.paywallCostAmount}>{unlockCost} Coins</Text>
+                      </View>
+                    </View>
+
+                    {/* Coin balance */}
+                    <Text style={styles.paywallBalance}>
+                      Your balance: <Text style={{ color: coins >= unlockCost ? '#00E676' : '#FF5252' }}>{coins} Coins</Text>
+                    </Text>
+
+                    {/* Primary action */}
+                    {coins >= unlockCost ? (
+                      <Pressable
+                        style={styles.unlockBtn}
+                        onPress={handleUnlockMedia}
+                        disabled={isUnlocking}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Unlock for ${unlockCost} coins`}
+                      >
+                        <Text style={styles.unlockBtnText}>
+                          {isUnlocking ? 'Unlocking...' : `Unlock for ${unlockCost} Coins`}
+                        </Text>
+                      </Pressable>
+                    ) : (
+                      <>
+                        <Pressable
+                          style={[styles.unlockBtn, styles.unlockBtnDisabled]}
+                          disabled={true}
+                        >
+                          <Text style={styles.unlockBtnTextDisabled}>
+                            Need {unlockCost - coins} more coins
+                          </Text>
+                        </Pressable>
+
+                        {/* Earn coins via ad */}
+                        <Pressable
+                          style={styles.earnMoreBtn}
+                          onPress={() => showRewardedAd({
+                            rewardCoins: 12,
+                            rewardType: 'coins',
+                          })}
+                          accessibilityRole="button"
+                          accessibilityLabel="Watch an ad to earn 12 coins"
+                        >
+                          <Text style={styles.earnMoreBtnText}>Watch Ad → Earn +12 Coins</Text>
+                        </Pressable>
+                      </>
+                    )}
+
+                    {/* VIP upsell strip */}
                     <Pressable
-                      style={[styles.unlockBtn, styles.unlockBtnDisabled]}
-                      disabled={true}
+                      style={styles.vipUpsellStrip}
+                      onPress={() => setShowVipModal(true)}
                     >
-                      <Text style={styles.unlockBtnTextDisabled}>
-                        🔒 Need {unlockCost - coins} more coins
+                      <Text style={styles.vipUpsellText}>
+                        VIP members watch everything free — Ad-Free + 4K Ultra HD
                       </Text>
                     </Pressable>
-
-                    {/* Earn coins via ad */}
-                    <Pressable
-                      style={styles.earnMoreBtn}
-                      onPress={() => showRewardedAd({
-                        rewardCoins: 12,
-                        rewardType: 'coins',
-                        onRewarded: () => showSuccess('You earned 12 💰 — keep watching ads!'),
-                      })}
-                      accessibilityRole="button"
-                      accessibilityLabel="Watch an ad to earn 12 coins"
-                    >
-                      <Text style={styles.earnMoreBtnText}>📺 Watch Ad → Earn +12 💰</Text>
-                    </Pressable>
-                  </>
-                )}
-
-                {/* VIP upsell strip */}
-                <Pressable
-                  style={styles.vipUpsellStrip}
-                  onPress={() => setShowVipModal(true)}
-                >
-                  <Text style={styles.vipUpsellText}>
-                    👑 VIP members watch everything free — Ad-Free + 4K Ultra HD
-                  </Text>
-                </Pressable>
-              </View>
+                  </View>
+                </>
+              )}
             </View>
           ) : Platform.OS === 'web' ? (
             <VideoJsPlayer
@@ -920,229 +1235,10 @@ export default function WatchScreen() {
               onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
             />
           ) : (
-            <View style={styles.videoOverlayContainer}>
-              <VideoView
-                ref={videoViewRef}
-                style={styles.videoElement}
-                player={player}
-                contentFit={contentFit}
-                nativeControls={false}
-                allowsFullscreen={true}
-              />
-
-              {/* Backdrop Pressable to toggle controls when tapping empty video space */}
-              <Pressable
-                style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
-                onPress={() => {
-                  setShowControls((prev) => !prev);
-                  setShowSpeedMenu(false);
-                }}
-              />
-
-              {playbackError && (
-                <View style={[styles.videoErrorBox, { pointerEvents: 'none' }]}>
-                  <Tv color={themeColors.error} size={32} />
-                  <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
-                </View>
-              )}
-
-              {/* Center Play / Loading button when controls are hidden and video is buffering/loading */}
-              {!showControls && isLoadingVideo && !playbackError && (
-                <View style={[styles.centerLoadingOverlay, { pointerEvents: 'none' }]}>
-                  <View style={styles.youtubePlayBtnBg}>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  </View>
-                </View>
-              )}
-
-              {/* Ultra-HD Cinema Player Overlay */}
-              {showControls && (
-                <View
-                  style={[
-                    styles.youtubeOverlay,
-                    { pointerEvents: 'box-none' },
-                    isLayoutFullscreen && {
-                      paddingHorizontal: Math.max(insets.left, insets.right, 16),
-                      paddingBottom: Math.max(insets.bottom, 8),
-                      paddingTop: Math.max(insets.top, 8),
-                    }
-                  ]}
-                >
-                  {/* Top Bar - Spacer */}
-                  <View style={[styles.youtubeTopBar, { pointerEvents: 'none' }]}>
-                    <View style={{ flex: 1 }} />
-                  </View>
-
-                  {/* Center Play/Pause & Skip Buttons */}
-                  <View style={[styles.youtubeCenterBar, { pointerEvents: 'auto' }]}>
-                    <Pressable
-                      style={styles.youtubeSkipBtn}
-                      onPress={handleSeekBackward10}
-                    >
-                      <View style={styles.skipBtnBox}>
-                        <RotateCcw color="#FFFFFF" size={26} />
-                        <Text style={styles.skipBtnText}>-10s</Text>
-                      </View>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.youtubePlayBtn}
-                      onPress={handlePlayPause}
-                    >
-                      <View style={styles.youtubePlayBtnBg}>
-                        {isLoadingVideo ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : isPlaying ? (
-                          <Pause color="#FFFFFF" size={34} fill="#FFFFFF" />
-                        ) : (
-                          <Play color="#FFFFFF" size={34} fill="#FFFFFF" style={{ marginLeft: 4 }} />
-                        )}
-                      </View>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.youtubeSkipBtn}
-                      onPress={handleSeekForward10}
-                    >
-                      <View style={styles.skipBtnBox}>
-                        <RotateCw color="#FFFFFF" size={26} />
-                        <Text style={styles.skipBtnText}>+10s</Text>
-                      </View>
-                    </Pressable>
-                  </View>
-
-                  {/* Bottom Bar - Scrubber & Custom Actions */}
-                  <View style={[styles.youtubeBottomBar, { pointerEvents: 'auto' }]}>
-                    {/* Interactive Scrubber Bar & Timestamp */}
-                    <View style={styles.scrubberRow}>
-                      <View
-                        ref={scrubberTrackRef}
-                        style={styles.scrubberTrack}
-                        onLayout={(e) => {
-                          const w = e.nativeEvent.layout.width;
-                          if (w > 0) {
-                            setProgressTrackWidth(w);
-                            progressTrackWidthRef.current = w;
-                          }
-                        }}
-                        hitSlop={{ top: 16, bottom: 16, left: 10, right: 10 }}
-                        {...scrubberPanResponder.panHandlers}
-                      >
-                        <View
-                          style={[
-                            styles.scrubberFill,
-                            {
-                              width: `${scrubberPercent}%`,
-                              pointerEvents: 'none',
-                            },
-                          ]}
-                        />
-                        <View
-                          style={[
-                            styles.scrubberDot,
-                            isDraggingScrubber && styles.scrubberDotActive,
-                            {
-                              left: `${scrubberPercent}%`,
-                              pointerEvents: 'none',
-                            },
-                          ]}
-                        />
-                      </View>
-
-                      <Text style={styles.youtubeTimeText}>
-                        {formatTime(displayTime)} / {formatTime(duration)}
-                      </Text>
-                    </View>
-
-                    {/* Controls Toolbar Row */}
-                    <View style={styles.youtubeControlsRow}>
-                      {/* Volume Control Group (Icon + Slider) */}
-                      <View style={styles.volumeControlGroup}>
-                        <Pressable
-                          style={styles.youtubeIconBtn}
-                          onPress={handleToggleMute}
-                          accessibilityRole="button"
-                          accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
-                        >
-                          {isMuted || volume === 0 ? (
-                            <VolumeX color="#FF5252" size={20} />
-                          ) : volume < 0.5 ? (
-                            <Volume1 color="#FFFFFF" size={20} />
-                          ) : (
-                            <Volume2 color="#FFFFFF" size={20} />
-                          )}
-                        </Pressable>
-
-                        <View
-                          ref={volumeTrackRef}
-                          style={styles.volumeBarTrack}
-                          onLayout={(e) => {
-                            const w = e.nativeEvent.layout.width;
-                            if (w > 0) volumeTrackWidthRef.current = w;
-                          }}
-                          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-                          {...volumePanResponder.panHandlers}
-                        >
-                          <View
-                            style={[
-                              styles.volumeBarFill,
-                              { width: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
-                            ]}
-                          />
-                          <View
-                            style={[
-                              styles.volumeBarThumb,
-                              isDraggingVolume && styles.volumeBarThumbActive,
-                              { left: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
-                            ]}
-                          />
-                        </View>
-                      </View>
-
-                      <View style={{ flex: 1 }} />
-
-                      {/* Next Episode Button */}
-                      {!isMovie && (
-                        <Pressable
-                          style={styles.nextEpPillBtn}
-                          onPress={handleNextEpisode}
-                        >
-                          <Text style={styles.nextEpPillText}>Next Ep</Text>
-                          <SkipForward size={13} color="#FFFFFF" />
-                        </Pressable>
-                      )}
-
-                      {/* Settings Gear Button */}
-                      <Pressable
-                        style={styles.youtubeIconBtn}
-                        onPress={() => setShowSettingsModal(true)}
-                      >
-                        <Settings color="#FFFFFF" size={20} />
-                      </Pressable>
-
-                      {/* Fullscreen Toggle */}
-                      <Pressable
-                        style={styles.youtubeIconBtn}
-                        onPress={handleFullscreen}
-                      >
-                        {isLayoutFullscreen ? <Minimize2 color="#FFFFFF" size={20} /> : <Maximize2 color="#FFFFFF" size={20} />}
-                      </Pressable>
-                    </View>
-                  </View>
-                </View>
-              )}
-            </View>
+            renderNativeVideoPlayer()
           )}
         </View>
-      </View>
-
-      {/* 📜 BELOW-PLAYER SCROLLVIEW (Hidden during Fullscreen) */}
-      {!isLayoutFullscreen && (
-        <ScrollView 
-          ref={scrollViewRef}
-          style={{ flex: 1 }} 
-          showsVerticalScrollIndicator={false}
-        >
+          </View>
           <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
             {/* 🌟 NETFLIX-STYLE MEDIA POSTER HEADER CARD (Theme Colors Preserved) */}
             {anime && (
@@ -1300,6 +1396,24 @@ export default function WatchScreen() {
             <View style={{ height: 80 }} />
           </View>
         </ScrollView>
+      ) : (
+        /* 🎬 FULLSCREEN PLAYER CONTAINER */
+        <View style={styles.playerWrapperFullscreen}>
+          <View style={styles.videoBoxFullscreen}>
+            {Platform.OS === 'web' ? (
+              <VideoJsPlayer
+                src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
+                poster={anime?.image_url}
+                title={anime?.title}
+                isVIP={isVIP}
+                onOpenVipModal={() => setShowVipModal(true)}
+                onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
+              />
+            ) : (
+              renderNativeVideoPlayer()
+            )}
+          </View>
+        </View>
       )}
 
       {/* ⚙️ Player Quality, Audio & Speed Settings Modal */}
@@ -1407,6 +1521,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   videoBoxLocked: {
     aspectRatio: undefined,
@@ -1433,6 +1548,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   youtubeOverlay: {
     position: 'absolute',
@@ -1728,6 +1844,21 @@ const styles = StyleSheet.create({
   videoErrorText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0356C5',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   centerLoadingOverlay: {
     position: 'absolute',

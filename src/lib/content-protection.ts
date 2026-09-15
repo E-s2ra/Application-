@@ -152,15 +152,9 @@ async function enableNativeProtection(isAdmin = false): Promise<Cleanup> {
     // Dynamically import to avoid crashing on web where it's unavailable
     const ScreenCapture = await import('expo-screen-capture');
 
-    if (isAdmin) {
-      await ScreenCapture.allowScreenCaptureAsync();
-      return () => {};
-    } else {
-      await ScreenCapture.preventScreenCaptureAsync();
-      return () => {
-        ScreenCapture.allowScreenCaptureAsync().catch(() => {});
-      };
-    }
+    // Temporarily allow screen capture everywhere per user request
+    await ScreenCapture.allowScreenCaptureAsync();
+    return () => {};
   } catch (e) {
     // expo-screen-capture may not be installed — fail gracefully
     console.warn('[AniFlix DRM] Screen capture protection unavailable:', e);

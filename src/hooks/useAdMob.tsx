@@ -170,7 +170,7 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
     // Universally credit coins & XP for any completed ad across the app
     if (currentRewardType === 'coins' && currentRewardCoins > 0) {
       addXPAndCoins(50, currentRewardCoins, true);
-      showSuccess(`Earned +${currentRewardCoins} Coins! 💰`);
+      showSuccess(`Earned +${currentRewardCoins} Coins!`);
     }
 
     // Trigger custom local callback if provided

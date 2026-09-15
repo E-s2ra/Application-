@@ -174,19 +174,19 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               <View style={styles.benefitRow}>
                 <Check size={16} color="#FFB800" />
                 <Text style={[styles.benefitText, { color: '#FFB800' }]}>
-                  {isKu ? '🎬 کوالیتی 4K Ultra HD — بە بەرزترین خێرایی' : '🎬 4K Ultra HD Quality (VIP Exclusive)'}
+                  {isKu ? 'کوالیتی 4K Ultra HD — بە بەرزترین خێرایی' : '4K Ultra HD Quality (VIP Exclusive)'}
                 </Text>
               </View>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#FFB800" />
                 <Text style={[styles.benefitText, { color: '#FFB800' }]}>
-                  {isKu ? '📺 Full HD 1080p — کوالیتی بەرز' : '📺 Full HD 1080p Quality (VIP Exclusive)'}
+                  {isKu ? 'Full HD 1080p — کوالیتی بەرز' : 'Full HD 1080p Quality (VIP Exclusive)'}
                 </Text>
               </View>
               <View style={styles.benefitRow}>
                 <Check size={16} color="#00E676" />
                 <Text style={styles.benefitText}>
-                  {isKu ? '🔓 گشت ناوەرۆکەکان کراوەن — بێ کۆین' : '🔓 All Content Unlocked — No coins needed'}
+                  {isKu ? 'گشت ناوەرۆکەکان کراوەن — بێ کۆین' : 'All Content Unlocked — No coins needed'}
                 </Text>
               </View>
               <View style={styles.benefitRow}>

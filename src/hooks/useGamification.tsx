@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
@@ -63,21 +63,21 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '50 Coins', icon: '💰', type: 'coins', amount: 50, color: '#00E676' },
-  { id: '2', label: '40 Coins', icon: '💰', type: 'coins', amount: 40, color: '#FF9800' },
-  { id: '3', label: '30 Coins', icon: '💰', type: 'coins', amount: 30, color: '#0356C5' },
-  { id: '4', label: '25 Coins', icon: '💰', type: 'coins', amount: 25, color: '#00D2FF' },
-  { id: '5', label: '15 Coins', icon: '💰', type: 'coins', amount: 15, color: '#9C27B0' },
-  { id: '6', label: '10 Coins', icon: '💰', type: 'coins', amount: 10, color: '#FFB800' },
+  { id: '1', label: '50 Coins', icon: 'Coins', type: 'coins', amount: 50, color: '#00E676' },
+  { id: '2', label: '40 Coins', icon: 'Coins', type: 'coins', amount: 40, color: '#FF9800' },
+  { id: '3', label: '30 Coins', icon: 'Coins', type: 'coins', amount: 30, color: '#0356C5' },
+  { id: '4', label: '25 Coins', icon: 'Coins', type: 'coins', amount: 25, color: '#00D2FF' },
+  { id: '5', label: '15 Coins', icon: 'Coins', type: 'coins', amount: 15, color: '#9C27B0' },
+  { id: '6', label: '10 Coins', icon: 'Coins', type: 'coins', amount: 10, color: '#FFB800' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
   {
     id: 'weekend-ad-frenzy',
-    title: '🔥 Weekend Ad Frenzy',
+    title: 'Weekend Ad Frenzy',
     subtitle: 'Watch 50 Ads this weekend to unlock the exclusive Inferno Theme!',
     badgeName: 'Ad Master',
-    badgeIcon: '🔥',
+    badgeIcon: 'Fire',
     bannerImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
     themeColor: '#FF3D00',
     endDate: 'Oct 31, 2026',
@@ -111,10 +111,10 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
   },
   {
     id: 'golden-ad-hour',
-    title: '⏳ Golden Ad Rush',
+    title: 'Golden Ad Rush',
     subtitle: 'For the next 48 hours, watching ads gives double XP!',
     badgeName: 'Golden Watcher',
-    badgeIcon: '⏳',
+    badgeIcon: 'Clock',
     bannerImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80',
     themeColor: '#FFB800',
     endDate: 'Nov 15, 2026',
@@ -196,10 +196,10 @@ export const THEMES_LIST: AppTheme[] = [
 
 export const DEFAULT_BADGES: UserBadge[] = [
   {
-    id: 'b-novice',
+    id: 'b-first-watch',
     title: 'First Stream',
     description: 'Streamed your first title on AniFlix',
-    icon: '🎬',
+    icon: 'Film',
     color: '#0356C5',
     isUnlocked: true,
     unlockedAt: 'Aug 19, 2026',
@@ -208,7 +208,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-streak-3',
     title: '3-Day Fire Streak',
     description: 'Logged in for 3 consecutive days',
-    icon: '🔥',
+    icon: 'Flame',
     color: '#FF5722',
     isUnlocked: true,
     unlockedAt: 'Aug 18, 2026',
@@ -217,7 +217,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-critic',
     title: '5-Star Critic',
     description: 'Published a helpful community review',
-    icon: '⭐',
+    icon: 'Star',
     color: '#FFB800',
     isUnlocked: true,
     unlockedAt: 'Aug 19, 2026',
@@ -226,7 +226,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-kurdish-sun',
     title: 'Kurdish Sun Legend',
     description: 'Participated in the Kurdish Cinema Gala',
-    icon: '☀️',
+    icon: 'Sun',
     color: '#FFD700',
     isUnlocked: false,
   },
@@ -234,7 +234,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     id: 'b-vip',
     title: 'AniFlix VIP Sovereign',
     description: 'Unlocked active VIP Ultra HD status',
-    icon: '👑',
+    icon: 'Crown',
     color: '#9C27B0',
     isUnlocked: false,
   },
@@ -328,6 +328,7 @@ type GamificationContextType = {
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (1 week) in milliseconds
+const GAMIFICATION_STORAGE_KEY_PREFIX = '@aniflix_gamification_v2';
 
 export function GamificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -826,6 +827,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     const now = Date.now();
     const newTimestamps = { ...unlockedMediaTimestamps, [unlockKey]: now };
+    const combinedUnlocked = Array.from(new Set([...unlockedMediaIds, unlockKey]));
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
@@ -833,8 +835,11 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         const { data, error } = await supabase.rpc('unlock_media_with_coins', { p_unlock_key: unlockKey, p_category: category });
         if (!error && data && (data as any).success) {
           const res = data as any;
-          const remaining = res.remaining_coins ?? (coins - cost);
-          const serverUnlocked = Array.isArray(res.unlocked_media_ids) ? res.unlocked_media_ids : [...unlockedMediaIds, unlockKey];
+          const remaining = res.remaining_coins ?? Math.max(0, coins - cost);
+          const serverUnlocked = Array.from(new Set([
+            ...(Array.isArray(res.unlocked_media_ids) ? res.unlocked_media_ids : []),
+            ...combinedUnlocked,
+          ]));
 
           setCoins(remaining);
           setUnlockedMediaIds(serverUnlocked);
@@ -843,39 +848,36 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           return true;
         }
         
-        console.warn('unlock_media_with_coins RPC failed, falling back to deduct_coins:', error?.message);
+        console.warn('unlock_media_with_coins RPC failed, trying direct DB update fallback:', error?.message);
         
-        // Fallback to older deduct_coins RPC if the new one isn't deployed yet
-        const fallback = await supabase.rpc('deduct_coins', { p_amount: cost });
-        if (!fallback.error && fallback.data && (fallback.data as any).success) {
-          const fallbackRes = fallback.data as any;
-          const remaining = fallbackRes.remaining_coins ?? (coins - cost);
-          const newUnlocked = [...unlockedMediaIds, unlockKey];
-
-          setCoins(remaining);
-          setUnlockedMediaIds(newUnlocked);
-          setUnlockedMediaTimestamps(newTimestamps);
-          persist({ coins: remaining, unlockedMediaIds: newUnlocked, unlockedMediaTimestamps: newTimestamps });
-          return true;
+        // Direct DB update fallback if RPC fails or is missing
+        const { data: profile } = await supabase.from('profiles').select('coins, unlocked_media_ids').eq('id', user.id).single();
+        if (profile) {
+          const currentCoins = profile.coins || 0;
+          if (currentCoins >= cost) {
+            const remaining = currentCoins - cost;
+            const dbUnlocked = Array.isArray(profile.unlocked_media_ids) ? profile.unlocked_media_ids : [];
+            const updatedUnlocked = Array.from(new Set([...dbUnlocked, ...combinedUnlocked]));
+            await supabase.from('profiles').update({ coins: remaining, unlocked_media_ids: updatedUnlocked, updated_at: new Date().toISOString() }).eq('id', user.id);
+            
+            setCoins(remaining);
+            setUnlockedMediaIds(updatedUnlocked);
+            setUnlockedMediaTimestamps(newTimestamps);
+            persist({ coins: remaining, unlockedMediaIds: updatedUnlocked, unlockedMediaTimestamps: newTimestamps });
+            return true;
+          }
         }
-        
-        console.warn('deduct_coins fallback also failed:', fallback.error?.message);
-        // We do NOT return false here. Instead, fall through to local deduction fallback
-        // This ensures the app doesn't break if migrations haven't been run by the user!
       } catch (err) {
         console.warn('Media unlock error:', err);
-        // Fall through to local deduction
       }
     }
 
     // Guest fallback / Offline fallback / Migration fallback
     const newCoins = Math.max(0, coins - cost);
-    const newUnlocked = [...unlockedMediaIds, unlockKey];
-
     setCoins(newCoins);
-    setUnlockedMediaIds(newUnlocked);
+    setUnlockedMediaIds(combinedUnlocked);
     setUnlockedMediaTimestamps(newTimestamps);
-    persist({ coins: newCoins, unlockedMediaIds: newUnlocked, unlockedMediaTimestamps: newTimestamps });
+    persist({ coins: newCoins, unlockedMediaIds: combinedUnlocked, unlockedMediaTimestamps: newTimestamps });
 
     return true;
   };
@@ -1035,6 +1037,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         addXPAndCoins,
         refreshGamification,
         unlockedMediaIds,
+        unlockedMediaTimestamps,
+        isMediaUnlocked,
+        getUnlockedMediaRemainingDays,
         unlockMedia,
       }}
     >
