@@ -17,6 +17,7 @@ This document serves as the authoritative feature reference for AniFlix, organiz
 - **Favorites Management**: Add/remove media items to personal favorites list.
 - **Reviews & Ratings**: Submit star ratings (1–5) and write reviews on media items.
 - **Gamification & Rewards**: Claim daily streak rewards, spin lucky wheel for bonus coins.
+- **Media Unlock System**: Unlock coin-locked premium titles securely via `unlock_media_with_coins` RPC.
 - **VIP Application**: View VIP subscription options (FIB, ZainCash, FastPay) and submit payment proofs.
 
 ### VIP Sovereign Members
@@ -42,6 +43,7 @@ This document serves as the authoritative feature reference for AniFlix, organiz
 | **Reviews** | ✓ | ✓ | ✓ | ✓ | Owner / Admin | Users can write/edit/delete their own reviews |
 | **VIP Payments** | ✓ | ✓ | ✓ | ✗ | Owner / Admin | Users create proofs; Admin approves/elevates |
 | **Daily Rewards** | ✓ | ✓ | ✓ | ✗ | Owner | Daily streak reset and coin updates |
+| **Media Unlocks** | ✓ | ✓ | ✗ | ✗ | Owner | Server-enforced coin transactions (`unlock_media_with_coins`) |
 
 ---
 
@@ -49,4 +51,4 @@ This document serves as the authoritative feature reference for AniFlix, organiz
 
 AniFlix supports real-time language toggling without requiring page reloads:
 - **English (`EN`)**: Default fallback language.
-- **Kurdish Sorani (`KU`)**: Full Kurdish translations for UI buttons, category headers, navigation tabs, and media descriptions (`description_ku`).
+- **Kurdish Sorani (`KU`)**: Full Kurdish translations across all screens: Home, Search, Favorites, Profile, Watch screen (loading media, in list, add to list, show less, read more, recommended titles), Rewards Hub, and VIP modals.

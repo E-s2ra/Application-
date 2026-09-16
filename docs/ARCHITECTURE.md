@@ -89,5 +89,8 @@ GUEST ──► NORMAL USER ──► VIP SOVEREIGN ──► ADMIN
 - **PostgreSQL Database**: Tables for `anime`, `reviews`, `favorites`, `payments`, and `profiles`.
 - **Row Level Security (RLS)**: Enforced at the database level to ensure users can only modify their own profiles, favorites, and reviews.
 - **Edge Functions (`admin-operations`)**: Serverless function executing privileged admin actions (`grant_vip`, catalog sync) using the Supabase Service Role key securely.
+- **Database RPC Security (`unlock_media_with_coins`)**: Media unlocking and coin deductions are executed exclusively via `SECURITY DEFINER` RPCs on the database server. Direct table update fallbacks are explicitly forbidden on the client to prevent coin duplication or client-bypassed unlocks.
+- **Race Condition Guarding**: Client hooks (`useGamification`) utilize optimistic timestamp locking before triggering remote RPC transactions, preventing rapid double-tapping from triggering concurrent RPC execution.
 
 VIP status is server-authoritative: authenticated clients derive active status from `profiles.is_vip` and `profiles.vip_expires_at`. Admin grants use an atomic database function so concurrent grants extend the active expiry safely.
+
