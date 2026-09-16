@@ -131,7 +131,7 @@ interface RewardsHubModalProps {
 
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showRewardedAd } = useAdMob();
   const { width: windowWidth, isXS, isSmallDevice } = useResponsive();
   const [showVipModal, setShowVipModal] = useState(false);
@@ -214,8 +214,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 <Trophy size={20} color="#FFB800" />
               </View>
               <View>
-                <Text style={styles.modalTitle}>Rewards Hub</Text>
-                <Text style={styles.modalSubtitle}>Earn coins, level up & unlock exclusive themes</Text>
+                <Text style={styles.modalTitle}>{t('rewardsHubTitle', 'Rewards Hub')}</Text>
+                <Text style={styles.modalSubtitle}>
+                  {t('rewardsHubSubtitle', 'Earn coins, level up & unlock exclusive themes')}
+                </Text>
               </View>
             </View>
 
@@ -230,7 +232,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <View style={styles.userProfileInfo}>
                 <View style={styles.levelBadge}>
                   <Crown size={13} color="#FFD700" />
-                  <Text style={styles.levelBadgeText}>LVL {level}</Text>
+                  <Text style={styles.levelBadgeText}>{t('level', 'LVL')} {level}</Text>
                 </View>
                 <Text style={styles.levelTitleText} numberOfLines={1}>
                   {t(levelTitle as any, levelTitle)}
@@ -241,18 +243,20 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 {isVIP ? (
                   <View style={styles.vipBadge}>
                     <Crown size={12} color="#E040FB" />
-                    <Text style={styles.vipBadgeText}>VIP ({vipDaysRemaining}d)</Text>
+                    <Text style={styles.vipBadgeText}>VIP ({vipDaysRemaining}{language === 'ku' ? 'ڕ' : 'd'})</Text>
                   </View>
                 ) : (
                   <Pressable style={styles.getVipBtn} onPress={() => setShowVipModal(true)}>
                     <Crown size={12} color="#FFB800" />
-                    <Text style={styles.getVipBtnText}>Get VIP</Text>
+                    <Text style={styles.getVipBtnText}>{t('getVip', 'Get VIP')}</Text>
                   </Pressable>
                 )}
 
                 <View style={styles.coinPill}>
                   <Coins size={14} color="#FFB800" />
-                  <Text style={styles.coinPillText}>{coins.toLocaleString()} Coins</Text>
+                  <Text style={styles.coinPillText}>
+                    {coins.toLocaleString()} {t('coinsText', 'Coins')}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -264,7 +268,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               </View>
               <View style={styles.xpInfoRow}>
                 <Text style={styles.xpTextLeft}>{levelXPProgress} / {levelXPTarget} XP</Text>
-                <Text style={styles.xpTextRight}>Level {level + 1} Unlocks</Text>
+                <Text style={styles.xpTextRight}>
+                  {t('levelUnlocks', `Level ${level + 1} Unlocks`).replace('{level}', String(level + 1))}
+                </Text>
               </View>
             </View>
           </View>
@@ -277,7 +283,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                 onPress={() => setShowSourcesInfo(!showSourcesInfo)}
               >
                 <Zap size={14} color="#FFB800" />
-                <Text style={styles.sourcesTitle}>Daily Coin Sources</Text>
+                <Text style={styles.sourcesTitle}>{t('dailyCoinSources', 'Daily Coin Sources')}</Text>
                 <Info size={12} color="#8E8EA4" />
               </Pressable>
 
@@ -298,7 +304,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   accessibilityLabel="Watch Rewarded Ad for 12 Coins"
                 >
                   <Film size={13} color="#FFFFFF" />
-                  <Text style={styles.watchAdBtnText}>Watch Ad (+12 Coins)</Text>
+                  <Text style={styles.watchAdBtnText}>{t('watchAdCoins', 'Watch Ad (+12 Coins)')}</Text>
                 </Pressable>
               )}
             </View>
@@ -306,16 +312,16 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             {showSourcesInfo && (
               <View style={styles.sourcesChipsGrid}>
                 <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+12 Coins</Text>
-                  <Text style={styles.sourceChipLabel}>Per Ad (Unlimited)</Text>
+                  <Text style={styles.sourceChipValue}>+12 {t('coinsText', 'Coins')}</Text>
+                  <Text style={styles.sourceChipLabel}>{t('perAdUnlimited', 'Per Ad (Unlimited)')}</Text>
                 </View>
                 <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+15 Coins</Text>
-                  <Text style={styles.sourceChipLabel}>Daily Streak</Text>
+                  <Text style={styles.sourceChipValue}>+15 {t('coinsText', 'Coins')}</Text>
+                  <Text style={styles.sourceChipLabel}>{t('dailyStreakSource', 'Daily Streak')}</Text>
                 </View>
                 <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+50 Coins</Text>
-                  <Text style={styles.sourceChipLabel}>Lucky Spin</Text>
+                  <Text style={styles.sourceChipValue}>+50 {t('coinsText', 'Coins')}</Text>
+                  <Text style={styles.sourceChipLabel}>{t('luckySpinSource', 'Lucky Spin')}</Text>
                 </View>
               </View>
             )}
@@ -330,7 +336,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               >
                 <Gift size={15} color={activeTab === 'spin' ? '#FFF' : '#7D7D9A'} />
                 <Text style={[styles.tabSegmentText, activeTab === 'spin' && styles.tabSegmentTextActive]}>
-                  Lucky Spin
+                  {t('tabLuckySpin', 'Lucky Spin')}
                 </Text>
               </Pressable>
 
@@ -340,7 +346,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               >
                 <Flame size={15} color={activeTab === 'streak' ? '#FF5722' : '#7D7D9A'} />
                 <Text style={[styles.tabSegmentText, activeTab === 'streak' && styles.tabSegmentTextActive]}>
-                  Streak ({streakDays}d)
+                  {t('tabStreak', 'Streak')} ({streakDays}{language === 'ku' ? 'ڕ' : 'd'})
                 </Text>
               </Pressable>
 
@@ -350,7 +356,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               >
                 <Palette size={15} color={activeTab === 'themes' ? '#00D2FF' : '#7D7D9A'} />
                 <Text style={[styles.tabSegmentText, activeTab === 'themes' && styles.tabSegmentTextActive]}>
-                  Theme Shop
+                  {t('tabThemeShop', 'Theme Shop')}
                 </Text>
               </Pressable>
 
@@ -360,7 +366,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               >
                 <Award size={15} color={activeTab === 'badges' ? '#FFB800' : '#7D7D9A'} />
                 <Text style={[styles.tabSegmentText, activeTab === 'badges' && styles.tabSegmentTextActive]}>
-                  Badges
+                  {t('tabBadges', 'Badges')}
                 </Text>
               </Pressable>
             </ScrollView>
@@ -372,9 +378,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             {activeTab === 'spin' && (
               <View style={styles.spinSection}>
                 <View style={styles.sectionHeaderCenter}>
-                  <Text style={styles.heroTitle}>Daily Lucky Cinema Wheel</Text>
+                  <Text style={styles.heroTitle}>{t('luckyWheelTitle', 'Daily Lucky Cinema Wheel')}</Text>
                   <Text style={styles.heroSubtitle}>
-                    Spin once every day for free Coins, XP, and VIP Passes!
+                    {t('luckyWheelSub', 'Spin once every day for free Coins, XP, and VIP Passes!')}
                   </Text>
                 </View>
 
@@ -428,10 +434,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   <PrimaryGradient borderRadius={14} />
                   <Text style={styles.spinPrimaryBtnText}>
                     {isSpinning
-                      ? 'Spinning Wheel...'
+                      ? t('spinningWheel', 'Spinning Wheel...')
                       : canSpinWheel
-                      ? 'SPIN WHEEL NOW (FREE)'
-                      : '✓ Spun Today - Return Tomorrow!'}
+                      ? t('spinWheelNow', 'SPIN WHEEL NOW (FREE)')
+                      : t('spunTodayReturnTomorrow', '✓ Spun Today - Return Tomorrow!')}
                   </Text>
                 </Pressable>
 
@@ -440,14 +446,14 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   <View style={[styles.wonRewardBanner, { borderColor: wonReward.color || '#FFB800' }]}>
                     <Sparkles size={18} color={wonReward.color || '#FFD700'} />
                     <Text style={[styles.wonRewardText, { color: wonReward.color || '#FFD700' }]}>
-                      🎉 Congratulations! You won {wonReward.label}!
+                      🎉 {t('congratsWon', 'Congratulations! You won')} {wonReward.label}!
                     </Text>
                   </View>
                 )}
 
                 {/* Wheel Rewards Pool Legend Grid */}
                 <View style={styles.prizesLegendBox}>
-                  <Text style={styles.prizesLegendTitle}>AVAILABLE PRIZES ON WHEEL</Text>
+                  <Text style={styles.prizesLegendTitle}>{t('availablePrizes', 'AVAILABLE PRIZES ON WHEEL')}</Text>
                   <View style={styles.prizesGrid}>
                     {SPIN_REWARDS.map((r) => (
                       <View key={r.id} style={[styles.prizeChip, { borderColor: `${r.color}50` }]}>
@@ -467,9 +473,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   <View style={styles.streakFlameCircle}>
                     <Flame size={36} color="#FF5722" />
                   </View>
-                  <Text style={styles.streakTitle}>{streakDays} DAY STREAK!</Text>
+                  <Text style={styles.streakTitle}>{streakDays} {t('dayStreakTitle', 'DAY STREAK!')}</Text>
                   <Text style={styles.streakDesc}>
-                    Log in daily to keep your streak alive and earn scaling coin rewards.
+                    {t('streakDesc', 'Log in daily to keep your streak alive and earn scaling coin rewards.')}
                   </Text>
 
                   <View style={styles.streakGrid}>
@@ -488,10 +494,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                             {isReached ? (
                               <Flame size={14} color="#FFF" />
                             ) : (
-                              <Text style={styles.streakDayNum}>D{day}</Text>
+                              <Text style={styles.streakDayNum}>{language === 'ku' ? 'ڕ' : 'D'}{day}</Text>
                             )}
                           </View>
-                          <Text style={styles.streakCoinReward}>+15 Coins</Text>
+                          <Text style={styles.streakCoinReward}>+15 {t('coinsText', 'Coins')}</Text>
                         </View>
                       );
                     })}
@@ -508,8 +514,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     <PrimaryGradient borderRadius={12} />
                     <Text style={styles.claimStreakBtnText}>
                       {hasClaimedDailyStreak
-                        ? '✓ Today Claimed - Come Back Tomorrow!'
-                        : `Claim Today (+15 Coins, +${150 + Math.min(streakDays, 7) * 50} XP)`}
+                        ? t('todayClaimed', '✓ Today Claimed - Come Back Tomorrow!')
+                        : `${t('claimToday', 'Claim Today')} (+15 ${t('coinsText', 'Coins')}, +${150 + Math.min(streakDays, 7) * 50} XP)`}
                     </Text>
                   </Pressable>
                 </View>
@@ -520,8 +526,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             {activeTab === 'themes' && (
               <View style={styles.themesSection}>
                 <View style={styles.sectionHeaderLeft}>
-                  <Text style={styles.sectionTitle}>AniFlix Cinema Themes</Text>
-                  <Text style={styles.sectionSub}>Custom accent colors and styles for your app</Text>
+                  <Text style={styles.sectionTitle}>{t('themesTitle', 'AniFlix Cinema Themes')}</Text>
+                  <Text style={styles.sectionSub}>{t('themesSub', 'Custom accent colors and styles for your app')}</Text>
                 </View>
 
                 <View style={styles.themesCardsList}>
@@ -537,7 +543,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                             {isEquipped && (
                               <View style={styles.equippedPill}>
                                 <CheckCircle size={11} color="#00E676" />
-                                <Text style={styles.equippedPillText}>Active</Text>
+                                <Text style={styles.equippedPillText}>{t('activeThemeLabel', 'Active')}</Text>
                               </View>
                             )}
                           </View>
@@ -551,7 +557,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                                 onPress={() => equipTheme(th.id)}
                               >
                                 <Text style={styles.themeBtnText}>
-                                  {isEquipped ? 'Equipped' : 'Equip Theme'}
+                                  {isEquipped ? t('equippedTheme', 'Equipped') : t('equipThemeBtn', 'Equip Theme')}
                                 </Text>
                               </Pressable>
                             ) : (
@@ -561,7 +567,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                                 onPress={() => unlockTheme(th.id)}
                               >
                                 <Text style={styles.themeBuyBtnText}>
-                                  Unlock for {th.costCoins} Coins
+                                  {t('unlockForCoins', `Unlock for ${th.costCoins} Coins`).replace('{coins}', String(th.costCoins))}
                                 </Text>
                               </Pressable>
                             )}
@@ -578,8 +584,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             {activeTab === 'badges' && (
               <View style={styles.badgesSection}>
                 <View style={styles.sectionHeaderLeft}>
-                  <Text style={styles.sectionTitle}>Prestige Badges</Text>
-                  <Text style={styles.sectionSub}>Unlock badges as you watch, review & streak</Text>
+                  <Text style={styles.sectionTitle}>{t('prestigeBadges', 'Prestige Badges')}</Text>
+                  <Text style={styles.sectionSub}>{t('badgesSub', 'Unlock badges as you watch, review & streak')}</Text>
                 </View>
 
                 <View style={styles.badgesGrid}>
@@ -600,9 +606,9 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                         <View style={styles.badgeTitleRow}>
                           <Text style={styles.badgeTitleText}>{t(b.title as any, b.title)}</Text>
                           {b.isUnlocked ? (
-                            <Text style={styles.unlockedTag}>✓ Unlocked</Text>
+                            <Text style={styles.unlockedTag}>{t('badgeUnlockedTag', '✓ Unlocked')}</Text>
                           ) : (
-                            <Text style={styles.lockedTag}>Locked</Text>
+                            <Text style={styles.lockedTag}>{t('badgeLockedTag', 'Locked')}</Text>
                           )}
                         </View>
                         <Text style={styles.badgeDescText}>{t(b.description as any, b.description)}</Text>
