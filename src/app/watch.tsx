@@ -76,7 +76,7 @@ export default function WatchScreen() {
   const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet, pagePad } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const defaultVideoHeight = Math.round((windowWidth * 9) / 16);
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { updateProgress } = useWatchHistory();
   const { isMediaUnlocked, getUnlockedMediaRemainingDays, unlockMedia, coins, isVIP } = useGamification();
@@ -123,6 +123,9 @@ export default function WatchScreen() {
   const volumeTrackWidthRef = useRef<number>(70);
   const ignoreSyncUntilRef = useRef<number>(0);
   const lastSeekTimeRef = useRef<number>(0);
+  // Declared early so volumePanResponder can safely reference it via .current
+  // (the actual handleVolumeChange function is synced via useEffect below)
+  const handleVolumeChangeRef = useRef<(vol: number) => void>(() => {});
 
   const videoViewRef = useRef<VideoView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -715,7 +718,7 @@ export default function WatchScreen() {
     }
   };
 
-  const handleVolumeChangeRef = useRef(handleVolumeChange);
+  // Sync latest handleVolumeChange into the ref (declared earlier to avoid ReferenceError in PanResponder)
   useEffect(() => {
     handleVolumeChangeRef.current = handleVolumeChange;
   }, [handleVolumeChange]);
@@ -849,7 +852,6 @@ export default function WatchScreen() {
         player={player}
         contentFit={contentFit}
         nativeControls={false}
-        allowsFullscreen={true}
       />
 
       {/* Backdrop Pressable to toggle controls when tapping empty video space */}
@@ -1123,7 +1125,7 @@ export default function WatchScreen() {
                 <View style={styles.paywallContent}>
                   <ActivityIndicator size="large" color={themeColors.primary} />
                   <Text style={{ color: themeColors.textSecondary, marginTop: 12, fontSize: 13, fontWeight: '600' }}>
-                    Loading media details...
+                    {t('loadingMedia', 'Loading media details...')}
                   </Text>
                 </View>
               ) : (
@@ -1228,8 +1230,8 @@ export default function WatchScreen() {
           ) : Platform.OS === 'web' ? (
             <VideoJsPlayer
               src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
-              poster={anime?.image_url}
-              title={anime?.title}
+              poster={anime?.image_url ?? undefined}
+              title={anime?.title ?? undefined}
               isVIP={isVIP}
               onOpenVipModal={() => setShowVipModal(true)}
               onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
@@ -1308,7 +1310,7 @@ export default function WatchScreen() {
                       size={18}
                     />
                     <Text style={[styles.myListBtnText, { color: favorited ? themeColors.primary : themeColors.text }]}>
-                      {favorited ? 'In My List' : '+ My List'}
+                      {favorited ? t('inMyList', 'In My List') : t('addToMyList', '+ My List')}
                     </Text>
                   </Pressable>
                 </View>
@@ -1322,7 +1324,7 @@ export default function WatchScreen() {
                     {language === 'ku' && anime.description_ku ? anime.description_ku : (anime.description || 'Experience this epic title with master audio and original subtitles.')}
                   </Text>
                   <Text style={[styles.readMoreBtn, { color: themeColors.primary }]}>
-                    {isExpandedSynopsis ? 'Show less' : 'Read more...'}
+                    {isExpandedSynopsis ? t('showLess', 'Show less') : t('readMore', 'Read more...')}
                   </Text>
                 </Pressable>
               </View>
@@ -1349,7 +1351,7 @@ export default function WatchScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Layers color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>You Might Also Like</Text>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('youMightAlsoLike', 'You Might Also Like')}</Text>
                   </View>
                 </View>
 
@@ -1403,8 +1405,8 @@ export default function WatchScreen() {
             {Platform.OS === 'web' ? (
               <VideoJsPlayer
                 src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
-                poster={anime?.image_url}
-                title={anime?.title}
+                poster={anime?.image_url ?? undefined}
+                title={anime?.title ?? undefined}
                 isVIP={isVIP}
                 onOpenVipModal={() => setShowVipModal(true)}
                 onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}

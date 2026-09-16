@@ -826,12 +826,18 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     if (isMediaUnlocked(unlockKey)) return true;
 
     const now = Date.now();
+    // SECURITY FIX H3: Optimistically write timestamp BEFORE the RPC to prevent
+    // a rapid double-tap from passing the isMediaUnlocked guard twice concurrently.
     const newTimestamps = { ...unlockedMediaTimestamps, [unlockKey]: now };
+    setUnlockedMediaTimestamps(newTimestamps);
+
     const combinedUnlocked = Array.from(new Set([...unlockedMediaIds, unlockKey]));
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
-        // Use new category-based RPC (server reads cost from content_cost_registry)
+        // SECURITY FIX C1: Only the SECURITY DEFINER RPC may deduct coins and write
+        // unlocked_media_ids. The direct profiles.update fallback has been removed —
+        // it bypassed server-side cost validation and RLS column-level restrictions.
         const { data, error } = await supabase.rpc('unlock_media_with_coins', { p_unlock_key: unlockKey, p_category: category });
         if (!error && data && (data as any).success) {
           const res = data as any;
@@ -840,43 +846,29 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
             ...(Array.isArray(res.unlocked_media_ids) ? res.unlocked_media_ids : []),
             ...combinedUnlocked,
           ]));
-
           setCoins(remaining);
           setUnlockedMediaIds(serverUnlocked);
-          setUnlockedMediaTimestamps(newTimestamps);
           persist({ coins: remaining, unlockedMediaIds: serverUnlocked, unlockedMediaTimestamps: newTimestamps });
           return true;
         }
-        
-        console.warn('unlock_media_with_coins RPC failed, trying direct DB update fallback:', error?.message);
-        
-        // Direct DB update fallback if RPC fails or is missing
-        const { data: profile } = await supabase.from('profiles').select('coins, unlocked_media_ids').eq('id', user.id).single();
-        if (profile) {
-          const currentCoins = profile.coins || 0;
-          if (currentCoins >= cost) {
-            const remaining = currentCoins - cost;
-            const dbUnlocked = Array.isArray(profile.unlocked_media_ids) ? profile.unlocked_media_ids : [];
-            const updatedUnlocked = Array.from(new Set([...dbUnlocked, ...combinedUnlocked]));
-            await supabase.from('profiles').update({ coins: remaining, unlocked_media_ids: updatedUnlocked, updated_at: new Date().toISOString() }).eq('id', user.id);
-            
-            setCoins(remaining);
-            setUnlockedMediaIds(updatedUnlocked);
-            setUnlockedMediaTimestamps(newTimestamps);
-            persist({ coins: remaining, unlockedMediaIds: updatedUnlocked, unlockedMediaTimestamps: newTimestamps });
-            return true;
-          }
-        }
-      } catch (err) {
-        console.warn('Media unlock error:', err);
+        // RPC returned an error or !success — rollback optimistic timestamp
+        const rolledBack = { ...newTimestamps };
+        delete rolledBack[unlockKey];
+        setUnlockedMediaTimestamps(rolledBack);
+        return false;
+      } catch (_err) {
+        // Network/RPC error — rollback optimistic timestamp, report failure
+        const rolledBack = { ...newTimestamps };
+        delete rolledBack[unlockKey];
+        setUnlockedMediaTimestamps(rolledBack);
+        return false;
       }
     }
 
-    // Guest fallback / Offline fallback / Migration fallback
+    // Guest / offline fallback — local-only unlock, no DB write
     const newCoins = Math.max(0, coins - cost);
     setCoins(newCoins);
     setUnlockedMediaIds(combinedUnlocked);
-    setUnlockedMediaTimestamps(newTimestamps);
     persist({ coins: newCoins, unlockedMediaIds: combinedUnlocked, unlockedMediaTimestamps: newTimestamps });
 
     return true;

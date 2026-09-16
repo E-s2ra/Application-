@@ -224,6 +224,14 @@ export const translations = {
     checkEmailVerification: 'Account created! Please check your email inbox to verify your account before logging in.',
     passwordResetSent: 'Password reset link sent! Check your inbox.',
 
+    // Watch Screen Misc
+    inMyList: 'In My List',
+    addToMyList: '+ My List',
+    showLess: 'Show less',
+    readMore: 'Read more...',
+    youMightAlsoLike: 'You Might Also Like',
+    loadingMedia: 'Loading media details...',
+
     // Notifications
     notifications: 'Notifications',
     noNotifications: 'No notifications yet',
@@ -450,6 +458,14 @@ export const translations = {
     sendResetLink: 'ناردنی لینک',
     checkEmailVerification: 'هەژمارەکەت دروستکرا! تکایە ئیمەیڵەکەت بپشکنە بۆ چالاککردنی هەژمار.',
     passwordResetSent: 'لینکی نوێکردنەوەی تێپەڕەوشە بۆ ئیمەیڵەکەت نێردرا!',
+
+    // Watch Screen Misc
+    inMyList: 'لە لیستەکەمە',
+    addToMyList: '+ لیستەکەم',
+    showLess: 'کەمتر نیشانبدە',
+    readMore: 'زیاتر بخوێنەوە...',
+    youMightAlsoLike: 'ئەمانەش دەتخوشێت',
+    loadingMedia: 'بارکردنی وردەکاری بەرهەم...',
 
     // Notifications
     notifications: 'ئاگادارییەکان',

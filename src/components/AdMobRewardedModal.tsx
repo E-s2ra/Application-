@@ -340,10 +340,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   adImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   adOverlayDark: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(5, 5, 12, 0.65)',
   },
   adHeroContent: {
