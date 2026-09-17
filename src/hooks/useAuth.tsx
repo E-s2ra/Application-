@@ -384,12 +384,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (updates: Partial<Profile>): Promise<{ error: string | null }> => {
     if (!user?.id) return { error: 'Not authenticated' };
     try {
+      // SECURITY: Whitelist only non-economic, non-privilege fields.
+      // Never forward role, coins, xp, level, is_vip, streak_days, etc.
+      // Column-level GRANTs on the DB also protect these, but we add a
+      // client-side guard here as defense-in-depth.
+      const safeUpdates: { username?: string | null; full_name?: string | null; avatar_url?: string | null; updated_at: string } = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updates.username !== undefined) safeUpdates.username = updates.username;
+      if (updates.full_name !== undefined) safeUpdates.full_name = updates.full_name;
+      if (updates.avatar_url !== undefined) safeUpdates.avatar_url = updates.avatar_url;
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
+        .update(safeUpdates)
         .eq('id', user.id);
 
       if (error) return { error: error.message };

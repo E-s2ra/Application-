@@ -35,7 +35,7 @@ import {
   Sun,
   Moon,
   Globe,
-  CreditCard,
+
   ShieldAlert,
   Disc3,
 } from 'lucide-react-native';
@@ -289,28 +289,7 @@ export default function ProfileScreen() {
             </Pressable>
           )}
 
-          {/* FIB Payment Link */}
-          {!isVIP && (
-            <Pressable 
-              style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-              onPress={() => router.push('/fib-payment' as any)}
-              accessibilityRole="button"
-              accessibilityLabel="FIB VIP Payment"
-            >
-              <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(2, 132, 199, 0.12)' : 'rgba(56, 189, 248, 0.15)' }]}>
-                <CreditCard color={themeColors.mode === 'light' ? '#0284C7' : '#38BDF8'} size={20} />
-              </View>
-              <View style={styles.menuTextContent}>
-                <Text style={[styles.menuTitle, { color: themeColors.text }]}>
-                  {language === 'ku' ? 'پارەدان لە ڕێگەی FIB' : 'VIP Subscription (FIB)'}
-                </Text>
-                <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
-                  {language === 'ku' ? 'پارەدان بۆ VIP لە ڕێگەی بانکی یەکەمی عێراقی' : 'Upgrade to VIP using First Iraqi Bank'}
-                </Text>
-              </View>
-              <ChevronRight color={themeColors.textSecondary} size={20} />
-            </Pressable>
-          )}
+
 
           {/* Rewards Hub Modal Trigger */}
           <Pressable 

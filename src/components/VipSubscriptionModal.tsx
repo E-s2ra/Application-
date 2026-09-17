@@ -20,20 +20,18 @@ import {
   Check,
   Sparkles,
   ShieldCheck,
-  Send,
   MessageSquare,
+  Send,
   ExternalLink,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  RASEDI_VIP_PLANS,
-  RasediPlanId,
-} from '@/lib/rasedi-payment';
-import {
-  OFFICIAL_CONTACT_CHANNELS,
-  createWhatsAppVipMessage,
-  createTelegramVipMessage,
-} from '@/constants/payment-methods';
+  VIP_PLANS,
+  VipPlanId,
+  ADMIN_CONTACT,
+  buildWhatsAppVipUrl,
+  buildTelegramVipUrl,
+} from '@/constants/vip-plans';
 
 interface VipSubscriptionModalProps {
   visible: boolean;
@@ -48,71 +46,52 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
   const { language } = useLanguage();
   const isKu = language === 'ku';
 
-  const [selectedPlanId, setSelectedPlanId] = useState<RasediPlanId>('vip_3_months');
+  const [selectedPlanId, setSelectedPlanId] = useState<VipPlanId>('vip_3_months');
+  const selectedPlan = VIP_PLANS.find((p) => p.id === selectedPlanId) ?? VIP_PLANS[1];
 
-  const selectedPlan = RASEDI_VIP_PLANS.find((p) => p.id === selectedPlanId) || RASEDI_VIP_PLANS[1];
+  const planLabel = isKu ? selectedPlan.durationLabelKu : selectedPlan.durationLabel;
 
-  const getPlanDurationLabel = (id: RasediPlanId) => {
-    if (!isKu) {
-      if (id === 'vip_1_month') return '1 Month';
-      if (id === 'vip_3_months') return '3 Months';
-      if (id === 'vip_6_months') return '6 Months';
-      return '1 Year';
-    }
-    if (id === 'vip_1_month') return '١ مانگ';
-    if (id === 'vip_3_months') return '٣ مانگ';
-    if (id === 'vip_6_months') return '٦ مانگ';
-    return '١ ساڵ';
-  };
-
-  const handleContactWhatsApp = async () => {
-    const message = `Hi AniFlix! I want to subscribe to VIP ${getPlanDurationLabel(selectedPlan.id)} - ${selectedPlan.priceIQD.toLocaleString()} IQD${user?.email ? ` (Account: ${user?.email})` : ''}`;
-    const appUrl = `whatsapp://send?phone=${OFFICIAL_CONTACT_CHANNELS.whatsappNumber}&text=${encodeURIComponent(message)}`;
-    const webUrl = `https://wa.me/${OFFICIAL_CONTACT_CHANNELS.whatsappNumber}?text=${encodeURIComponent(message)}`;
-    
+  // ── Contact Handlers ──────────────────────────────────────────────────────
+  const openUrl = async (appUrl: string, webUrl: string, fallbackLabel: string) => {
     try {
-      const supported = await Linking.canOpenURL(appUrl);
-      if (supported) {
-        await Linking.openURL(appUrl);
-      } else {
-        await Linking.openURL(webUrl);
-      }
-    } catch (_err) {
+      const canOpen = await Linking.canOpenURL(appUrl);
+      await Linking.openURL(canOpen ? appUrl : webUrl);
+    } catch {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.open(webUrl, '_blank');
       } else {
-        Alert.alert('Contact Support', `WhatsApp: ${OFFICIAL_CONTACT_CHANNELS.whatsappDisplay}`);
+        Alert.alert('Contact Support', fallbackLabel);
       }
     }
   };
 
-  const handleContactTelegram = async () => {
-    const url = createTelegramVipMessage(
-      getPlanDurationLabel(selectedPlan.id),
-      selectedPlan.priceIQD,
-      user?.email
-    );
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        await Linking.openURL(`https://t.me/${OFFICIAL_CONTACT_CHANNELS.telegramUsername}`);
-      }
-    } catch (_err) {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.open(url, '_blank');
-      } else {
-        Alert.alert('Contact Support', `Telegram: ${OFFICIAL_CONTACT_CHANNELS.telegramDisplay}`);
-      }
-    }
+  const handleWhatsApp = () => {
+    const webUrl = buildWhatsAppVipUrl(planLabel, selectedPlan.priceIQD, user?.email);
+    const appUrl = `whatsapp://send?phone=${ADMIN_CONTACT.whatsappNumber}&text=${encodeURIComponent(
+      `Hi AniFlix! I want to subscribe to VIP — ${planLabel} — ${selectedPlan.priceIQD.toLocaleString()} IQD${user?.email ? ` (Account: ${user.email})` : ''}`
+    )}`;
+    openUrl(appUrl, webUrl, `WhatsApp: ${ADMIN_CONTACT.whatsappDisplay}`);
   };
 
+  const handleTelegram = () => {
+    const url = buildTelegramVipUrl(planLabel, selectedPlan.priceIQD, user?.email);
+    openUrl(url, url, `Telegram: ${ADMIN_CONTACT.telegramDisplay}`);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={[styles.overlay, { paddingTop: Math.max(insets.top + 8, 20), paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
+      <View
+        style={[
+          styles.overlay,
+          {
+            paddingTop: Math.max(insets.top + 8, 20),
+            paddingBottom: Math.max(insets.bottom + 8, 20),
+          },
+        ]}
+      >
         <View style={[styles.card, { backgroundColor: '#0D0D15' }]}>
-          {/* Header */}
+          {/* ── Header ─────────────────────────────────────────────────── */}
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <View style={styles.crownCircle}>
@@ -123,7 +102,9 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                   {isKu ? 'ئابوونەی AniFlix VIP Sovereign' : 'AniFlix VIP Sovereign'}
                 </Text>
                 <Text style={styles.modalSubtitle} numberOfLines={2}>
-                  {isKu ? 'کوالیتی 4K، بە تەواوی بێ ڕیکلام و ئەڵقەی تایبەت' : 'Ultra HD 4K, Ad-Free & Exclusive Series'}
+                  {isKu
+                    ? 'کوالیتی 4K، بە تەواوی بێ ڕیکلام و ئەڵقەی تایبەت'
+                    : 'Ultra HD 4K, Ad-Free & Exclusive Series'}
                 </Text>
               </View>
             </View>
@@ -131,7 +112,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               style={styles.closeBtn}
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel="Close VIP subscription modal"
+              accessibilityLabel="Close VIP modal"
             >
               <X size={20} color="#FFF" />
             </Pressable>
@@ -140,10 +121,10 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scroll}
-            showsVerticalScrollIndicator={true}
-            bounces={true}
+            showsVerticalScrollIndicator
+            bounces
           >
-            {/* Active VIP Status Banner */}
+            {/* ── Active VIP Banner ───────────────────────────────────── */}
             {isVIP && (
               <View style={styles.activeVipBanner}>
                 <Sparkles color="#FFB800" size={18} />
@@ -154,67 +135,67 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                   <Text style={styles.activeVipSub}>
                     {isKu
                       ? `${vipDaysRemaining} ڕۆژت ماوە. نوێکردنەوە کاتەکەت زیاتر درێژ دەکاتەوە!`
-                      : `You currently have ${vipDaysRemaining} days remaining. Subscribing will extend your active time!`}
+                      : `You have ${vipDaysRemaining} days remaining. Subscribing will extend your active time!`}
                   </Text>
                 </View>
               </View>
             )}
 
-            {/* VIP Benefits List */}
+            {/* ── VIP Benefits ────────────────────────────────────────── */}
             <View style={styles.benefitsCard}>
               <Text style={styles.benefitsHeading}>
                 {isKu ? 'تایبەتمەندییەکانی ئەندامێتی VIP' : 'VIP MEMBERSHIP BENEFITS'}
               </Text>
-              <View style={styles.benefitRow}>
-                <Check size={16} color="#00E676" />
-                <Text style={styles.benefitText}>
-                  {isKu ? '١٠٠٪ بێ هیچ ڕیکلامێک و پەخشی ڕاستەوخۆ' : '100% Ad-Free — No interruptions, ever'}
-                </Text>
-              </View>
-              <View style={styles.benefitRow}>
-                <Check size={16} color="#FFB800" />
-                <Text style={[styles.benefitText, { color: '#FFB800' }]}>
-                  {isKu ? 'کوالیتی 4K Ultra HD — بە بەرزترین خێرایی' : '4K Ultra HD Quality (VIP Exclusive)'}
-                </Text>
-              </View>
-              <View style={styles.benefitRow}>
-                <Check size={16} color="#FFB800" />
-                <Text style={[styles.benefitText, { color: '#FFB800' }]}>
-                  {isKu ? 'Full HD 1080p — کوالیتی بەرز' : 'Full HD 1080p Quality (VIP Exclusive)'}
-                </Text>
-              </View>
-              <View style={styles.benefitRow}>
-                <Check size={16} color="#00E676" />
-                <Text style={styles.benefitText}>
-                  {isKu ? 'گشت ناوەرۆکەکان کراوەن — بێ کۆین' : 'All Content Unlocked — No coins needed'}
-                </Text>
-              </View>
-              <View style={styles.benefitRow}>
-                <Check size={16} color="#00E676" />
-                <Text style={styles.benefitText}>
-                  {isKu ? 'بینینی زووتری ئەڵقە نوێیەکان و فیلمە تایبەتەکان' : 'Early Access to New Releases & Exclusive Series'}
-                </Text>
-              </View>
+              {[
+                {
+                  color: '#00E676',
+                  en: '100% Ad-Free — No interruptions, ever',
+                  ku: '١٠٠٪ بێ هیچ ڕیکلامێک و پەخشی ڕاستەوخۆ',
+                },
+                {
+                  color: '#FFB800',
+                  en: '4K Ultra HD Quality (VIP Exclusive)',
+                  ku: 'کوالیتی 4K Ultra HD — بە بەرزترین خێرایی',
+                },
+                {
+                  color: '#FFB800',
+                  en: 'Full HD 1080p Quality (VIP Exclusive)',
+                  ku: 'Full HD 1080p — کوالیتی بەرز',
+                },
+                {
+                  color: '#00E676',
+                  en: 'All Content Unlocked — No coins needed',
+                  ku: 'گشت ناوەرۆکەکان کراوەن — بێ کۆین',
+                },
+                {
+                  color: '#00E676',
+                  en: 'Early Access to New Releases & Exclusive Series',
+                  ku: 'بینینی زووتری ئەڵقە نوێیەکان و فیلمە تایبەتەکان',
+                },
+              ].map((item, i) => (
+                <View key={i} style={styles.benefitRow}>
+                  <Check size={16} color={item.color} />
+                  <Text style={[styles.benefitText, { color: item.color === '#FFB800' ? '#FFB800' : '#FFF' }]}>
+                    {isKu ? item.ku : item.en}
+                  </Text>
+                </View>
+              ))}
             </View>
 
-            {/* Plan Cards */}
-            <Text style={styles.plansSectionTitle}>
+            {/* ── Step 1 — Plan Selection ─────────────────────────────── */}
+            <Text style={styles.stepHeading}>
               {isKu ? '١. هەڵبژاردنی پلانی VIP' : '1. SELECT YOUR VIP PLAN'}
             </Text>
             <View style={styles.plansGrid}>
-              {RASEDI_VIP_PLANS.map((plan) => {
+              {VIP_PLANS.map((plan) => {
                 const isSelected = selectedPlanId === plan.id;
                 return (
                   <Pressable
                     key={plan.id}
-                    style={[
-                      styles.planCard,
-                      isSelected && styles.planCardSelected,
-                      Platform.OS === 'web' && ({ cursor: 'pointer', userSelect: 'none' } as any),
-                    ]}
+                    style={[styles.planCard, isSelected && styles.planCardSelected]}
                     onPress={() => setSelectedPlanId(plan.id)}
                     accessibilityRole="radio"
-                    accessibilityLabel={`${plan.durationDays} day VIP plan — ${plan.priceIQD.toLocaleString()} IQD`}
+                    accessibilityLabel={`${plan.durationLabel} VIP plan — ${plan.priceIQD.toLocaleString()} IQD`}
                     accessibilityState={{ checked: isSelected }}
                   >
                     {plan.badge && (
@@ -225,11 +206,13 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                         ]}
                       >
                         <Text style={styles.planBadgeText}>
-                          {isKu && plan.popular ? 'باوترین' : plan.badge.toUpperCase()}
+                          {isKu ? (plan.badgeKu ?? plan.badge) : plan.badge.toUpperCase()}
                         </Text>
                       </View>
                     )}
-                    <Text style={styles.planDuration}>{getPlanDurationLabel(plan.id)}</Text>
+                    <Text style={styles.planDuration}>
+                      {isKu ? plan.durationLabelKu : plan.durationLabel}
+                    </Text>
                     <Text style={styles.planPrice}>
                       {plan.priceIQD.toLocaleString()}{' '}
                       <Text style={styles.planCurrency}>{isKu ? 'د.ع' : 'IQD'}</Text>
@@ -242,32 +225,34 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
               })}
             </View>
 
-            {/* Direct Contact Payment Section */}
-            <Text style={styles.plansSectionTitle}>
-              {isKu ? '٢. پەیوەندیکردن بۆ چالاککردنی VIP' : '2. CONTACT TO ACTIVATE VIP'}
+            {/* ── Step 2 — Contact Admin ──────────────────────────────── */}
+            <Text style={styles.stepHeading}>
+              {isKu ? '٢. پەیوەندیکردن بۆ چالاككردنی VIP' : '2. CONTACT ADMIN TO ACTIVATE VIP'}
             </Text>
 
             <View style={styles.contactContainer}>
               <Text style={styles.contactInstructions}>
                 {isKu
-                  ? 'بۆ کڕین و چالاککردنی خێرای ئەندامێتی VIP، لە ڕێگەی واتسئاپ یان تێلیگرام پەیوەندی بە تیمی پشتگیری بکە:'
-                  : 'To purchase and activate your VIP subscription instantly, contact our official support via WhatsApp or Telegram:'}
+                  ? 'پلانەکەت هەڵبژێرە، دوای پارەدان لە ڕێگەی WhatsApp یان Telegram پەیوەندی بە ئیدارەی ئەپ بکە. ئیدارە VIP بۆت دروست دەکات.'
+                  : 'Select your plan, send the payment, then contact admin via WhatsApp or Telegram. The admin will manually activate VIP for your account.'}
               </Text>
 
+              {/* Selected plan summary */}
               <View style={styles.selectedPlanSummary}>
-                <Text style={styles.summaryLabel}>{isKu ? 'پلانی هەڵبژێردراو:' : 'Selected Plan:'}</Text>
+                <Text style={styles.summaryLabel}>
+                  {isKu ? 'پلانی هەڵبژێردراو:' : 'Selected Plan:'}
+                </Text>
                 <Text style={styles.summaryValue}>
-                  {getPlanDurationLabel(selectedPlan.id)} — {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دینار' : 'IQD'}
+                  {planLabel} — {selectedPlan.priceIQD.toLocaleString()} {isKu ? 'دینار' : 'IQD'}
                 </Text>
               </View>
 
               {/* WhatsApp Button */}
               <Pressable
-                style={styles.whatsappBtn}
-                onPress={handleContactWhatsApp}
+                style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.8 }]}
+                onPress={handleWhatsApp}
                 accessibilityRole="button"
                 accessibilityLabel="Contact via WhatsApp to activate VIP"
-                accessibilityHint="Opens WhatsApp to message the AniFlix support team"
               >
                 <View style={styles.btnLeftContent}>
                   <View style={styles.whatsappIconCircle}>
@@ -277,7 +262,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                     <Text style={styles.btnTitle}>
                       {isKu ? 'پەیوەندی لە ڕێگەی WhatsApp' : 'Contact via WhatsApp'}
                     </Text>
-                    <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.whatsappDisplay}</Text>
+                    <Text style={styles.btnSubtitle}>{ADMIN_CONTACT.whatsappDisplay}</Text>
                   </View>
                 </View>
                 <ExternalLink size={16} color="#25D366" />
@@ -285,11 +270,10 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
 
               {/* Telegram Button */}
               <Pressable
-                style={styles.telegramBtn}
-                onPress={handleContactTelegram}
+                style={({ pressed }) => [styles.telegramBtn, pressed && { opacity: 0.8 }]}
+                onPress={handleTelegram}
                 accessibilityRole="button"
                 accessibilityLabel="Contact via Telegram to activate VIP"
-                accessibilityHint="Opens Telegram to message the AniFlix support team"
               >
                 <View style={styles.btnLeftContent}>
                   <View style={styles.telegramIconCircle}>
@@ -299,37 +283,14 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
                     <Text style={styles.btnTitle}>
                       {isKu ? 'پەیوەندی لە ڕێگەی Telegram' : 'Contact via Telegram'}
                     </Text>
-                    <Text style={styles.btnSubtitle}>{OFFICIAL_CONTACT_CHANNELS.telegramDisplay}</Text>
+                    <Text style={styles.btnSubtitle}>{ADMIN_CONTACT.telegramDisplay}</Text>
                   </View>
                 </View>
                 <ExternalLink size={16} color="#0088CC" />
               </Pressable>
             </View>
 
-            {/*
-            ================================================================================
-            ARCHIVED MANUAL FIB TRANSACTION FORM (KEEP FOR FUTURE RESTORATION)
-            ================================================================================
-            <View style={styles.transferInfoBox}>
-              <Text style={styles.transferTitle}>{isKu ? activeMethod.nameKu : activeMethod.name}</Text>
-              <Text style={styles.transferInstructions}>
-                {isKu ? activeMethod.instructionsKu : activeMethod.instructions}
-              </Text>
-              <View style={styles.accountRow}>
-                <View>
-                  <Text style={styles.accountLabel}>{isKu ? 'ژمارەی ئەژمێری FIB:' : 'FIB Account / Phone Number:'}</Text>
-                  <Text style={styles.accountNumber}>{activeMethod.accountNumber}</Text>
-                  <Text style={styles.accountHolder}>{activeMethod.accountName}</Text>
-                </View>
-                <Pressable style={styles.copyBtn} onPress={handleCopyAccount}>
-                  <Copy size={16} color="#FFF" />
-                  <Text style={styles.copyBtnText}>{copied ? (isKu ? 'کۆپیکرا!' : 'Copied!') : isKu ? 'کۆپیکردن' : 'Copy'}</Text>
-                </Pressable>
-              </View>
-            </View>
-            ================================================================================
-            */}
-
+            {/* ── Footer ─────────────────────────────────────────────── */}
             <View style={styles.securityFooter}>
               <ShieldCheck size={14} color="#8E8EA4" />
               <Text style={styles.securityText}>
@@ -345,6 +306,7 @@ export function VipSubscriptionModal({ visible, onClose }: VipSubscriptionModalP
   );
 }
 
+// ── Styles ─────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -356,7 +318,7 @@ const styles = StyleSheet.create({
   card: {
     width: '94%',
     maxWidth: 520,
-    height: '88%',
+    height: '90%',
     maxHeight: '92%',
     borderRadius: 20,
     borderWidth: 1,
@@ -411,10 +373,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     ...(Platform.OS === 'web'
-      ? ({
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        } as any)
+      ? ({ overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as any)
       : {}),
   },
   scroll: {
@@ -422,6 +381,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 14,
   },
+  // Active VIP Banner
   activeVipBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -443,6 +403,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 15,
   },
+  // Benefits
   benefitsCard: {
     backgroundColor: '#141420',
     borderRadius: 14,
@@ -464,18 +425,19 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   benefitText: {
-    color: '#FFF',
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
   },
-  plansSectionTitle: {
+  // Step headings
+  stepHeading: {
     color: '#8E8EA4',
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
     marginTop: 4,
   },
+  // Plan cards grid
   plansGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -483,7 +445,7 @@ const styles = StyleSheet.create({
   },
   planCard: {
     flex: 1,
-    minWidth: 135,
+    minWidth: 130,
     backgroundColor: '#141420',
     borderRadius: 12,
     padding: 12,
@@ -504,12 +466,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
   },
-  planBadgePopular: {
-    backgroundColor: '#0356C5',
-  },
-  planBadgeStandard: {
-    backgroundColor: '#2A2A3E',
-  },
+  planBadgePopular: { backgroundColor: '#0356C5' },
+  planBadgeStandard: { backgroundColor: '#2A2A3E' },
   planBadgeText: {
     color: '#FFF',
     fontSize: 9,
@@ -536,6 +494,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
+  // Contact section
   contactContainer: {
     backgroundColor: '#141420',
     borderRadius: 14,
@@ -570,6 +529,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
+  // WhatsApp & Telegram buttons
   whatsappBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -579,7 +539,6 @@ const styles = StyleSheet.create({
     borderColor: '#25D366',
     borderRadius: 12,
     padding: 14,
-    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   whatsappIconCircle: {
     width: 36,
@@ -598,7 +557,6 @@ const styles = StyleSheet.create({
     borderColor: '#0088CC',
     borderRadius: 12,
     padding: 14,
-    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   telegramIconCircle: {
     width: 36,
@@ -623,6 +581,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
   },
+  // Footer
   securityFooter: {
     flexDirection: 'row',
     alignItems: 'center',

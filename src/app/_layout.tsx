@@ -20,15 +20,10 @@ import { LanguageProvider } from '@/hooks/use-language';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function PrivacyProtection() {
-  const { user, profile, isLoading } = useAuth();
+  const { profile, isLoading } = useAuth();
 
   useEffect(() => {
     if (Platform.OS === 'web' || isLoading) return;
-
-    const isAdmin =
-      profile?.role === 'admin' ||
-      user?.email === process.env.EXPO_PUBLIC_ADMIN_EMAIL ||
-      user?.email === 'esra99san@gmail.com';
 
     // Temporarily allow screenshots/screen recording everywhere per user request
     void ScreenCapture.allowScreenCaptureAsync('app-security').catch(() => {});
@@ -36,7 +31,7 @@ function PrivacyProtection() {
       // @ts-ignore
       if (ScreenCapture.disableAppSwitcherProtectionAsync) void ScreenCapture.disableAppSwitcherProtectionAsync();
     }
-  }, [user, profile, isLoading]);
+  }, [profile, isLoading]);
 
   return null;
 }
@@ -101,8 +96,7 @@ function RootNavigation({
         <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         <Stack.Screen name="verified" options={{ headerShown: false }} />
-        <Stack.Screen name="fib-payment" options={{ headerShown: false }} />
-        <Stack.Screen name="vip-success" options={{ headerShown: false }} />
+
       </Stack>
 
       {/* Google AdMob Rewarded Ad Modal */}
