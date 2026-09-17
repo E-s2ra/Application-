@@ -38,6 +38,9 @@ import {
 
   ShieldAlert,
   Disc3,
+  ShieldCheck,
+  FileText,
+  Info,
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -364,6 +367,90 @@ export default function ProfileScreen() {
               </Text>
               <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
                 {t('switchLanguageSub', 'Switch between English and Kurdish')}
+              </Text>
+            </View>
+            <ChevronRight color={themeColors.textSecondary} size={20} />
+          </Pressable>
+
+          {/* 📜 Privacy Policy */}
+          <Pressable 
+            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+            onPress={() => router.push('/legal/privacy-policy' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Privacy Policy"
+          >
+            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+              <ShieldCheck color="#3B82F6" size={20} />
+            </View>
+            <View style={styles.menuTextContent}>
+              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
+                {language === 'ku' ? 'یاسای تایبەتمەندی' : 'Privacy Policy'}
+              </Text>
+              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
+                {language === 'ku' ? 'پاراستنی زانیارییەکان و هەژمار' : 'Data protection & security policies'}
+              </Text>
+            </View>
+            <ChevronRight color={themeColors.textSecondary} size={20} />
+          </Pressable>
+
+          {/* 📜 Terms of Service */}
+          <Pressable 
+            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+            onPress={() => router.push('/legal/terms-of-service' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Terms of Service"
+          >
+            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+              <FileText color="#10B981" size={20} />
+            </View>
+            <View style={styles.menuTextContent}>
+              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
+                {language === 'ku' ? 'مەرجەکانی بەکارهێنان' : 'Terms of Service'}
+              </Text>
+              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
+                {language === 'ku' ? 'یاسا و مەرجەکانی بەکارهێنانی ئەپ' : 'App rules, VIP terms & guidelines'}
+              </Text>
+            </View>
+            <ChevronRight color={themeColors.textSecondary} size={20} />
+          </Pressable>
+
+          {/* 🛡️ DMCA Policy */}
+          <Pressable 
+            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+            onPress={() => router.push('/legal/dmca' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="DMCA Policy"
+          >
+            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+              <ShieldAlert color="#EF4444" size={20} />
+            </View>
+            <View style={styles.menuTextContent}>
+              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
+                {language === 'ku' ? 'مافی کۆپیکردن (DMCA)' : 'DMCA & Copyright'}
+              </Text>
+              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
+                {language === 'ku' ? 'ڕاگەیەندراوی مافی فکری و کۆپیکردن' : 'Intellectual property & takedown notices'}
+              </Text>
+            </View>
+            <ChevronRight color={themeColors.textSecondary} size={20} />
+          </Pressable>
+
+          {/* ℹ️ About AniFlix */}
+          <Pressable 
+            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+            onPress={() => router.push('/legal/about' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="About AniFlix"
+          >
+            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+              <Info color="#A855F7" size={20} />
+            </View>
+            <View style={styles.menuTextContent}>
+              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
+                {language === 'ku' ? 'دەربارەی ئەنیفلیکس' : 'About AniFlix'}
+              </Text>
+              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
+                {language === 'ku' ? 'وەشانی ئەپ، پشتیوانی و پەیوەندی' : 'Version 1.0.0, support & contacts'}
               </Text>
             </View>
             <ChevronRight color={themeColors.textSecondary} size={20} />

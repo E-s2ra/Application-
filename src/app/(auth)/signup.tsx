@@ -405,6 +405,26 @@ export default function SignUpScreen() {
                 </Text>
               </Pressable>
             </View>
+
+            {/* Legal Disclaimer */}
+            <View style={{ marginTop: 14, alignItems: 'center', paddingHorizontal: 8 }}>
+              <Text style={{ fontSize: 11, color: themeColors.textSecondary, textAlign: 'center', lineHeight: 16 }}>
+                {language === 'ku' ? 'بە دروستکردنی هەژمار، تۆ ڕەزامەندی دەدەیت لەسەر ' : 'By creating an account, you agree to our '}
+                <Text
+                  style={{ color: themeColors.primary, fontWeight: '700' }}
+                  onPress={() => router.push('/legal/terms-of-service' as any)}
+                >
+                  {language === 'ku' ? 'مەرجەکانی بەکارهێنان' : 'Terms of Service'}
+                </Text>
+                {language === 'ku' ? ' و ' : ' & '}
+                <Text
+                  style={{ color: themeColors.primary, fontWeight: '700' }}
+                  onPress={() => router.push('/legal/privacy-policy' as any)}
+                >
+                  {language === 'ku' ? 'یاسای تایبەتمەندی' : 'Privacy Policy'}
+                </Text>
+              </Text>
+            </View>
           </View>
         </View>
       </KeyboardAwareScrollView>

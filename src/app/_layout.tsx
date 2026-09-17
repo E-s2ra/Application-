@@ -55,8 +55,9 @@ function AuthGuard({ onReady }: { onReady: () => void }) {
     const inAuthGroup = segments[0] === '(auth)';
     const isPasswordRecovery = String(segments[0]) === 'reset-password';
     const isVerified = String(segments[0]) === 'verified';
+    const isLegal = String(segments[0]) === 'legal';
 
-    if (!session && !inAuthGroup && !isPasswordRecovery && !isVerified) {
+    if (!session && !inAuthGroup && !isPasswordRecovery && !isVerified && !isLegal) {
       router.replace('/(auth)/login');
     } else if (session && inAuthGroup) {
       router.replace('/(tabs)');
@@ -96,6 +97,7 @@ function RootNavigation({
         <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         <Stack.Screen name="verified" options={{ headerShown: false }} />
+        <Stack.Screen name="legal" options={{ headerShown: false }} />
 
       </Stack>
 
