@@ -538,7 +538,7 @@ export default function WatchScreen() {
 
   const isMovie = anime?.category === 'Movies' || anime?.category === 'Anime Movies';
   const isKDrama = anime?.category === 'K-Drama' || anime?.category === 'Drama';
-  const animeCategory = anime?.category ?? 'Anime';
+  const animeCategory = isMovie ? 'Movies' : isKDrama ? 'K-Drama' : 'Anime';
   const unlockCost = isMovie ? 125 : isKDrama ? 100 : 80;
   const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
   const isUnlocked = isVIP || Boolean(unlockKey && isMediaUnlocked(unlockKey));

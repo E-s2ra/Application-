@@ -825,6 +825,14 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     const unlockKey = episodeNum !== undefined ? `${mediaId}_ep_${episodeNum}` : mediaId;
     if (isMediaUnlocked(unlockKey)) return true;
 
+    // Normalize category to matched registry buckets ('Movies', 'K-Drama', or 'Anime')
+    const normalizedCategory =
+      category === 'Movies' || category === 'Anime Movies'
+        ? 'Movies'
+        : category === 'K-Drama' || category === 'Drama'
+        ? 'K-Drama'
+        : 'Anime';
+
     const now = Date.now();
     // SECURITY FIX H3: Optimistically write timestamp BEFORE the RPC to prevent
     // a rapid double-tap from passing the isMediaUnlocked guard twice concurrently.
@@ -836,9 +844,21 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
         // SECURITY FIX C1: Only the SECURITY DEFINER RPC may deduct coins and write
-        // unlocked_media_ids. The direct profiles.update fallback has been removed —
-        // it bypassed server-side cost validation and RLS column-level restrictions.
-        const { data, error } = await supabase.rpc('unlock_media_with_coins', { p_unlock_key: unlockKey, p_category: category });
+        // unlocked_media_ids. Try category-based RPC first, fallback to cost-based RPC if needed.
+        let rpcRes = await supabase.rpc('unlock_media_with_coins', {
+          p_unlock_key: unlockKey,
+          p_category: normalizedCategory,
+        });
+
+        if (rpcRes.error || !rpcRes.data || !(rpcRes.data as any).success) {
+          // Fallback to legacy 2-arg signature using integer cost
+          rpcRes = await supabase.rpc('unlock_media_with_coins', {
+            p_unlock_key: unlockKey,
+            p_cost: cost,
+          });
+        }
+
+        const { data, error } = rpcRes;
         if (!error && data && (data as any).success) {
           const res = data as any;
           const remaining = res.remaining_coins ?? Math.max(0, coins - cost);
@@ -852,12 +872,14 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           return true;
         }
         // RPC returned an error or !success — rollback optimistic timestamp
+        console.warn('[unlockMedia] RPC failed:', error?.message, data);
         const rolledBack = { ...newTimestamps };
         delete rolledBack[unlockKey];
         setUnlockedMediaTimestamps(rolledBack);
         return false;
-      } catch (_err) {
+      } catch (err) {
         // Network/RPC error — rollback optimistic timestamp, report failure
+        console.warn('[unlockMedia] exception:', err);
         const rolledBack = { ...newTimestamps };
         delete rolledBack[unlockKey];
         setUnlockedMediaTimestamps(rolledBack);
