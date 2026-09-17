@@ -146,10 +146,7 @@ export default function WatchScreen() {
   }, [player]);
 
   const { user, profile } = useAuth();
-  const isAdmin =
-    profile?.role === 'admin' ||
-    user?.email === process.env.EXPO_PUBLIC_ADMIN_EMAIL ||
-    user?.email === 'esra99san@gmail.com';
+  const isAdmin = profile?.role === 'admin';
 
   // Enable DRM content protection when screen mounts; remove when leaving
   useEffect(() => {
