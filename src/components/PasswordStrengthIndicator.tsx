@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
-import { Check, Circle } from 'lucide-react-native';
+import { Check, Circle, ShieldCheck, Shield, ShieldAlert } from 'lucide-react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/hooks/use-language';
 import { evaluatePasswordStrength, getPasswordRuleChecks } from '@/lib/password';
@@ -46,12 +46,12 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
     );
   }
 
-  const { score, strength, label, emoji, color, badgeBg } = strengthInfo;
+  const { score, strength, label, color, badgeBg } = strengthInfo;
   const translatedLabel = getTranslatedStrengthLabel(strength, label);
 
   return (
     <View style={styles.container}>
-      {/* 🌸 Cute Strength Meter Bar & Pill */}
+      {/* Strength Meter Bar & Pill */}
       <View style={[styles.meterHeader, isRTL && styles.meterHeaderRTL]}>
         <View style={styles.meterBars}>
           {[1, 2, 3].map((step) => {
@@ -70,14 +70,17 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
           })}
         </View>
 
-        <View style={[styles.badgePill, { backgroundColor: badgeBg, borderColor: color }]}>
+        <View style={[styles.badgePill, { backgroundColor: badgeBg, borderColor: color, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+          {strength === 'strong' && <ShieldCheck size={12} color={color} />}
+          {strength === 'good' && <Shield size={12} color={color} />}
+          {strength === 'low' && <ShieldAlert size={12} color={color} />}
           <Text style={[styles.badgeText, { color }]}>
-            {translatedLabel} {emoji}
+            {translatedLabel}
           </Text>
         </View>
       </View>
 
-      {/* 📋 Dynamic Condition Checklist */}
+      {/* Dynamic Condition Checklist */}
       <View style={styles.rulesList}>
         {ruleChecks.map((rule) => {
           const isPassed = rule.passed;

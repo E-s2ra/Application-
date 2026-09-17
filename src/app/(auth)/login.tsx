@@ -16,7 +16,7 @@ import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation, useLanguage } from '@/hooks/use-language';
-import { AlertCircle, Eye, EyeOff, Globe, Mail, Lock, Sparkles } from 'lucide-react-native';
+import { AlertCircle, Eye, EyeOff, Globe, Mail, Lock, Sparkles, LogIn } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useToast } from '@/hooks/useToast';
@@ -242,7 +242,10 @@ export default function LoginScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.buttonText}>{t('signInBtn', 'Sign In')}</Text>
+                  <View style={styles.buttonContent}>
+                    <LogIn size={18} color="#FFFFFF" />
+                    <Text style={styles.buttonText}>{t('signInBtn', 'Sign In')}</Text>
+                  </View>
                 )}
               </Pressable>
             </View>
@@ -431,6 +434,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   buttonText: {
     color: '#FFFFFF',

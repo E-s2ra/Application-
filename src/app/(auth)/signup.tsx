@@ -3,7 +3,7 @@ import { useTranslation, useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useRouter } from 'expo-router';
-import { AlertCircle, Eye, EyeOff, Globe, ArrowLeft, User, Mail, Lock } from 'lucide-react-native';
+import { AlertCircle, Eye, EyeOff, Globe, ArrowLeft, User, Mail, Lock, CheckCircle2, UserPlus } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -120,11 +120,11 @@ export default function SignUpScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* 🔮 Ambient Background Glow Orbs */}
+      {/* Ambient Background Glow Orbs */}
       <View style={[styles.glowOrbTop, { backgroundColor: themeColors.primary, opacity: 0.18, pointerEvents: 'none' }]} />
       <View style={[styles.glowOrbBottom, { backgroundColor: '#00D2FF', opacity: 0.12, pointerEvents: 'none' }]} />
 
-      {/* 🌐 Top Floating Bar: Back Button & Language Switcher */}
+      {/* Top Floating Bar: Back Button & Language Switcher */}
       <View style={[styles.topFloatingBar, { paddingTop: Math.max(insets.top + 6, 16) }]}>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/login'))}
@@ -173,7 +173,7 @@ export default function SignUpScreen() {
               },
             ]}
           >
-            {/* 🎬 Brand Header */}
+            {/* Brand Header */}
             <View style={styles.header}>
               <View style={[styles.logoContainer, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
                 <Image
@@ -200,11 +200,12 @@ export default function SignUpScreen() {
 
             {infoMessage && (
               <View style={[styles.errorBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10B981' }]}>
+                <CheckCircle2 color="#10B981" size={18} />
                 <Text style={[styles.errorText, { color: '#10B981' }]}>{infoMessage}</Text>
               </View>
             )}
 
-            {/* 📝 Input Form */}
+            {/* Input Form */}
             <View style={styles.form}>
               {/* Full Name Field */}
               <View style={styles.fieldGroup}>
@@ -385,7 +386,10 @@ export default function SignUpScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.buttonText}>Create Account</Text>
+                  <View style={styles.buttonContent}>
+                    <UserPlus size={18} color="#FFFFFF" style={styles.buttonIcon} />
+                    <Text style={styles.buttonText}>Create Account</Text>
+                  </View>
                 )}
               </Pressable>
             </View>
@@ -575,6 +579,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 6,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  buttonIcon: {
+    marginRight: 2,
   },
   buttonText: {
     color: '#FFFFFF',
