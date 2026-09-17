@@ -222,6 +222,7 @@ export const translations = {
     resetPasswordSub: 'Enter your email to receive a password reset link',
     sendResetLink: 'Send Reset Link',
     checkEmailVerification: 'Account created! Please check your email inbox to verify your account before logging in.',
+    accountAlreadyExists: 'An account with this email address already exists. Please sign in instead.',
     passwordResetSent: 'Password reset link sent! Check your inbox.',
 
     // Watch Screen Misc
@@ -457,6 +458,7 @@ export const translations = {
     resetPasswordSub: 'ئیمەیڵەکەت بنووسە بۆ ناردنی لینکی گۆڕینی تێپەڕەوشە',
     sendResetLink: 'ناردنی لینک',
     checkEmailVerification: 'هەژمارەکەت دروستکرا! تکایە ئیمەیڵەکەت بپشکنە بۆ چالاککردنی هەژمار.',
+    accountAlreadyExists: 'هەژمارێک بەم ئیمەیڵە پێشتر دروستکراوە. تکایە بچۆ ژوورەوە.',
     passwordResetSent: 'لینکی نوێکردنەوەی تێپەڕەوشە بۆ ئیمەیڵەکەت نێردرا!',
 
     // Watch Screen Misc

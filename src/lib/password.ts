@@ -95,7 +95,30 @@ export function validatePassword(password: string): string | null {
 }
 
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  const trimmed = email.trim().toLowerCase();
+  const atIndex = trimmed.lastIndexOf('@');
+  if (atIndex === -1) return trimmed;
+
+  let local = trimmed.substring(0, atIndex);
+  let domain = trimmed.substring(atIndex + 1);
+
+  // Canonicalize googlemail.com to gmail.com
+  if (domain === 'googlemail.com') {
+    domain = 'gmail.com';
+  }
+
+  // Strip plus tags (+anything) across all email providers (e.g., user+alias@gmail.com -> user@gmail.com)
+  const plusIndex = local.indexOf('+');
+  if (plusIndex !== -1) {
+    local = local.substring(0, plusIndex);
+  }
+
+  // For Gmail / Googlemail, strip all dots (.) in the username portion (e.g., u.s.e.r@gmail.com -> user@gmail.com)
+  if (domain === 'gmail.com') {
+    local = local.replace(/\./g, '');
+  }
+
+  return `${local}@${domain}`;
 }
 
 export function isValidEmail(email: string): boolean {

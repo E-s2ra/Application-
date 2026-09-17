@@ -296,12 +296,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: 'Enter a valid email address.', needsEmailVerification: false };
     }
 
+    try {
+      // 1. Pre-check if an account with this canonical email already exists in profiles
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        return {
+          error: 'An account with this email address already exists. Please sign in instead.',
+          needsEmailVerification: false,
+        };
+      }
+    } catch {
+      // Ignore network / RLS error during pre-check and fall through to Auth check
+    }
+
     claimingDeviceRef.current = true;
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,
       options: {
-        data: { full_name: fullName.trim() },
+        data: { full_name: fullName.trim(), email: normalizedEmail },
         emailRedirectTo: Platform.OS === 'web' && typeof window !== 'undefined'
           ? `${window.location.origin}/verified`
           : Linking.createURL('verified'),
@@ -310,7 +328,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       claimingDeviceRef.current = false;
+      if (
+        error.message.toLowerCase().includes('already registered') ||
+        error.message.toLowerCase().includes('already exists') ||
+        error.message.toLowerCase().includes('user_already_exists')
+      ) {
+        return {
+          error: 'An account with this email address already exists. Please sign in instead.',
+          needsEmailVerification: false,
+        };
+      }
       return { error: error.message, needsEmailVerification: false };
+    }
+
+    // 2. Check for obfuscated duplicate signup in Supabase Auth (user returned with identities: [])
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      claimingDeviceRef.current = false;
+      return {
+        error: 'An account with this email address already exists. Please sign in instead.',
+        needsEmailVerification: false,
+      };
     }
 
     if (data.session) {
