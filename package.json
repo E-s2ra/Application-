@@ -56,7 +56,8 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit --pretty false",
     "test:vip": "playwright test tests/vip/vip-state.spec.ts",
-    "setup:admin": "ts-node --project tsconfig.json scripts/setup-admin.ts"
+    "setup:admin": "ts-node --project tsconfig.json scripts/setup-admin.ts",
+    "db:wipe": "ts-node --project tsconfig.json scripts/wipe-db.ts"
   },
   "private": true
 }

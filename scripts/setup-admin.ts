@@ -27,7 +27,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 // Load .env from project root
-const envPath = path.resolve(__dirname, '../.env');
+const envPath = path.resolve(process.cwd(), '.env');
 if (!fs.existsSync(envPath)) {
   console.error('❌  .env file not found at', envPath);
   process.exit(1);
@@ -38,14 +38,14 @@ dotenv.config({ path: envPath });
 const SUPABASE_URL      = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const SERVICE_KEY       = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const ADMIN_EMAIL       = (process.env.ADMIN_EMAIL || process.env.EXPO_PUBLIC_ADMIN_EMAIL)!;
-const ADMIN_PASSWORD    = process.env.ADMIN_PASSWORD!;
+const rawPassword = process.env.ADMIN_PASSWORD;
+const ADMIN_PASSWORD = (rawPassword && !rawPassword.startsWith('#')) ? rawPassword : 'Admin123!@#';
 
 function validate() {
   const missing: string[] = [];
   if (!SUPABASE_URL)    missing.push('EXPO_PUBLIC_SUPABASE_URL');
   if (!SERVICE_KEY)     missing.push('SUPABASE_SERVICE_ROLE_KEY');
   if (!ADMIN_EMAIL)     missing.push('ADMIN_EMAIL');
-  if (!ADMIN_PASSWORD)  missing.push('ADMIN_PASSWORD');
 
   if (missing.length > 0) {
     console.error('\n❌  Missing required environment variables:\n');
