@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { AnimeItem } from '@/types';
@@ -5,6 +6,83 @@ import { logError } from '@/lib/error-logger';
 
 /** Default page size for catalog fetches — keeps initial load fast */
 const CATALOG_PAGE_SIZE = 40;
+const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
+const CATALOG_CACHE_MAX_STALE_MS = 24 * 60 * 60 * 1000;
+const CATALOG_CACHE_STORAGE_PREFIX = 'aniflix_public_catalog_cache_v1';
+
+type CatalogCacheEntry = {
+  savedAt: number;
+  items: AnimeItem[];
+};
+
+const catalogMemoryCache = new Map<string, CatalogCacheEntry>();
+
+function catalogCacheKey(page: number, limit: number) {
+  return `${page}:${limit}`;
+}
+
+function catalogStorageKey(page: number, limit: number) {
+  return `${CATALOG_CACHE_STORAGE_PREFIX}:${catalogCacheKey(page, limit)}`;
+}
+
+async function readCatalogCache(page: number, limit: number): Promise<CatalogCacheEntry | null> {
+  const key = catalogCacheKey(page, limit);
+  const memory = catalogMemoryCache.get(key);
+  if (memory) return memory;
+
+  try {
+    const json = await AsyncStorage.getItem(catalogStorageKey(page, limit));
+    if (!json) return null;
+    const parsed = JSON.parse(json) as Partial<CatalogCacheEntry>;
+    if (!Number.isFinite(parsed.savedAt) || !Array.isArray(parsed.items)) return null;
+    const entry: CatalogCacheEntry = {
+      savedAt: Number(parsed.savedAt),
+      items: parsed.items as AnimeItem[],
+    };
+    catalogMemoryCache.set(key, entry);
+    return entry;
+  } catch {
+    return null;
+  }
+}
+
+async function writeCatalogCache(page: number, limit: number, items: AnimeItem[]) {
+  const entry: CatalogCacheEntry = {
+    savedAt: Date.now(),
+    items,
+  };
+  catalogMemoryCache.set(catalogCacheKey(page, limit), entry);
+  try {
+    await AsyncStorage.setItem(catalogStorageKey(page, limit), JSON.stringify(entry));
+  } catch {
+    // Memory cache is still useful if persistent storage is unavailable.
+  }
+}
+
+function applyLocalCatalogState(
+  items: AnimeItem[],
+  page: number,
+  deletedIds: string[],
+  overrides: Record<string, any>
+): AnimeItem[] {
+  const visibleItems = items
+    .filter((item) => item?.id && !deletedIds.includes(item.id))
+    .map((item) => ({
+      ...item,
+      ...(overrides[item.id] || {}),
+    })) as AnimeItem[];
+
+  if (page !== 0) return visibleItems;
+
+  const localOnlyItems = Object.values(overrides).filter(
+    (override: any) =>
+      override?.id &&
+      !deletedIds.includes(override.id) &&
+      !items.some((item) => item?.id === override.id)
+  ) as AnimeItem[];
+
+  return [...localOnlyItems, ...visibleItems];
+}
 
 /**
  * MediaService — Encapsulates media catalog queries and local admin-edit overrides.
@@ -17,13 +95,23 @@ export const MediaService = {
    * @param page  0-indexed page number (default: 0 = first page)
    * @param limit Number of items per page (default: CATALOG_PAGE_SIZE)
    */
-  async getCatalog(page = 0, limit = CATALOG_PAGE_SIZE): Promise<AnimeItem[]> {
-    try {
-      const [deletedIds, overrides] = await Promise.all([
-        getDeletedMediaIds(),
-        getEditedMediaOverrides(),
-      ]);
+  async getCatalog(
+    page = 0,
+    limit = CATALOG_PAGE_SIZE,
+    options: { forceRefresh?: boolean } = {}
+  ): Promise<AnimeItem[]> {
+    const [deletedIds, overrides, cached] = await Promise.all([
+      getDeletedMediaIds(),
+      getEditedMediaOverrides(),
+      readCatalogCache(page, limit),
+    ]);
+    const cacheAge = cached ? Date.now() - cached.savedAt : Number.POSITIVE_INFINITY;
 
+    if (!options.forceRefresh && cached && cacheAge <= CATALOG_CACHE_TTL_MS) {
+      return applyLocalCatalogState(cached.items, page, deletedIds, overrides);
+    }
+
+    try {
       const from = page * limit;
       const to = from + limit - 1;
 
@@ -39,29 +127,13 @@ export const MediaService = {
 
       const res = (await Promise.race([fetchPromise, timeoutPromise])) as any;
       if (res?.error) throw res.error;
-      const safeData: any[] = Array.isArray(res?.data) ? res.data : [];
-
-      // Apply deletions and merge any admin-edit overrides
-      const items = safeData
-        .filter((item: any) => !deletedIds.includes(item.id))
-        .map((item: any) => ({
-          ...item,
-          ...(overrides[item.id] || {}),
-        })) as AnimeItem[];
-
-      // On the first page only, prepend locally-created items not yet in the DB result
-      const localOnlyItems: AnimeItem[] =
-        page === 0
-          ? (Object.values(overrides).filter(
-              (override: any) =>
-                override?.id &&
-                !deletedIds.includes(override.id) &&
-                !safeData.some((d: any) => d.id === override.id)
-            ) as AnimeItem[])
-          : [];
-
-      return [...localOnlyItems, ...items];
+      const safeData = (Array.isArray(res?.data) ? res.data : []) as AnimeItem[];
+      await writeCatalogCache(page, limit, safeData);
+      return applyLocalCatalogState(safeData, page, deletedIds, overrides);
     } catch (err) {
+      if (cached && cacheAge <= CATALOG_CACHE_MAX_STALE_MS) {
+        return applyLocalCatalogState(cached.items, page, deletedIds, overrides);
+      }
       logError(err, { screen: 'MediaService', action: 'getCatalog' });
       throw err;
     }

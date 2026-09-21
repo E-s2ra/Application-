@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: config.name ?? 'AniFlix',
   slug: config.slug ?? 'aniflix',
-  plugins: [...(config.plugins ?? []), 'expo-web-browser'],
+  plugins: [...(config.plugins ?? []), 'expo-web-browser', 'expo-image'],
   extra: {
     ...(config.extra ?? {}),
     // ── Supabase ──────────────────────────────────────────────────────────────

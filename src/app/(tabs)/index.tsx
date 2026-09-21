@@ -6,12 +6,12 @@ import {
   Text,
   FlatList,
   Pressable,
-  Image,
   ActivityIndicator,
   RefreshControl,
   AccessibilityInfo,
   AppState,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -95,10 +95,10 @@ export default function HomeScreen() {
     return defaultLabel;
   };
 
-  const fetchMedia = async () => {
+  const fetchMedia = useCallback(async (forceRefresh = false) => {
     try {
       setLoadError(null);
-      const items = await MediaService.getCatalog(0);
+      const items = await MediaService.getCatalog(0, undefined, { forceRefresh });
       const seenIds = new Set<string>();
       const uniqueItems: AnimeItem[] = [];
       items.forEach((item) => {
@@ -115,12 +115,12 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      fetchMedia();
-    }, [])
+      void fetchMedia(false);
+    }, [fetchMedia])
   );
 
   useFocusEffect(
@@ -184,13 +184,13 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchMedia();
-  }, []);
+    void fetchMedia(true);
+  }, [fetchMedia]);
 
   const retryLoad = useCallback(() => {
     setLoading(true);
-    fetchMedia();
-  }, []);
+    void fetchMedia(true);
+  }, [fetchMedia]);
 
   const handleWatch = (id: string) => {
     releaseWebFocus();
@@ -206,7 +206,13 @@ export default function HomeScreen() {
     return (
       <View style={[styles.heroSlideItem, { width: heroWidth, height: heroHeight }]}>
         {heroImgUri ? (
-          <Image source={{ uri: heroImgUri }} style={styles.heroBackdrop} resizeMode="cover" />
+          <Image
+            source={heroImgUri}
+            style={styles.heroBackdrop}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={120}
+          />
         ) : (
           <View style={[styles.heroBackdrop, styles.artworkPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
             <Film color={themeColors.textMuted} size={44} />
@@ -326,7 +332,13 @@ export default function HomeScreen() {
             accessibilityLabel={`Open ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
           >
             {cardImg ? (
-              <Image source={{ uri: cardImg }} style={styles.standardImage} resizeMode="cover" />
+              <Image
+                source={cardImg}
+                style={styles.standardImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={120}
+              />
             ) : (
               <View style={[styles.standardImage, styles.artworkPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
                 <Film color={themeColors.textMuted} size={28} />
