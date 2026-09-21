@@ -39,7 +39,21 @@ function allowedOrigin(origin: string | null) {
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  return origin && allowed.includes(origin) ? origin : null;
+  if (!origin) return null;
+  if (allowed.includes(origin)) return origin;
+
+  try {
+    const parsed = new URL(origin);
+    const isLoopbackHost = parsed.hostname === 'localhost'
+      || parsed.hostname === '127.0.0.1'
+      || parsed.hostname === '[::1]'
+      || parsed.hostname === '::1';
+    if (parsed.protocol === 'http:' && isLoopbackHost) return origin;
+  } catch {
+    // Invalid Origin headers are rejected below.
+  }
+
+  return null;
 }
 
 function parseEpisode(value: unknown): number | null {
