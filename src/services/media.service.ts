@@ -8,7 +8,7 @@ import { logError } from '@/lib/error-logger';
 const CATALOG_PAGE_SIZE = 40;
 const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
 const CATALOG_CACHE_MAX_STALE_MS = 24 * 60 * 60 * 1000;
-const CATALOG_CACHE_STORAGE_PREFIX = 'aniflix_public_catalog_cache_v1';
+const CATALOG_CACHE_STORAGE_PREFIX = 'aniflix_public_catalog_cache_v2';
 
 type CatalogCacheEntry = {
   savedAt: number;
