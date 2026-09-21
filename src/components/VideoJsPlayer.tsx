@@ -654,7 +654,7 @@ export function VideoJsPlayer({
             CENTER CONTROLS OVERLAY (-10s | Play/Pause | +10s)
            ═══════════════════════════════════════════════ */}
         {showControls && (
-          <View style={[styles.centerControlsOverlay, { pointerEvents: 'box-none' }]}>
+          <View style={styles.centerControlsOverlay}>
             {/* -10s Rewind Button */}
             <Pressable
               style={({ pressed }) => [
@@ -875,7 +875,7 @@ export function VideoJsPlayer({
             FULL CONTROLS OVERLAY (Top Title & Bottom Control Bar)
            ═══════════════════════════════════════════════ */}
         {showControls && (
-          <View style={[styles.controlsOverlayWrapper, { pointerEvents: 'box-none' }]}>
+          <View style={styles.controlsOverlayWrapper}>
             {/* Top Bar - Video Badges */}
             <View style={[styles.playerTopHeaderRow, { pointerEvents: 'auto' }]}>
               <View style={{ flex: 1 }} />
@@ -1173,8 +1173,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 32,
-    zIndex: 150,
-    elevation: 150,
+    pointerEvents: 'box-none',
+    zIndex: 220,
+    elevation: 220,
   },
   centerPlayBtn: {
     width: 68,
@@ -1183,8 +1184,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 160,
-    zIndex: 160,
+    elevation: 230,
+    zIndex: 230,
   },
   centerPlayBtnGlow: {
     justifyContent: 'center',
@@ -1193,8 +1194,8 @@ const styles = StyleSheet.create({
   centerSkipBtn: {
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 160,
-    elevation: 160,
+    zIndex: 230,
+    elevation: 230,
   },
   centerSkipIconCircle: {
     width: 48,
@@ -1221,6 +1222,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     justifyContent: 'space-between',
+    pointerEvents: 'box-none',
     zIndex: 180,
     elevation: 180,
     backgroundColor: 'transparent',
@@ -1426,7 +1428,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#242A42',
     padding: 10,
-    zIndex: 100,
+    zIndex: 240,
     boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.6)',
     elevation: 12,
   },

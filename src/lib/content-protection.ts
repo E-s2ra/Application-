@@ -92,12 +92,12 @@ function enableWebProtection(): Cleanup {
     if (el) el.remove();
   });
 
-  // 4. Patch all <video> elements: remove controls, set controlsList
+  // 4. Patch all <video> elements: remove native controls and remote playback.
+  // Picture-in-picture remains available through the app's own player control.
   const patchVideos = () => {
     document.querySelectorAll('video').forEach((v) => {
       v.removeAttribute('controls');
       v.setAttribute('controlsList', 'nodownload nofullscreen noremoteplayback');
-      v.setAttribute('disablePictureInPicture', 'true');
       v.setAttribute('disableRemotePlayback', 'true');
       (v as any).disableRemotePlayback = true;
     });
