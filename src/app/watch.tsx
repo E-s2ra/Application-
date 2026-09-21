@@ -62,6 +62,7 @@ import { useGamification } from '@/hooks/useGamification';
 import { useAdMob } from '@/hooks/useAdMob';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 import { AdMobBanner } from '@/components/AdMobBanner';
+import { releaseWebFocus } from '@/lib/web-focus';
 
 import { VideoJsPlayer } from '@/components/VideoJsPlayer';
 
@@ -73,10 +74,10 @@ export default function WatchScreen() {
   const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getStatsForMedia } = useReviews();
-  const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet, pagePad } = useResponsive();
+  const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet, pagePad } = useResponsive({ desktopRailWidth: 0 });
   const { width: windowWidth } = useWindowDimensions();
   const defaultVideoHeight = Math.round((windowWidth * 9) / 16);
-  const { language, t } = useLanguage();
+  const { language, isRTL, t } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { updateProgress } = useWatchHistory();
   const { isMediaUnlocked, getUnlockedMediaRemainingDays, unlockMedia, coins, isVIP } = useGamification();
@@ -96,7 +97,6 @@ export default function WatchScreen() {
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
-  const [selectedQuality, setSelectedQuality] = useState<string>('Auto');
   const [selectedAudio, setSelectedAudio] = useState<string>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
@@ -131,6 +131,8 @@ export default function WatchScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [videoSource, setVideoSource] = useState<any>(null);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [isAuthorizingPlayback, setIsAuthorizingPlayback] = useState(false);
+  const [playbackRetryKey, setPlaybackRetryKey] = useState(0);
 
   const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
@@ -298,7 +300,7 @@ export default function WatchScreen() {
     handleSeekToRef.current = handleSeekTo;
   }, [handleSeekTo]);
 
-  const updateScrubberPageX = () => {
+  const updateScrubberPageX = useCallback(() => {
     if (Platform.OS === 'web' && scrubberTrackRef.current) {
       const rect = (scrubberTrackRef.current as any)?.getBoundingClientRect?.();
       if (rect) {
@@ -313,9 +315,9 @@ export default function WatchScreen() {
         progressTrackWidthRef.current = width;
       }
     });
-  };
+  }, []);
 
-  const updateVolumePageX = () => {
+  const updateVolumePageX = useCallback(() => {
     if (Platform.OS === 'web' && volumeTrackRef.current) {
       const rect = (volumeTrackRef.current as any)?.getBoundingClientRect?.();
       if (rect) {
@@ -330,9 +332,9 @@ export default function WatchScreen() {
         volumeTrackWidthRef.current = width;
       }
     });
-  };
+  }, []);
 
-  const getScrubberTargetTime = (pageX: number) => {
+  const getScrubberTargetTime = useCallback((pageX: number) => {
     let trackX = scrubberPageXRef.current;
     let w = progressTrackWidthRef.current > 0 ? progressTrackWidthRef.current : 240;
     if (Platform.OS === 'web' && scrubberTrackRef.current) {
@@ -347,16 +349,20 @@ export default function WatchScreen() {
     const activeP = playerRef.current;
     const dur = durationRef.current || activeP?.duration || 0;
     return dur > 0 ? ratio * dur : 0;
-  };
+  }, []);
 
-  const getVolumeRatio = (pageX: number) => {
+  const getVolumeRatio = useCallback((pageX: number) => {
     const trackX = volumePageXRef.current;
     const w = volumeTrackWidthRef.current > 0 ? volumeTrackWidthRef.current : 70;
     const touchX = pageX - trackX;
     return Math.max(0, Math.min(1, touchX / w));
-  };
+  }, []);
 
-  const scrubberPanResponder = useRef(
+  // PanResponder callbacks run on gestures, not during render. The React 19
+  // refs rule cannot see through PanResponder.create and reports these refs as
+  // render-time reads, so keep the standard stable responder pattern scoped.
+  /* eslint-disable react-hooks/refs */
+  const [scrubberPanResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onStartShouldSetPanResponderCapture: () => true,
@@ -381,9 +387,9 @@ export default function WatchScreen() {
         setScrubberDragTime(null);
       },
     })
-  ).current;
+  );
 
-  const volumePanResponder = useRef(
+  const [volumePanResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onStartShouldSetPanResponderCapture: () => true,
@@ -405,7 +411,8 @@ export default function WatchScreen() {
         setIsDraggingVolume(false);
       },
     })
-  ).current;
+  );
+  /* eslint-enable react-hooks/refs */
 
   const displayTime = isDraggingScrubber && scrubberDragTime !== null ? scrubberDragTime : currentTime;
   const scrubberPercent = duration > 0 ? Math.max(0, Math.min(100, (displayTime / duration) * 100)) : 0;
@@ -476,7 +483,7 @@ export default function WatchScreen() {
         if (isUuid) {
           const { data: supabaseData } = await supabase
             .from('anime')
-            .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
+            .select('id, title, description, image_url, episodes, genre, category, is_featured')
             .eq('id', id)
             .single();
           data = supabaseData;
@@ -490,24 +497,17 @@ export default function WatchScreen() {
           const itemWithOverrides = { ...defaultMatch, ...(overrides[String(id)] || {}) };
           setAnime(itemWithOverrides);
         } else {
-          setAnime({
-            id: String(id),
-            title: `Title #${String(id).slice(0, 6)}`,
-            description: 'Experience this thrilling title in full high definition with original audio and multiple subtitle tracks.',
-            episodes: 24,
-            genre: 'Action, Drama',
-            category: 'Movies',
-            image_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
-            is_featured: false,
-            ...(overrides[String(id)] || {}),
-          });
+          setAnime(null);
+          setRecommendations([]);
+          setPlaybackError('This title is not available in the catalog.');
+          return;
         }
 
         let recs = null;
         if (isUuid) {
           const { data: supabaseRecs } = await supabase
             .from('anime')
-            .select('id, title, description, image_url, episodes, genre, category, is_featured, video_asset_key, video_url')
+            .select('id, title, description, image_url, episodes, genre, category, is_featured')
             .neq('id', id)
             .limit(6);
           recs = supabaseRecs;
@@ -534,24 +534,61 @@ export default function WatchScreen() {
   }, [id]);
 
   const isMovie = anime?.category === 'Movies' || anime?.category === 'Anime Movies';
-  const isKDrama = anime?.category === 'K-Drama' || anime?.category === 'Drama';
-  const animeCategory = isMovie ? 'Movies' : isKDrama ? 'K-Drama' : 'Anime';
-  const unlockCost = isMovie ? 125 : isKDrama ? 100 : 80;
   const unlockKey = anime && !isMovie ? `${anime.id}_ep_${selectedEpisode}` : anime?.id;
   const isUnlocked = isVIP || Boolean(unlockKey && isMediaUnlocked(unlockKey));
   const remainingUnlockDays = isUnlocked && !isVIP && unlockKey ? getUnlockedMediaRemainingDays(unlockKey) : null;
+  const [unlockQuote, setUnlockQuote] = useState<{ category: string; costCoins: number } | null>(null);
+  const [unlockQuoteError, setUnlockQuoteError] = useState<string | null>(null);
+  const [isLoadingUnlockQuote, setIsLoadingUnlockQuote] = useState(false);
 
-  const currentEpLink = anime?.episode_links?.find((e: any) => e.episode === selectedEpisode);
-  const currentEpSources: VideoSource[] = currentEpLink?.sources || [];
+  useEffect(() => {
+    if (!anime || isVIP) {
+      setUnlockQuote(null);
+      setUnlockQuoteError(null);
+      setIsLoadingUnlockQuote(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingUnlockQuote(true);
+    setUnlockQuoteError(null);
+    setUnlockQuote(null);
+
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('quote_media_unlock', {
+          p_media_id: anime.id,
+          p_episode: isMovie ? null : selectedEpisode,
+        });
+        if (cancelled) return;
+        if (error || !data || !Number.isFinite(Number((data as any).cost_coins))) {
+          setUnlockQuoteError(error?.message || 'Unlock price is unavailable.');
+          setIsLoadingUnlockQuote(false);
+          return;
+        }
+        setUnlockQuote({
+          category: String((data as any).category),
+          costCoins: Number((data as any).cost_coins),
+        });
+        setIsLoadingUnlockQuote(false);
+      } catch (error) {
+        if (cancelled) return;
+        setUnlockQuoteError(error instanceof Error ? error.message : 'Unlock price is unavailable.');
+        setIsLoadingUnlockQuote(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [anime, isMovie, isVIP, selectedEpisode]);
+
+  // Playback sources are intentionally server-issued only. Raw episode/source
+  // URLs are never trusted by the watch screen.
+  const currentEpSources: VideoSource[] = [];
   const [activeSourceId, setActiveSourceId] = useState<string | undefined>(undefined);
 
-  const handleSelectSource = (srcItem: VideoSource) => {
-    if (!isUnlocked) return;
-    setActiveSourceId(srcItem.id);
-    setVideoSource(srcItem.url);
-    setPlaybackError(null);
-    showSuccess(`Switched to ${srcItem.label || 'Server'} 📡`);
-  };
+  const handleSelectSource = (_srcItem: VideoSource) => {};
 
   useEffect(() => {
     if (!anime) return;
@@ -560,60 +597,36 @@ export default function WatchScreen() {
     if (!isUnlocked) {
       setVideoSource(null);
       setPlaybackError(null);
+      setIsAuthorizingPlayback(false);
       return;
     }
 
     let cancelled = false;
+    setIsAuthorizingPlayback(true);
+    setPlaybackError(null);
 
-    const epLink = anime.episode_links?.find((e: any) => e.episode === selectedEpisode);
-    const epSources: VideoSource[] = epLink?.sources || [];
-
-    if (epSources.length > 0) {
-      const defaultSrc = epSources.find((s) => s.is_default) || epSources[0];
-      setActiveSourceId(defaultSrc.id);
-      setVideoSource(defaultSrc.url);
-      setPlaybackError(null);
-      return;
-    }
-
-    const specificEpisodeUrl = epLink?.url?.trim();
-    const directUrl =
-      (specificEpisodeUrl && specificEpisodeUrl.startsWith('http'))
-        ? specificEpisodeUrl
-        : (anime.video_url && anime.video_url.trim().startsWith('http'))
-        ? anime.video_url.trim()
-        : (anime.video_asset_key && anime.video_asset_key.trim().startsWith('http'))
-        ? anime.video_asset_key.trim()
-        : null;
-
-    if (directUrl) {
-      setActiveSourceId(undefined);
-      setVideoSource(directUrl);
-      setPlaybackError(null);
-      return;
-    }
-
-    void getPlaybackUrl(anime.id)
+    void getPlaybackUrl(anime.id, isMovie ? undefined : selectedEpisode)
       .then(({ url }) => {
         if (!cancelled && isUnlocked) {
           setActiveSourceId(undefined);
           setVideoSource(url);
           setPlaybackError(null);
+          setIsAuthorizingPlayback(false);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!cancelled && isUnlocked) {
-          const fallbackStream = directUrl || 'https://vjs.zencdn.net/v/oceans.mp4';
           setActiveSourceId(undefined);
-          setVideoSource(fallbackStream);
-          setPlaybackError(null);
+          setVideoSource(null);
+          setPlaybackError(error instanceof Error ? error.message : 'Unable to authorize playback.');
+          setIsAuthorizingPlayback(false);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [anime, selectedEpisode, isUnlocked]);
+  }, [anime, isMovie, selectedEpisode, isUnlocked, playbackRetryKey]);
 
   const [isUnlocking, setIsUnlocking] = useState(false);
 
@@ -676,10 +689,9 @@ export default function WatchScreen() {
   }, [isUnlocked, videoSource, selectedEpisode, player]);
 
   const handleUnlockMedia = async () => {
-    if (!anime) return;
+    if (!anime || !unlockQuote) return;
     setIsUnlocking(true);
-    // Pass category so server reads the authoritative cost from content_cost_registry
-    const success = await unlockMedia(anime.id, isMovie ? undefined : selectedEpisode, unlockCost, animeCategory);
+    const success = await unlockMedia(anime.id, isMovie ? undefined : selectedEpisode);
     setIsUnlocking(false);
     if (!success) {
       showError('Not enough coins or server error. Try watching an ad to earn more!');
@@ -839,9 +851,9 @@ export default function WatchScreen() {
   }, []);
 
   const favorited = anime ? isFavorite(anime.id) : false;
-  const stats = anime ? getStatsForMedia(anime.id) : { average: 4.9, count: 64 };
+  const stats = anime ? getStatsForMedia(anime.id) : { average: 0, count: 0, breakdown: {} };
 
-  const renderNativeVideoPlayer = () => (
+  const nativeVideoPlayer = (
     <View style={styles.videoOverlayContainer}>
       <VideoView
         ref={videoViewRef}
@@ -869,7 +881,10 @@ export default function WatchScreen() {
             onPress={() => {
               setPlaybackError(null);
               setVideoSource(null);
+              setPlaybackRetryKey((value) => value + 1);
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Retry playback"
           >
             <RefreshCw size={14} color="#FFFFFF" />
             <Text style={styles.retryBtnText}>Retry Stream</Text>
@@ -1066,7 +1081,7 @@ export default function WatchScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background, direction: isRTL ? 'rtl' : 'ltr' }]}>
       
       {/* 🔙 Minimalist Navigation Header Bar (Hidden during Fullscreen) */}
       {!isLayoutFullscreen && (
@@ -1152,64 +1167,74 @@ export default function WatchScreen() {
                         : `Episode ${selectedEpisode} — ${anime.title}`}
                     </Text>
 
-                    {/* Category pill */}
-                    <View style={styles.paywallCategoryPill}>
-                      <Text style={styles.paywallCategoryText}>
-                        {isMovie ? 'Movie' : isKDrama ? 'K-Drama / Drama' : 'Anime'}
-                      </Text>
-                    </View>
+                    {(unlockQuote?.category || anime.category) && (
+                      <View style={styles.paywallCategoryPill}>
+                        <Text style={styles.paywallCategoryText}>
+                          {unlockQuote?.category || anime.category}
+                        </Text>
+                      </View>
+                    )}
 
-                    {/* Cost badge */}
                     <View style={styles.paywallCostRow}>
                       <Text style={styles.paywallCostLabel}>Unlock Cost</Text>
                       <View style={styles.paywallCostBadge}>
-                        <Text style={styles.paywallCostAmount}>{unlockCost} Coins</Text>
+                        <Text style={styles.paywallCostAmount}>
+                          {isLoadingUnlockQuote ? 'Checking…' : unlockQuote ? `${unlockQuote.costCoins} Coins` : 'Unavailable'}
+                        </Text>
                       </View>
                     </View>
 
-                    {/* Coin balance */}
                     <Text style={styles.paywallBalance}>
-                      Your balance: <Text style={{ color: coins >= unlockCost ? '#00E676' : '#FF5252' }}>{coins} Coins</Text>
+                      Your balance: <Text style={{ color: unlockQuote && coins >= unlockQuote.costCoins ? '#00E676' : themeColors.textSecondary }}>{coins} Coins</Text>
                     </Text>
 
-                    {/* Primary action */}
-                    {coins >= unlockCost ? (
+                    {unlockQuoteError ? (
+                      <Text style={[styles.videoErrorText, { color: themeColors.error, textAlign: 'center' }]}>Unlock pricing is unavailable. Please try again.</Text>
+                    ) : unlockQuote && coins >= unlockQuote.costCoins ? (
                       <Pressable
                         style={styles.unlockBtn}
                         onPress={handleUnlockMedia}
                         disabled={isUnlocking}
                         accessibilityRole="button"
-                        accessibilityLabel={`Unlock for ${unlockCost} coins`}
+                        accessibilityLabel={`Unlock for ${unlockQuote.costCoins} coins`}
+                        accessibilityState={{ disabled: isUnlocking }}
                       >
                         <Text style={styles.unlockBtnText}>
-                          {isUnlocking ? 'Unlocking...' : `Unlock for ${unlockCost} Coins`}
+                          {isUnlocking ? 'Unlocking...' : `Unlock for ${unlockQuote.costCoins} Coins`}
                         </Text>
                       </Pressable>
-                    ) : (
+                    ) : unlockQuote ? (
                       <>
                         <Pressable
                           style={[styles.unlockBtn, styles.unlockBtnDisabled]}
                           disabled={true}
+                          accessibilityRole="button"
+                          accessibilityState={{ disabled: true }}
                         >
                           <Text style={styles.unlockBtnTextDisabled}>
-                            Need {unlockCost - coins} more coins
+                            Need {Math.max(0, unlockQuote.costCoins - coins)} more coins
                           </Text>
                         </Pressable>
 
-                        {/* Earn coins via ad */}
-                        <Pressable
-                          style={styles.earnMoreBtn}
-                          onPress={() => showRewardedAd({
-                            rewardCoins: 12,
-                            rewardType: 'coins',
-                          })}
-                          accessibilityRole="button"
-                          accessibilityLabel="Watch an ad to earn 12 coins"
-                        >
-                          <Text style={styles.earnMoreBtnText}>Watch Ad → Earn +12 Coins</Text>
-                        </Pressable>
+                        {Platform.OS !== 'web' ? (
+                          <Pressable
+                            style={styles.earnMoreBtn}
+                            onPress={() => showRewardedAd({
+                              rewardCoins: 12,
+                              rewardType: 'coins',
+                            })}
+                            accessibilityRole="button"
+                            accessibilityLabel="Watch a verified ad to earn 12 coins"
+                          >
+                            <Text style={styles.earnMoreBtnText}>Watch Verified Ad · +12 Coins</Text>
+                          </Pressable>
+                        ) : (
+                          <Text style={[styles.videoErrorText, { color: themeColors.textSecondary, textAlign: 'center' }]}>
+                            Rewarded coins are available in the Android and iOS apps.
+                          </Text>
+                        )}
                       </>
-                    )}
+                    ) : null}
 
                     {/* VIP upsell strip */}
                     <Pressable
@@ -1217,24 +1242,50 @@ export default function WatchScreen() {
                       onPress={() => setShowVipModal(true)}
                     >
                       <Text style={styles.vipUpsellText}>
-                        VIP members watch everything free — Ad-Free + 4K Ultra HD
+                        VIP members watch everything free — Ad-Free
                       </Text>
                     </Pressable>
                   </View>
                 </>
               )}
             </View>
+          ) : isAuthorizingPlayback ? (
+            <View style={styles.videoErrorBox} accessible accessibilityLabel="Authorizing secure playback">
+              <ActivityIndicator size="large" color={themeColors.primary} />
+              <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>Authorizing secure playback…</Text>
+            </View>
+          ) : playbackError ? (
+            <View style={styles.videoErrorBox}>
+              <Tv color={themeColors.error} size={32} />
+              <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
+              <Pressable
+                style={styles.retryBtn}
+                onPress={() => {
+                  setPlaybackError(null);
+                  setVideoSource(null);
+                  setPlaybackRetryKey((value) => value + 1);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Retry playback"
+              >
+                <RefreshCw size={14} color="#FFFFFF" />
+                <Text style={styles.retryBtnText}>Retry Stream</Text>
+              </Pressable>
+            </View>
+          ) : !videoSource ? (
+            <View style={styles.videoErrorBox}>
+              <ActivityIndicator size="large" color={themeColors.primary} />
+              <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>Preparing stream…</Text>
+            </View>
           ) : Platform.OS === 'web' ? (
             <VideoJsPlayer
               src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
               poster={anime?.image_url ?? undefined}
               title={anime?.title ?? undefined}
-              isVIP={isVIP}
-              onOpenVipModal={() => setShowVipModal(true)}
               onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
             />
           ) : (
-            renderNativeVideoPlayer()
+            nativeVideoPlayer
           )}
         </View>
           </View>
@@ -1247,18 +1298,22 @@ export default function WatchScreen() {
               ]}>
                 <View style={styles.mediaHeaderFlex}>
                   {/* Poster Artwork Image */}
-                  <Image
-                    source={{ uri: anime.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
-                    style={styles.posterThumbnail}
-                    resizeMode="cover"
-                  />
+                  {anime.image_url ? (
+                    <Image source={{ uri: anime.image_url }} style={styles.posterThumbnail} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.posterThumbnail, styles.artworkPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
+                      <Tv color={themeColors.textMuted} size={24} />
+                    </View>
+                  )}
 
                   {/* Title & Metadata */}
                   <View style={styles.mediaHeaderInfo}>
                     <View style={styles.badgeRow}>
-                      <View style={[styles.catBadge, { backgroundColor: themeColors.primary }]}>
-                        <Text style={styles.catBadgeText}>{(anime.category || 'ANIME').toUpperCase()}</Text>
-                      </View>
+                      {anime.category ? (
+                        <View style={[styles.catBadge, { backgroundColor: themeColors.primary }]}>
+                          <Text style={styles.catBadgeText}>{anime.category.toUpperCase()}</Text>
+                        </View>
+                      ) : null}
                       {anime.qualities && anime.qualities.length > 0 && (
                         <View style={[styles.hdBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, borderWidth: 1 }]}>
                           <Text style={[styles.hdBadgeText, { color: themeColors.text }]}>{anime.qualities[0].toUpperCase()}</Text>
@@ -1270,16 +1325,20 @@ export default function WatchScreen() {
                       {language === 'ku' && anime.title_ku ? anime.title_ku : anime.title}
                     </Text>
 
-                    <Text style={[styles.genreSubText, { color: themeColors.accentCyan || themeColors.primary }]}>
-                      {anime.genre ?? 'General'}
-                    </Text>
+                    {anime.genre ? (
+                      <Text style={[styles.genreSubText, { color: themeColors.accentCyan || themeColors.primary }]}>{anime.genre}</Text>
+                    ) : null}
 
                     <View style={styles.statsRow}>
-                      <View style={styles.ratingBox}>
-                        <Star color="#FFB800" size={13} fill="#FFB800" />
-                        <Text style={styles.ratingVal}>{stats.average.toFixed(1)}</Text>
-                      </View>
-                      <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
+                      {stats.count > 0 && (
+                        <>
+                          <View style={styles.ratingBox}>
+                            <Star color="#FFB800" size={13} fill="#FFB800" />
+                            <Text style={styles.ratingVal}>{stats.average.toFixed(1)}</Text>
+                          </View>
+                          <Text style={[styles.dotSeparator, { color: themeColors.textMuted }]}>·</Text>
+                        </>
+                      )}
                       <Text style={[styles.epCountText, { color: themeColors.textSecondary }]}>{anime.episodes || 1} EPS</Text>
                       {anime.audio_tracks && anime.audio_tracks.length > 0 && (
                         <>
@@ -1297,7 +1356,7 @@ export default function WatchScreen() {
                     style={[
                       styles.myListBtn,
                       { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-                      favorited && { borderColor: themeColors.primary, backgroundColor: 'rgba(3, 86, 197, 0.15)' }
+                      favorited && { borderColor: themeColors.primary, backgroundColor: 'rgba(77, 124, 254, 0.15)' }
                     ]}
                     onPress={() => toggleFavorite(anime)}
                   >
@@ -1318,7 +1377,7 @@ export default function WatchScreen() {
                   onPress={() => setIsExpandedSynopsis(!isExpandedSynopsis)}
                 >
                   <Text style={[styles.synopsisText, { color: themeColors.textSecondary }]} numberOfLines={isExpandedSynopsis ? undefined : 3}>
-                    {language === 'ku' && anime.description_ku ? anime.description_ku : (anime.description || 'Experience this epic title with master audio and original subtitles.')}
+                    {language === 'ku' && anime.description_ku ? anime.description_ku : (anime.description || 'No description available.')}
                   </Text>
                   <Text style={[styles.readMoreBtn, { color: themeColors.primary }]}>
                     {isExpandedSynopsis ? t('showLess', 'Show less') : t('readMore', 'Read more...')}
@@ -1357,24 +1416,29 @@ export default function WatchScreen() {
                     <Pressable
                       key={item.id}
                       style={[styles.recPosterCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, width: railCardWidth }]}
-                      onPress={() => router.push({ pathname: '/watch', params: { id: item.id } })}
+                      onPress={() => {
+                        releaseWebFocus();
+                        router.replace({ pathname: '/watch', params: { id: item.id } });
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${item.title}`}
                     >
-                      <Image
-                        source={{ uri: item.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' }}
-                        style={[styles.recPosterImg, { width: railCardWidth, height: railCardHeight }]}
-                        resizeMode="cover"
-                      />
-                      <View style={styles.recBadgeOverlay}>
-                        <Star color="#FFB800" size={10} fill="#FFB800" />
-                        <Text style={styles.recBadgeText}>4.9</Text>
-                      </View>
+                      {item.image_url ? (
+                        <Image source={{ uri: item.image_url }} style={[styles.recPosterImg, { width: railCardWidth, height: railCardHeight }]} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.recPosterImg, styles.artworkPlaceholder, { width: railCardWidth, height: railCardHeight, backgroundColor: themeColors.backgroundElement }]}>
+                          <Tv color={themeColors.textMuted} size={26} />
+                        </View>
+                      )}
                       <View style={styles.recMetaContainer}>
                         <Text style={[styles.recTitleText, { color: themeColors.text }]} numberOfLines={1}>
                           {item.title}
                         </Text>
-                        <Text style={[styles.recGenreText, { color: themeColors.textSecondary }]} numberOfLines={1}>
-                          {item.genre ?? 'Anime'}
-                        </Text>
+                        {(item.genre || item.category) && (
+                          <Text style={[styles.recGenreText, { color: themeColors.textSecondary }]} numberOfLines={1}>
+                            {item.genre ?? item.category}
+                          </Text>
+                        )}
                       </View>
                     </Pressable>
                   ))}
@@ -1400,16 +1464,26 @@ export default function WatchScreen() {
         <View style={styles.playerWrapperFullscreen}>
           <View style={styles.videoBoxFullscreen}>
             {Platform.OS === 'web' ? (
-              <VideoJsPlayer
-                src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
-                poster={anime?.image_url ?? undefined}
-                title={anime?.title ?? undefined}
-                isVIP={isVIP}
-                onOpenVipModal={() => setShowVipModal(true)}
-                onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
-              />
+              isAuthorizingPlayback || !videoSource ? (
+                <View style={styles.videoErrorBox}>
+                  <ActivityIndicator size="large" color={themeColors.primary} />
+                  <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>Preparing stream…</Text>
+                </View>
+              ) : playbackError ? (
+                <View style={styles.videoErrorBox}>
+                  <Tv color={themeColors.error} size={32} />
+                  <Text style={[styles.videoErrorText, { color: themeColors.textSecondary }]}>{playbackError}</Text>
+                </View>
+              ) : (
+                <VideoJsPlayer
+                  src={typeof videoSource === 'string' ? videoSource : videoSource?.uri}
+                  poster={anime?.image_url ?? undefined}
+                  title={anime?.title ?? undefined}
+                  onFullscreenChange={(fs) => setIsLayoutFullscreen(fs)}
+                />
+              )
             ) : (
-              renderNativeVideoPlayer()
+              nativeVideoPlayer
             )}
           </View>
         </View>
@@ -1424,20 +1498,10 @@ export default function WatchScreen() {
           setPlaybackSpeed(speed);
           try { (playerRef.current || player).playbackRate = speed; } catch (_e) {}
         }}
-        availableQualities={anime?.qualities?.length ? anime.qualities : ['4K Ultra HD', '1080p Full HD', '720p HD', '480p SD']}
-        activeQuality={selectedQuality}
-        onSelectQuality={(q) => {
-          setSelectedQuality(q);
-          showSuccess(`Stream quality set to ${q}`);
-        }}
+        availableQualities={anime?.qualities ?? []}
         availableAudioTracks={anime?.audio_tracks}
         activeAudio={selectedAudio}
         onSelectAudio={(a) => setSelectedAudio(a)}
-        isVIP={isVIP}
-        onOpenVipModal={() => {
-          setShowSettingsModal(false);
-          setShowVipModal(true);
-        }}
       />
 
       <VipSubscriptionModal
@@ -1600,15 +1664,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   playerPillBadgePrimary: {
-    backgroundColor: 'rgba(3, 86, 197, 0.4)',
+    backgroundColor: 'rgba(77, 124, 254, 0.32)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#0356C5',
+    borderColor: '#4D7CFE',
   },
   playerPillBadgePrimaryText: {
-    color: '#00D2FF',
+    color: '#4D7CFE',
     fontSize: 10,
     fontWeight: '900',
   },
@@ -1635,7 +1699,7 @@ const styles = StyleSheet.create({
   },
   scrubberFill: {
     height: 4,
-    backgroundColor: '#0356C5',
+    backgroundColor: '#4D7CFE',
     borderRadius: 2,
   },
   scrubberDot: {
@@ -1643,20 +1707,10 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#00D2FF',
+    backgroundColor: '#4D7CFE',
     marginTop: -5,
     marginLeft: -7,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 0px 4px rgba(0, 210, 255, 0.8)',
-      },
-      default: {
-        shadowColor: '#00D2FF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 4,
-      },
-    }),
+    boxShadow: '0px 0px 4px rgba(77, 124, 254, 0.65)',
     elevation: 4,
   },
   scrubberDotActive: {
@@ -1687,9 +1741,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(3, 86, 197, 0.35)',
+    backgroundColor: 'rgba(77, 124, 254, 0.28)',
     borderWidth: 1,
-    borderColor: '#0356C5',
+    borderColor: '#4D7CFE',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1753,10 +1807,7 @@ const styles = StyleSheet.create({
     padding: 6,
     zIndex: 300,
     elevation: 300,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
+    boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.8)',
   },
   speedPopoverHeader: {
     flexDirection: 'row',
@@ -1785,7 +1836,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   speedOptionActive: {
-    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+    backgroundColor: 'rgba(77, 124, 254, 0.15)',
   },
   speedOptionText: {
     color: '#B0B5C6',
@@ -1793,8 +1844,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   speedOptionTextActive: {
-    color: '#00D2FF',
-    fontWeight: '800',
+    color: '#4D7CFE',
+    fontWeight: '700',
   },
   youtubeBottomBar: {
     flexDirection: 'column',
@@ -1848,7 +1899,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0356C5',
+    backgroundColor: '#4D7CFE',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1926,13 +1977,13 @@ const styles = StyleSheet.create({
   },
   earnMoreBtn: {
     marginTop: 10,
-    backgroundColor: 'rgba(3, 86, 197, 0.22)',
-    borderWidth: 1, borderColor: '#0356C5',
+    backgroundColor: 'rgba(77, 124, 254, 0.16)',
+    borderWidth: 1, borderColor: '#4D7CFE',
     paddingVertical: 12, paddingHorizontal: 20,
     borderRadius: 12, width: '100%', alignItems: 'center',
   },
   earnMoreBtnText: {
-    color: '#00D2FF', fontSize: 14, fontWeight: '800',
+    color: '#4D7CFE', fontSize: 14, fontWeight: '700',
   },
   paywallVeil: {
     position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
@@ -2007,7 +2058,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   pillBtnActive: {
-    backgroundColor: 'rgba(3, 86, 197, 0.15)',
+    backgroundColor: 'rgba(77, 124, 254, 0.15)',
   },
   pillBtnText: {
     fontSize: 11,
@@ -2048,6 +2099,10 @@ const styles = StyleSheet.create({
     width: 90,
     height: 125,
     borderRadius: 10,
+  },
+  artworkPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mediaHeaderInfo: {
     flex: 1,
@@ -2294,7 +2349,7 @@ const styles = StyleSheet.create({
   },
   volumeBarFill: {
     height: 4,
-    backgroundColor: '#00D2FF',
+    backgroundColor: '#4D7CFE',
     borderRadius: 2,
   },
   volumeBarThumb: {
@@ -2312,7 +2367,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: -6,
     marginLeft: -8,
-    backgroundColor: '#00D2FF',
+    backgroundColor: '#4D7CFE',
   },
 
 });

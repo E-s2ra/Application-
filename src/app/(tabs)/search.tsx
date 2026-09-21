@@ -12,17 +12,19 @@ import {
 } from 'react-native';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
-import { Search as SearchIcon, X, Heart, Play, Sparkles, Star, Film, Clapperboard, Tv, Flame, Compass, SlidersHorizontal } from 'lucide-react-native';
+import { Search as SearchIcon, X, Heart, Film, Clapperboard, Tv, Flame, Compass, Sparkles } from 'lucide-react-native';
 import { getDeletedMediaIds, getEditedMediaOverrides } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
 import { DEFAULT_CATALOG } from './index';
 import { useResponsive } from '@/hooks/useResponsive';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { MediaCardSkeleton } from '@/components/MediaCardSkeleton';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
-import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { AdMobBanner } from '@/components/AdMobBanner';
+import { Radius, Spacing } from '@/constants/theme';
+import { releaseWebFocus } from '@/lib/web-focus';
 
 const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: any }[] = [
   { id: 'All', label: 'All Categories', icon: Compass },
@@ -35,23 +37,18 @@ const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: any }[] = [
 
 const GENRES = ['All', 'Action', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Comedy', 'Horror'];
 
-const PLACEHOLDER_IMAGES = [
-  'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
-  'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&q=80',
-  'https://images.unsplash.com/photo-1563089145-599997674d42?w=800&q=80',
-];
-
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const themeColors = useTheme();
-  const { language } = useLanguage();
+  const { language, isRTL } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth } = useResponsive();
 
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | MediaCategory>((params.category as MediaCategory) || 'All');
   const [selectedGenre, setSelectedGenre] = useState((params.genre as string) || 'All');
+  const hasActiveFilters = selectedCategory !== 'All' || selectedGenre !== 'All';
 
   useEffect(() => {
     if (params.category) setSelectedCategory(params.category as MediaCategory);
@@ -60,16 +57,20 @@ export default function SearchScreen() {
 
   const [mediaList, setMediaList] = useState<AnimeItem[]>(DEFAULT_CATALOG);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     async function loadData() {
+      setLoading(true);
+      setLoadError(null);
       try {
         const [deletedIds, overrides] = await Promise.all([
           getDeletedMediaIds(),
           getEditedMediaOverrides(),
         ]);
         const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 1500)
+          setTimeout(() => resolve({ data: null, error: new Error('Catalog request timed out') }), 8000)
         );
 
         const fetchPromise = supabase
@@ -79,15 +80,14 @@ export default function SearchScreen() {
 
         const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
         const { data, error } = result || {};
+        if (error) throw error;
 
-        let combined: AnimeItem[] = [];
-        const safeData = (!error && data) ? data : [];
+        const safeData = Array.isArray(data) ? data : [];
         
         const customItems = safeData
           .filter((item: any) => !deletedIds.includes(item.id))
           .map((item: any) => ({
             ...item,
-            category: item.category || 'Anime Series',
             ...(overrides[item.id] || {}),
           })) as AnimeItem[];
           
@@ -112,13 +112,14 @@ export default function SearchScreen() {
         setMediaList(uniqueCombined);
       } catch (err) {
         console.warn('Error loading search data:', err);
-        setMediaList(DEFAULT_CATALOG);
+        setMediaList([]);
+        setLoadError(err instanceof Error ? err.message : 'Could not load the catalog.');
       } finally {
         setLoading(false);
       }
     }
     loadData();
-  }, []);
+  }, [reloadKey]);
 
   const filteredList = mediaList.filter((item) => {
     const matchesQuery =
@@ -137,49 +138,59 @@ export default function SearchScreen() {
     return matchesQuery && matchesCategory && matchesGenre;
   });
 
-  const getImage = (anime: AnimeItem) => {
-    if (anime.image_url) return anime.image_url;
-    const strId = String(anime?.id || '');
-    const numericPart = strId.replace(/\D/g, '').slice(-2) || '0';
-    const idx = Math.abs(parseInt(numericPart, 10)) % PLACEHOLDER_IMAGES.length;
-    return PLACEHOLDER_IMAGES[idx || 0];
+  const handleWatch = (id: string) => {
+    releaseWebFocus();
+    router.push({ pathname: '/watch', params: { id } });
   };
 
-  const handleWatch = (id: string) => {
-    router.push({ pathname: '/watch', params: { id } });
+  const resetFilters = () => {
+    setSelectedCategory('All');
+    setSelectedGenre('All');
   };
 
   const renderStandardCard = ({ item }: { item: AnimeItem }) => {
     const favorited = isFavorite(item.id);
 
     return (
-      <Pressable
+      <View
         style={[styles.standardCard, { width: cardWidth }]}
-        onPress={() => handleWatch(item.id)}
       >
-        <View style={[styles.posterCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, height: cardWidth * 1.45 }]}>
-          <Image source={{ uri: getImage(item) }} style={styles.posterImage} resizeMode="cover" />
-          <View style={styles.cardImageOverlay} />
+        <View style={{ position: 'relative', height: cardWidth * 1.45 }}>
+          <Pressable
+            style={[styles.posterCard, { backgroundColor: themeColors.backgroundCard, height: cardWidth * 1.45 }]}
+            onPress={() => handleWatch(item.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
+          >
+            {item.image_url ? (
+              <Image source={{ uri: item.image_url }} style={styles.posterImage} resizeMode="cover" />
+            ) : (
+              <View style={[styles.posterImage, styles.posterPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
+                <Film color={themeColors.textMuted} size={28} />
+                <Text style={[styles.posterPlaceholderText, { color: themeColors.textMuted }]}>No artwork</Text>
+              </View>
+            )}
+            <View style={styles.cardImageOverlay} />
 
-          {item.category && (
-            <View style={[styles.cardCategoryBadge, { backgroundColor: themeColors.primary }]}>
-              <PrimaryGradient borderRadius={4} />
-              <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
-            </View>
-          )}
+            {item.category && (
+              <View style={styles.cardCategoryBadge}>
+                <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
+              </View>
+            )}
+          </Pressable>
 
           <Pressable
             style={[
               styles.cardHeartBtn,
               {
-                backgroundColor: favorited ? 'rgba(3, 86, 197, 0.35)' : 'rgba(0,0,0,0.5)',
-                borderColor: favorited ? themeColors.primary : 'rgba(255,255,255,0.2)',
+                backgroundColor: favorited ? themeColors.primary : 'rgba(7,9,13,0.66)',
               },
             ]}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              toggleFavorite(item);
-            }}
+            onPress={() => toggleFavorite(item)}
+            hitSlop={7}
+            accessibilityRole="button"
+            accessibilityLabel={favorited ? `Remove ${item.title} from favorites` : `Add ${item.title} to favorites`}
+            accessibilityState={{ selected: favorited }}
           >
             <Heart
               color={favorited ? themeColors.primary : '#FFFFFF'}
@@ -187,35 +198,31 @@ export default function SearchScreen() {
               size={14}
             />
           </Pressable>
-
-          <View style={styles.centerPlayCircle}>
-            <View style={[styles.playCircleInner, { backgroundColor: themeColors.primary }]}>
-              <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
-            </View>
-          </View>
         </View>
 
-        <View style={styles.standardCardInfo}>
+        <Pressable
+          style={styles.standardCardInfo}
+          onPress={() => handleWatch(item.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`Open details for ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
+        >
           <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
             {language === 'ku' && item.title_ku ? item.title_ku : item.title}
           </Text>
-          <View style={styles.cardMetaRow}>
-            <Star size={10} color="#FFB800" fill="#FFB800" />
-            <Text style={[styles.cardRatingText, { color: themeColors.textSecondary }]}>9.8</Text>
-            <Text style={[styles.cardMetaDot, { color: themeColors.textSecondary }]}>·</Text>
+          {(item.genre || item.category) && <View style={styles.cardMetaRow}>
             <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-              {item.genre ?? item.category ?? 'Stream'}
+              {item.genre ?? item.category}
             </Text>
-          </View>
-        </View>
-      </Pressable>
+          </View>}
+        </Pressable>
+      </View>
     );
   };
 
   const pageTitle = selectedCategory === 'All' ? 'Browse Catalog' : selectedCategory;
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background, direction: isRTL ? 'rtl' : 'ltr' }]}>
       <GlobalNavbar title={pageTitle} showBrandLogo={false} />
 
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
@@ -224,7 +231,7 @@ export default function SearchScreen() {
           <View
             style={[
               styles.searchBar,
-              { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border },
+              { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
             ]}
           >
             <SearchIcon color={themeColors.textSecondary} size={18} />
@@ -235,9 +242,16 @@ export default function SearchScreen() {
               value={query}
               onChangeText={setQuery}
               autoCorrect={false}
+              accessibilityLabel="Search catalog"
             />
             {query.length > 0 && (
-              <Pressable onPress={() => setQuery('')} style={styles.clearBtn}>
+              <Pressable
+                onPress={() => setQuery('')}
+                style={styles.clearBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+                hitSlop={4}
+              >
                 <X color={themeColors.textSecondary} size={16} />
               </Pressable>
             )}
@@ -252,6 +266,11 @@ export default function SearchScreen() {
               <MediaCardSkeleton key={i} />
             ))}
           </View>
+        ) : loadError ? (
+          <ErrorState
+            message="Couldn't load the catalog. Check your connection and try again."
+            onRetry={() => setReloadKey((value) => value + 1)}
+          />
         ) : (
           <FlatList
             data={filteredList}
@@ -263,18 +282,87 @@ export default function SearchScreen() {
             columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
             ListHeaderComponent={
               <View style={styles.filterContainer}>
+                <View style={styles.filterLabelRow}>
+                  <Text style={[styles.filterLabel, { color: themeColors.textSecondary }]}>Category</Text>
+                  {hasActiveFilters && (
+                    <Pressable
+                      onPress={resetFilters}
+                      style={styles.resetFiltersBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Reset category and genre filters"
+                    >
+                      <Text style={[styles.resetFiltersText, { color: themeColors.primary }]}>Reset</Text>
+                    </Pressable>
+                  )}
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoryContent}
+                >
+                  {CATEGORIES.map(({ id, label, icon: Icon }) => {
+                    const isSelected = selectedCategory === id;
+                    return (
+                      <Pressable
+                        key={id}
+                        onPress={() => setSelectedCategory(id)}
+                        style={[
+                          styles.categoryChip,
+                          {
+                            backgroundColor: isSelected ? themeColors.backgroundSelected : themeColors.backgroundElement,
+                            borderColor: isSelected ? themeColors.primary : themeColors.border,
+                          },
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Filter by ${label}`}
+                        accessibilityState={{ selected: isSelected }}
+                      >
+                        <Icon size={14} color={isSelected ? themeColors.primary : themeColors.textSecondary} />
+                        <Text style={[styles.categoryText, { color: isSelected ? themeColors.primary : themeColors.text }]}>
+                          {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
 
+                <Text style={[styles.filterLabel, { color: themeColors.textSecondary }]}>Genre</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.genreContent}
+                >
+                  {GENRES.map((genre) => {
+                    const isSelected = selectedGenre === genre;
+                    return (
+                      <Pressable
+                        key={genre}
+                        onPress={() => setSelectedGenre(genre)}
+                        style={[
+                          styles.genreChip,
+                          {
+                            backgroundColor: isSelected ? themeColors.backgroundSelected : themeColors.backgroundElement,
+                            borderColor: isSelected ? themeColors.primary : themeColors.border,
+                          },
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Filter by ${genre} genre`}
+                        accessibilityState={{ selected: isSelected }}
+                      >
+                        <Text style={[styles.genreText, { color: isSelected ? themeColors.primary : themeColors.text }]}>
+                          {genre}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
 
-                {/* 📊 RESULT HEADER */}
                 <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <Sparkles color={themeColors.primary} size={18} />
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                      {selectedCategory === 'All' ? 'Catalog Titles' : selectedCategory}
-                    </Text>
-                  </View>
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+                    {selectedCategory === 'All' ? 'Catalog' : selectedCategory}
+                  </Text>
                   <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                    {filteredList.length} Titles Found
+                    {filteredList.length} titles
                   </Text>
                 </View>
               </View>
@@ -292,8 +380,7 @@ export default function SearchScreen() {
                 actionLabel="Clear Search Filters"
                 onAction={() => {
                   setQuery('');
-                  setSelectedCategory('All');
-                  setSelectedGenre('All');
+                  resetFilters();
                 }}
               />
             }
@@ -315,26 +402,30 @@ const styles = StyleSheet.create({
   },
   searchHeader: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 46,
+    minHeight: 48,
     borderRadius: 14,
-    paddingHorizontal: 14,
-    gap: 10,
+    paddingHorizontal: 16,
+    gap: 12,
     borderWidth: 1,
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     height: '100%',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   clearBtn: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    marginRight: -10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   trendingWrap: {
     marginTop: 10,
@@ -365,8 +456,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   filterContainer: {
-    marginBottom: 16,
+    marginBottom: 18,
     gap: 12,
+  },
+  filterLabelRow: {
+    minHeight: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  filterLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  resetFiltersBtn: {
+    minHeight: 44,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetFiltersText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   categoryContent: {
     gap: 8,
@@ -377,8 +490,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    minHeight: 44,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.full,
     borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
@@ -392,8 +506,10 @@ const styles = StyleSheet.create({
   },
   genreChip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.full,
     borderWidth: 1,
   },
   genreText: {
@@ -411,26 +527,35 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700',
+    letterSpacing: -0.35,
   },
   sectionCount: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   standardCard: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   posterCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
     position: 'relative',
   },
   posterImage: {
     width: '100%',
     height: '100%',
+  },
+  posterPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  posterPlaceholderText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   cardImageOverlay: {
     position: 'absolute',
@@ -438,50 +563,35 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    backgroundColor: 'rgba(0,0,0,0.10)',
   },
   cardCategoryBadge: {
     position: 'absolute',
     top: 6,
     left: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(7,9,13,0.72)',
     zIndex: 5,
     overflow: 'hidden',
   },
   cardCategoryText: {
     color: '#FFFFFF',
     fontSize: 8,
-    fontWeight: '900',
+    fontWeight: '700',
+    letterSpacing: 0.45,
   },
   cardHeartBtn: {
     position: 'absolute',
     top: 6,
     right: 6,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
     zIndex: 5,
-  },
-  centerPlayCircle: {
-    position: 'absolute',
-    top: '36%',
-    left: '50%',
-    transform: [{ translateX: -16 }, { translateY: -16 }],
-    zIndex: 4,
-  },
-  playCircleInner: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    opacity: 0.9,
   },
   epBadge: {
     position: 'absolute',
@@ -498,12 +608,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   standardCardInfo: {
-    paddingTop: 6,
-    paddingHorizontal: 2,
+    paddingTop: 9,
+    paddingHorizontal: 1,
   },
   cardTitle: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
   },
   cardMetaRow: {
     flexDirection: 'row',
@@ -513,7 +623,7 @@ const styles = StyleSheet.create({
   },
   cardRatingText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   cardMetaDot: {
     fontSize: 11,
@@ -521,6 +631,6 @@ const styles = StyleSheet.create({
   },
   cardMeta: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });
