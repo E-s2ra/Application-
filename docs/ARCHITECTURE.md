@@ -85,15 +85,18 @@ GUEST ──► NORMAL USER ──► VIP SOVEREIGN ──► ADMIN
 1. **Guest**: Public catalog browsing, searching, viewing trailer / public media players, language switching.
 2. **Normal User**: Registered account, profile dashboard, favorites management, submitting reviews, daily streak rewards, spin wheel, coin unlocks.
 3. **VIP Sovereign**: Exclusive VIP video stream access, golden crown badge on profile & reviews, ad-free streaming.
-4. **Admin**: Restricted to users with `role === 'admin'` or email matching `EXPO_PUBLIC_ADMIN_EMAIL` (`esra99san@gmail.com`). Full access to `/admin` dashboard, catalog CRUD, VIP payment approvals, and Edge Function invocation.
+4. **Admin**: Restricted by the server-side `is_admin()` authorization check and an approved `role === 'admin'` profile. Full access to `/admin` dashboard, catalog CRUD, VIP payment approvals, and privileged Edge Function invocation.
 
 ---
 
 ## 6. Data Layer & Security Architecture
 
 ### Supabase Cloud PostgreSQL Schema
-- **`anime`**: Stores media titles, genres, thumbnails, video URLs, VIP flags, coin prices, and Kurdish metadata (`title_ku`, `description_ku`).
+- **`anime`**: Stores public catalog metadata plus private media locator fields that are denied to normal client SQL reads.
 - **`profiles`**: Stores user levels, XP, streak counters, coin balance, and VIP expiration timestamps (`is_vip`, `vip_expires_at`).
+- **`media_entitlements`**: Server-written, user-readable seven-day content unlocks.
+- **`wallet_ledger`**: Append-only audit trail for every coin balance change, including before/after balances and a transaction reason.
+- **`device_sessions`**: One active Supabase auth session binding per account; sensitive economy and playback operations verify the winning session.
 - **`favorites`**: User bookmarked media items (`user_id`, `anime_id`).
 - **`reviews`**: User star ratings (1–5) and text reviews (`user_id`, `anime_id`, `rating`, `comment`).
 - **`payments`**: VIP payment proof submissions (`user_id`, `method`, `receipt_url`, `status`, `duration_days`).
@@ -103,19 +106,23 @@ GUEST ──► NORMAL USER ──► VIP SOVEREIGN ──► ADMIN
 - Users can read public catalog data but can only create/update/delete their own `favorites`, `reviews`, and `profiles`.
 - Direct table updates to sensitive `profiles` columns (e.g., balance, `is_vip`) are revoked for the `authenticated` role.
 
-### Server-Authoritative Database RPCs (`unlock_media_with_coins`)
-- **Server Enforcement**: Media coin unlocks and balance deductions execute exclusively through `SECURITY DEFINER` RPC functions on PostgreSQL.
-- **No Client Fallbacks**: Direct client-side `profiles.update(...)` fallbacks are strictly prohibited to prevent client balance manipulation.
+### Server-Authoritative Economy RPCs
+- Media unlocks, themes, daily rewards, missions, lucky-wheel rewards, VIP coin purchases, and rewarded-ad credits execute through trusted PostgreSQL or Edge Function paths.
+- Every signed-in economy mutation is tied to the active auth session and serialized on the profile balance row.
+- The client never supplies a spend price and never mints spendable coins as an offline fallback.
+- Verified rewarded ads credit only after a signed provider callback and only while the originating auth session remains active.
 
-### Race Condition Guarding
-- **Optimistic Lock**: The `useGamification` hook enforces an in-memory timestamp lock (`unlockingRef.current`) during unlock requests.
-- **Transaction Rollback**: If the server RPC returns an error or fails validation, the optimistic state lock rolls back gracefully without mutating client state.
+### Wallet audit and reconciliation
+- `profiles.coins` is the current materialized balance.
+- `wallet_ledger` records immutable deltas and balance-before/balance-after values for reconciliation.
+- `get_wallet_snapshot()` returns the authoritative balance and recent ledger history to the active session.
 
 ---
 
 ## 7. Video Streaming Engine Architecture
 
 - **Primary Player Engine**: `expo-video` v2 (`VideoView` and `useVideoPlayer`).
-- **Fallback Resolution**: If `getPlaybackUrl` returns an error or unconfigured stream, the streaming engine automatically falls back to secondary media sources (`fallbackStream`).
+- **Playback Authorization**: `stream-playback` validates the JWT, active device/auth session, VIP or unexpired entitlement, and requested episode before issuing a short-lived private-storage URL.
+- **Fail Closed**: Missing or misconfigured media produces an unavailable/error state; the player never falls back to a public demo URL or raw catalog locator.
 - **Responsive Gesture Controls**: Custom `PanResponder` implementations for volume sliders and playback seek bars, declared early in component lifecycles to prevent runtime `ReferenceError` exceptions.
 - **Web Fallback Support**: Compatible web fallback rendering for standard HTML5/Video.js integration.

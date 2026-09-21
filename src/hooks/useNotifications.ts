@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const NOTIFICATIONS_STORAGE_KEY = '@aniflix_notifications_v1';
+const NOTIFICATIONS_STORAGE_KEY = '@aniflix_notifications_v2';
 
 export interface AppNotification {
   id: string;
@@ -13,24 +13,7 @@ export interface AppNotification {
   mediaId?: string;
 }
 
-const DEFAULT_INITIAL_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 'notif-1',
-    title: 'New 4K Release: Solo Leveling S2',
-    message: 'Stream all new episodes in Ultra HD with Kurdish Dubbed audio now live on AniFlix!',
-    type: 'release',
-    read: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'notif-2',
-    title: 'AniFlix VIP Sovereign Upgrade',
-    message: 'Get ad-free 4K cinema streaming and exclusive episodes.',
-    type: 'vip',
-    read: true,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
+const DEFAULT_INITIAL_NOTIFICATIONS: AppNotification[] = [];
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -42,12 +25,11 @@ export function useNotifications() {
       if (stored) {
         setNotifications(JSON.parse(stored));
       } else {
-        setNotifications(DEFAULT_INITIAL_NOTIFICATIONS);
-        await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(DEFAULT_INITIAL_NOTIFICATIONS));
+        setNotifications([]);
       }
     } catch (e) {
       console.warn('[useNotifications] Error loading notifications:', e);
-      setNotifications(DEFAULT_INITIAL_NOTIFICATIONS);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

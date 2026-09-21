@@ -48,35 +48,41 @@ Ensure production environment variables are properly configured in your deployme
 ```env
 # Production Supabase Cloud Credentials
 EXPO_PUBLIC_SUPABASE_URL=https://your-production-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key-here
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-production-public-key-here
 
-# Sovereign Admin Configuration
-EXPO_PUBLIC_ADMIN_EMAIL=esra99san@gmail.com
+# Admin setup is server-side only. Do not expose the admin email to the client.
 ```
 
 ### Database Row-Level Security (RLS) Checklist
-- Ensure RLS is enabled on all tables: `anime`, `profiles`, `favorites`, `reviews`, `payments`.
-- Verify that `unlock_media_with_coins` is configured with `SECURITY DEFINER` privileges on PostgreSQL.
+- Ensure RLS is enabled on client-facing tables including `anime`, `profiles`, `favorites`, `comments`, `notifications`, `media_entitlements`, and `wallet_ledger`.
+- Verify that the latest wallet/auth migrations are applied and legacy client coin/unlock RPCs remain revoked.
 
 ### Deploying Edge Functions (`admin-operations`)
 
 Deploy the serverless Edge Function to handle privileged administrative operations (e.g., instant VIP elevation, catalog sync):
 
 ```bash
-# Deploy admin-operations Edge Function using Supabase CLI
-npx supabase functions deploy admin-operations --no-verify-jwt
+# Deploy privileged functions with JWT verification enabled (the default).
+npx supabase functions deploy admin-operations
+npx supabase functions deploy stream-playback
+npx supabase functions deploy admob-ssv --no-verify-jwt
+
+# Username login is intentionally unauthenticated because it establishes a session.
+# Its verify_jwt=false setting lives in supabase/config.toml.
+npx supabase functions deploy username-login
 ```
 
 Set required production secrets in the Supabase Dashboard:
-- `SUPABASE_SERVICE_ROLE_KEY`: Supabase secret key for Service Role elevation.
+- `SUPABASE_SECRET_KEY`: Server-only Supabase secret key. Never expose it to Expo/client code.
 - `RASEDI_SECRET_KEY`: Production payment verification key for RASEDI payment gateway integrations.
+- `ALLOWED_WEB_ORIGINS`: Comma-separated production web origins allowed to call browser-accessible Edge Functions.
 
 ---
 
 ## 4. Pre-Flight Production Launch Checklist
 
 - [x] **Type Safety**: `npx tsc --noEmit` completes with zero type errors across core components.
-- [x] **Automated Testing**: Playwright E2E suite passes across desktop, tablet, and mobile viewports.
-- [x] **Environment Variables**: Confirmed production URLs (no `localhost` or staging strings).
-- [x] **Security Audit**: Verified that direct profile balance writes are revoked and database RPCs are active.
-- [x] **Bilingual i18n Verification**: Tested English and Kurdish Sorani toggling on live build.
+- [ ] **Automated Testing**: Run the relevant Playwright smoke suite across desktop and mobile viewports.
+- [ ] **Environment Variables**: Confirm production origins, Supabase keys, AdMob IDs, and server-only secrets.
+- [ ] **Security Audit**: Verify direct sensitive writes are revoked, raw media columns are unreadable to clients, and displaced sessions cannot use economy/playback paths.
+- [ ] **Bilingual i18n Verification**: Test English and Kurdish Sorani layout direction on the production export.

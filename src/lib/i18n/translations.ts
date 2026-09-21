@@ -14,7 +14,7 @@ export const translations = {
 
     // App Branding & Slogans
     appTagline: 'YOUR ULTIMATE CINEMA & ANIME UNIVERSE',
-    desktopTagline: 'Unlimited Anime, Movies, K-Dramas & Series in Ultra HD',
+    desktopTagline: 'Anime, Movies, K-Dramas & Series in one library',
 
     // Categories & Menus
     mainMenu: 'MAIN MENU',
@@ -98,7 +98,7 @@ export const translations = {
     myBadges: 'MY ACHIEVEMENT BADGES',
     viewAll: 'View All →',
     watchAdEarn: 'Watch Ad & Earn Coins',
-    watchAdSub: 'Watch a quick sponsored clip for instant reward',
+    watchAdSub: 'Watch a verified sponsored ad to earn coins',
     themeShop: 'Theme Shop',
     customizeColors: 'Customize AniFlix colors with Coins',
     myFavoritesList: 'My Favorites List',
@@ -153,7 +153,7 @@ export const translations = {
     levelUnlocks: 'Level {level} Unlocks',
     dailyCoinSources: 'Daily Coin Sources',
     watchAdCoins: 'Watch Ad (+12 Coins)',
-    perAdUnlimited: 'Per Ad (Unlimited)',
+    perAdUnlimited: 'Per verified ad',
     dailyStreakSource: 'Daily Streak',
     luckySpinSource: 'Lucky Spin',
     tabLuckySpin: 'Lucky Spin',
@@ -334,7 +334,7 @@ export const translations = {
     myBadges: 'مەدالیا و دەستکەوتەکانم',
     viewAll: 'بینینی هەمووی ←',
     watchAdEarn: 'سەیری ڕیکلام بکە و دراو بەدەستبهێنە',
-    watchAdSub: 'سەیری ڕیکلامێکی خێرا بکە بۆ وەرگرتنی خەڵاتی خێرا',
+    watchAdSub: 'سەیری ڕیکلامێکی پشتڕاستکراو بکە بۆ بەدەستهێنانی دراو',
     themeShop: 'فرۆشگای ڕووکار',
     customizeColors: 'ڕەنگەکانی ئەنیفلیکس بە دراوەکانت بگۆڕە',
     myFavoritesList: 'لیستی دڵخوازەکانم',
@@ -389,7 +389,7 @@ export const translations = {
     levelUnlocks: 'کراوەتەوە لە ئاستی {level}',
     dailyCoinSources: 'سەرچاوەکانی دراوی ڕۆژانە',
     watchAdCoins: 'سەیری ڕیکلام بکە (+١٢ دراو)',
-    perAdUnlimited: 'بۆ هەر ڕیکلامێک (بێ سنوور)',
+    perAdUnlimited: 'بۆ هەر ڕیکلامێکی پشتڕاستکراو',
     dailyStreakSource: 'بەردەوامی ڕۆژانە',
     luckySpinSource: 'چەرخی بەخت',
     tabLuckySpin: 'چەرخی بەخت',

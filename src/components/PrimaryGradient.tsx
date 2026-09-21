@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/hooks/use-theme';
 
 interface PrimaryGradientProps {
   style?: StyleProp<ViewStyle>;
@@ -9,27 +9,20 @@ interface PrimaryGradientProps {
 }
 
 export function PrimaryGradient({ style, children, borderRadius = 0 }: PrimaryGradientProps) {
-  // Deep blue glossy gradient
+  const theme = useTheme();
+
+  // Kept as a compatibility layer for existing call sites. The old glossy
+  // gradient was intentionally replaced by a single brand surface so primary
+  // actions share one visual language across the app.
   return (
-    <LinearGradient
-      colors={['#02060E', '#0D47A1', '#0356C5']}
-      locations={[0, 0.6, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[StyleSheet.absoluteFill, { borderRadius }, style]}
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        { borderRadius, backgroundColor: theme.primary },
+        style,
+      ]}
     >
-      {/* Glossy overlay effect - upper half subtle highlight */}
-      <View style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '40%',
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        borderTopLeftRadius: borderRadius,
-        borderTopRightRadius: borderRadius,
-      }} />
       {children}
-    </LinearGradient>
+    </View>
   );
 }

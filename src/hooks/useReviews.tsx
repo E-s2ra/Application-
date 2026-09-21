@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { useAuth } from './useAuth';
+import { getVipStatus } from '@/features/vip/vip-state';
 import { supabase } from '@/lib/supabase';
 import { moderateContent } from '@/lib/moderation';
 
@@ -118,9 +119,9 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
 
     if (list.length === 0) {
       return {
-        average: 4.8,
-        count: 14,
-        breakdown: { 5: 11, 4: 2, 3: 1, 2: 0, 1: 0 },
+        average: 0,
+        count: 0,
+        breakdown,
       };
     }
 
@@ -174,7 +175,7 @@ export function ReviewsProvider({ children }: { children: React.ReactNode }) {
         createdAt: 'Just now',
         helpfulCount: 0,
         isVerified: true,
-        isVip: profile?.is_vip || false,
+        isVip: getVipStatus(profile).isVIP,
       };
       updated = [newReview, ...reviews];
     }

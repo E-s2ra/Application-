@@ -1,0 +1,11 @@
+Use the connected Supabase MCP for project zkbprmyxwjfznsucyuvi. This deployment is authorized. Do not edit local files, commit, push, or expose secrets.
+
+Read supabase/migrations/20260920155351_final_security_hardening.sql. Inspect migration history through Supabase MCP. If final_security_hardening is not applied, apply that SQL once as a new migration named final_security_hardening. Do not reapply earlier migrations.
+
+Read and deploy supabase/functions/admin-operations/index.ts with JWT verification enabled.
+Read and deploy supabase/functions/username-login/index.ts with JWT verification disabled.
+
+If MCP exposes secrets management, set ALLOWED_WEB_ORIGINS to exactly http://localhost:8081,http://127.0.0.1:8081. If unavailable, report it.
+If MCP exposes project Auth config, enable leaked/compromised password protection. If unavailable, report it.
+
+Then verify through MCP: final migration is applied; admin-operations and username-login are ACTIVE with requested JWT settings; definitions/grants/policies for admin_grant_vip_by_identifier, admin_grant_vip, profiles anon/authenticated access, handle_new_user, record_watch_time_reward, daily_logins/user_themes/user_badges/vip_transactions DML, vip_transactions type constraint, and videos-private public/file_size_limit. Use only read-only verification. Do not invoke privileged reward/unlock/VIP mutations on real users. Return concise factual results.

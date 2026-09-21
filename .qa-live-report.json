@@ -1,0 +1,1250 @@
+[
+  {
+    "viewport": "desktop",
+    "route": "/",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/",
+    "title": "",
+    "bodyText": "ANIFLIX AniFlix User FREE PLAN LIBRARY Home Search My List DISCOVER Movies Anime Movies K-Drama Drama Anime Series EXTRAS Rewards PREFERENCES Dark Mode Sign Out ANIFLIX VIP Artwork unavailable ANIME SERIES Anime Huyyyuuy666 Watch Now + Add to List All titles 2 Titles No artwork MOVIES Ieueuhe Movies No artwork ANIME SERIES Anime Anime Series SPONSORED AniFlix Watch without interruptions Upgrade to VIP for an uninterrupted viewing experience Remove Ads",
+    "bodyWidth": 1440,
+    "clientWidth": 1440,
+    "bodyHeight": 900,
+    "buttons": [
+      {
+        "text": "AniFlix UserFREE PLAN",
+        "aria": "Open profile",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": "Home",
+        "role": "button"
+      },
+      {
+        "text": "Search",
+        "aria": "Search",
+        "role": "button"
+      },
+      {
+        "text": "My List",
+        "aria": "My List",
+        "role": "button"
+      },
+      {
+        "text": "Movies",
+        "aria": "Movies",
+        "role": "button"
+      },
+      {
+        "text": "Anime Movies",
+        "aria": "Anime Movies",
+        "role": "button"
+      },
+      {
+        "text": "K-Drama",
+        "aria": "K-Drama",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Drama",
+        "role": "button"
+      },
+      {
+        "text": "Anime Series",
+        "aria": "Anime Series",
+        "role": "button"
+      },
+      {
+        "text": "Rewards",
+        "aria": "Open rewards",
+        "role": "button"
+      },
+      {
+        "text": "Sign Out",
+        "aria": "Sign out",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "Watch Now",
+        "aria": "Watch Anime",
+        "role": "button"
+      },
+      {
+        "text": "+ Add to List",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkMOVIESIeueuheMovies",
+        "aria": "Open Ieueuhe",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Ieueuhe to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkANIME SERIESAnimeAnime Series",
+        "aria": "Open Anime",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "Watch without interruptionsUpgrade to VIP for an uninterrupted viewing experienceRemove Ads",
+        "aria": "Remove Ads with AniFlix VIP",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <View data={[...]} keyExtractor={function} renderItem={function renderProp} ListHeaderComponent={<Fragment>} ...>\n      <div onTouchStart={function} onTouchEnd={function} onScroll={function handleScroll} onTouchMove={function} ...>\n        <View onLayout={function} collapsable={false} ref={function} style={[...]}>\n          <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{...}}>\n            <VirtualizedListCellContextProvider>\n            <CellRenderer CellRendererComponent={undefined} ItemSeparatorComponent={undefined} ...>\n              <VirtualizedListCellContextProvider cellKey=\"fae93291-b...\">\n                <View style={null} onFocusCapture={function onCellFocusCapture} onLayout={function}>\n                  <div dir={null} ref={function forwardRef} className=\"css-view-g...\">\n                    <View style={[...]}>\n                      <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{gap:\"16px\", ...}}>\n                        <Pressable style={[...]} onPress={function onPress} accessibilityRole=\"button\" ...>\n                          <View accessibilityRole=\"button\" accessibilityLabel=\"Open Ieueuhe\" ...>\n>                           <button\n>                             onKeyDown={function}\n>                             onClick={function onClick}\n>                             onContextMenu={function}\n>                             onBlur={function}\n>                             onFocus={function}\n>                             dir={null}\n>                             ref={function forwardRef}\n>                             aria-label=\"Open Ieueuhe\"\n>                             role=\"button\"\n>                             tabIndex={0}\n>                             className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-borderRadius-17gur6a...\"\n>                             style={{backgroundColor:\"rgba(0,0,0...\",width:\"262px\"}}\n>                             type=\"button\"\n>                           >\n                              ...\n                                <Pressable style={[...]} onPress={function onPress} hitSlop={7} ...>\n                                  <View hitSlop={7} accessibilityRole=\"button\" accessibilityLabel=\"Add Ieueuh...\" ...>\n>                                   <button\n>                                     onKeyDown={function}\n>                                     onClick={function onClick}\n>                                     onContextMenu={function}\n>                                     onBlur={function}\n>                                     onFocus={function}\n>                                     dir={null}\n>                                     ref={function forwardRef}\n>                                     aria-label=\"Add Ieueuhe to favorites\"\n>                                     role=\"button\"\n>                                     tabIndex={0}\n>                                     className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1...\"\n>                                     style={{backgroundColor:\"rgba(7,9,1...\"}}\n>                                     type=\"button\"\n>                                   >\n                              ...\n                        ...\n            ...\n",
+      "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "desktop",
+    "route": "/search",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/search",
+    "title": "",
+    "bodyText": "ANIFLIX AniFlix User FREE PLAN LIBRARY Home Search My List DISCOVER Movies Anime Movies K-Drama Drama Anime Series EXTRAS Rewards PREFERENCES Dark Mode Sign Out Browse Catalog VIP CATEGORY All Categories Movies Anime K-Drama Drama Series GENRE All Action Drama Romance Sci-Fi Thriller Fantasy Comedy Horror Catalog 2 titles No artwork MOVIES Ieueuhe Movies No artwork ANIME SERIES Anime Anime Series SPONSORED AniFlix Watch without interruptions Upgrade to VIP for an uninterrupted viewing experience Remove Ads",
+    "bodyWidth": 1440,
+    "clientWidth": 1440,
+    "bodyHeight": 900,
+    "buttons": [
+      {
+        "text": "AniFlix UserFREE PLAN",
+        "aria": "Open profile",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": "Home",
+        "role": "button"
+      },
+      {
+        "text": "Search",
+        "aria": "Search",
+        "role": "button"
+      },
+      {
+        "text": "My List",
+        "aria": "My List",
+        "role": "button"
+      },
+      {
+        "text": "Movies",
+        "aria": "Movies",
+        "role": "button"
+      },
+      {
+        "text": "Anime Movies",
+        "aria": "Anime Movies",
+        "role": "button"
+      },
+      {
+        "text": "K-Drama",
+        "aria": "K-Drama",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Drama",
+        "role": "button"
+      },
+      {
+        "text": "Anime Series",
+        "aria": "Anime Series",
+        "role": "button"
+      },
+      {
+        "text": "Rewards",
+        "aria": "Open rewards",
+        "role": "button"
+      },
+      {
+        "text": "Sign Out",
+        "aria": "Sign out",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "All Categories",
+        "aria": "Filter by All Categories",
+        "role": "button"
+      },
+      {
+        "text": "Movies",
+        "aria": "Filter by Movies",
+        "role": "button"
+      },
+      {
+        "text": "Anime",
+        "aria": "Filter by Anime",
+        "role": "button"
+      },
+      {
+        "text": "K-Drama",
+        "aria": "Filter by K-Drama",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Filter by Drama",
+        "role": "button"
+      },
+      {
+        "text": "Series",
+        "aria": "Filter by Series",
+        "role": "button"
+      },
+      {
+        "text": "All",
+        "aria": "Filter by All genre",
+        "role": "button"
+      },
+      {
+        "text": "Action",
+        "aria": "Filter by Action genre",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Filter by Drama genre",
+        "role": "button"
+      },
+      {
+        "text": "Romance",
+        "aria": "Filter by Romance genre",
+        "role": "button"
+      },
+      {
+        "text": "Sci-Fi",
+        "aria": "Filter by Sci-Fi genre",
+        "role": "button"
+      },
+      {
+        "text": "Thriller",
+        "aria": "Filter by Thriller genre",
+        "role": "button"
+      },
+      {
+        "text": "Fantasy",
+        "aria": "Filter by Fantasy genre",
+        "role": "button"
+      },
+      {
+        "text": "Comedy",
+        "aria": "Filter by Comedy genre",
+        "role": "button"
+      },
+      {
+        "text": "Horror",
+        "aria": "Filter by Horror genre",
+        "role": "button"
+      },
+      {
+        "text": "No artworkMOVIESIeueuheMovies",
+        "aria": "Open Ieueuhe",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Ieueuhe to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkANIME SERIESAnimeAnime Series",
+        "aria": "Open Anime",
+        "role": "button"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <View data={[...]} keyExtractor={function} renderItem={function renderProp} ListHeaderComponent={<View>} ...>\n      <div onTouchStart={function} onTouchEnd={function} onScroll={function handleScroll} onTouchMove={function} ...>\n        <View onLayout={function} collapsable={false} ref={function} style={[...]}>\n          <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{...}}>\n            <VirtualizedListCellContextProvider>\n            <CellRenderer CellRendererComponent={undefined} ItemSeparatorComponent={undefined} ...>\n              <VirtualizedListCellContextProvider cellKey=\"fae93291-b...\">\n                <View style={null} onFocusCapture={function onCellFocusCapture} onLayout={function}>\n                  <div dir={null} ref={function forwardRef} className=\"css-view-g...\">\n                    <View style={[...]}>\n                      <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{gap:\"20px\", ...}}>\n                        <Pressable style={[...]} onPress={function onPress} accessibilityRole=\"button\" ...>\n                          <View accessibilityRole=\"button\" accessibilityLabel=\"Open Ieueuhe\" ...>\n>                           <button\n>                             onKeyDown={function}\n>                             onClick={function onClick}\n>                             onContextMenu={function}\n>                             onBlur={function}\n>                             onFocus={function}\n>                             dir={null}\n>                             ref={function forwardRef}\n>                             aria-label=\"Open Ieueuhe\"\n>                             role=\"button\"\n>                             tabIndex={0}\n>                             className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-marginBottom-1ifxtd0\"\n>                             style={{width:\"166px\"}}\n>                             type=\"button\"\n>                           >\n                              ...\n                                <Pressable style={[...]} onPress={function onPress} hitSlop={7} ...>\n                                  <View hitSlop={7} accessibilityRole=\"button\" accessibilityLabel=\"Add Ieueuh...\" ...>\n>                                   <button\n>                                     onKeyDown={function}\n>                                     onClick={function onClick}\n>                                     onContextMenu={function}\n>                                     onBlur={function}\n>                                     onFocus={function}\n>                                     dir={null}\n>                                     ref={function forwardRef}\n>                                     aria-label=\"Add Ieueuhe to favorites\"\n>                                     role=\"button\"\n>                                     tabIndex={0}\n>                                     className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1...\"\n>                                     style={{backgroundColor:\"rgba(7,9,1...\"}}\n>                                     type=\"button\"\n>                                   >\n                              ...\n                        ...\n            ...\n",
+      "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "desktop",
+    "route": "/favorites",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/favorites",
+    "title": "",
+    "bodyText": "ANIFLIX AniFlix User FREE PLAN LIBRARY Home Search My List DISCOVER Movies Anime Movies K-Drama Drama Anime Series EXTRAS Rewards PREFERENCES Dark Mode Sign Out My Saved List VIP Your Watchlist is Empty Tap the heart icon on any movie or series to save it to your personal watchlist. Explore Catalog",
+    "bodyWidth": 1440,
+    "clientWidth": 1440,
+    "bodyHeight": 900,
+    "buttons": [
+      {
+        "text": "AniFlix UserFREE PLAN",
+        "aria": "Open profile",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": "Home",
+        "role": "button"
+      },
+      {
+        "text": "Search",
+        "aria": "Search",
+        "role": "button"
+      },
+      {
+        "text": "My List",
+        "aria": "My List",
+        "role": "button"
+      },
+      {
+        "text": "Movies",
+        "aria": "Movies",
+        "role": "button"
+      },
+      {
+        "text": "Anime Movies",
+        "aria": "Anime Movies",
+        "role": "button"
+      },
+      {
+        "text": "K-Drama",
+        "aria": "K-Drama",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Drama",
+        "role": "button"
+      },
+      {
+        "text": "Anime Series",
+        "aria": "Anime Series",
+        "role": "button"
+      },
+      {
+        "text": "Rewards",
+        "aria": "Open rewards",
+        "role": "button"
+      },
+      {
+        "text": "Sign Out",
+        "aria": "Sign out",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "desktop",
+    "route": "/profile",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/profile",
+    "title": "",
+    "bodyText": "ANIFLIX AniFlix User FREE PLAN LIBRARY Home Search My List DISCOVER Movies Anime Movies K-Drama Drama Anime Series EXTRAS Rewards PREFERENCES Dark Mode Sign Out Profile & Settings VIP AniFlix Member STANDARD STREAMER · GET VIP Level 1 Novice Watcher 0 / 300 XP to Level 2 0 Coins 0d Streak 0 Favorites 0 Following MY BADGES View All First Stream Unlocked 3-Day Fire Streak Unlocked 5-Star Critic Unlocked Kurdish Sun Legend Locked AniFlix VIP Sovereign Locked AniFlix Rewards Hub Spin wheel & claim daily streak Watch Ad & Earn Coins Watch a quick sponsored clip for instant reward · +12 Coins Light Theme Mode Switch to bright clean mode Language / زمان (English) گۆڕین بۆ کوردی سۆرانی (Kurdish) Privacy Policy Data protection & security policies Terms of Service App rules, VIP terms & guidelines DMCA & Copyright Intellectual property & takedown notices About AniFlix Version 1.0.0, support & contacts Sign Out",
+    "bodyWidth": 1440,
+    "clientWidth": 1440,
+    "bodyHeight": 900,
+    "buttons": [
+      {
+        "text": "AniFlix UserFREE PLAN",
+        "aria": "Open profile",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": "Home",
+        "role": "button"
+      },
+      {
+        "text": "Search",
+        "aria": "Search",
+        "role": "button"
+      },
+      {
+        "text": "My List",
+        "aria": "My List",
+        "role": "button"
+      },
+      {
+        "text": "Movies",
+        "aria": "Movies",
+        "role": "button"
+      },
+      {
+        "text": "Anime Movies",
+        "aria": "Anime Movies",
+        "role": "button"
+      },
+      {
+        "text": "K-Drama",
+        "aria": "K-Drama",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Drama",
+        "role": "button"
+      },
+      {
+        "text": "Anime Series",
+        "aria": "Anime Series",
+        "role": "button"
+      },
+      {
+        "text": "Rewards",
+        "aria": "Open rewards",
+        "role": "button"
+      },
+      {
+        "text": "Sign Out",
+        "aria": "Sign out",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Change avatar image",
+        "role": "button"
+      },
+      {
+        "text": "STANDARD STREAMER · GET VIP",
+        "aria": "Membership status",
+        "role": "button"
+      },
+      {
+        "text": "0Favorites",
+        "aria": "View favorite titles",
+        "role": "button"
+      },
+      {
+        "text": "View All",
+        "aria": "View all rewards and badges",
+        "role": "button"
+      },
+      {
+        "text": "AniFlix Rewards HubSpin wheel & claim daily streak",
+        "aria": "Quests & Rewards Hub",
+        "role": "button"
+      },
+      {
+        "text": "Watch Ad & Earn CoinsWatch a quick sponsored clip for instant reward · +12 Coins",
+        "aria": "Watch sponsored ad to earn 12 coins",
+        "role": "button"
+      },
+      {
+        "text": "Light Theme ModeSwitch to bright clean mode",
+        "aria": "Toggle Dark / Light Theme Mode",
+        "role": "button"
+      },
+      {
+        "text": "Language / زمان (English)گۆڕین بۆ کوردی سۆرانی (Kurdish)",
+        "aria": "Switch language",
+        "role": "button"
+      },
+      {
+        "text": "Privacy PolicyData protection & security policies",
+        "aria": "Privacy Policy",
+        "role": "button"
+      },
+      {
+        "text": "Terms of ServiceApp rules, VIP terms & guidelines",
+        "aria": "Terms of Service",
+        "role": "button"
+      },
+      {
+        "text": "DMCA & CopyrightIntellectual property & takedown notices",
+        "aria": "DMCA Policy",
+        "role": "button"
+      },
+      {
+        "text": "About AniFlixVersion 1.0.0, support & contacts",
+        "aria": "About AniFlix",
+        "role": "button"
+      },
+      {
+        "text": "Sign Out",
+        "aria": "Sign out of account",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "desktop",
+    "route": "/watch?id=00000000-0000-4000-8000-000000000000",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/watch?id=00000000-0000-4000-8000-000000000000",
+    "title": "",
+    "bodyText": "AniFlix Cinema Loading media details... SPONSORED AniFlix Watch without interruptions Upgrade to VIP for an uninterrupted viewing experience Remove Ads English ANI FLIX YOUR ULTIMATE CINEMA & ANIME UNIVERSE Welcome to AniFlix! 100% ANIFLIX CINEMA ENGINE",
+    "bodyWidth": 1440,
+    "clientWidth": 1440,
+    "bodyHeight": 900,
+    "buttons": [
+      {
+        "text": "",
+        "aria": "Back",
+        "role": "button"
+      },
+      {
+        "text": "Watch without interruptionsUpgrade to VIP for an uninterrupted viewing experienceRemove Ads",
+        "aria": "Remove Ads with AniFlix VIP",
+        "role": "button"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 406 ()"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "desktop",
+    "route": "/admin",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/",
+    "title": "",
+    "bodyText": "ANIFLIX AniFlix User FREE PLAN LIBRARY Home Search My List DISCOVER Movies Anime Movies K-Drama Drama Anime Series EXTRAS Rewards PREFERENCES Dark Mode Sign Out ANIFLIX VIP Artwork unavailable ANIME SERIES Anime Huyyyuuy666 Watch Now + Add to List All titles 2 Titles No artwork MOVIES Ieueuhe Movies No artwork ANIME SERIES Anime Anime Series SPONSORED AniFlix Watch without interruptions Upgrade to VIP for an uninterrupted viewing experience Remove Ads",
+    "bodyWidth": 1440,
+    "clientWidth": 1440,
+    "bodyHeight": 900,
+    "buttons": [
+      {
+        "text": "AniFlix UserFREE PLAN",
+        "aria": "Open profile",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": "Home",
+        "role": "button"
+      },
+      {
+        "text": "Search",
+        "aria": "Search",
+        "role": "button"
+      },
+      {
+        "text": "My List",
+        "aria": "My List",
+        "role": "button"
+      },
+      {
+        "text": "Movies",
+        "aria": "Movies",
+        "role": "button"
+      },
+      {
+        "text": "Anime Movies",
+        "aria": "Anime Movies",
+        "role": "button"
+      },
+      {
+        "text": "K-Drama",
+        "aria": "K-Drama",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Drama",
+        "role": "button"
+      },
+      {
+        "text": "Anime Series",
+        "aria": "Anime Series",
+        "role": "button"
+      },
+      {
+        "text": "Rewards",
+        "aria": "Open rewards",
+        "role": "button"
+      },
+      {
+        "text": "Sign Out",
+        "aria": "Sign out",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "Watch Now",
+        "aria": "Watch Anime",
+        "role": "button"
+      },
+      {
+        "text": "+ Add to List",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkMOVIESIeueuheMovies",
+        "aria": "Open Ieueuhe",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Ieueuhe to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkANIME SERIESAnimeAnime Series",
+        "aria": "Open Anime",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "Watch without interruptionsUpgrade to VIP for an uninterrupted viewing experienceRemove Ads",
+        "aria": "Remove Ads with AniFlix VIP",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <View data={[...]} keyExtractor={function} renderItem={function renderProp} ListHeaderComponent={<Fragment>} ...>\n      <div onTouchStart={function} onTouchEnd={function} onScroll={function handleScroll} onTouchMove={function} ...>\n        <View onLayout={function} collapsable={false} ref={function} style={[...]}>\n          <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{...}}>\n            <VirtualizedListCellContextProvider>\n            <CellRenderer CellRendererComponent={undefined} ItemSeparatorComponent={undefined} ...>\n              <VirtualizedListCellContextProvider cellKey=\"fae93291-b...\">\n                <View style={null} onFocusCapture={function onCellFocusCapture} onLayout={function}>\n                  <div dir={null} ref={function forwardRef} className=\"css-view-g...\">\n                    <View style={[...]}>\n                      <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{gap:\"16px\", ...}}>\n                        <Pressable style={[...]} onPress={function onPress} accessibilityRole=\"button\" ...>\n                          <View accessibilityRole=\"button\" accessibilityLabel=\"Open Ieueuhe\" ...>\n>                           <button\n>                             onKeyDown={function}\n>                             onClick={function onClick}\n>                             onContextMenu={function}\n>                             onBlur={function}\n>                             onFocus={function}\n>                             dir={null}\n>                             ref={function forwardRef}\n>                             aria-label=\"Open Ieueuhe\"\n>                             role=\"button\"\n>                             tabIndex={0}\n>                             className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-borderRadius-17gur6a...\"\n>                             style={{backgroundColor:\"rgba(0,0,0...\",width:\"262px\"}}\n>                             type=\"button\"\n>                           >\n                              ...\n                                <Pressable style={[...]} onPress={function onPress} hitSlop={7} ...>\n                                  <View hitSlop={7} accessibilityRole=\"button\" accessibilityLabel=\"Add Ieueuh...\" ...>\n>                                   <button\n>                                     onKeyDown={function}\n>                                     onClick={function onClick}\n>                                     onContextMenu={function}\n>                                     onBlur={function}\n>                                     onFocus={function}\n>                                     dir={null}\n>                                     ref={function forwardRef}\n>                                     aria-label=\"Add Ieueuhe to favorites\"\n>                                     role=\"button\"\n>                                     tabIndex={0}\n>                                     className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1...\"\n>                                     style={{backgroundColor:\"rgba(7,9,1...\"}}\n>                                     type=\"button\"\n>                                   >\n                              ...\n                        ...\n            ...\n",
+      "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "mobile",
+    "route": "/",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/",
+    "title": "",
+    "bodyText": "ANIFLIX VIP Artwork unavailable ANIME SERIES Anime Huyyyuuy666 Watch Now + Add to List All titles 2 Titles No artwork MOVIES Ieueuhe Movies No artwork ANIME SERIES Anime Anime Series SPONSORED AniFlix Watch without interruptions VIP removes ads Remove Ads Home Search My List Profile",
+    "bodyWidth": 390,
+    "clientWidth": 390,
+    "bodyHeight": 844,
+    "buttons": [
+      {
+        "text": "",
+        "aria": "Open Navigation Sidebar",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "Watch Now",
+        "aria": "Watch Anime",
+        "role": "button"
+      },
+      {
+        "text": "+ Add to List",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkMOVIESIeueuheMovies",
+        "aria": "Open Ieueuhe",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Ieueuhe to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkANIME SERIESAnimeAnime Series",
+        "aria": "Open Anime",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "Watch without interruptionsVIP removes adsRemove Ads",
+        "aria": "Remove Ads with AniFlix VIP",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <View data={[...]} keyExtractor={function} renderItem={function renderProp} ListHeaderComponent={<Fragment>} ...>\n      <div onTouchStart={function} onTouchEnd={function} onScroll={function handleScroll} onTouchMove={function} ...>\n        <View onLayout={function} collapsable={false} ref={function} style={[...]}>\n          <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{...}}>\n            <VirtualizedListCellContextProvider>\n            <CellRenderer CellRendererComponent={undefined} ItemSeparatorComponent={undefined} ...>\n              <VirtualizedListCellContextProvider cellKey=\"fae93291-b...\">\n                <View style={null} onFocusCapture={function onCellFocusCapture} onLayout={function}>\n                  <div dir={null} ref={function forwardRef} className=\"css-view-g...\">\n                    <View style={[...]}>\n                      <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{gap:\"16px\", ...}}>\n                        <Pressable style={[...]} onPress={function onPress} accessibilityRole=\"button\" ...>\n                          <View accessibilityRole=\"button\" accessibilityLabel=\"Open Ieueuhe\" ...>\n>                           <button\n>                             onKeyDown={function}\n>                             onClick={function onClick}\n>                             onContextMenu={function}\n>                             onBlur={function}\n>                             onFocus={function}\n>                             dir={null}\n>                             ref={function forwardRef}\n>                             aria-label=\"Open Ieueuhe\"\n>                             role=\"button\"\n>                             tabIndex={0}\n>                             className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-borderRadius-17gur6a...\"\n>                             style={{backgroundColor:\"rgba(0,0,0...\",width:\"175px\"}}\n>                             type=\"button\"\n>                           >\n                              ...\n                                <Pressable style={[...]} onPress={function onPress} hitSlop={7} ...>\n                                  <View hitSlop={7} accessibilityRole=\"button\" accessibilityLabel=\"Add Ieueuh...\" ...>\n>                                   <button\n>                                     onKeyDown={function}\n>                                     onClick={function onClick}\n>                                     onContextMenu={function}\n>                                     onBlur={function}\n>                                     onFocus={function}\n>                                     dir={null}\n>                                     ref={function forwardRef}\n>                                     aria-label=\"Add Ieueuhe to favorites\"\n>                                     role=\"button\"\n>                                     tabIndex={0}\n>                                     className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1...\"\n>                                     style={{backgroundColor:\"rgba(7,9,1...\"}}\n>                                     type=\"button\"\n>                                   >\n                              ...\n                        ...\n            ...\n",
+      "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "mobile",
+    "route": "/search",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/search",
+    "title": "",
+    "bodyText": "Browse Catalog VIP CATEGORY All Categories Movies Anime K-Drama Drama Series GENRE All Action Drama Romance Sci-Fi Thriller Fantasy Comedy Horror Catalog 2 titles No artwork MOVIES Ieueuhe Movies No artwork ANIME SERIES Anime Anime Series SPONSORED AniFlix Watch without interruptions VIP removes ads Remove Ads Home Search My List Profile",
+    "bodyWidth": 390,
+    "clientWidth": 390,
+    "bodyHeight": 844,
+    "buttons": [
+      {
+        "text": "",
+        "aria": "Open Navigation Sidebar",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "All Categories",
+        "aria": "Filter by All Categories",
+        "role": "button"
+      },
+      {
+        "text": "Movies",
+        "aria": "Filter by Movies",
+        "role": "button"
+      },
+      {
+        "text": "Anime",
+        "aria": "Filter by Anime",
+        "role": "button"
+      },
+      {
+        "text": "K-Drama",
+        "aria": "Filter by K-Drama",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Filter by Drama",
+        "role": "button"
+      },
+      {
+        "text": "Series",
+        "aria": "Filter by Series",
+        "role": "button"
+      },
+      {
+        "text": "All",
+        "aria": "Filter by All genre",
+        "role": "button"
+      },
+      {
+        "text": "Action",
+        "aria": "Filter by Action genre",
+        "role": "button"
+      },
+      {
+        "text": "Drama",
+        "aria": "Filter by Drama genre",
+        "role": "button"
+      },
+      {
+        "text": "Romance",
+        "aria": "Filter by Romance genre",
+        "role": "button"
+      },
+      {
+        "text": "Sci-Fi",
+        "aria": "Filter by Sci-Fi genre",
+        "role": "button"
+      },
+      {
+        "text": "Thriller",
+        "aria": "Filter by Thriller genre",
+        "role": "button"
+      },
+      {
+        "text": "Fantasy",
+        "aria": "Filter by Fantasy genre",
+        "role": "button"
+      },
+      {
+        "text": "Comedy",
+        "aria": "Filter by Comedy genre",
+        "role": "button"
+      },
+      {
+        "text": "Horror",
+        "aria": "Filter by Horror genre",
+        "role": "button"
+      },
+      {
+        "text": "No artworkMOVIESIeueuheMovies",
+        "aria": "Open Ieueuhe",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Ieueuhe to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkANIME SERIESAnimeAnime Series",
+        "aria": "Open Anime",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "Watch without interruptionsVIP removes adsRemove Ads",
+        "aria": "Remove Ads with AniFlix VIP",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <View data={[...]} keyExtractor={function} renderItem={function renderProp} ListHeaderComponent={<View>} ...>\n      <div onTouchStart={function} onTouchEnd={function} onScroll={function handleScroll} onTouchMove={function} ...>\n        <View onLayout={function} collapsable={false} ref={function} style={[...]}>\n          <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{...}}>\n            <VirtualizedListCellContextProvider>\n            <CellRenderer CellRendererComponent={undefined} ItemSeparatorComponent={undefined} ...>\n              <VirtualizedListCellContextProvider cellKey=\"fae93291-b...\">\n                <View style={null} onFocusCapture={function onCellFocusCapture} onLayout={function}>\n                  <div dir={null} ref={function forwardRef} className=\"css-view-g...\">\n                    <View style={[...]}>\n                      <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{gap:\"10px\", ...}}>\n                        <Pressable style={[...]} onPress={function onPress} accessibilityRole=\"button\" ...>\n                          <View accessibilityRole=\"button\" accessibilityLabel=\"Open Ieueuhe\" ...>\n>                           <button\n>                             onKeyDown={function}\n>                             onClick={function onClick}\n>                             onContextMenu={function}\n>                             onBlur={function}\n>                             onFocus={function}\n>                             dir={null}\n>                             ref={function forwardRef}\n>                             aria-label=\"Open Ieueuhe\"\n>                             role=\"button\"\n>                             tabIndex={0}\n>                             className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-marginBottom-1ifxtd0\"\n>                             style={{width:\"178px\"}}\n>                             type=\"button\"\n>                           >\n                              ...\n                                <Pressable style={[...]} onPress={function onPress} hitSlop={7} ...>\n                                  <View hitSlop={7} accessibilityRole=\"button\" accessibilityLabel=\"Add Ieueuh...\" ...>\n>                                   <button\n>                                     onKeyDown={function}\n>                                     onClick={function onClick}\n>                                     onContextMenu={function}\n>                                     onBlur={function}\n>                                     onFocus={function}\n>                                     dir={null}\n>                                     ref={function forwardRef}\n>                                     aria-label=\"Add Ieueuhe to favorites\"\n>                                     role=\"button\"\n>                                     tabIndex={0}\n>                                     className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1...\"\n>                                     style={{backgroundColor:\"rgba(7,9,1...\"}}\n>                                     type=\"button\"\n>                                   >\n                              ...\n                        ...\n            ...\n",
+      "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "mobile",
+    "route": "/favorites",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/favorites",
+    "title": "",
+    "bodyText": "My Saved List VIP Your Watchlist is Empty Tap the heart icon on any movie or series to save it to your personal watchlist. Explore Catalog Home Search My List Profile",
+    "bodyWidth": 390,
+    "clientWidth": 390,
+    "bodyHeight": 844,
+    "buttons": [
+      {
+        "text": "",
+        "aria": "Open Navigation Sidebar",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "mobile",
+    "route": "/profile",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/profile",
+    "title": "",
+    "bodyText": "Profile & Settings VIP AniFlix Member STANDARD STREAMER · GET VIP Level 1 Novice Watcher 0 / 300 XP to Level 2 0 Coins 0d Streak 0 Favorites 0 Following MY BADGES View All First Stream Unlocked 3-Day Fire Streak Unlocked 5-Star Critic Unlocked Kurdish Sun Legend Locked AniFlix VIP Sovereign Locked AniFlix Rewards Hub Spin wheel & claim daily streak Watch Ad & Earn Coins Watch a quick sponsored clip for instant reward · +12 Coins Light Theme Mode Switch to bright clean mode Language / زمان (English) گۆڕین بۆ کوردی سۆرانی (Kurdish) Privacy Policy Data protection & security policies Terms of Service App rules, VIP terms & guidelines DMCA & Copyright Intellectual property & takedown notices About AniFlix Version 1.0.0, support & contacts Sign Out Home Search My List Profile",
+    "bodyWidth": 390,
+    "clientWidth": 390,
+    "bodyHeight": 844,
+    "buttons": [
+      {
+        "text": "",
+        "aria": "Open Navigation Sidebar",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Change avatar image",
+        "role": "button"
+      },
+      {
+        "text": "STANDARD STREAMER · GET VIP",
+        "aria": "Membership status",
+        "role": "button"
+      },
+      {
+        "text": "0Favorites",
+        "aria": "View favorite titles",
+        "role": "button"
+      },
+      {
+        "text": "View All",
+        "aria": "View all rewards and badges",
+        "role": "button"
+      },
+      {
+        "text": "AniFlix Rewards HubSpin wheel & claim daily streak",
+        "aria": "Quests & Rewards Hub",
+        "role": "button"
+      },
+      {
+        "text": "Watch Ad & Earn CoinsWatch a quick sponsored clip for instant reward · +12 Coins",
+        "aria": "Watch sponsored ad to earn 12 coins",
+        "role": "button"
+      },
+      {
+        "text": "Light Theme ModeSwitch to bright clean mode",
+        "aria": "Toggle Dark / Light Theme Mode",
+        "role": "button"
+      },
+      {
+        "text": "Language / زمان (English)گۆڕین بۆ کوردی سۆرانی (Kurdish)",
+        "aria": "Switch language",
+        "role": "button"
+      },
+      {
+        "text": "Privacy PolicyData protection & security policies",
+        "aria": "Privacy Policy",
+        "role": "button"
+      },
+      {
+        "text": "Terms of ServiceApp rules, VIP terms & guidelines",
+        "aria": "Terms of Service",
+        "role": "button"
+      },
+      {
+        "text": "DMCA & CopyrightIntellectual property & takedown notices",
+        "aria": "DMCA Policy",
+        "role": "button"
+      },
+      {
+        "text": "About AniFlixVersion 1.0.0, support & contacts",
+        "aria": "About AniFlix",
+        "role": "button"
+      },
+      {
+        "text": "Sign Out",
+        "aria": "Sign out of account",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "mobile",
+    "route": "/watch?id=00000000-0000-4000-8000-000000000000",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/watch?id=00000000-0000-4000-8000-000000000000",
+    "title": "",
+    "bodyText": "AniFlix Cinema Loading media details... SPONSORED AniFlix Watch without interruptions VIP removes ads Remove Ads",
+    "bodyWidth": 390,
+    "clientWidth": 390,
+    "bodyHeight": 844,
+    "buttons": [
+      {
+        "text": "",
+        "aria": "Back",
+        "role": "button"
+      },
+      {
+        "text": "Watch without interruptionsVIP removes adsRemove Ads",
+        "aria": "Remove Ads with AniFlix VIP",
+        "role": "button"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 406 ()"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": "mobile",
+    "route": "/admin",
+    "navigationError": null,
+    "url": "http://127.0.0.1:8083/",
+    "title": "",
+    "bodyText": "ANIFLIX VIP Artwork unavailable ANIME SERIES Anime Huyyyuuy666 Watch Now + Add to List All titles 2 Titles No artwork MOVIES Ieueuhe Movies No artwork ANIME SERIES Anime Anime Series SPONSORED AniFlix Watch without interruptions VIP removes ads Remove Ads Home Search My List Profile",
+    "bodyWidth": 390,
+    "clientWidth": 390,
+    "bodyHeight": 844,
+    "buttons": [
+      {
+        "text": "",
+        "aria": "Open Navigation Sidebar",
+        "role": "button"
+      },
+      {
+        "text": "VIP",
+        "aria": "Open VIP membership options",
+        "role": "button"
+      },
+      {
+        "text": "Watch Now",
+        "aria": "Watch Anime",
+        "role": "button"
+      },
+      {
+        "text": "+ Add to List",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkMOVIESIeueuheMovies",
+        "aria": "Open Ieueuhe",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Ieueuhe to favorites",
+        "role": "button"
+      },
+      {
+        "text": "No artworkANIME SERIESAnimeAnime Series",
+        "aria": "Open Anime",
+        "role": "button"
+      },
+      {
+        "text": "",
+        "aria": "Add Anime to favorites",
+        "role": "button"
+      },
+      {
+        "text": "Watch without interruptionsVIP removes adsRemove Ads",
+        "aria": "Remove Ads with AniFlix VIP",
+        "role": "button"
+      },
+      {
+        "text": "Home",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Search",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "My List",
+        "aria": null,
+        "role": "tab"
+      },
+      {
+        "text": "Profile",
+        "aria": null,
+        "role": "tab"
+      }
+    ],
+    "brokenImages": [],
+    "horizontalOverflow": false,
+    "consoleErrors": [
+      "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <View data={[...]} keyExtractor={function} renderItem={function renderProp} ListHeaderComponent={<Fragment>} ...>\n      <div onTouchStart={function} onTouchEnd={function} onScroll={function handleScroll} onTouchMove={function} ...>\n        <View onLayout={function} collapsable={false} ref={function} style={[...]}>\n          <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{...}}>\n            <VirtualizedListCellContextProvider>\n            <CellRenderer CellRendererComponent={undefined} ItemSeparatorComponent={undefined} ...>\n              <VirtualizedListCellContextProvider cellKey=\"fae93291-b...\">\n                <View style={null} onFocusCapture={function onCellFocusCapture} onLayout={function}>\n                  <div dir={null} ref={function forwardRef} className=\"css-view-g...\">\n                    <View style={[...]}>\n                      <div dir={null} ref={function forwardRef} className=\"css-view-g...\" style={{gap:\"16px\", ...}}>\n                        <Pressable style={[...]} onPress={function onPress} accessibilityRole=\"button\" ...>\n                          <View accessibilityRole=\"button\" accessibilityLabel=\"Open Ieueuhe\" ...>\n>                           <button\n>                             onKeyDown={function}\n>                             onClick={function onClick}\n>                             onContextMenu={function}\n>                             onBlur={function}\n>                             onFocus={function}\n>                             dir={null}\n>                             ref={function forwardRef}\n>                             aria-label=\"Open Ieueuhe\"\n>                             role=\"button\"\n>                             tabIndex={0}\n>                             className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-borderRadius-17gur6a...\"\n>                             style={{backgroundColor:\"rgba(0,0,0...\",width:\"175px\"}}\n>                             type=\"button\"\n>                           >\n                              ...\n                                <Pressable style={[...]} onPress={function onPress} hitSlop={7} ...>\n                                  <View hitSlop={7} accessibilityRole=\"button\" accessibilityLabel=\"Add Ieueuh...\" ...>\n>                                   <button\n>                                     onKeyDown={function}\n>                                     onClick={function onClick}\n>                                     onContextMenu={function}\n>                                     onBlur={function}\n>                                     onFocus={function}\n>                                     dir={null}\n>                                     ref={function forwardRef}\n>                                     aria-label=\"Add Ieueuhe to favorites\"\n>                                     role=\"button\"\n>                                     tabIndex={0}\n>                                     className=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1...\"\n>                                     style={{backgroundColor:\"rgba(7,9,1...\"}}\n>                                     type=\"button\"\n>                                   >\n                              ...\n                        ...\n            ...\n",
+      "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>"
+    ],
+    "pageErrors": [],
+    "failedRequests": []
+  }
+]

@@ -1,10 +1,10 @@
 import { Redirect } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
 import { ActivityIndicator, View } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Index() {
-  const { session, isLoading } = useAuth();
+  const { isLoading } = useAuth();
   const themeColors = useTheme();
 
   if (isLoading) {
@@ -15,5 +15,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={session ? '/(tabs)' : '/(auth)/login'} />;
+  return <Redirect href="/(tabs)" />;
 }

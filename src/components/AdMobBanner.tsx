@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Platform, Pressable } from 'react-native';
-import { Sparkles, Crown, ArrowRight, ShieldCheck } from 'lucide-react-native';
+import { Crown, ArrowRight } from 'lucide-react-native';
 import { useGamification } from '@/hooks/useGamification';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -32,17 +32,9 @@ export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerPro
           },
         ]}
       >
-        {/* Top Header Tag */}
         <View style={styles.topBar}>
-          <View style={[styles.sponsorBadge, { backgroundColor: `${themeColors.primary}18`, borderColor: `${themeColors.primary}40` }]}>
-            <Sparkles size={11} color={themeColors.primary} />
-            <Text style={[styles.sponsorBadgeText, { color: themeColors.primary }]}>SPONSORED</Text>
-          </View>
-
-          <View style={styles.adLabelRight}>
-            <ShieldCheck size={11} color={themeColors.textSecondary} />
-            <Text style={[styles.adLabelText, { color: themeColors.textSecondary }]}>AdMob Verified</Text>
-          </View>
+          <Text style={[styles.sponsorBadgeText, { color: themeColors.textMuted }]}>ANIFLIX VIP</Text>
+          <Text style={[styles.adLabelText, { color: themeColors.textMuted }]}>Membership</Text>
         </View>
 
         {/* Banner Content Card */}
@@ -57,16 +49,16 @@ export function AdMobBanner({ placement = 'home_bottom', style }: AdMobBannerPro
           accessibilityLabel="Remove Ads with AniFlix VIP"
         >
           <View style={styles.leftInfoGroup}>
-            <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 184, 0, 0.15)', borderColor: '#FFB800' }]}>
-              <Crown size={isSmallDevice ? 16 : 18} color="#FFB800" />
+            <View style={[styles.iconBox, { backgroundColor: themeColors.backgroundSelected }]}>
+              <Crown size={isSmallDevice ? 16 : 18} color={themeColors.primary} />
             </View>
 
             <View style={styles.textGroup}>
               <Text style={[styles.bannerTitle, { color: themeColors.text }]} numberOfLines={1}>
-                AniFlix Commercial-Free Pass
+                Watch without interruptions
               </Text>
               <Text style={[styles.bannerSubtitle, { color: themeColors.textSecondary }]} numberOfLines={1}>
-                {isXS ? 'Upgrade to VIP for 4K Dolby Stream' : 'Stream uninterrupted in 4K OLED with zero ads & uncapped speed'}
+                {isXS ? 'VIP removes ads' : 'Upgrade to VIP for an uninterrupted viewing experience'}
               </Text>
             </View>
           </View>
@@ -92,10 +84,10 @@ const styles = StyleSheet.create({
   },
   bannerContainer: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 10,
-    gap: 8,
+    padding: 12,
+    gap: 10,
   },
   topBar: {
     flexDirection: 'row',
@@ -103,36 +95,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 2,
   },
-  sponsorBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
   sponsorBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  adLabelRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.9,
   },
   adLabelText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   bannerContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 12,
-    padding: 10,
-    gap: 10,
+    borderRadius: 14,
+    padding: 12,
+    gap: 12,
   },
   leftInfoGroup: {
     flexDirection: 'row',
@@ -141,35 +119,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
   },
   textGroup: {
     flex: 1,
   },
   bannerTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
   },
   bannerSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
   },
   ctaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    minHeight: 38,
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
   ctaBtnText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });

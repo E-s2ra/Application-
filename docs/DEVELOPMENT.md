@@ -34,11 +34,11 @@ Populate `.env` with your active Supabase project credentials:
 ```env
 # Supabase Cloud Project Configuration
 EXPO_PUBLIC_SUPABASE_URL=https://zkbprmyxwjfznsucyuvi.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-
-# Sovereign Admin Configuration
-EXPO_PUBLIC_ADMIN_EMAIL=esra99san@gmail.com
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_public_key_here
 ```
+
+Admin provisioning uses the server-only `ADMIN_EMAIL` variable documented in
+`.env.example`; it is not exposed through Expo public configuration.
 
 ---
 

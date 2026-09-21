@@ -1,0 +1,27 @@
+Use the connected Supabase MCP for project zkbprmyxwjfznsucyuvi. Remote backend deployment for this project is already authorized. Do not edit local files, commit, push, run Git mutations, expose secrets, or modify real user balances/entitlements while verifying.
+
+Inspect current remote migration history first. Read these local migrations in chronological order and apply through Supabase MCP only when their equivalent change is not already present remotely:
+- supabase/migrations/20260920150555_harden_vip_security.sql
+- supabase/migrations/20260920150608_secure_coin_entitlements.sql
+- supabase/migrations/20260920152445_lock_down_media_locators.sql
+- supabase/migrations/20260920155351_final_security_hardening.sql
+- supabase/migrations/20260920210000_wallet_architecture.sql
+- supabase/migrations/20260920220000_auth_edge_hardening.sql
+
+Do not blindly reapply a migration just because the exact timestamp/name differs; inspect definitions/history and skip equivalent already-applied changes. Apply genuinely missing changes in dependency order using apply_migration, preserving each migration as one logical unit when possible.
+
+Then deploy the CURRENT local source for these Edge Functions through the Supabase MCP:
+- admin-operations: JWT verification enabled
+- stream-playback: JWT verification enabled
+- username-login: JWT verification disabled
+- admob-ssv: JWT verification disabled because Google SSV callbacks are provider-signed rather than Supabase-JWT authenticated
+
+After deployment, verify read-only through MCP:
+1. quote_media_unlock exists and returns only price/category metadata, not private media locators.
+2. get_wallet_snapshot, claim_device_session, assert_active_auth_session, unlock_media_with_coins_v2, unlock_theme_with_coins, activate_vip_with_coins, claim_daily_login, spin_lucky_wheel and rewarded-ad functions have intended grants.
+3. wallet_ledger and device_sessions RLS/grants are hardened as defined by the migrations.
+4. raw anime video_url/video_asset_key/episode_links remain unavailable to anon/authenticated direct SELECT.
+5. the four functions above are ACTIVE with the requested JWT settings.
+6. no migration/function deployment error remains.
+
+Return a concise factual deployment/verification report. If any remote prerequisite or permission prevents a safe apply, stop before improvising and report the exact blocker.

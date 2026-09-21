@@ -14,6 +14,12 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 const LANGUAGE_STORAGE_KEY = 'aniflix_language_preference_v2';
 
+function applyDocumentLanguage(language: Language) {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+  document.documentElement.dir = language === 'ku' ? 'rtl' : 'ltr';
+  document.documentElement.lang = language;
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
 
@@ -29,25 +35,26 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         if (saved === 'en' || saved === 'ku') {
           setLanguageState(saved);
         }
-      } catch (_e) {
+      } catch {
         // Fallback to default en
       }
     }
     void loadSavedLanguage();
   }, []);
 
+  useEffect(() => {
+    applyDocumentLanguage(language);
+  }, [language]);
+
   const setLanguage = useCallback(async (newLang: Language) => {
     setLanguageState(newLang);
     try {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         localStorage.setItem(LANGUAGE_STORAGE_KEY, newLang);
-        // Set document dir for accessibility
-        document.documentElement.dir = newLang === 'ku' ? 'rtl' : 'ltr';
-        document.documentElement.lang = newLang;
       } else {
         await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLang);
       }
-    } catch (_e) {
+    } catch {
       // Ignore storage errors
     }
   }, []);

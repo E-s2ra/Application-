@@ -6,16 +6,16 @@
 [![TypeScript 5.x](https://img.shields.io/badge/TypeScript-Strict%20Type%20Check-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
 [![Playwright E2E](https://img.shields.io/badge/Playwright-E2E%20Automated-2EAD33?style=for-the-badge&logo=playwright)](https://playwright.dev)
 
-AniFlix is a production-grade, multi-platform cinema and anime streaming web and mobile application built with **Expo (SDK 57)**, **React Native Web**, **Cloud Supabase**, and **Playwright E2E**. It features a modern dark glassmorphism interface, real-time multi-language localization (English and Kurdish Sorani / کوردی سۆرانی), gamified reward systems, secure server-authoritative media unlocks, and a dedicated VIP Sovereign management panel.
+AniFlix is a multi-platform cinema and anime streaming app built with **Expo SDK 57**, **React Native Web**, **Supabase**, and **Playwright**. It includes English and Kurdish Sorani / کوردی سۆرانی layouts, server-authoritative rewards and media entitlements, private signed playback, and an audited admin console.
 
 ---
 
 ## 🌟 Key Application Features
 
-- 🎥 **High-Performance Streaming Engine**: Custom video player built on `expo-video` v2 with multi-source fallback resolution, episode selectors, responsive controls, and custom gestures.
+- 🎥 **Secure Streaming Engine**: `expo-video` on native and Video.js on web consume only short-lived private-storage URLs issued after entitlement and active-session checks.
 - 🌐 **Real-Time Bilingual i18n Engine**: Dynamic switching between **English (`en`)** and **Kurdish Sorani (`ku`)** across all user screens, headers, buttons, watch player controls, and modal components.
 - 🔒 **Hardened Server-Authoritative Security**: Strict database Row-Level Security (RLS) and `SECURITY DEFINER` RPCs (`unlock_media_with_coins`) preventing client-side data tampering and double-unlock race conditions.
-- 👑 **VIP Sovereign Membership**: Integrated manual Iraqi payment gateway (FIB, ZainCash, FastPay) with instant admin verification and golden crown status badges.
+- 👑 **VIP Membership**: Manual plan activation is performed by an authenticated admin through the audited server path; VIP state and expiry remain database-authoritative.
 - 🎮 **Gamification & Rewards Hub**: Daily login streak tracking, lucky wheel bonus spins, coin economy, and XP level progression.
 - ⚡ **Admin Sovereign Control Center**: Dedicated `/admin` dashboard for media catalog management (Add/Edit/Delete), VIP application approvals, and serverless Edge Function operations.
 - 📱 **Fully Responsive Layout Matrix**: Precision breakpoints supporting Compact Mobile (<360px), Standard Mobile (390–430px), Tablets (768px), and Desktop/Workstations (1440px+).
@@ -27,7 +27,7 @@ AniFlix is a production-grade, multi-platform cinema and anime streaming web and
 | Domain | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Core Framework** | Expo SDK 57 & React Native 0.86 | Cross-platform runtime & native compilation |
-| **Web Runtime** | React Native Web 0.21 & React 18 | High-performance Web DOM rendering |
+| **Web Runtime** | React Native Web 0.21 & React 19 | Web DOM rendering |
 | **Navigation** | Expo Router v4 | File-based routing, tab layouts, and access guards |
 | **Database & Backend** | Cloud Supabase | PostgreSQL database, Auth, RLS Policies, and Storage |
 | **Edge Compute** | Deno Edge Functions | Serverless administrative RPCs using Service Role |
@@ -85,8 +85,7 @@ cp .env.example .env
 Configure `.env` with your Supabase project credentials:
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-supabase-id.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-EXPO_PUBLIC_ADMIN_EMAIL=esra99san@gmail.com
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-public-key
 ```
 
 ### 3. Launch Local Development Server
