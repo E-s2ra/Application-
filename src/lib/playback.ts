@@ -10,7 +10,7 @@ type PlaybackResponse = {
  * Requests a short-lived stream URL only after the server checks both the
  * signed-in account and its active device. Never persist the returned URL.
  */
-export async function getPlaybackUrl(animeId: string): Promise<PlaybackResponse> {
+export async function getPlaybackUrl(animeId: string, episode?: number): Promise<PlaybackResponse> {
   const [{ data: { session } }, deviceId] = await Promise.all([
     supabase.auth.getSession(),
     getDeviceId(),
@@ -27,7 +27,7 @@ export async function getPlaybackUrl(animeId: string): Promise<PlaybackResponse>
           Authorization: `Bearer ${session?.access_token || ''}`,
           'X-Device-Id': deviceId,
         },
-        body: JSON.stringify({ animeId }),
+        body: JSON.stringify({ animeId, episode }),
       });
 
       if (response.ok) {

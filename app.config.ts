@@ -4,17 +4,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: config.name ?? 'AniFlix',
   slug: config.slug ?? 'aniflix',
+  plugins: [...(config.plugins ?? []), 'expo-web-browser'],
   extra: {
     ...(config.extra ?? {}),
     // ── Supabase ──────────────────────────────────────────────────────────────
-    // Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your
+    // Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY in your
     // .env file (local) or EAS Secrets (CI/production). Never hard-code these.
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
-    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
-
-    // ── Admin ─────────────────────────────────────────────────────────────────
-    // Set EXPO_PUBLIC_ADMIN_EMAIL in your .env / EAS Secrets.
-    adminEmail: process.env.EXPO_PUBLIC_ADMIN_EMAIL ?? '',
+    supabasePublishableKey:
+      process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+      '',
 
     // ── Google AdMob ──────────────────────────────────────────────────────────
     // Set all four ADMOB env vars in your .env / EAS Secrets.

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import {
   StyleSheet,
   View,
@@ -60,8 +60,10 @@ export default function SearchScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    async function loadData() {
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+
+    async function loadData(requestVersion: number) {
       setLoading(true);
       setLoadError(null);
       try {
@@ -69,8 +71,10 @@ export default function SearchScreen() {
           getDeletedMediaIds(),
           getEditedMediaOverrides(),
         ]);
+        if (cancelled) return;
+
         const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: new Error('Catalog request timed out') }), 8000)
+          setTimeout(() => resolve({ data: null, error: new Error(`Catalog request timed out (attempt ${requestVersion + 1})`) }), 8000)
         );
 
         const fetchPromise = supabase
@@ -79,6 +83,7 @@ export default function SearchScreen() {
           .order('created_at', { ascending: false });
 
         const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
+        if (cancelled) return;
         const { data, error } = result || {};
         if (error) throw error;
 
@@ -109,17 +114,21 @@ export default function SearchScreen() {
           }
         });
 
-        setMediaList(uniqueCombined);
+        if (!cancelled) setMediaList(uniqueCombined);
       } catch (err) {
+        if (cancelled) return;
         console.warn('Error loading search data:', err);
         setMediaList([]);
         setLoadError(err instanceof Error ? err.message : 'Could not load the catalog.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    loadData();
-  }, [reloadKey]);
+    void loadData(reloadKey);
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]));
 
   const filteredList = mediaList.filter((item) => {
     const matchesQuery =

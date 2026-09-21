@@ -5,7 +5,6 @@ import {
   Text,
   Modal,
   Pressable,
-  Image,
   Animated,
   Easing,
   ScrollView,
@@ -167,27 +166,23 @@ export function AdMobRewardedModal() {
           >
             {/* Video / Creative Showcase */}
             <View style={[styles.creativeArea, isLandscapeOrShort && { height: 180 }]}>
-              <Image
-                source={{
-                  uri: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80',
-                }}
-                style={styles.adImage}
-                resizeMode="cover"
-              />
+              <View style={styles.previewBackdrop}>
+                <Tv size={42} color="#6B7280" />
+              </View>
               <View style={styles.adOverlayDark} />
 
               {/* Ad Content Overlay */}
               <View style={styles.adHeroContent}>
                 <View style={styles.sponsorRow}>
                   <Tv size={18} color="#00D2FF" />
-                  <Text style={styles.sponsorName}>AniFlix Ultra HD Sponsor</Text>
+                  <Text style={styles.sponsorName}>Sponsored reward preview</Text>
                 </View>
                 <Text style={[styles.adHeadline, isXS && { fontSize: 16, lineHeight: 22 }]}>
-                  Stream Next-Gen Anime & Movies in Pure 4K OLED
+                  Rewarded ad preview
                 </Text>
                 {!isLandscapeOrShort && (
                   <Text style={styles.adSubtext}>
-                    No buffering. Uncapped bandwidth. Available globally on all devices.
+                    This web preview never credits spendable coins. Verified rewards are issued only after provider confirmation on supported native builds.
                   </Text>
                 )}
               </View>
@@ -201,9 +196,9 @@ export function AdMobRewardedModal() {
                 <View style={styles.successLeft}>
                   <CheckCircle2 size={22} color="#00E676" />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.successTitle}>Reward Granted!</Text>
+                    <Text style={styles.successTitle}>Preview Complete</Text>
                     <Text style={[styles.successSubtitle, { color: themeColors.textSecondary }]} numberOfLines={1}>
-                      +{currentRewardCoins} AniFlix Coins added to account
+                      No coins were credited in the web preview
                     </Text>
                   </View>
                 </View>
@@ -211,15 +206,16 @@ export function AdMobRewardedModal() {
                   style={[styles.claimButton, { backgroundColor: themeColors.primary }]}
                   onPress={closeAdModal}
                   accessibilityRole="button"
+                  accessibilityLabel="Return to AniFlix"
                 >
-                  <Text style={styles.claimButtonText}>Claim & Return</Text>
+                  <Text style={styles.claimButtonText}>Return</Text>
                 </Pressable>
               </View>
             ) : (
               <View style={styles.waitingBox}>
                 <Sparkles size={16} color="#FFB800" />
                 <Text style={[styles.waitingText, { color: themeColors.textSecondary }]}>
-                  Watch full ad for <Text style={{ color: '#FFD700', fontWeight: '800' }}>+{currentRewardCoins} Coins</Text>
+                  Preview only — no spendable coins are credited on web
                 </Text>
               </View>
             )}
@@ -339,8 +335,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'flex-end',
   },
-  adImage: {
+  previewBackdrop: {
     ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#111827',
   },
   adOverlayDark: {
     ...StyleSheet.absoluteFill,

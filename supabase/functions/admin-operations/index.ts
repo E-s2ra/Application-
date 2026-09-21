@@ -4,35 +4,45 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.3';
 const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, content-type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
 };
+
+class RequestError extends Error {}
 
 function getAllowedOrigin(requestOrigin: string | null): string | null {
     const allowedStr = Deno.env.get('ALLOWED_WEB_ORIGINS') ?? '';
-    if (!allowedStr.trim()) return requestOrigin; // Allow all origins if not specified
+    if (!requestOrigin || !allowedStr.trim()) return null;
     const allowed = allowedStr.split(',').map((o) => o.trim()).filter(Boolean);
-    return requestOrigin && allowed.includes(requestOrigin) ? requestOrigin : null;
+    return allowed.includes(requestOrigin) ? requestOrigin : null;
 }
 
 serve(async (req) => {
-    const origin = getAllowedOrigin(req.headers.get('origin'));
+    const requestOrigin = req.headers.get('origin');
+    const origin = getAllowedOrigin(requestOrigin);
     const responseHeaders = {
         ...corsHeaders,
-        'Access-Control-Allow-Origin': origin || '*',
+        ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
         'Content-Type': 'application/json',
     };
+
+    if (requestOrigin && !origin) {
+        return new Response(
+            JSON.stringify({ success: false, error: 'Origin is not allowed.' }),
+            { status: 403, headers: responseHeaders }
+        );
+    }
 
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: responseHeaders });
     }
-
-    const ADMIN_EMAIL = (Deno.env.get('ADMIN_EMAIL') || 'esra99san@gmail.com').toLowerCase().trim();
 
     try {
         const authHeader = req.headers.get('authorization');
         if (!authHeader) {
             return new Response(
                 JSON.stringify({ success: false, error: 'Missing authorization header' }),
-                { status: 200, headers: responseHeaders }
+                { status: 401, headers: responseHeaders }
             );
         }
 
@@ -58,38 +68,89 @@ serve(async (req) => {
         if (userError || !user) {
             return new Response(
                 JSON.stringify({ success: false, error: 'Unauthorized' }),
-                { status: 200, headers: responseHeaders }
+                { status: 401, headers: responseHeaders }
             );
         }
 
-        // Check if user is admin (profile role MUST be admin)
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
+        const { error: activeSessionError } = await supabase.rpc('assert_active_auth_session');
+        if (activeSessionError) {
+            return new Response(
+                JSON.stringify({ success: false, error: 'This account session is no longer active.' }),
+                { status: 403, headers: responseHeaders }
+            );
+        }
 
-        const isUserAdminEmail = user.email?.toLowerCase() === ADMIN_EMAIL;
-        const isUserAdminRole = profile?.role === 'admin';
-
-        if (profileError || !profile || (!isUserAdminRole && !isUserAdminEmail)) {
+        // Keep privileged authorization inside the hardened database check.
+        const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin');
+        if (adminCheckError || isAdmin !== true) {
             return new Response(
                 JSON.stringify({ success: false, error: 'Access denied. Admin role required.' }),
-                { status: 200, headers: responseHeaders }
+                { status: 403, headers: responseHeaders }
             );
         }
 
         const body = await req.json();
         const { action, anime, comment, user: targetUser } = body;
 
-        const normalizeVideoAssetKey = (value: unknown): string | null => {
+        const normalizeMediaLocator = (value: unknown): string | null => {
             if (value === null || value === undefined || value === '') return null;
-            if (typeof value !== 'string') throw new Error('Invalid private video key.');
-            const key = value.trim();
-            if (!key || key.length > 500 || key.includes('..') || key.includes('://') || key.startsWith('/')) {
-                throw new Error('Invalid private video key. Use a relative path inside the private video bucket.');
+            if (typeof value !== 'string') throw new RequestError('Invalid private video key.');
+            const locator = value.trim();
+            if (
+                !locator
+                || locator.length > 1000
+                || locator.includes('\0')
+                || locator.includes('://')
+                || locator.includes('..')
+                || locator.startsWith('/')
+            ) {
+                throw new RequestError('Use a relative path inside the private video bucket.');
             }
-            return key;
+            return locator;
+        };
+
+        const normalizeEpisodeLinks = (value: unknown, episodeCount?: number) => {
+            if (value === undefined) return undefined;
+            if (value === null) return [];
+            if (!Array.isArray(value)) throw new RequestError('Episode links must be an array.');
+
+            const seen = new Set<number>();
+            return value.map((entry: any) => {
+                const episode = Number(entry?.episode);
+                if (!Number.isSafeInteger(episode) || episode < 1) {
+                    throw new RequestError('Each episode link needs a positive integer episode number.');
+                }
+                if (episodeCount && episode > episodeCount) {
+                    throw new RequestError(`Episode ${episode} exceeds the configured episode count (${episodeCount}).`);
+                }
+                if (seen.has(episode)) throw new RequestError(`Duplicate episode link: ${episode}`);
+                seen.add(episode);
+
+                const sources = Array.isArray(entry?.sources)
+                    ? entry.sources
+                        .map((source: any, index: number) => {
+                            const url = normalizeMediaLocator(source?.url);
+                            if (!url) return null;
+                            return {
+                                id: source?.id ? String(source.id).slice(0, 120) : `source_${episode}_${index + 1}`,
+                                label: source?.label ? String(source.label).trim().slice(0, 80) : `Server ${index + 1}`,
+                                url,
+                                is_default: Boolean(source?.is_default),
+                            };
+                        })
+                        .filter(Boolean)
+                    : [];
+
+                const defaultSource = sources.find((source: any) => source?.is_default) ?? sources[0];
+                const url = normalizeMediaLocator(entry?.url) ?? defaultSource?.url ?? null;
+                if (!url) throw new RequestError(`Episode ${episode} has no playable source.`);
+
+                if (sources.length > 0 && !sources.some((source: any) => source?.is_default)) {
+                    sources[0].is_default = true;
+                }
+
+                return { episode, url, sources };
+            }).sort((a, b) => a.episode - b.episode);
         };
 
         let result;
@@ -99,9 +160,13 @@ serve(async (req) => {
         switch (action) {
             case 'add_anime': {
                 if (!anime?.title) {
-                    throw new Error('Anime title is required');
+                    throw new RequestError('Anime title is required');
                 }
-                const normalizedVideoKey = normalizeVideoAssetKey(anime.video_asset_key ?? anime.video_url);
+                const episodeCount = Math.max(1, Number(anime.episodes) || 1);
+                const normalizedEpisodeLinks = normalizeEpisodeLinks(anime.episode_links, episodeCount) ?? [];
+                const normalizedVideoKey = normalizeMediaLocator(
+                    anime.video_asset_key ?? anime.video_url ?? normalizedEpisodeLinks[0]?.url
+                );
 
                 const cleanAnime = {
                     title: String(anime.title).trim(),
@@ -109,7 +174,8 @@ serve(async (req) => {
                     image_url: anime.image_url ? String(anime.image_url).trim() : null,
                     video_asset_key: normalizedVideoKey,
                     video_url: normalizedVideoKey,
-                    episodes: Number(anime.episodes) || 1,
+                    episode_links: normalizedEpisodeLinks,
+                    episodes: episodeCount,
                     genre: anime.genre ? String(anime.genre).trim() : null,
                     category: anime.category ? String(anime.category).trim() : 'Movies',
                     is_featured: Boolean(anime.is_featured),
@@ -139,9 +205,29 @@ serve(async (req) => {
                 break;
             }
 
+            case 'get_anime_private': {
+                if (!anime?.id) {
+                    throw new RequestError('Anime ID is required');
+                }
+
+                const { data, error } = await supabaseAdmin
+                    .from('anime')
+                    .select('id, title, description, image_url, video_asset_key, video_url, episodes, genre, category, is_featured, episode_links')
+                    .eq('id', anime.id)
+                    .single();
+
+                if (error) {
+                    success = false;
+                    errorMsg = error.message;
+                } else {
+                    result = data;
+                }
+                break;
+            }
+
             case 'update_anime': {
                 if (!anime?.id) {
-                    throw new Error('Anime ID is required for update');
+                    throw new RequestError('Anime ID is required for update');
                 }
 
                 const updates: Record<string, any> = {
@@ -153,12 +239,25 @@ serve(async (req) => {
                 if (anime.image_url !== undefined) updates.image_url = anime.image_url ? String(anime.image_url).trim() : null;
 
                 if (anime.video_asset_key !== undefined || anime.video_url !== undefined) {
-                    const normalizedVideoKey = normalizeVideoAssetKey(anime.video_asset_key ?? anime.video_url);
+                    const normalizedVideoKey = normalizeMediaLocator(anime.video_asset_key ?? anime.video_url);
                     updates.video_asset_key = normalizedVideoKey;
                     updates.video_url = normalizedVideoKey;
                 }
 
-                if (anime.episodes !== undefined) updates.episodes = Number(anime.episodes) || 1;
+                if (anime.episodes !== undefined) updates.episodes = Math.max(1, Number(anime.episodes) || 1);
+                if (anime.episode_links !== undefined) {
+                    const episodeCount = updates.episodes ?? Math.max(
+                        1,
+                        ...((Array.isArray(anime.episode_links) ? anime.episode_links : [])
+                            .map((entry: any) => Number(entry?.episode) || 1))
+                    );
+                    const normalizedEpisodeLinks = normalizeEpisodeLinks(anime.episode_links, episodeCount) ?? [];
+                    updates.episode_links = normalizedEpisodeLinks;
+                    if (anime.video_asset_key === undefined && anime.video_url === undefined && normalizedEpisodeLinks[0]?.url) {
+                        updates.video_asset_key = normalizedEpisodeLinks[0].url;
+                        updates.video_url = normalizedEpisodeLinks[0].url;
+                    }
+                }
                 if (anime.genre !== undefined) updates.genre = anime.genre ? String(anime.genre).trim() : null;
                 if (anime.category !== undefined) updates.category = anime.category ? String(anime.category).trim() : 'Movies';
                 if (anime.is_featured !== undefined) updates.is_featured = Boolean(anime.is_featured);
@@ -188,7 +287,7 @@ serve(async (req) => {
 
             case 'delete_anime': {
                 if (!anime?.id) {
-                    throw new Error('Anime ID is required for deletion');
+                    throw new RequestError('Anime ID is required for deletion');
                 }
 
                 const { error } = await supabaseAdmin
@@ -212,7 +311,7 @@ serve(async (req) => {
 
             case 'toggle_featured': {
                 if (!anime?.id) {
-                    throw new Error('Anime ID is required');
+                    throw new RequestError('Anime ID is required');
                 }
 
                 const { data, error } = await supabaseAdmin
@@ -236,7 +335,7 @@ serve(async (req) => {
 
             case 'delete_comment': {
                 if (!comment?.id) {
-                    throw new Error('Comment ID is required');
+                    throw new RequestError('Comment ID is required');
                 }
 
                 const { error } = await supabaseAdmin
@@ -262,48 +361,19 @@ serve(async (req) => {
             case 'grantVip':
             case 'grant-vip': {
                 if (!targetUser?.email || !targetUser?.days) {
-                    throw new Error('Missing target email or duration days');
+                    throw new RequestError('Missing target email or duration days');
                 }
                 const targetEmail = String(targetUser.email).trim().toLowerCase();
                 const daysCount = Number(targetUser.days);
                 if (!Number.isInteger(daysCount) || daysCount < 1 || daysCount > 3650) {
-                    throw new Error('Invalid VIP duration days');
+                    throw new RequestError('Invalid VIP duration days');
                 }
 
-                // 1. Search profiles table first by email, username, or user ID
-                let targetUserId: string | undefined;
-                const { data: targetProfile } = await supabaseAdmin
-                    .from('profiles')
-                    .select('id, email, username')
-                    .or(`email.ilike.${targetEmail},username.ilike.${targetEmail},id.eq.${targetEmail}`)
-                    .maybeSingle();
-
-                if (targetProfile) {
-                    targetUserId = targetProfile.id;
-                } else {
-                    // 2. Fallback: search auth.users list (with large perPage parameter)
-                    const { data: authUserList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-                    const matchedAuthUser = authUserList?.users?.find(
-                        (u) => u.email?.toLowerCase() === targetEmail || u.id === targetEmail
-                    );
-                    if (matchedAuthUser) {
-                        targetUserId = matchedAuthUser.id;
-                        // Retrieve profile for this auth user if it exists
-                        const { data: matchedProfile } = await supabaseAdmin
-                            .from('profiles')
-                            .select('id')
-                            .eq('id', targetUserId)
-                            .maybeSingle();
-                        if (!matchedProfile) targetUserId = undefined;
-                    }
-                }
-
-                if (!targetUserId) {
-                    throw new Error(`User with email, username, or ID "${targetEmail}" was not found.`);
-                }
-
-                const { data: grantResult, error: vipGrantError } = await supabaseAdmin.rpc('admin_grant_vip', {
-                    p_target_user_id: targetUserId,
+                // Resolve the target with exact case-insensitive equality inside
+                // the hardened database function. This avoids PostgREST filter
+                // wildcard semantics for '%'/'_' and the old 1000-user list cap.
+                const { data: grantResult, error: vipGrantError } = await supabaseAdmin.rpc('admin_grant_vip_by_identifier', {
+                    p_target: targetEmail,
                     p_days: daysCount,
                 });
 
@@ -312,6 +382,10 @@ serve(async (req) => {
                     errorMsg = vipGrantError.message;
                 } else {
                     result = grantResult;
+                    const targetUserId = grantResult?.user_id;
+                    if (!targetUserId) {
+                        throw new RequestError(`User with email, username, or ID "${targetEmail}" was not found.`);
+                    }
                     const isoExpiry = grantResult?.vip_expires_at;
 
                     // Log to vip_transactions table
@@ -337,35 +411,10 @@ serve(async (req) => {
                 break;
             }
 
-            case 'set_user_suspension': {
-                if (!targetUser?.id) {
-                    throw new Error('User ID is required');
-                }
-
-                const isSuspended = Boolean(targetUser.suspended);
-                const { data, error } = await supabaseAdmin
-                    .from('profiles')
-                    .update({
-                        is_suspended: isSuspended,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', targetUser.id)
-                    .select()
-                    .single();
-
-                if (error) {
-                    success = false;
-                    errorMsg = error.message;
-                } else {
-                    result = data;
-                }
-                break;
-            }
-
             default:
                 return new Response(
                     JSON.stringify({ success: false, error: `Invalid action: ${action}` }),
-                    { status: 200, headers: responseHeaders }
+                    { status: 400, headers: responseHeaders }
                 );
         }
 
@@ -380,7 +429,7 @@ serve(async (req) => {
 
             return new Response(
                 JSON.stringify({ success: false, error: errorMsg }),
-                { status: 200, headers: responseHeaders }
+                { status: 500, headers: responseHeaders }
             );
         }
 
@@ -389,9 +438,10 @@ serve(async (req) => {
             { status: 200, headers: responseHeaders }
         );
     } catch (error: any) {
+        const status = error instanceof RequestError || error instanceof SyntaxError ? 400 : 500;
         return new Response(
             JSON.stringify({ success: false, error: error.message || 'Internal server error' }),
-            { status: 200, headers: responseHeaders }
+            { status, headers: responseHeaders }
         );
     }
 });

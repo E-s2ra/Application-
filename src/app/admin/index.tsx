@@ -1,9 +1,11 @@
 import { useTheme } from '@/hooks/use-theme';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
+import { ErrorState } from '@/components/ErrorState';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAnime, updateAnimeFeatured, callAdminOperation, grantVipUser } from '@/lib/admin-operations';
 import { supabase } from '@/lib/supabase';
+import { VIP_PLANS } from '@/constants/vip-plans';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
   ArrowLeft,
@@ -52,32 +54,22 @@ type Anime = {
 const CATEGORIES = ['All', 'Movies', 'Anime Movies', 'K-Drama', 'Drama', 'Anime Series'];
 
 import { useToast } from '@/hooks/useToast';
-import { useNotifications } from '@/hooks/useNotifications';
-import { Send, Bell } from 'lucide-react-native';
 
 export default function AdminPanelScreen() {
   const router = useRouter();
   const themeColors = useTheme();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { profile } = useAuth();
-  const { maxContentWidth, isMobile, width } = useResponsive();
+  const { maxContentWidth, isMobile, width } = useResponsive({ desktopRailWidth: 0 });
   const { showSuccess, showError, showInfo } = useToast();
-  const { addNotification } = useNotifications();
-
-  const handleBroadcastAnnouncement = async () => {
-    await addNotification({
-      title: 'New 4K Release Announcement',
-      message: 'New high quality movies and anime series uploaded to AniFlix catalog!',
-      type: 'release',
-    });
-    showSuccess('Broadcast announcement sent to all users!');
-  };
 
   const isAdmin = profile?.role === 'admin';
 
   const [activeTab, setActiveTab] = useState<'media' | 'vip'>('media');
   const [animeList, setAnimeList] = useState<Anime[]>([]);
-  const [vipCount, setVipCount] = useState(0);
+  const [vipCount, setVipCount] = useState<number | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [vipError, setVipError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,25 +109,41 @@ export default function AdminPanelScreen() {
 
   const fetchAnime = async () => {
     try {
+      setCatalogError(null);
+      setVipError(null);
       const promises: any[] = [
         supabase
           .from('anime')
           .select('id, title, description, image_url, episodes, genre, category, is_featured')
           .order('created_at', { ascending: false }),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_vip', true),
+        supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_vip', true)
+          .gt('vip_expires_at', new Date().toISOString()),
         import('@/lib/admin-operations').then(m => m.getEditedMediaOverrides()),
         import('@/lib/admin-operations').then(m => m.getDeletedMediaIds())
       ];
 
       const resArr = await Promise.allSettled(promises);
       
-      const animeRes = resArr[0].status === 'fulfilled' ? resArr[0].value : { data: [], error: null };
-      const vipsRes = resArr[1].status === 'fulfilled' ? resArr[1].value : { count: 0 };
+      const animeRes = resArr[0].status === 'fulfilled' ? resArr[0].value : null;
+      const vipsRes = resArr[1].status === 'fulfilled' ? resArr[1].value : null;
       const overrides = resArr[2].status === 'fulfilled' ? (resArr[2].value || {}) : {};
       const deletedIdsArr = resArr[3].status === 'fulfilled' ? (resArr[3].value || []) : [];
 
+      const animeFailure = resArr[0].status === 'rejected'
+        ? String(resArr[0].reason || 'Catalog request failed')
+        : animeRes?.error?.message;
+      const vipFailure = resArr[1].status === 'rejected'
+        ? String(resArr[1].reason || 'VIP metric request failed')
+        : vipsRes?.error?.message;
+
+      if (animeFailure) setCatalogError(animeFailure);
+      if (vipFailure) setVipError(vipFailure);
+
       const deletedStrings = Array.isArray(deletedIdsArr) ? deletedIdsArr.map(String) : [];
-      const safeData = (animeRes && !animeRes.error && Array.isArray(animeRes.data)) ? animeRes.data : [];
+      const safeData = (animeRes && !animeFailure && Array.isArray(animeRes.data)) ? animeRes.data : [];
 
       const cloudItems = safeData
         .filter((item: any) => item && item.id && !deletedStrings.includes(String(item.id)))
@@ -145,10 +153,12 @@ export default function AdminPanelScreen() {
       const newLocalItems = Object.values(safeOverrides)
         .filter((override: any) => override && override.id && !deletedStrings.includes(String(override.id)) && !safeData.some((d: any) => String(d?.id) === String(override.id))) as Anime[];
 
-      const combined = [...newLocalItems, ...cloudItems];
-
-      setAnimeList(combined);
-      if (typeof vipsRes?.count === 'number') setVipCount(vipsRes.count);
+      if (!animeFailure) {
+        const combined = [...newLocalItems, ...cloudItems];
+        setAnimeList(combined);
+      }
+      if (!vipFailure && typeof vipsRes?.count === 'number') setVipCount(vipsRes.count);
+      if (vipFailure) setVipCount(null);
     } catch (e) {
       console.warn('[Admin] fetchAnime error:', e);
     } finally {
@@ -225,12 +235,30 @@ export default function AdminPanelScreen() {
       return;
     }
 
-    for (const item of animeList) {
-      if (item?.id) await deleteAnime(item.id);
+    const fallbackResults = await Promise.all(
+      animeList
+        .filter((item) => item?.id)
+        .map(async (item) => ({
+          id: item.id,
+          result: await deleteAnime(item.id),
+        }))
+    );
+    const failedDeletes = fallbackResults.filter(({ result }) => !result.success);
+    await fetchAnime();
+
+    if (failedDeletes.length > 0) {
+      showError(
+        'Delete-all was only partially completed. ' +
+          failedDeletes.length +
+          ' item' +
+          (failedDeletes.length === 1 ? '' : 's') +
+          ' could not be deleted.'
+      );
+      return;
     }
+
     setAnimeList([]);
     showInfo('All media catalog items deleted.');
-    await fetchAnime();
   };
 
   const handleToggleFeatured = async (item: Anime) => {
@@ -260,15 +288,21 @@ export default function AdminPanelScreen() {
     if (!item) return null;
     const catLabel = item.category ? String(item.category).toUpperCase() : null;
     const itemTitle = String(item.title || 'Untitled');
-    const epsCount = Number(item.episodes || 1);
+    const epsCount = Number(item.episodes);
+    const metaParts = [
+      item.genre || null,
+      Number.isFinite(epsCount) && epsCount > 1 ? `${epsCount} Eps` : null,
+    ].filter(Boolean);
 
     return (
       <View style={[styles.card, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-        <Image
-          source={{ uri: item.image_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&q=80' }}
-          style={styles.cardThumbnail}
-          resizeMode="cover"
-        />
+        {item.image_url ? (
+          <Image source={{ uri: item.image_url }} style={styles.cardThumbnail} resizeMode="cover" />
+        ) : (
+          <View style={[styles.cardThumbnail, styles.cardThumbnailPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
+            <Film color={themeColors.textMuted} size={18} />
+          </View>
+        )}
 
         <View style={styles.cardInfo}>
           <View style={styles.cardCategoryRow}>
@@ -289,9 +323,11 @@ export default function AdminPanelScreen() {
             {itemTitle}
           </Text>
 
-          <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {item.genre ?? 'General'} · {epsCount > 1 ? `${epsCount} Eps` : 'Movie'}
-          </Text>
+          {metaParts.length > 0 ? (
+            <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
+              {metaParts.join(' · ')}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.cardActions}>
@@ -397,8 +433,10 @@ export default function AdminPanelScreen() {
               <Crown size={16} color="#00E676" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.metricValue, { color: themeColors.text }]} numberOfLines={1} adjustsFontSizeToFit>{vipCount}</Text>
-              <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]} numberOfLines={1}>VIP Active</Text>
+              <Text style={[styles.metricValue, { color: themeColors.text }]} numberOfLines={1} adjustsFontSizeToFit>{vipCount ?? '—'}</Text>
+              <Text style={[styles.metricLabel, { color: vipError ? themeColors.error : themeColors.textSecondary }]} numberOfLines={1}>
+                {vipError ? 'VIP metric unavailable' : 'VIP Active'}
+              </Text>
             </View>
           </View>
         </View>
@@ -411,6 +449,9 @@ export default function AdminPanelScreen() {
               activeTab === 'media' && [styles.segmentedTabActive, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.primary }]
             ]}
             onPress={() => setActiveTab('media')}
+            accessibilityRole="tab"
+            accessibilityLabel="Catalog management"
+            accessibilityState={{ selected: activeTab === 'media' }}
           >
             <Layers size={14} color={activeTab === 'media' ? themeColors.primary : themeColors.textSecondary} />
             <Text style={[styles.segmentedText, { color: activeTab === 'media' ? themeColors.text : themeColors.textSecondary }]} numberOfLines={1}>
@@ -424,6 +465,9 @@ export default function AdminPanelScreen() {
               activeTab === 'vip' && [styles.segmentedTabActive, { backgroundColor: themeColors.backgroundCard, borderColor: '#FFB800' }]
             ]}
             onPress={() => setActiveTab('vip')}
+            accessibilityRole="tab"
+            accessibilityLabel="VIP grant tool"
+            accessibilityState={{ selected: activeTab === 'vip' }}
           >
             <Crown size={14} color={activeTab === 'vip' ? '#FFB800' : themeColors.textSecondary} />
             <Text style={[styles.segmentedText, { color: activeTab === 'vip' ? themeColors.text : themeColors.textSecondary }]} numberOfLines={1}>
@@ -448,7 +492,12 @@ export default function AdminPanelScreen() {
                   onChangeText={setSearchQuery}
                 />
                 {searchQuery.length > 0 && (
-                  <Pressable onPress={() => setSearchQuery('')}>
+                  <Pressable
+                    onPress={() => setSearchQuery('')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear catalog search"
+                    hitSlop={8}
+                  >
                     <XCircle size={16} color={themeColors.textMuted} />
                   </Pressable>
                 )}
@@ -467,6 +516,9 @@ export default function AdminPanelScreen() {
                         isSelected && { backgroundColor: themeColors.primary, borderColor: themeColors.primary }
                       ]}
                       onPress={() => setSelectedCategoryFilter(cat)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filter catalog by ${cat}`}
+                      accessibilityState={{ selected: isSelected }}
                     >
                       <Text style={[styles.filterChipText, { color: isSelected ? '#FFFFFF' : themeColors.textSecondary }]}>
                         {cat}
@@ -483,12 +535,13 @@ export default function AdminPanelScreen() {
                 SHOWING {filteredAnimeList.length} OF {animeList.length} TITLES
               </Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable onPress={handleBroadcastAnnouncement} style={[styles.clearBtn, { backgroundColor: 'rgba(3, 86, 197, 0.15)', paddingHorizontal: 10 }]}>
-                  <Send color={themeColors.primary} size={12} />
-                  <Text style={{ color: themeColors.primary, fontSize: 10, fontWeight: '800' }}>ANNOUNCE</Text>
-                </Pressable>
                 {animeList.length > 0 && (
-                  <Pressable onPress={handleClearAll} style={styles.clearBtn}>
+                  <Pressable
+                    onPress={handleClearAll}
+                    style={styles.clearBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete all catalog titles"
+                  >
                     <Trash2 color="#EF4444" size={12} />
                     <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: '800' }}>CLEAR ALL</Text>
                   </Pressable>
@@ -497,28 +550,35 @@ export default function AdminPanelScreen() {
             </View>
 
             {/* Media List */}
-            <FlatList
-              data={filteredAnimeList}
-              keyExtractor={(item, index) => String(item?.id || index)}
-              renderItem={renderItem}
-              contentContainerStyle={styles.listContainer}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={handleRefresh}
-                  tintColor={themeColors.primary}
-                />
-              }
-              ListEmptyComponent={
-                <View style={styles.emptyCard}>
-                  <Film size={32} color={themeColors.textMuted} />
-                  <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No Titles Found</Text>
-                  <Text style={[styles.emptySub, { color: themeColors.textSecondary }]}>
-                    No titles match your filter. Tap + below to publish a new title!
-                  </Text>
-                </View>
-              }
-            />
+            {catalogError ? (
+              <ErrorState
+                message="The admin catalog could not be loaded. Check the backend connection and permissions, then retry."
+                onRetry={fetchAnime}
+              />
+            ) : (
+              <FlatList
+                data={filteredAnimeList}
+                keyExtractor={(item, index) => String(item?.id || index)}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContainer}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={handleRefresh}
+                    tintColor={themeColors.primary}
+                  />
+                }
+                ListEmptyComponent={
+                  <View style={styles.emptyCard}>
+                    <Film size={32} color={themeColors.textMuted} />
+                    <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No Titles Found</Text>
+                    <Text style={[styles.emptySub, { color: themeColors.textSecondary }]}>
+                      No titles match your filter. Tap + below to publish a new title!
+                    </Text>
+                  </View>
+                }
+              />
+            )}
 
             {/* + Add Media Floating Action Button */}
             <Pressable
@@ -559,23 +619,21 @@ export default function AdminPanelScreen() {
 
               <Text style={[styles.inputLabel, { color: themeColors.text, marginTop: 10 }]}>Select Subscription Plan:</Text>
               <View style={styles.durationChipRow}>
-                {[
-                  { label: '1 Month (30d)', days: 30 },
-                  { label: '3 Months (90d)', days: 90 },
-                  { label: '6 Months (180d)', days: 180 },
-                  { label: '1 Year (365d)', days: 365 },
-                ].map((chip) => (
+                {VIP_PLANS.map((plan) => (
                   <Pressable
-                    key={chip.days}
+                    key={plan.id}
                     style={[
                       styles.durationChip,
                       { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-                      instantDays === chip.days && { backgroundColor: 'rgba(255, 184, 0, 0.15)', borderColor: '#FFB800' }
+                      instantDays === plan.durationDays && { backgroundColor: 'rgba(255, 184, 0, 0.15)', borderColor: '#FFB800' }
                     ]}
-                    onPress={() => setInstantDays(chip.days)}
+                    onPress={() => setInstantDays(plan.durationDays)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`${plan.durationLabel}, ${plan.durationDays} days`}
+                    accessibilityState={{ selected: instantDays === plan.durationDays }}
                   >
-                    <Text style={[styles.durationChipText, { color: instantDays === chip.days ? '#FFB800' : themeColors.textSecondary }]}>
-                      {chip.label}
+                    <Text style={[styles.durationChipText, { color: instantDays === plan.durationDays ? '#FFB800' : themeColors.textSecondary }]}>
+                      {plan.durationLabel} ({plan.durationDays}d)
                     </Text>
                   </Pressable>
                 ))}
@@ -585,6 +643,9 @@ export default function AdminPanelScreen() {
                 style={[styles.grantSubmitBtn, grantingVip && { opacity: 0.6 }]}
                 onPress={handleInstantGrantVip}
                 disabled={grantingVip}
+                accessibilityRole="button"
+                accessibilityLabel="Activate VIP membership"
+                accessibilityState={{ disabled: grantingVip }}
               >
                 {grantingVip ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -829,6 +890,10 @@ const styles = StyleSheet.create({
     width: 42,
     height: 56,
     borderRadius: 6,
+  },
+  cardThumbnailPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardInfo: {
     flex: 1,

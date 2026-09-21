@@ -25,6 +25,7 @@ type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   isLoading: boolean;
+  isDeviceSessionReady: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsEmailVerification: boolean }>;
   signOut: () => Promise<void>;
@@ -41,27 +42,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeviceSessionReady, setIsDeviceSessionReady] = useState(false);
   const deviceIdRef = useRef<string | null>(null);
   const claimingDeviceRef = useRef(false);
   const router = useRouter();
   const userId = session?.user?.id;
 
   const signOutLocally = useCallback(async () => {
-    await supabase.auth.signOut();
+    setIsDeviceSessionReady(false);
+    await supabase.auth.signOut({ scope: 'local' });
   }, []);
 
   const claimCurrentDevice = useCallback(async (): Promise<string | null> => {
+    claimingDeviceRef.current = true;
+    setIsDeviceSessionReady(false);
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession?.user) return null;
+      if (!currentSession?.user) return 'Not authenticated';
 
       const deviceId = deviceIdRef.current ?? await getDeviceId();
       deviceIdRef.current = deviceId;
 
       const { error } = await supabase.rpc('claim_device_session', { p_device_id: deviceId });
-      return error?.message ?? null;
-    } catch {
+      if (error) return error.message;
+      setIsDeviceSessionReady(true);
       return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Unable to verify device session';
     } finally {
       claimingDeviceRef.current = false;
     }
@@ -75,7 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase.rpc('is_current_device', { p_device_id: deviceIdRef.current });
       if (!error && data === false) {
+        setIsDeviceSessionReady(false);
         await signOutLocally();
+      } else if (!error && data === true) {
+        setIsDeviceSessionReady(true);
       }
     } catch {
       // Ignore network errors
@@ -157,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setUser(null);
         setProfile(null);
+        setIsDeviceSessionReady(false);
       }
 
       // Only fetch profile explicitly on SIGNED_IN. initAuth handles the initial app load.
@@ -173,44 +184,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+
     const restoreRecoverySession = async (url: string | null) => {
       if (!url) return;
 
-      // Extract params from both query string and hash fragment
-      const queryPart = url.includes('?') ? url.split('?')[1].split('#')[0] : '';
-      const hashPart = url.includes('#') ? url.slice(url.indexOf('#') + 1) : '';
-
-      const queryParams = new URLSearchParams(queryPart);
-      const hashParams = new URLSearchParams(hashPart);
-
-      const getParam = (key: string) => queryParams.get(key) || hashParams.get(key);
-
-      const accessToken = getParam('access_token');
-      const refreshToken = getParam('refresh_token');
-      const code = getParam('code');
-      const tokenHash = getParam('token_hash');
-      const type = getParam('type');
-
-      // First establish/restore the session before navigating
-      try {
-        if (accessToken && refreshToken) {
-          await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-        } else if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
-        } else if (tokenHash && type) {
-          await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any });
-        }
-      } catch (err) {
-        console.warn('[useAuth] Link session restoration failed:', err);
+      const parsed = Linking.parse(url);
+      const scheme = parsed.scheme?.toLowerCase() ?? '';
+      const path = (parsed.path ?? '').replace(/^\/+|\/+$/g, '');
+      if (scheme !== 'aniflix' || (path !== 'reset-password' && path !== 'verified')) {
+        return;
       }
 
-      // Then route to the appropriate screen
-      const isRecovery = type === 'recovery' || url.includes('reset-password');
-      const isSignup = type === 'signup' || type === 'email_verification' || url.includes('verified');
+      const getParam = (key: string) => {
+        const value = parsed.queryParams?.[key];
+        return typeof value === 'string' ? value : null;
+      };
 
-      if (isRecovery) {
+      const code = getParam('code');
+      if (!code) return;
+
+      let authError: Error | null = null;
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        authError = error;
+      } catch (err) {
+        console.warn('[useAuth] Link session restoration failed:', err);
+        return;
+      }
+
+      if (authError) {
+        console.warn('[useAuth] Auth callback was rejected:', authError.message);
+        return;
+      }
+
+      if (path === 'reset-password') {
         router.replace('/reset-password');
-      } else if (isSignup) {
+      } else {
         router.replace('/verified');
       }
     };
@@ -221,11 +231,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setIsDeviceSessionReady(false);
+      return;
+    }
 
-    void getDeviceId().then((deviceId) => {
+    // Bind the persisted Supabase auth session to this installed-app device on
+    // startup. The server rejects an older displaced session, so a stale JWT
+    // cannot reclaim the account after a newer login wins the single-device lock.
+    void getDeviceId().then(async (deviceId) => {
       deviceIdRef.current = deviceId;
-      return verifyCurrentDevice();
+      const claimError = await claimCurrentDevice();
+      if (claimError) {
+        await signOutLocally();
+      }
     });
 
     const interval = setInterval(() => void verifyCurrentDevice(), 30_000);
@@ -237,23 +256,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearInterval(interval);
       appStateSubscription.remove();
     };
-  }, [userId, verifyCurrentDevice]);
+  }, [claimCurrentDevice, signOutLocally, userId, verifyCurrentDevice]);
 
   const signIn = async (inputIdentifier: string, password: string): Promise<{ error: string | null }> => {
     try {
       let targetEmail = normalizeEmail(inputIdentifier);
 
-      // If user entered a username instead of an email (e.g. "esra99san"), resolve their email from profiles
+      // Username login is resolved inside a public auth Edge Function so the
+      // profiles table never exposes account emails to anonymous clients.
       if (!isValidEmail(targetEmail)) {
-        const { data: foundProfile } = await supabase
-          .from('profiles')
-          .select('email')
-          .ilike('username', targetEmail)
-          .maybeSingle();
+        claimingDeviceRef.current = true;
+        const { data, error } = await supabase.functions.invoke('username-login', {
+          body: {
+            identifier: inputIdentifier.trim(),
+            password,
+          },
+        });
 
-        if (foundProfile?.email) {
-          targetEmail = foundProfile.email.toLowerCase();
+        if (error || !data?.access_token || !data?.refresh_token) {
+          claimingDeviceRef.current = false;
+          return { error: 'Invalid email/username or password. Please check your credentials.' };
         }
+
+        const { data: sessionData, error: setSessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+
+        if (setSessionError || !sessionData.session) {
+          claimingDeviceRef.current = false;
+          return { error: 'Unable to start your session. Please try again.' };
+        }
+
+        const claimError = await claimCurrentDevice();
+        if (claimError) {
+          await signOutLocally();
+          return { error: 'Unable to start this device session. Please sign in again.' };
+        }
+        return { error: null };
       }
 
       claimingDeviceRef.current = true;
@@ -274,7 +314,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.session) {
-        await claimCurrentDevice();
+        const claimError = await claimCurrentDevice();
+        if (claimError) {
+          await signOutLocally();
+          return { error: 'Unable to start this device session. Please sign in again.' };
+        }
         // State updates and profile fetching are automatically handled by the onAuthStateChange listener
       }
 
@@ -294,24 +338,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const normalizedEmail = normalizeEmail(email);
     if (!isValidEmail(normalizedEmail)) {
       return { error: 'Enter a valid email address.', needsEmailVerification: false };
-    }
-
-    try {
-      // 1. Pre-check if an account with this canonical email already exists in profiles
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
-
-      if (existingProfile) {
-        return {
-          error: 'An account with this email address already exists. Please sign in instead.',
-          needsEmailVerification: false,
-        };
-      }
-    } catch {
-      // Ignore network / RLS error during pre-check and fall through to Auth check
     }
 
     claimingDeviceRef.current = true;
@@ -351,7 +377,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (data.session) {
-      await claimCurrentDevice();
+      const claimError = await claimCurrentDevice();
+      if (claimError) {
+        await signOutLocally();
+        return {
+          error: 'Unable to start this device session. Please sign in again.',
+          needsEmailVerification: false,
+        };
+      }
     }
     const needsEmailVerification = !data.session;
     return { error: null, needsEmailVerification };
@@ -361,7 +394,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setUser(null);
     setProfile(null);
-    await supabase.auth.signOut();
+    setIsDeviceSessionReady(false);
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
@@ -416,6 +450,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         profile,
         isLoading,
+        isDeviceSessionReady,
         signIn,
         signUp,
         signOut,

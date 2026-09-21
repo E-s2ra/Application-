@@ -5,7 +5,7 @@ const envPath = path.resolve(process.cwd(), '.env');
 dotenv.config({ path: envPath });
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const SERVICE_KEY = (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!;
 
 async function fetchTable(tableName: string) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?select=count`, {

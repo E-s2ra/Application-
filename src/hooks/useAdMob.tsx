@@ -4,7 +4,8 @@ import { useAuth } from './useAuth';
 import { useGamification } from './useGamification';
 import { useToast } from './useToast';
 import { ADMOB_REWARDS, ADMOB_IDS } from '@/constants/admob';
-import { recordRewardedAdToSupabase } from '@/lib/admob';
+import { createRewardedAdSession, waitForRewardedAdVerification } from '@/lib/admob';
+import { AdMobProxy } from '@/lib/admob-proxy';
 
 type ShowAdOptions = {
   rewardCoins?: number;
@@ -25,8 +26,6 @@ type AdMobContextType = {
 
 const AdMobContext = createContext<AdMobContextType | undefined>(undefined);
 
-import { AdMobProxy } from '@/lib/admob-proxy';
-
 const { RewardedAd, RewardedAdEventType, AdEventType, TestIds, isAvailable } = AdMobProxy;
 
 if (!isAvailable) {
@@ -40,22 +39,58 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
   const [isAdModalVisible, setIsAdModalVisible] = useState(false);
   const [currentRewardCoins, setCurrentRewardCoins] = useState(ADMOB_REWARDS.rewardedAdCoins);
   const [currentRewardType, setCurrentRewardType] = useState<'coins' | 'xp' | 'spin' | 'vip'>('coins');
-  const [onRewardCallback, setOnRewardCallback] = useState<((amount: number) => void) | null>(null);
 
   const rewardedAdRef = useRef<any>(null);
+  const rewardSessionTokenRef = useRef<string | null>(null);
+  const onRewardCallbackRef = useRef<((amount: number) => void) | null>(null);
   const isNativeAdAvailable = Platform.OS !== 'web' && RewardedAd !== null;
+  const { refreshGamification, isVIP } = useGamification();
+  const { showSuccess } = useToast();
+
+  const finalizeVerifiedReward = useCallback(async (sessionToken: string) => {
+    const verification = await waitForRewardedAdVerification(sessionToken);
+    if (!verification.verified) {
+      console.warn('[AdMob] Reward is pending server-side verification. Balance will refresh when the app resumes.');
+      return false;
+    }
+
+    await refreshGamification();
+    showSuccess(`Earned +${ADMOB_REWARDS.rewardedAdCoins} Coins!`);
+    onRewardCallbackRef.current?.(ADMOB_REWARDS.rewardedAdCoins);
+    return true;
+  }, [refreshGamification, showSuccess]);
 
   // Pre-load a rewarded ad on native platforms
-  const loadRewardedAd = useCallback(() => {
-    if (!isNativeAdAvailable) return;
+  const loadRewardedAd = useCallback(async () => {
+    if (!isNativeAdAvailable || !user?.id || user.id.startsWith('guest-') || isVIP) return;
 
     const adUnitId = __DEV__
       ? TestIds?.REWARDED || 'ca-app-pub-3940256099942544/5224354917'
       : ADMOB_IDS.rewardedAdUnitId || '';
 
     try {
+      rewardedAdRef.current?.unsubscribe?.();
+      rewardedAdRef.current = null;
+      rewardSessionTokenRef.current = null;
+      setIsAdLoaded(false);
+      setIsLoadingAd(true);
+
+      const sessionResult = await createRewardedAdSession(adUnitId);
+      if (!sessionResult.success || !sessionResult.session) {
+        console.warn('[AdMob] Could not create verified reward session:', sessionResult.error);
+        setIsLoadingAd(false);
+        return;
+      }
+
+      const sessionToken = sessionResult.session.token;
+      rewardSessionTokenRef.current = sessionToken;
+
       const rewarded = RewardedAd.createForAdRequest(adUnitId, {
         keywords: ['anime', 'movies', 'streaming', 'entertainment'],
+        serverSideVerificationOptions: {
+          userId: user.id,
+          customData: sessionToken,
+        },
       });
 
       // Ad loaded successfully
@@ -74,7 +109,7 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
       // Ad was closed by user
       const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
         // Preload the next ad
-        loadRewardedAd();
+        void loadRewardedAd();
       });
 
       // User earned reward by watching full ad
@@ -82,7 +117,7 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
         RewardedAdEventType.EARNED_REWARD,
         (reward: any) => {
           console.log('[AdMob] User earned reward:', reward);
-          // Reward is credited via the onAdCompleted callback
+          void finalizeVerifiedReward(sessionToken);
         }
       );
 
@@ -96,20 +131,22 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
         },
       };
 
-      setIsLoadingAd(true);
       rewarded.load();
     } catch (err) {
       console.warn('[AdMob] Error creating rewarded ad:', err);
+      setIsLoadingAd(false);
     }
-  }, [isNativeAdAvailable]);
+  }, [finalizeVerifiedReward, isNativeAdAvailable, isVIP, user?.id]);
 
   // Load ad on mount for native
   useEffect(() => {
     if (isNativeAdAvailable) {
-      loadRewardedAd();
-    } else {
-      // Web/dev fallback — always "loaded"
+      void loadRewardedAd();
+    } else if (Platform.OS === 'web') {
+      // Web exposes a visual preview only; it never credits spendable rewards.
       setIsAdLoaded(true);
+    } else {
+      setIsAdLoaded(false);
     }
 
     return () => {
@@ -117,14 +154,10 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isNativeAdAvailable, loadRewardedAd]);
 
-  const { profile } = useAuth();
-  const { addXPAndCoins } = useGamification();
-  const { showSuccess } = useToast();
-
   const showRewardedAd = useCallback(
     async (options?: ShowAdOptions): Promise<boolean> => {
       // VIP subscribers do not see ads and cannot claim coins
-      if (profile?.is_vip) {
+      if (isVIP) {
         console.log('[AdMob] User is VIP — ads are disabled for VIP plan.');
         return false;
       }
@@ -135,49 +168,53 @@ export function AdMobProvider({ children }: { children: React.ReactNode }) {
       setCurrentRewardCoins(coins);
       setCurrentRewardType(type);
       if (options?.onRewarded) {
-        setOnRewardCallback(() => options.onRewarded);
+        onRewardCallbackRef.current = options.onRewarded;
       } else {
-        setOnRewardCallback(null);
+        onRewardCallbackRef.current = null;
       }
 
-      // NATIVE PATH: Show real Google ad
-      if (isNativeAdAvailable && rewardedAdRef.current?.ad) {
+      // Native rewards are only valid when a real Google ad has a server-side
+      // verification session. Never fall back to the simulator on native.
+      if (isNativeAdAvailable) {
+        if (!rewardedAdRef.current?.ad || !isAdLoaded) {
+          void loadRewardedAd();
+          return false;
+        }
         try {
           await rewardedAdRef.current.ad.show();
           return true;
         } catch (err) {
-          console.warn('[AdMob] Failed to show ad, falling back to modal:', err);
-          // Fall through to modal fallback
+          console.warn('[AdMob] Failed to show verified rewarded ad:', err);
+          void loadRewardedAd();
+          return false;
         }
       }
 
-      // WEB/FALLBACK PATH: Show the simulated ad modal
+      // A native build without the AdMob module must fail closed. Showing the
+      // simulator here would imply a verified reward path that does not exist.
+      if (Platform.OS !== 'web') {
+        console.warn('[AdMob] Rewarded ads are unavailable in this native build.');
+        return false;
+      }
+
+      // Web can show the existing visual preview, but it never mints
+      // spendable coins because there is no provider-signed AdMob callback.
       setIsLoadingAd(true);
       await new Promise((resolve) => setTimeout(resolve, 300));
       setIsLoadingAd(false);
       setIsAdModalVisible(true);
       return true;
     },
-    [isNativeAdAvailable, profile?.is_vip]
+    [isAdLoaded, isNativeAdAvailable, isVIP, loadRewardedAd]
   );
 
   const onAdCompleted = useCallback(async () => {
-    const userId = user?.id || 'guest-user';
-    
-    // Record to Supabase
-    await recordRewardedAdToSupabase(userId, currentRewardCoins, currentRewardType);
-
-    // Universally credit coins & XP for any completed ad across the app
-    if (currentRewardType === 'coins' && currentRewardCoins > 0) {
-      addXPAndCoins(50, currentRewardCoins, true);
-      showSuccess(`Earned +${currentRewardCoins} Coins!`);
+    // The fallback modal is only a UI preview. Real coins are credited solely
+    // by the signed AdMob SSV callback and then observed by the native client.
+    if (Platform.OS !== 'web' && rewardSessionTokenRef.current) {
+      await finalizeVerifiedReward(rewardSessionTokenRef.current);
     }
-
-    // Trigger custom local callback if provided
-    if (onRewardCallback) {
-      onRewardCallback(currentRewardCoins);
-    }
-  }, [user, currentRewardCoins, currentRewardType, onRewardCallback, addXPAndCoins, showSuccess]);
+  }, [finalizeVerifiedReward]);
 
   const closeAdModal = useCallback(() => {
     setIsAdModalVisible(false);

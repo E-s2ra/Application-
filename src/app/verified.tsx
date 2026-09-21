@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
-import { CheckCircle2, Loader2, ArrowRight, LogIn } from 'lucide-react-native';
+import { CheckCircle2, Loader2, LogIn, CircleAlert } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function VerifiedScreen() {
@@ -41,10 +41,18 @@ export default function VerifiedScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.card, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
-        <CheckCircle2 color={themeColors.primary} size={64} style={styles.icon} />
-        <Text style={[styles.title, { color: themeColors.text }]}>Email Verified!</Text>
+        {showFallback && !session ? (
+          <CircleAlert color={themeColors.error} size={64} style={styles.icon} />
+        ) : (
+          <CheckCircle2 color={themeColors.primary} size={64} style={styles.icon} />
+        )}
+        <Text style={[styles.title, { color: themeColors.text }]}>
+          {showFallback && !session ? 'Sign-in Required' : 'Email Verified!'}
+        </Text>
         <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-          Your account has been successfully verified.
+          {showFallback && !session
+            ? 'We could not establish a verified session from this link. Sign in to continue.'
+            : 'Your account has been successfully verified.'}
         </Text>
 
         {!showFallback || session ? (
@@ -62,14 +70,6 @@ export default function VerifiedScreen() {
             >
               <LogIn color="#FFF" size={18} />
               <Text style={styles.buttonText}>Sign In to Account</Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.secondaryButton, { borderColor: themeColors.border }]}
-              onPress={() => router.replace('/(tabs)')}
-            >
-              <Text style={[styles.secondaryButtonText, { color: themeColors.textSecondary }]}>Continue to Home</Text>
-              <ArrowRight color={themeColors.textSecondary} size={16} />
             </Pressable>
           </View>
         )}
@@ -135,18 +135,5 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 15,
     fontWeight: '700',
-  },
-  secondaryButton: {
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

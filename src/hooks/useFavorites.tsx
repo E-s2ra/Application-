@@ -19,7 +19,11 @@ type FavoritesContextType = {
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'user_anime_favorites_v1';
+const LEGACY_STORAGE_KEY = 'user_anime_favorites_v1';
+const STORAGE_KEY_PREFIX = 'user_anime_favorites_v2';
+
+const favoritesStorageKey = (userId?: string) =>
+  `${STORAGE_KEY_PREFIX}:${userId || 'guest'}`;
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -27,13 +31,13 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<AnimeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const saveLocal = async (items: AnimeItem[]) => {
+  const saveLocal = async (items: AnimeItem[], storageKey = favoritesStorageKey(user?.id)) => {
     try {
       const json = JSON.stringify(items);
       if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, json);
+        if (typeof window !== 'undefined') localStorage.setItem(storageKey, json);
       } else {
-        await AsyncStorage.setItem(STORAGE_KEY, json);
+        await AsyncStorage.setItem(storageKey, json);
       }
     } catch (err: any) {
       throw new Error(`Failed to save local favorites: ${err.message || err}`);
@@ -42,7 +46,13 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   // Load favorites from local storage & Supabase
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
+      const storageKey = favoritesStorageKey(user?.id);
+      setIsLoading(true);
+      setFavorites([]);
+
       try {
         const [deletedIds, overrides] = await Promise.all([
           getDeletedMediaIds(),
@@ -51,17 +61,19 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
         let storedItems: AnimeItem[] = [];
         if (Platform.OS === 'web') {
-          const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+          const raw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
           if (raw) storedItems = JSON.parse(raw);
+          if (typeof window !== 'undefined') localStorage.removeItem(LEGACY_STORAGE_KEY);
         } else {
-          const raw = await AsyncStorage.getItem(STORAGE_KEY);
+          const raw = await AsyncStorage.getItem(storageKey);
           if (raw) storedItems = JSON.parse(raw);
+          await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
         }
 
         const validStored = storedItems
           .filter((item) => !deletedIds.includes(item.id))
           .map((item) => ({ ...item, ...(overrides[item.id] || {}) }));
-        setFavorites(validStored);
+        if (!cancelled) setFavorites(validStored);
 
         // If user is logged in, try fetching from Supabase favorites table
         if (user) {
@@ -70,25 +82,26 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
             .select('anime_id, anime(id, title, image_url, episodes, genre, is_featured, description)')
             .eq('user_id', user.id);
 
-          if (!error && data && data.length > 0) {
+          if (!error && data) {
             const remoteAnime = data
               .map((row: any) => row.anime)
               .filter(Boolean)
               .filter((item: any) => !deletedIds.includes(item.id))
               .map((item: any) => ({ ...item, ...(overrides[item.id] || {}) })) as AnimeItem[];
-            if (remoteAnime.length > 0) {
-              setFavorites(remoteAnime);
-              saveLocal(remoteAnime);
-            }
+            if (!cancelled) setFavorites(remoteAnime);
+            await saveLocal(remoteAnime, storageKey);
           }
         }
       } catch (err: any) {
-        throw new Error(`Failed to load favorites: ${err.message || err}`);
+        console.warn('Failed to load favorites:', err);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
-    load();
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const isFavorite = (id: string) => {

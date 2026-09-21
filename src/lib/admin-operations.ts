@@ -1,4 +1,4 @@
-import { supabase, SUPABASE_URL } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -116,27 +116,16 @@ export async function addAnime(anime: {
     episode_links?: { episode: number; url: string }[];
 }): Promise<AdminOperationResult<any>> {
     try {
-        // Try direct database insertion first
-        const { data: dbData, error: dbError } = await supabase
-            .from('anime')
-            .insert(anime)
-            .select()
-            .single();
-
-        let insertedData = dbData;
-
-        // If direct insertion fails (e.g. RLS policy requires service role), fallback to Edge Function
-        if (dbError) {
-            const edgeResult = await callAdminOperation<any>('add_anime', { anime });
-
-            if (!edgeResult.success) {
-                return {
-                    success: false,
-                    error: edgeResult.error || 'Failed to publish media. Please check your connection and try again.',
-                };
-            }
-            insertedData = Array.isArray(edgeResult.data) ? edgeResult.data[0] : edgeResult.data;
+        // Private media locators are server-owned. All media creation goes
+        // through the audited admin Edge Function rather than client DB grants.
+        const edgeResult = await callAdminOperation<any>('add_anime', { anime });
+        if (!edgeResult.success) {
+            return {
+                success: false,
+                error: edgeResult.error || 'Failed to publish media. Please check your connection and try again.',
+            };
         }
+        const insertedData = Array.isArray(edgeResult.data) ? edgeResult.data[0] : edgeResult.data;
 
         // Cache the newly added item locally so it appears immediately in the admin UI
         // before the next catalog refresh. This is a UI convenience only — the source of
@@ -159,28 +148,20 @@ export async function deleteAnime(
     animeId: string
 ): Promise<AdminOperationResult<any>> {
     try {
-        // 1. Mark as permanently deleted in local persistent storage so it NEVER returns on reload
-        await markMediaAsDeletedLocally(animeId);
-
         // If this is a local-only item, we are done! It doesn't exist in Supabase so don't try to delete it there.
         if (String(animeId).startsWith('local_') || String(animeId).startsWith('debug_')) {
+            await markMediaAsDeletedLocally(animeId);
             return { success: true, data: null };
         }
 
-        // 2. Perform direct database delete on Supabase
-        const { error } = await supabase
-            .from('anime')
-            .delete()
-            .eq('id', animeId);
-
-        if (error) {
-            const edgeResult = await callAdminOperation('delete_anime', { id: animeId });
-            if (edgeResult.success) return edgeResult;
-
-            return { success: false, error: error.message };
+        // Media deletion is privileged and audited server-side. Only persist the
+        // local hide marker after the server confirms the delete succeeded.
+        const edgeResult = await callAdminOperation('delete_anime', { anime: { id: animeId } });
+        if (!edgeResult.success) {
+            return { success: false, error: edgeResult.error || 'Failed to delete media' };
         }
-
-        return { success: true, data: null };
+        await markMediaAsDeletedLocally(animeId);
+        return { success: true, data: edgeResult.data ?? null };
     } catch (e: any) {
         return { success: false, error: e.message || 'Failed to delete media' };
     }
@@ -190,31 +171,21 @@ export async function updateAnimeFeatured(
     animeId: string,
     isFeatured: boolean
 ): Promise<AdminOperationResult<any>> {
-    // 1. Instantly save to persistent overrides so it updates everywhere in the UI
-    await saveEditedMediaOverride(animeId, { is_featured: isFeatured });
-
     // If this is a local-only item, we are done! It doesn't exist in Supabase so don't try to update it there.
     if (String(animeId).startsWith('local_') || String(animeId).startsWith('debug_')) {
+        await saveEditedMediaOverride(animeId, { is_featured: isFeatured });
         return { success: true, data: { id: animeId, is_featured: isFeatured } };
     }
 
     try {
-        // 2. Update directly in database
-        const { data, error } = await supabase
-            .from('anime')
-            .update({
-                is_featured: isFeatured,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', animeId)
-            .select()
-            .single();
-
-        if (error) {
-            const edgeResult = await callAdminOperation('toggle_featured', { anime: { id: animeId, is_featured: isFeatured } });
-            if (edgeResult.success) return edgeResult;
+        const edgeResult = await callAdminOperation('toggle_featured', {
+            anime: { id: animeId, is_featured: isFeatured },
+        });
+        if (!edgeResult.success) {
+            return { success: false, error: edgeResult.error || 'Failed to update featured status' };
         }
-        return { success: true, data };
+        await saveEditedMediaOverride(animeId, { is_featured: isFeatured });
+        return edgeResult;
     } catch (e: any) {
         console.warn('updateAnimeFeatured error:', e);
         return { success: false, error: e.message || 'Failed to update featured status' };
@@ -223,6 +194,17 @@ export async function updateAnimeFeatured(
 
 const EDITED_MEDIA_STORAGE_KEY = 'aniflix_edited_media_overrides_v2';
 const OVERRIDE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days
+
+function sanitizeMediaOverride(value: Record<string, any> | null | undefined): Record<string, any> {
+    if (!value) return {};
+    const {
+        video_url: _videoUrl,
+        video_asset_key: _videoAssetKey,
+        episode_links: _episodeLinks,
+        ...safe
+    } = value;
+    return safe;
+}
 
 export async function getEditedMediaOverrides(): Promise<Record<string, any>> {
     try {
@@ -236,14 +218,35 @@ export async function getEditedMediaOverrides(): Promise<Record<string, any>> {
         const parsed = JSON.parse(json);
         const valid: Record<string, any> = {};
         const now = Date.now();
+        let sanitizedLegacyData = false;
 
         Object.keys(parsed).forEach((id) => {
             const item = parsed[id];
             // Filter out entries older than 7 days if timestamp is present
             if (!item._savedAt || (now - item._savedAt) < OVERRIDE_TTL_MS) {
-                valid[id] = item;
+                const sanitized = sanitizeMediaOverride(item);
+                valid[id] = sanitized;
+                if (
+                    item?.video_url !== undefined ||
+                    item?.video_asset_key !== undefined ||
+                    item?.episode_links !== undefined
+                ) {
+                    sanitizedLegacyData = true;
+                }
             }
         });
+
+        // One-time scrub for older admin overrides that cached private locators.
+        // Returning sanitized data is not enough: remove those values from the
+        // device/browser storage itself as soon as we see them.
+        if (sanitizedLegacyData || Object.keys(valid).length !== Object.keys(parsed).length) {
+            const sanitizedJson = JSON.stringify(valid);
+            if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+                localStorage.setItem(EDITED_MEDIA_STORAGE_KEY, sanitizedJson);
+            } else {
+                await AsyncStorage.setItem(EDITED_MEDIA_STORAGE_KEY, sanitizedJson);
+            }
+        }
         return valid;
     } catch {
         return {};
@@ -254,8 +257,8 @@ export async function saveEditedMediaOverride(animeId: string, updates: Record<s
     try {
         const current = await getEditedMediaOverrides();
         current[animeId] = {
-            ...(current[animeId] || {}),
-            ...updates,
+            ...sanitizeMediaOverride(current[animeId]),
+            ...sanitizeMediaOverride(updates),
             _savedAt: Date.now(),
         };
         const json = JSON.stringify(current);
@@ -283,49 +286,40 @@ export async function updateAnime(
         episode_links?: { episode: number; url: string }[];
     }
 ): Promise<AdminOperationResult<any>> {
-    // 1. Instantly save to persistent overrides so it updates everywhere in the UI
-    await saveEditedMediaOverride(animeId, updates);
-
     // Local-only items (not in DB) — nothing more to do
     if (String(animeId).startsWith('local_') || String(animeId).startsWith('debug_')) {
+        await saveEditedMediaOverride(animeId, updates);
         return { success: true, data: { id: animeId, ...updates } };
     }
 
     try {
-        // After migration 20260831030000 both video_url and video_asset_key exist in DB
-        // and are kept in sync by the trg_sync_video_columns trigger. We just set one.
-        const { data, error } = await supabase
-            .from('anime')
-            .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('id', animeId)
-            .select()
-            .single();
-
-        if (error) {
-            // Fall through to Edge Function which runs as service-role and bypasses RLS
-            const edgeResult = await callAdminOperation('update_anime', { anime: { id: animeId, ...updates } });
-            if (edgeResult.success) return edgeResult;
-            return { success: false, error: error.message };
+        const edgeResult = await callAdminOperation('update_anime', {
+            anime: { id: animeId, ...updates },
+        });
+        if (!edgeResult.success) {
+            return { success: false, error: edgeResult.error || 'Failed to update media' };
         }
-        return { success: true, data };
+        await saveEditedMediaOverride(animeId, updates);
+        return edgeResult;
     } catch (e: any) {
         console.warn('[admin-operations] updateAnime error:', e);
         return { success: false, error: e.message || 'Failed to update media' };
     }
 }
 
+export async function getAnimePrivateForAdmin(animeId: string): Promise<AdminOperationResult<any>> {
+    if (!animeId) return { success: false, error: 'Anime ID is required' };
+    return callAdminOperation('get_anime_private', { anime: { id: animeId } });
+}
+
 export async function deleteCommentAsAdmin(commentId: string): Promise<AdminOperationResult<any>> {
     try {
         const edgeResult = await callAdminOperation('delete_comment', { comment: { id: commentId } });
         if (edgeResult.success) return edgeResult;
-        return { success: true };
+        return { success: false, error: edgeResult.error || 'Failed to delete comment' };
     } catch (e: any) {
         return { success: false, error: e.message || 'Failed to delete comment' };
     }
-}
-
-export async function setUserSuspension(userId: string, suspended: boolean): Promise<AdminOperationResult<any>> {
-    return callAdminOperation('set_user_suspension', { user: { id: userId, suspended } });
 }
 
 /**
@@ -371,10 +365,7 @@ export async function signOutAllOtherDevices(
     }
 }
 
-/**
- * Grants VIP status to a user by email, username, or ID.
- * Tries Edge Function first, then SECURITY DEFINER RPC functions, and finally direct DB update.
- */
+/** Grants VIP status through the authenticated admin Edge Function. */
 export async function grantVipUser(
     emailOrUsername: string,
     days: number = 30
@@ -384,105 +375,15 @@ export async function grantVipUser(
         return { success: false, error: 'Email or username is required.' };
     }
 
-    // 1. Attempt via Edge Function first
     const edgeResult = await callAdminOperation<any>('grant_vip', {
         user: { email: targetInput, days },
     });
 
-    if (edgeResult.success) {
-        return edgeResult;
-    }
-
-    // 2. Attempt via SECURITY DEFINER RPC function 'admin_grant_vip_by_identifier'
-    try {
-        const { data: rpcData, error: rpcError } = await supabase.rpc('admin_grant_vip_by_identifier', {
-            p_target: targetInput,
-            p_days: days,
-        });
-
-        if (!rpcError && rpcData) {
-            return {
-                success: true,
-                data: rpcData,
-            };
-        }
-    } catch (_rpcErr) {
-        // Fall through to lookup + fallback RPC
-    }
-
-    // 3. Fallback: Search profiles table first by email or username
-    try {
-        let { data: targetProfile } = await supabase
-            .from('profiles')
-            .select('id, email, username, is_vip, vip_expires_at')
-            .or(`email.ilike.${targetInput},username.ilike.${targetInput}`)
-            .maybeSingle();
-
-        if (!targetProfile) {
-            // Check if input is a valid UUID matching user ID
-            const { data: idProfile } = await supabase
-                .from('profiles')
-                .select('id, email, username, is_vip, vip_expires_at')
-                .eq('id', targetInput)
-                .maybeSingle();
-            targetProfile = idProfile;
-        }
-
-        if (!targetProfile) {
-            return {
-                success: false,
-                error: `User with email/username "${targetInput}" was not found in registered profiles.`,
-            };
-        }
-
-        // Try SECURITY DEFINER RPC by UUID
-        try {
-            const { data: uuidRpcData, error: uuidRpcError } = await supabase.rpc('admin_grant_vip', {
-                p_target_user_id: targetProfile.id,
-                p_days: days,
-            });
-
-            if (!uuidRpcError && uuidRpcData) {
-                return {
-                    success: true,
-                    data: uuidRpcData,
-                };
-            }
-        } catch (_uuidRpcErr) {
-            // Fall through to direct table update
-        }
-
-        const currentExpiry = targetProfile.vip_expires_at ? new Date(targetProfile.vip_expires_at).getTime() : 0;
-        const baseTime = Math.max(Date.now(), isNaN(currentExpiry) ? 0 : currentExpiry);
-        const newExpiryIso = new Date(baseTime + days * 24 * 60 * 60 * 1000).toISOString();
-
-        const { data: updatedData, error: updateError } = await supabase
-            .from('profiles')
-            .update({
-                is_vip: true,
-                vip_expires_at: newExpiryIso,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', targetProfile.id)
-            .select()
-            .single();
-
-        if (updateError) {
-            return {
-                success: false,
-                error: updateError.message || 'Failed to update user VIP status in database.',
-            };
-        }
-
-        return {
-            success: true,
-            data: updatedData || { message: `VIP granted for ${days} days` },
-        };
-    } catch (err: any) {
-        return {
+    return edgeResult.success
+        ? edgeResult
+        : {
             success: false,
-            error: err.message || 'An error occurred while granting VIP status.',
+            error: edgeResult.error || 'Failed to grant VIP through the admin service.',
         };
-    }
 }
 

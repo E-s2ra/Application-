@@ -26,6 +26,8 @@ expo-env.d.ts
 *.p12
 *.jks
 *.mobileprovision
+google-play-service-account.json
+*service-account*.json
 .supabase/
 supabase/.env*
 supabase/.temp/

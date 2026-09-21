@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -131,7 +131,7 @@ interface RewardsHubModalProps {
 
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const { showRewardedAd } = useAdMob();
   const { width: windowWidth, isXS, isSmallDevice } = useResponsive();
   const [showVipModal, setShowVipModal] = useState(false);
@@ -158,15 +158,23 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     themes,
     activeTheme,
     badges,
+    walletLedger,
+    isWalletSyncing,
+    walletSyncError,
+    walletLastVerifiedAt,
     claimDailyStreak,
     spinWheel,
     claimMission,
     unlockTheme,
     equipTheme,
-    addXPAndCoins,
+    refreshGamification,
   } = useGamification();
 
-  const [activeTab, setActiveTab] = useState<'spin' | 'streak' | 'themes' | 'badges'>('spin');
+  useEffect(() => {
+    if (visible) void refreshGamification();
+  }, [refreshGamification, visible]);
+
+  const [activeTab, setActiveTab] = useState<'wallet' | 'spin' | 'streak' | 'missions' | 'themes' | 'badges'>('wallet');
 
   const [spinAnim] = useState(() => new Animated.Value(0));
   const [isSpinning, setIsSpinning] = useState(false);
@@ -175,6 +183,22 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const levelXPProgress = xp - currentLevelBaseXP;
   const levelXPTarget = Math.max(1, nextLevelXP - currentLevelBaseXP);
   const xpPercent = Math.min(100, Math.max(0, (levelXPProgress / levelXPTarget) * 100));
+  const curatorMission = missions.find((mission) => mission.id === 'm-daily-3');
+  const walletReasonLabel = (reason: string) => {
+    const labels: Record<string, string> = {
+      opening_balance: 'Opening balance',
+      daily_login: 'Daily reward',
+      mission_reward: 'Task reward',
+      lucky_spin: 'Lucky spin',
+      rewarded_ad: 'Verified ad reward',
+      content_unlock: 'Content unlock',
+      theme_unlock: 'Theme unlock',
+      vip_access: 'VIP access',
+      credit: 'Coin credit',
+      debit: 'Coin spend',
+    };
+    return labels[reason] ?? reason.replace(/_/g, ' ');
+  };
 
   const handleSpinPress = async () => {
     if (isSpinning || !canSpinWheel) return;
@@ -205,56 +229,65 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          {/* 👑 Top Glass Header */}
-          <View style={styles.modalHeader}>
+      <View style={[styles.modalOverlay, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+        <View style={[styles.modalCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+          <View style={[styles.modalHeader, { backgroundColor: themeColors.backgroundCard, borderBottomColor: themeColors.border }]}>
             <View style={styles.headerTitleRow}>
-              <View style={styles.headerIconGlow}>
-                <Trophy size={20} color="#FFB800" />
+              <View style={[styles.headerIconGlow, { backgroundColor: themeColors.backgroundSelected }]}>
+                <Trophy size={20} color={themeColors.primary} />
               </View>
               <View>
-                <Text style={styles.modalTitle}>{t('rewardsHubTitle', 'Rewards Hub')}</Text>
-                <Text style={styles.modalSubtitle}>
+                <Text style={[styles.modalTitle, { color: themeColors.text }]}>{t('rewardsHubTitle', 'Rewards')}</Text>
+                <Text style={[styles.modalSubtitle, { color: themeColors.textSecondary }]}>
                   {t('rewardsHubSubtitle', 'Earn coins, level up & unlock exclusive themes')}
                 </Text>
               </View>
             </View>
 
-            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
-              <X size={18} color="#A0A0B8" />
+            <Pressable
+              style={[styles.closeBtn, { backgroundColor: themeColors.backgroundElement }]}
+              onPress={onClose}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Close rewards"
+            >
+              <X size={18} color={themeColors.textSecondary} />
             </Pressable>
           </View>
 
-          {/* 📊 User Status & XP Bar */}
-          <View style={styles.statusCard}>
+          <View style={[styles.statusCard, { backgroundColor: themeColors.backgroundElement }]}>
             <View style={styles.statusRow}>
               <View style={styles.userProfileInfo}>
-                <View style={styles.levelBadge}>
-                  <Crown size={13} color="#FFD700" />
-                  <Text style={styles.levelBadgeText}>{t('level', 'LVL')} {level}</Text>
+                <View style={[styles.levelBadge, { backgroundColor: themeColors.backgroundSelected }]}>
+                  <Crown size={13} color={themeColors.primary} />
+                  <Text style={[styles.levelBadgeText, { color: themeColors.primary }]}>{t('level', 'LVL')} {level}</Text>
                 </View>
-                <Text style={styles.levelTitleText} numberOfLines={1}>
+                <Text style={[styles.levelTitleText, { color: themeColors.text }]} numberOfLines={1}>
                   {t(levelTitle as any, levelTitle)}
                 </Text>
               </View>
 
               <View style={styles.statsRightGroup}>
                 {isVIP ? (
-                  <View style={styles.vipBadge}>
-                    <Crown size={12} color="#E040FB" />
-                    <Text style={styles.vipBadgeText}>VIP ({vipDaysRemaining}{language === 'ku' ? 'ڕ' : 'd'})</Text>
+                  <View style={[styles.vipBadge, { backgroundColor: themeColors.backgroundSelected }]}>
+                    <Crown size={12} color={themeColors.primary} />
+                    <Text style={[styles.vipBadgeText, { color: themeColors.primary }]}>VIP ({vipDaysRemaining}{language === 'ku' ? 'ڕ' : 'd'})</Text>
                   </View>
                 ) : (
-                  <Pressable style={styles.getVipBtn} onPress={() => setShowVipModal(true)}>
-                    <Crown size={12} color="#FFB800" />
-                    <Text style={styles.getVipBtnText}>{t('getVip', 'Get VIP')}</Text>
+                  <Pressable
+                    style={[styles.getVipBtn, { backgroundColor: themeColors.backgroundSelected }]}
+                    onPress={() => setShowVipModal(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open VIP membership options"
+                  >
+                    <Crown size={12} color={themeColors.primary} />
+                    <Text style={[styles.getVipBtnText, { color: themeColors.primary }]}>{t('getVip', 'Get VIP')}</Text>
                   </Pressable>
                 )}
 
-                <View style={styles.coinPill}>
-                  <Coins size={14} color="#FFB800" />
-                  <Text style={styles.coinPillText}>
+                <View style={[styles.coinPill, { backgroundColor: themeColors.backgroundSelected }]}>
+                  <Coins size={14} color={themeColors.primary} />
+                  <Text style={[styles.coinPillText, { color: themeColors.text }]}>
                     {coins.toLocaleString()} {t('coinsText', 'Coins')}
                   </Text>
                 </View>
@@ -263,31 +296,33 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
             {/* XP Progress Bar */}
             <View style={styles.xpBarSection}>
-              <View style={styles.xpTrack}>
-                <View style={[styles.xpFill, { width: `${xpPercent}%` }]} />
+              <View style={[styles.xpTrack, { backgroundColor: themeColors.backgroundSelected }]}>
+                <View style={[styles.xpFill, { width: `${xpPercent}%`, backgroundColor: themeColors.primary }]} />
               </View>
               <View style={styles.xpInfoRow}>
-                <Text style={styles.xpTextLeft}>{levelXPProgress} / {levelXPTarget} XP</Text>
-                <Text style={styles.xpTextRight}>
+                <Text style={[styles.xpTextLeft, { color: themeColors.textSecondary }]}>{levelXPProgress} / {levelXPTarget} XP</Text>
+                <Text style={[styles.xpTextRight, { color: themeColors.primary }]}>
                   {t('levelUnlocks', `Level ${level + 1} Unlocks`).replace('{level}', String(level + 1))}
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* 💰 Compact Daily Sources Banner & Ad Action */}
-          <View style={styles.dailySourcesBar}>
+          <View style={[styles.dailySourcesBar, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
             <View style={styles.sourcesHeaderRow}>
               <Pressable
                 style={styles.sourcesToggleBtn}
                 onPress={() => setShowSourcesInfo(!showSourcesInfo)}
+                accessibilityRole="button"
+                accessibilityLabel="Toggle reward source details"
+                accessibilityState={{ expanded: showSourcesInfo }}
               >
-                <Zap size={14} color="#FFB800" />
-                <Text style={styles.sourcesTitle}>{t('dailyCoinSources', 'Daily Coin Sources')}</Text>
-                <Info size={12} color="#8E8EA4" />
+                <Zap size={14} color={themeColors.primary} />
+                <Text style={[styles.sourcesTitle, { color: themeColors.text }]}>{t('dailyCoinSources', 'Daily coin sources')}</Text>
+                <Info size={12} color={themeColors.textMuted} />
               </Pressable>
 
-              {!isVIP && (
+              {!isVIP && Platform.OS !== 'web' && (
                 <Pressable
                   style={({ pressed }) => [
                     styles.watchAdCompactBtn,
@@ -311,18 +346,26 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
             {showSourcesInfo && (
               <View style={styles.sourcesChipsGrid}>
-                <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+12 {t('coinsText', 'Coins')}</Text>
-                  <Text style={styles.sourceChipLabel}>{t('perAdUnlimited', 'Per Ad (Unlimited)')}</Text>
-                </View>
+                {Platform.OS !== 'web' && (
+                  <View style={styles.sourceChip}>
+                    <Text style={styles.sourceChipValue}>+12 {t('coinsText', 'Coins')}</Text>
+                    <Text style={styles.sourceChipLabel}>Per verified ad</Text>
+                  </View>
+                )}
                 <View style={styles.sourceChip}>
                   <Text style={styles.sourceChipValue}>+15 {t('coinsText', 'Coins')}</Text>
                   <Text style={styles.sourceChipLabel}>{t('dailyStreakSource', 'Daily Streak')}</Text>
                 </View>
                 <View style={styles.sourceChip}>
-                  <Text style={styles.sourceChipValue}>+50 {t('coinsText', 'Coins')}</Text>
+                  <Text style={styles.sourceChipValue}>Variable prize</Text>
                   <Text style={styles.sourceChipLabel}>{t('luckySpinSource', 'Lucky Spin')}</Text>
                 </View>
+                {curatorMission && (
+                  <View style={styles.sourceChip}>
+                    <Text style={styles.sourceChipValue}>+{curatorMission.rewardCoins} {t('coinsText', 'Coins')}</Text>
+                    <Text style={styles.sourceChipLabel}>Curator Task</Text>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -331,10 +374,26 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
           <View style={styles.navTabsWrapper}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navTabsRow}>
               <Pressable
+                style={[styles.tabSegment, activeTab === 'wallet' && styles.tabSegmentActive]}
+                onPress={() => setActiveTab('wallet')}
+                accessibilityRole="tab"
+                accessibilityLabel="Wallet history tab"
+                accessibilityState={{ selected: activeTab === 'wallet' }}
+              >
+                <Coins size={15} color={activeTab === 'wallet' ? themeColors.primary : themeColors.textMuted} />
+                <Text style={[styles.tabSegmentText, activeTab === 'wallet' && styles.tabSegmentTextActive]}>
+                  Wallet
+                </Text>
+              </Pressable>
+
+              <Pressable
                 style={[styles.tabSegment, activeTab === 'spin' && styles.tabSegmentActive]}
                 onPress={() => setActiveTab('spin')}
+                accessibilityRole="tab"
+                accessibilityLabel="Lucky Spin rewards tab"
+                accessibilityState={{ selected: activeTab === 'spin' }}
               >
-                <Gift size={15} color={activeTab === 'spin' ? '#FFF' : '#7D7D9A'} />
+                <Gift size={15} color={activeTab === 'spin' ? themeColors.primary : themeColors.textMuted} />
                 <Text style={[styles.tabSegmentText, activeTab === 'spin' && styles.tabSegmentTextActive]}>
                   {t('tabLuckySpin', 'Lucky Spin')}
                 </Text>
@@ -343,18 +402,37 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Pressable
                 style={[styles.tabSegment, activeTab === 'streak' && styles.tabSegmentActive]}
                 onPress={() => setActiveTab('streak')}
+                accessibilityRole="tab"
+                accessibilityLabel="Daily streak rewards tab"
+                accessibilityState={{ selected: activeTab === 'streak' }}
               >
-                <Flame size={15} color={activeTab === 'streak' ? '#FF5722' : '#7D7D9A'} />
+                <Flame size={15} color={activeTab === 'streak' ? themeColors.primary : themeColors.textMuted} />
                 <Text style={[styles.tabSegmentText, activeTab === 'streak' && styles.tabSegmentTextActive]}>
                   {t('tabStreak', 'Streak')} ({streakDays}{language === 'ku' ? 'ڕ' : 'd'})
                 </Text>
               </Pressable>
 
               <Pressable
+                style={[styles.tabSegment, activeTab === 'missions' && styles.tabSegmentActive]}
+                onPress={() => setActiveTab('missions')}
+                accessibilityRole="tab"
+                accessibilityLabel="Tasks rewards tab"
+                accessibilityState={{ selected: activeTab === 'missions' }}
+              >
+                <Target size={15} color={activeTab === 'missions' ? themeColors.primary : themeColors.textMuted} />
+                <Text style={[styles.tabSegmentText, activeTab === 'missions' && styles.tabSegmentTextActive]}>
+                  {t('missions', 'Tasks')}
+                </Text>
+              </Pressable>
+
+              <Pressable
                 style={[styles.tabSegment, activeTab === 'themes' && styles.tabSegmentActive]}
                 onPress={() => setActiveTab('themes')}
+                accessibilityRole="tab"
+                accessibilityLabel="Theme shop rewards tab"
+                accessibilityState={{ selected: activeTab === 'themes' }}
               >
-                <Palette size={15} color={activeTab === 'themes' ? '#00D2FF' : '#7D7D9A'} />
+                <Palette size={15} color={activeTab === 'themes' ? themeColors.primary : themeColors.textMuted} />
                 <Text style={[styles.tabSegmentText, activeTab === 'themes' && styles.tabSegmentTextActive]}>
                   {t('tabThemeShop', 'Theme Shop')}
                 </Text>
@@ -363,8 +441,11 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
               <Pressable
                 style={[styles.tabSegment, activeTab === 'badges' && styles.tabSegmentActive]}
                 onPress={() => setActiveTab('badges')}
+                accessibilityRole="tab"
+                accessibilityLabel="Badges rewards tab"
+                accessibilityState={{ selected: activeTab === 'badges' }}
               >
-                <Award size={15} color={activeTab === 'badges' ? '#FFB800' : '#7D7D9A'} />
+                <Award size={15} color={activeTab === 'badges' ? themeColors.primary : themeColors.textMuted} />
                 <Text style={[styles.tabSegmentText, activeTab === 'badges' && styles.tabSegmentTextActive]}>
                   {t('tabBadges', 'Badges')}
                 </Text>
@@ -374,6 +455,70 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
           {/* 📜 Main Content Area */}
           <ScrollView style={styles.mainScrollView} contentContainerStyle={styles.mainScrollContent}>
+            {activeTab === 'wallet' && (
+              <View style={styles.walletSection}>
+                <View style={styles.sectionHeaderLeft}>
+                  <Text style={styles.sectionTitle}>Coin Wallet</Text>
+                  <Text style={styles.sectionSub}>Server-verified balance history for your account.</Text>
+                </View>
+
+                <View style={[styles.walletBalanceCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+                  <View>
+                    <Text style={[styles.walletBalanceLabel, { color: themeColors.textSecondary }]}>Available balance</Text>
+                    <Text style={[styles.walletBalanceValue, { color: themeColors.text }]}>{coins.toLocaleString()} Coins</Text>
+                  </View>
+                  {walletLastVerifiedAt && !walletSyncError ? (
+                    <View style={[styles.walletStatusPill, { backgroundColor: themeColors.backgroundSelected }]}>
+                      <CheckCircle size={13} color={themeColors.primary} />
+                      <Text style={[styles.walletStatusText, { color: themeColors.primary }]}>Server verified</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {isWalletSyncing ? (
+                  <Text style={[styles.walletEmptyText, { color: themeColors.textSecondary }]}>Refreshing wallet history…</Text>
+                ) : walletSyncError ? (
+                  <View style={styles.walletErrorBox}>
+                    <Text style={[styles.walletEmptyText, { color: themeColors.error, paddingVertical: 8 }]}>Wallet verification is unavailable.</Text>
+                    <Pressable
+                      style={[styles.walletRetryBtn, { backgroundColor: themeColors.primary }]}
+                      onPress={() => void refreshGamification()}
+                      accessibilityRole="button"
+                      accessibilityLabel="Retry wallet verification"
+                    >
+                      <Text style={styles.walletRetryText}>Retry</Text>
+                    </Pressable>
+                  </View>
+                ) : walletLedger.length === 0 ? (
+                  <Text style={[styles.walletEmptyText, { color: themeColors.textSecondary }]}>No coin activity yet.</Text>
+                ) : (
+                  <View style={styles.walletLedgerList}>
+                    {walletLedger.map((entry) => (
+                      <View
+                        key={entry.id}
+                        style={[styles.walletLedgerRow, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
+                        accessible
+                        accessibilityLabel={`${walletReasonLabel(entry.reason)}, ${entry.delta > 0 ? 'plus' : 'minus'} ${Math.abs(entry.delta)} coins, balance ${entry.balance_after}`}
+                      >
+                        <View style={styles.walletLedgerCopy}>
+                          <Text style={[styles.walletLedgerReason, { color: themeColors.text }]}>{walletReasonLabel(entry.reason)}</Text>
+                          <Text style={[styles.walletLedgerDate, { color: themeColors.textMuted }]}>
+                            {new Date(entry.created_at).toLocaleString()}
+                          </Text>
+                        </View>
+                        <View style={styles.walletLedgerAmountWrap}>
+                          <Text style={[styles.walletLedgerAmount, { color: entry.delta > 0 ? '#34D399' : themeColors.text }]}>
+                            {entry.delta > 0 ? '+' : ''}{entry.delta}
+                          </Text>
+                          <Text style={[styles.walletLedgerBalance, { color: themeColors.textMuted }]}>Bal. {entry.balance_after}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* 🎡 LUCKY SPIN TAB */}
             {activeTab === 'spin' && (
               <View style={styles.spinSection}>
@@ -475,7 +620,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   </View>
                   <Text style={styles.streakTitle}>{streakDays} {t('dayStreakTitle', 'DAY STREAK!')}</Text>
                   <Text style={styles.streakDesc}>
-                    {t('streakDesc', 'Log in daily to keep your streak alive and earn scaling coin rewards.')}
+                    {t('streakDesc', 'Log in daily to keep your streak alive and claim the verified daily reward.')}
                   </Text>
 
                   <View style={styles.streakGrid}>
@@ -510,15 +655,88 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     ]}
                     disabled={hasClaimedDailyStreak}
                     onPress={claimDailyStreak}
+                    accessibilityRole="button"
+                    accessibilityLabel={hasClaimedDailyStreak ? 'Daily reward already claimed' : 'Claim daily reward'}
+                    accessibilityState={{ disabled: hasClaimedDailyStreak }}
                   >
                     <PrimaryGradient borderRadius={12} />
                     <Text style={styles.claimStreakBtnText}>
                       {hasClaimedDailyStreak
                         ? t('todayClaimed', '✓ Today Claimed - Come Back Tomorrow!')
-                        : `${t('claimToday', 'Claim Today')} (+15 ${t('coinsText', 'Coins')}, +${150 + Math.min(streakDays, 7) * 50} XP)`}
+                        : `${t('claimToday', 'Claim Today')} (+15 ${t('coinsText', 'Coins')} + XP)`}
                     </Text>
                   </Pressable>
                 </View>
+              </View>
+            )}
+
+            {activeTab === 'missions' && (
+              <View style={styles.missionsList}>
+                <View style={styles.sectionHeaderLeft}>
+                  <Text style={styles.sectionTitle}>{t('missions', 'Daily Tasks')}</Text>
+                  <Text style={styles.sectionSub}>
+                    Complete verified activity to earn spendable coins.
+                  </Text>
+                </View>
+
+                {missions
+                  .filter((mission) => mission.id === 'm-daily-3')
+                  .map((mission) => {
+                    const progress = Math.min(100, Math.max(0, (mission.current / Math.max(1, mission.target)) * 100));
+                    const canClaim = mission.completed && !mission.claimed;
+                    return (
+                      <View
+                        key={mission.id}
+                        style={[
+                          styles.missionCard,
+                          { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+                        ]}
+                      >
+                        <View style={styles.missionHeaderRow}>
+                          <View style={styles.missionTitleGroup}>
+                            <Target size={15} color={themeColors.primary} />
+                            <Text style={[styles.missionTitle, { color: themeColors.text }]}>{mission.title}</Text>
+                          </View>
+                          <View style={styles.missionRewardPills}>
+                            <View style={styles.missionCoinPill}>
+                              <Text style={styles.missionCoinText}>+{mission.rewardCoins} Coins</Text>
+                            </View>
+                            <View style={styles.missionXpPill}>
+                              <Text style={styles.missionXpText}>+{mission.rewardXP} XP</Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        <Text style={[styles.missionDesc, { color: themeColors.textMuted }]}>{mission.description}</Text>
+
+                        <View style={styles.missionActionRow}>
+                          <View style={styles.missionTrackSection}>
+                            <View style={[styles.missionTrack, { backgroundColor: themeColors.border }]}>
+                              <View style={[styles.missionFill, { width: `${progress}%`, backgroundColor: themeColors.primary }]} />
+                            </View>
+                            <Text style={[styles.missionProgressText, { color: themeColors.textMuted }]}>
+                              {mission.current}/{mission.target}
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={[
+                              styles.claimMissionBtn,
+                              { backgroundColor: themeColors.primary },
+                              !canClaim && styles.claimMissionBtnDisabled,
+                            ]}
+                            disabled={!canClaim}
+                            onPress={() => void claimMission(mission.id)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Claim ${mission.rewardCoins} coins for ${mission.title}`}
+                          >
+                            <Text style={styles.claimMissionBtnText}>
+                              {mission.claimed ? 'Claimed' : canClaim ? t('claimReward', 'Claim') : 'In progress'}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
               </View>
             )}
 
@@ -630,7 +848,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 14, 0.88)',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 10,
@@ -640,23 +858,11 @@ const styles = StyleSheet.create({
     maxWidth: 580,
     height: '88%',
     maxHeight: 740,
-    backgroundColor: '#0F121E',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#24283C',
     overflow: 'hidden',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.4)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.4,
-        shadowRadius: 24,
-      },
-    }),
-    elevation: 12,
+    boxShadow: '0px 18px 50px rgba(0, 0, 0, 0.28)',
+    elevation: 8,
     display: 'flex',
     flexDirection: 'column',
   },
@@ -667,8 +873,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#1A1E2F',
-    backgroundColor: '#121524',
   },
   headerTitleRow: {
     flexDirection: 'row',
@@ -678,41 +882,31 @@ const styles = StyleSheet.create({
   headerIconGlow: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 184, 0, 0.12)',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 184, 0, 0.25)',
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.25,
   },
   modalSubtitle: {
-    fontSize: 11,
-    color: '#8E8EA6',
-    marginTop: 1,
+    fontSize: 12,
+    marginTop: 2,
   },
   closeBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1C2032',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2A2E44',
   },
   statusCard: {
-    backgroundColor: '#141829',
     marginHorizontal: 16,
     marginTop: 12,
-    padding: 14,
+    padding: 16,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#252940',
     gap: 10,
   },
   statusRow: {
@@ -730,21 +924,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 184, 0, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFB800',
   },
   levelBadgeText: {
-    color: '#FFD700',
-    fontWeight: '900',
+    fontWeight: '700',
     fontSize: 11,
   },
   levelTitleText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 13,
     flex: 1,
   },
@@ -756,48 +945,36 @@ const styles = StyleSheet.create({
   vipBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(224, 64, 251, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E040FB',
   },
   vipBadgeText: {
-    color: '#E040FB',
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   getVipBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 184, 0, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFB800',
   },
   getVipBtnText: {
-    color: '#FFB800',
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   coinPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#1C2035',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#2D3250',
   },
   coinPillText: {
-    color: '#FFD700',
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 12,
   },
   xpBarSection: {
@@ -806,13 +983,11 @@ const styles = StyleSheet.create({
   xpTrack: {
     width: '100%',
     height: 6,
-    backgroundColor: '#1F243A',
     borderRadius: 3,
     overflow: 'hidden',
   },
   xpFill: {
     height: '100%',
-    backgroundColor: '#00D2FF',
     borderRadius: 3,
   },
   xpInfoRow: {
@@ -822,21 +997,17 @@ const styles = StyleSheet.create({
   },
   xpTextLeft: {
     fontSize: 10,
-    color: '#A0A0C0',
     fontWeight: '600',
   },
   xpTextRight: {
     fontSize: 10,
-    color: '#00D2FF',
     fontWeight: '700',
   },
   dailySourcesBar: {
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: '#121524',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#202438',
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -852,14 +1023,12 @@ const styles = StyleSheet.create({
   },
   sourcesTitle: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#FFB800',
+    fontWeight: '600',
   },
   watchAdCompactBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0356C5',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
@@ -867,7 +1036,7 @@ const styles = StyleSheet.create({
   watchAdBtnText: {
     color: '#FFF',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   sourcesChipsGrid: {
     flexDirection: 'row',
@@ -913,21 +1082,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#141728',
-    borderWidth: 1,
-    borderColor: '#22263C',
+    backgroundColor: 'transparent',
   },
   tabSegmentActive: {
-    backgroundColor: '#0356C5',
-    borderColor: '#0356C5',
+    backgroundColor: '#192235',
   },
   tabSegmentText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#8E8EA6',
   },
   tabSegmentTextActive: {
-    color: '#FFFFFF',
+    color: '#4D7CFE',
   },
   mainScrollView: {
     flex: 1,
@@ -965,17 +1131,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 0px 6px rgba(255, 184, 0, 0.9)',
-      },
-      default: {
-        shadowColor: '#FFB800',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.9,
-        shadowRadius: 6,
-      },
-    }),
+    boxShadow: '0px 0px 6px rgba(255, 184, 0, 0.9)',
     elevation: 6,
   },
   wheelPointerTriangle: {
@@ -990,17 +1146,7 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#FFD700',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 6px rgba(255, 215, 0, 0.8)',
-      },
-      default: {
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.8,
-        shadowRadius: 6,
-      },
-    }),
+    boxShadow: '0px 2px 6px rgba(255, 215, 0, 0.8)',
     elevation: 8,
   },
   wheelCircle: {
@@ -1047,17 +1193,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFD700',
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 0px 8px rgba(255, 215, 0, 0.8)',
-      },
-      default: {
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 8,
-      },
-    }),
+    boxShadow: '0px 0px 8px rgba(255, 215, 0, 0.8)',
     elevation: 8,
   },
   wonRewardBanner: {
@@ -1233,6 +1369,104 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8EA6',
     marginTop: 2,
+  },
+  walletSection: {
+    gap: 10,
+  },
+  walletBalanceCard: {
+    minHeight: 82,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  walletBalanceLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  walletBalanceValue: {
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  walletStatusPill: {
+    minHeight: 32,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  walletStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  walletLedgerList: {
+    gap: 8,
+  },
+  walletLedgerRow: {
+    minHeight: 64,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  walletLedgerCopy: {
+    flex: 1,
+  },
+  walletLedgerReason: {
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'capitalize',
+  },
+  walletLedgerDate: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+  walletLedgerAmountWrap: {
+    alignItems: 'flex-end',
+  },
+  walletLedgerAmount: {
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  walletLedgerBalance: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  walletEmptyText: {
+    textAlign: 'center',
+    paddingVertical: 24,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  walletErrorBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  walletRetryBtn: {
+    minHeight: 40,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletRetryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
   themesCardsList: {
     gap: 10,

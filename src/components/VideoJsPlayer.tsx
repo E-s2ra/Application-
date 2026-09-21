@@ -31,7 +31,7 @@ import {
 
 export type VideoJsQuality = 'Auto' | '1080p' | '720p' | '480p' | '360p';
 export type VideoJsSpeed = 0.5 | 0.75 | 1.0 | 1.25 | 1.5 | 2.0;
-export type VideoJsSubtitle = 'Off' | 'English' ;
+export type VideoJsSubtitle = 'Off' | 'Subtitles';
 export type SettingsSubMenu = 'main' | 'quality' | 'speed' | 'subtitles';
 
 export interface VideoJsPlayerProps {
@@ -40,8 +40,6 @@ export interface VideoJsPlayerProps {
   poster?: string;
   title?: string;
   subtitleTrackUrl?: string;
-  isVIP?: boolean;
-  onOpenVipModal?: () => void;
 
   // Initial State Overrides for Design State Testing
   forcedState?: {
@@ -69,17 +67,11 @@ export interface VideoJsPlayerProps {
   onTheaterChange?: (theater: boolean) => void;
 }
 
-const SAMPLE_VIDEO =
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';
-const SAMPLE_POSTER =
-  'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80';
-
 export function VideoJsPlayer({
-  src = SAMPLE_VIDEO,
-  poster = SAMPLE_POSTER,
-  title = 'Tears of Steel — AniFlix Cinema 4K',
-  isVIP = false,
-  onOpenVipModal,
+  src = '',
+  poster,
+  title = 'AniFlix Player',
+  subtitleTrackUrl,
   forcedState,
   onPlayStateChange,
   onFullscreenChange,
@@ -122,15 +114,25 @@ export function VideoJsPlayer({
   const [settingsSubMenu, setSettingsSubMenu] = useState<SettingsSubMenu>(
     forcedState?.settingsSubMenu ?? 'main'
   );
-  const [selectedQuality, setSelectedQuality] = useState<VideoJsQuality>(
-    forcedState?.selectedQuality ?? '1080p'
-  );
   const [selectedSpeed, setSelectedSpeed] = useState<VideoJsSpeed>(
     forcedState?.selectedSpeed ?? 1.0
   );
   const [selectedSubtitle, setSelectedSubtitle] = useState<VideoJsSubtitle>(
-    forcedState?.selectedSubtitle ?? 'English'
+    forcedState?.selectedSubtitle ?? 'Off'
   );
+
+  useEffect(() => {
+    const vjs = vjsPlayerRef.current;
+    if (vjs) {
+      try {
+        vjs.playbackRate(selectedSpeed);
+        return;
+      } catch {}
+    }
+    if (videoRef.current) {
+      videoRef.current.playbackRate = selectedSpeed;
+    }
+  }, [selectedSpeed]);
 
   // Timeline Scrubber & Tooltip States
   const [scrubberWidth, setScrubberWidth] = useState(500);
@@ -166,9 +168,6 @@ export function VideoJsPlayer({
       if (!prev || prev.settingsSubMenu !== forcedState.settingsSubMenu) {
         if (forcedState.settingsSubMenu !== undefined) setSettingsSubMenu(forcedState.settingsSubMenu);
       }
-      if (!prev || prev.selectedQuality !== forcedState.selectedQuality) {
-        if (forcedState.selectedQuality !== undefined) setSelectedQuality(forcedState.selectedQuality);
-      }
       if (!prev || prev.selectedSpeed !== forcedState.selectedSpeed) {
         if (forcedState.selectedSpeed !== undefined) setSelectedSpeed(forcedState.selectedSpeed);
       }
@@ -200,7 +199,7 @@ export function VideoJsPlayer({
 
   // Video.js DOM Engine Initialization (Web Environment)
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== 'web' || !src) return;
 
     let vjsPlayer: any = null;
 
@@ -251,7 +250,9 @@ export function VideoJsPlayer({
           vjsPlayer.on('playing', () => setIsBuffering(false));
 
           vjsPlayer.on('durationchange', () => {
-            if (vjsPlayer) setDuration(vjsPlayer.duration() || 734);
+            if (!vjsPlayer) return;
+            const nextDuration = Number(vjsPlayer.duration());
+            setDuration(Number.isFinite(nextDuration) && nextDuration > 0 ? nextDuration : 0);
           });
 
           vjsPlayer.on('play', () => {
@@ -477,7 +478,7 @@ export function VideoJsPlayer({
     isDraggingRef.current = true;
     blockTimeupdateRef.current = true;
 
-    const timeFromTouch = (touch: Touch): number => {
+    const timeFromTouch = (touch: { clientX: number }): number => {
       const trackEl = scrubberElRef.current;
       if (!trackEl) return 0;
       const rect = trackEl.getBoundingClientRect();
@@ -591,6 +592,14 @@ export function VideoJsPlayer({
   const displayTime = dragPreviewTime !== null ? dragPreviewTime : currentTime;
   const progressRatio = duration > 0 ? Math.max(0, Math.min(1, displayTime / duration)) : 0;
 
+  if (!src) {
+    return (
+      <View style={[styles.playerOuterWrapper, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#050509' }]}>
+        <Text style={{ color: '#D4D4DE', fontSize: 13, fontWeight: '700' }}>Playback source unavailable</Text>
+      </View>
+    );
+  }
+
   return (
     <View
       ref={containerRef}
@@ -613,19 +622,26 @@ export function VideoJsPlayer({
             style={{
               width: '100%',
               height: '100%',
-              objectFit: selectedQuality === '1080p' ? 'cover' : 'contain',
+              objectFit: 'contain',
               backgroundColor: '#000000',
             }}
             src={src}
             poster={poster}
             playsInline
-          />
+          >
+            {subtitleTrackUrl ? (
+              <track
+                src={subtitleTrackUrl}
+                kind="subtitles"
+                label="Subtitles"
+                default={selectedSubtitle === 'Subtitles'}
+              />
+            ) : null}
+          </video>
+        ) : poster ? (
+          <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} resizeMode="cover" />
         ) : (
-          <Image
-            source={{ uri: poster }}
-            style={StyleSheet.absoluteFillObject}
-            resizeMode="cover"
-          />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000000' }]} />
         )}
 
         {/* Backdrop Tap Target to Toggle Controls */}
@@ -716,7 +732,7 @@ export function VideoJsPlayer({
               </View>
             ) : (
               <View style={styles.settingsMenuHeader}>
-                <Sparkles size={14} color="#00D2FF" />
+                <Sparkles size={14} color="#4D7CFE" />
                 <Text style={styles.settingsMenuHeaderTitle}>Playback Settings</Text>
               </View>
             )}
@@ -724,19 +740,15 @@ export function VideoJsPlayer({
             {/* MAIN SETTINGS MENU */}
             {settingsSubMenu === 'main' && (
               <View style={styles.settingsOptionsList}>
-                <Pressable
-                  style={styles.settingsOptionRow}
-                  onPress={() => setSettingsSubMenu('quality')}
-                >
+                <View style={styles.settingsOptionRow} accessible accessibilityLabel="Quality is managed by the secure source stream">
                   <View style={styles.settingsOptionLeft}>
                     <Monitor size={15} color="#A0A0B8" />
                     <Text style={styles.settingsOptionLabel}>Quality</Text>
                   </View>
                   <View style={styles.settingsOptionRight}>
-                    <Text style={styles.settingsOptionValue}>{selectedQuality}</Text>
-                    <ChevronRight size={14} color="#70708A" />
+                    <Text style={styles.settingsOptionValue}>Original</Text>
                   </View>
-                </Pressable>
+                </View>
 
                 <Pressable
                   style={styles.settingsOptionRow}
@@ -754,62 +766,33 @@ export function VideoJsPlayer({
                   </View>
                 </Pressable>
 
-                <Pressable
-                  style={styles.settingsOptionRow}
-                  onPress={() => setSettingsSubMenu('subtitles')}
-                >
-                  <View style={styles.settingsOptionLeft}>
-                    <Captions size={15} color="#A0A0B8" />
-                    <Text style={styles.settingsOptionLabel}>Subtitles</Text>
-                  </View>
-                  <View style={styles.settingsOptionRight}>
-                    <Text style={styles.settingsOptionValue}>{selectedSubtitle}</Text>
-                    <ChevronRight size={14} color="#70708A" />
-                  </View>
-                </Pressable>
+                {subtitleTrackUrl ? (
+                  <Pressable
+                    style={styles.settingsOptionRow}
+                    onPress={() => setSettingsSubMenu('subtitles')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Subtitles ${selectedSubtitle}`}
+                  >
+                    <View style={styles.settingsOptionLeft}>
+                      <Captions size={15} color="#A0A0B8" />
+                      <Text style={styles.settingsOptionLabel}>Subtitles</Text>
+                    </View>
+                    <View style={styles.settingsOptionRight}>
+                      <Text style={styles.settingsOptionValue}>{selectedSubtitle}</Text>
+                      <ChevronRight size={14} color="#70708A" />
+                    </View>
+                  </Pressable>
+                ) : null}
               </View>
             )}
 
             {/* QUALITY SUBMENU */}
             {settingsSubMenu === 'quality' && (
               <View style={styles.settingsOptionsList}>
-                {(['Auto', '1080p', '720p', '480p', '360p'] as VideoJsQuality[]).map(
-                  (q) => {
-                    const isSelected = selectedQuality === q;
-                    const isVipLocked = q === '1080p' && !isVIP;
-                    return (
-                      <Pressable
-                        key={q}
-                        style={[
-                          styles.settingsSubItemRow,
-                          isSelected && styles.settingsSubItemActive,
-                        ]}
-                        onPress={() => {
-                          if (isVipLocked) {
-                            onOpenVipModal?.();
-                            return;
-                          }
-                          setSelectedQuality(q);
-                          setSettingsSubMenu('main');
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.settingsSubItemText,
-                            isVipLocked ? { color: '#FFB800' } : isSelected ? styles.settingsSubItemTextActive : undefined,
-                          ]}
-                        >
-                          {q === '1080p' ? '1080p Full HD (VIP Only)' : q === '720p' ? '720p HD' : q}
-                        </Text>
-                        {isVipLocked ? (
-                          <Sparkles size={14} color="#FFB800" />
-                        ) : isSelected ? (
-                          <Check size={14} color="#00D2FF" />
-                        ) : null}
-                      </Pressable>
-                    );
-                  }
-                )}
+                <View style={[styles.settingsSubItemRow, styles.settingsSubItemActive]}>
+                  <Text style={[styles.settingsSubItemText, styles.settingsSubItemTextActive]}>Original secure stream</Text>
+                  <Check size={14} color="#4D7CFE" />
+                </View>
               </View>
             )}
 
@@ -838,7 +821,7 @@ export function VideoJsPlayer({
                       >
                         {s === 1.0 ? 'Normal (1.0x)' : `${s}x`}
                       </Text>
-                      {isSelected && <Check size={14} color="#00D2FF" />}
+                      {isSelected && <Check size={14} color="#4D7CFE" />}
                     </Pressable>
                   );
                 })}
@@ -846,9 +829,9 @@ export function VideoJsPlayer({
             )}
 
             {/* SUBTITLES SUBMENU */}
-            {settingsSubMenu === 'subtitles' && (
+            {settingsSubMenu === 'subtitles' && subtitleTrackUrl && (
               <View style={styles.settingsOptionsList}>
-                {(['Off', 'English', 'Bangla'] as VideoJsSubtitle[]).map((sub) => {
+                {(['Off', 'Subtitles'] as VideoJsSubtitle[]).map((sub) => {
                   const isSelected = selectedSubtitle === sub;
                   return (
                     <Pressable
@@ -859,8 +842,17 @@ export function VideoJsPlayer({
                       ]}
                       onPress={() => {
                         setSelectedSubtitle(sub);
+                        const tracks = vjsPlayerRef.current?.textTracks?.();
+                        if (tracks) {
+                          for (let i = 0; i < tracks.length; i += 1) {
+                            tracks[i].mode = sub === 'Off' ? 'disabled' : (i === 0 ? 'showing' : 'disabled');
+                          }
+                        }
                         setSettingsSubMenu('main');
                       }}
+                      accessibilityRole="radio"
+                      accessibilityLabel={sub === 'Off' ? 'Turn subtitles off' : 'Turn subtitles on'}
+                      accessibilityState={{ selected: isSelected }}
                     >
                       <Text
                         style={[
@@ -868,9 +860,9 @@ export function VideoJsPlayer({
                           isSelected && styles.settingsSubItemTextActive,
                         ]}
                       >
-                        {sub === 'Bangla' ? 'বাংলা (Bangla)' : sub}
+                        {sub}
                       </Text>
-                      {isSelected && <Check size={14} color="#00D2FF" />}
+                      {isSelected && <Check size={14} color="#4D7CFE" />}
                     </Pressable>
                   );
                 })}
@@ -1063,7 +1055,7 @@ export function VideoJsPlayer({
                   >
                     <Settings
                       size={18}
-                      color={isSettingsOpen ? '#00D2FF' : '#FFFFFF'}
+                      color={isSettingsOpen ? '#4D7CFE' : '#FFFFFF'}
                     />
                   </Pressable>
 
@@ -1077,7 +1069,7 @@ export function VideoJsPlayer({
                     >
                       <PictureInPicture2
                         size={18}
-                        color={isPip ? '#00D2FF' : '#FFFFFF'}
+                        color={isPip ? '#4D7CFE' : '#FFFFFF'}
                       />
                     </Pressable>
                   )}
@@ -1095,7 +1087,7 @@ export function VideoJsPlayer({
                     >
                       <Tv
                         size={18}
-                        color={isTheaterMode ? '#00D2FF' : '#FFFFFF'}
+                        color={isTheaterMode ? '#4D7CFE' : '#FFFFFF'}
                       />
                     </Pressable>
                   )}
@@ -1133,17 +1125,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1F2438',
     position: 'relative',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 12px 20px rgba(0, 0, 0, 0.5)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-      },
-    }),
+    boxShadow: '0px 12px 20px rgba(0, 0, 0, 0.5)',
     elevation: 10,
   },
   playerTheaterMode: {
@@ -1153,7 +1135,7 @@ const styles = StyleSheet.create({
   },
   playerFullscreen: {
     ...(Platform.OS === 'web'
-      ? { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }
+      ? { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, width: '100vw' as any, height: '100vh' as any }
       : { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }),
     maxWidth: undefined,
     maxHeight: undefined,
@@ -1182,7 +1164,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   centerControlsOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -1229,7 +1215,11 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.94 }],
   },
   controlsOverlayWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     justifyContent: 'space-between',
     zIndex: 180,
     elevation: 180,
@@ -1275,15 +1265,15 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   vjsBadge: {
-    backgroundColor: 'rgba(3, 86, 197, 0.3)',
+    backgroundColor: 'rgba(77, 124, 254, 0.24)',
     borderWidth: 1,
-    borderColor: '#0356C5',
+    borderColor: '#4D7CFE',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 5,
   },
   vjsBadgeText: {
-    color: '#00D2FF',
+    color: '#4D7CFE',
     fontSize: 9,
     fontWeight: '900',
   },
@@ -1297,17 +1287,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 4,
     position: 'relative',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 0px 6px rgba(0, 210, 255, 0.9)',
-      },
-      default: {
-        shadowColor: '#00D2FF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.9,
-        shadowRadius: 6,
-      },
-    }),
+    boxShadow: '0px 0px 6px rgba(77, 124, 254, 0.7)',
     elevation: 6,
   },
   hoverTooltipBox: {
@@ -1315,14 +1295,14 @@ const styles = StyleSheet.create({
     top: -24,
     backgroundColor: '#0F121E',
     borderWidth: 1,
-    borderColor: '#00D2FF',
+    borderColor: '#4D7CFE',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     zIndex: 50,
   },
   hoverTooltipText: {
-    color: '#00D2FF',
+    color: '#4D7CFE',
     fontSize: 10,
     fontWeight: '800',
   },
@@ -1347,7 +1327,7 @@ const styles = StyleSheet.create({
   },
   scrubberPlayedFill: {
     height: 4,
-    backgroundColor: '#0356C5',
+    backgroundColor: '#4D7CFE',
     borderRadius: 2,
     position: 'absolute',
   },
@@ -1356,19 +1336,15 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#00D2FF',
+    backgroundColor: '#4D7CFE',
     marginTop: -4,
     marginLeft: -6,
-    shadowColor: '#00D2FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
+    boxShadow: '0px 0px 6px rgba(77, 124, 254, 0.9)',
     elevation: 6,
   },
   scrubberHandleDotDragging: {
     transform: [{ scale: 1.4 }],
-    shadowOpacity: 1,
-    shadowRadius: 10,
+    boxShadow: '0px 0px 10px rgba(77, 124, 254, 1)',
   },
   bottomControlsRow: {
     flexDirection: 'row',
@@ -1393,9 +1369,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ctrlIconBtnActive: {
-    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+    backgroundColor: 'rgba(77, 124, 254, 0.15)',
     borderWidth: 1,
-    borderColor: '#00D2FF',
+    borderColor: '#4D7CFE',
   },
   volumeGroupRow: {
     flexDirection: 'row',
@@ -1451,10 +1427,7 @@ const styles = StyleSheet.create({
     borderColor: '#242A42',
     padding: 10,
     zIndex: 100,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
+    boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.6)',
     elevation: 12,
   },
   settingsMenuHeader: {
@@ -1503,7 +1476,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   settingsOptionValue: {
-    color: '#00D2FF',
+    color: '#4D7CFE',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -1516,7 +1489,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   settingsSubItemActive: {
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    backgroundColor: 'rgba(77, 124, 254, 0.12)',
   },
   settingsSubItemText: {
     color: '#A0A0C0',
@@ -1525,6 +1498,6 @@ const styles = StyleSheet.create({
   },
   settingsSubItemTextActive: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '700',
   },
 });

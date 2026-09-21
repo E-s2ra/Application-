@@ -97,7 +97,6 @@ export default function WatchScreen() {
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
-  const [selectedAudio, setSelectedAudio] = useState<string>('Kurdish Dubbed');
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [isExpandedSynopsis, setIsExpandedSynopsis] = useState(false);
   const [showControls, setShowControls] = useState(true);
@@ -462,6 +461,19 @@ export default function WatchScreen() {
   }, [anime, player, selectedEpisode, updateProgress]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // A recommendation uses router.replace on this same screen instance. Reset
+    // title-specific playback state immediately so the previous episode/player
+    // cannot leak into the newly selected title while its metadata is loading.
+    setSelectedEpisode(1);
+    setAnime(null);
+    setRecommendations([]);
+    setVideoSource(null);
+    setPlaybackError(null);
+    setCurrentTime(0);
+    setDuration(0);
+
     async function loadData() {
       if (!id) return;
       try {
@@ -469,6 +481,7 @@ export default function WatchScreen() {
           getDeletedMediaIds(),
           getEditedMediaOverrides(),
         ]);
+        if (cancelled) return;
 
         if (deletedIds.includes(String(id))) {
           setPlaybackError('This media item has been removed by the administrator.');
@@ -486,6 +499,7 @@ export default function WatchScreen() {
             .select('id, title, description, image_url, episodes, genre, category, is_featured')
             .eq('id', id)
             .single();
+          if (cancelled) return;
           data = supabaseData;
         }
 
@@ -510,6 +524,7 @@ export default function WatchScreen() {
             .select('id, title, description, image_url, episodes, genre, category, is_featured')
             .neq('id', id)
             .limit(6);
+          if (cancelled) return;
           recs = supabaseRecs;
         }
 
@@ -525,12 +540,16 @@ export default function WatchScreen() {
 
         setRecommendations(customRecs.length > 0 ? customRecs : fallbackSimilar.slice(0, 6));
       } catch (e) {
+        if (cancelled) return;
         console.warn('[Watch] Error loading media data:', e);
         setPlaybackError('Failed to load media details.');
       }
     }
 
     void loadData();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const isMovie = anime?.category === 'Movies' || anime?.category === 'Anime Movies';
@@ -1500,8 +1519,6 @@ export default function WatchScreen() {
         }}
         availableQualities={anime?.qualities ?? []}
         availableAudioTracks={anime?.audio_tracks}
-        activeAudio={selectedAudio}
-        onSelectAudio={(a) => setSelectedAudio(a)}
       />
 
       <VipSubscriptionModal

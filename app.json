@@ -8,6 +8,7 @@
     "scheme": "aniflix",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.e2sra.aniflix",
       "icon": "./assets/images/icon.png"
     },
     "android": {

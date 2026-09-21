@@ -47,22 +47,54 @@ serve(async (req) => {
             );
         }
 
-        const body = await req.json();
-        const { current_device_id } = body;
+        const body = await req.json().catch(() => null) as { current_device_id?: unknown } | null;
+        const currentDeviceId = typeof body?.current_device_id === 'string'
+            ? body.current_device_id.trim()
+            : '';
 
-        if (!current_device_id) {
+        if (currentDeviceId.length < 20 || currentDeviceId.length > 200) {
             return new Response(
-                JSON.stringify({ error: 'Missing current_device_id' }),
+                JSON.stringify({ error: 'Invalid current_device_id' }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
-        // Delete all other device sessions for this user
+        // A displaced but still-unexpired JWT must never be able to delete the
+        // newer active device row and then reclaim single-device ownership.
+        const [{ error: activeSessionError }, { data: isCurrentDevice, error: currentDeviceError }] = await Promise.all([
+            supabase.rpc('assert_active_auth_session'),
+            supabase.rpc('is_current_device', { p_device_id: currentDeviceId }),
+        ]);
+        if (activeSessionError || currentDeviceError || isCurrentDevice !== true) {
+            return new Response(
+                JSON.stringify({ error: 'This account session is no longer active' }),
+                { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
+        const accessToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+        if (!accessToken) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized' }),
+                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
+        // Revoke every other Supabase Auth session while keeping this one alive.
+        const { error: revokeError } = await supabaseAdmin.auth.admin.signOut(accessToken, 'others');
+        if (revokeError) {
+            return new Response(
+                JSON.stringify({ error: 'Unable to revoke other sessions' }),
+                { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
+        // Clean up any legacy extra device rows left from older schemas.
         const { error: deleteError } = await supabaseAdmin
             .from('device_sessions')
             .delete()
             .eq('user_id', user.id)
-            .neq('device_id', current_device_id);
+            .neq('device_id', currentDeviceId);
 
         if (deleteError) {
             return new Response(

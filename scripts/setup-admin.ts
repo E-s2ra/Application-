@@ -13,11 +13,10 @@
  *   1. Reads ADMIN_EMAIL + ADMIN_PASSWORD from .env
  *   2. Tries to sign in — if the account doesn't exist, creates it
  *   3. Calls Supabase service-role API to set role='admin' in profiles table
- *   4. Injects app.admin_email into the DB so get_admin_email() returns it
  *
  * Requirements:
  *   SUPABASE_URL         (from .env)
- *   SUPABASE_SERVICE_KEY (from .env  — NOT the anon key, the service_role key)
+ *   SUPABASE_SECRET_KEY  (from .env — server-only secret key)
  *   ADMIN_EMAIL          (from .env)
  *   ADMIN_PASSWORD       (from .env)
  */
@@ -36,16 +35,16 @@ dotenv.config({ path: envPath });
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const SUPABASE_URL      = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const SERVICE_KEY       = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const ADMIN_EMAIL       = (process.env.ADMIN_EMAIL || process.env.EXPO_PUBLIC_ADMIN_EMAIL)!;
-const rawPassword = process.env.ADMIN_PASSWORD;
-const ADMIN_PASSWORD = (rawPassword && !rawPassword.startsWith('#')) ? rawPassword : 'Admin123!@#';
+const SERVICE_KEY       = (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!;
+const ADMIN_EMAIL       = process.env.ADMIN_EMAIL!;
+const ADMIN_PASSWORD    = process.env.ADMIN_PASSWORD!;
 
 function validate() {
   const missing: string[] = [];
   if (!SUPABASE_URL)    missing.push('EXPO_PUBLIC_SUPABASE_URL');
-  if (!SERVICE_KEY)     missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (!SERVICE_KEY)     missing.push('SUPABASE_SECRET_KEY');
   if (!ADMIN_EMAIL)     missing.push('ADMIN_EMAIL');
+  if (!ADMIN_PASSWORD)  missing.push('ADMIN_PASSWORD');
 
   if (missing.length > 0) {
     console.error('\n❌  Missing required environment variables:\n');
@@ -79,19 +78,6 @@ async function serviceRoleGet(path: string): Promise<any> {
   return res.json();
 }
 
-async function rpcAsServiceRole(fn: string, args: object): Promise<any> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'apikey':        SERVICE_KEY,
-      'Authorization': `Bearer ${SERVICE_KEY}`,
-    },
-    body: JSON.stringify(args),
-  });
-  return res.json();
-}
-
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   validate();
@@ -103,7 +89,7 @@ async function main() {
   console.log('══════════════════════════════════════════\n');
 
   // ── Step 1: Check if admin user exists ───────────────────────────────────
-  console.log('⏳  Step 1/4 — Looking up admin account...');
+  console.log('⏳  Step 1/3 — Looking up admin account...');
   const usersRes = await serviceRoleGet(
     `/auth/v1/admin/users?email=${encodeURIComponent(ADMIN_EMAIL)}`
   );
@@ -115,7 +101,7 @@ async function main() {
     console.log(`✅  Admin account found: ${userId}`);
   } else {
     // ── Step 2: Create admin user ─────────────────────────────────────────
-    console.log('⏳  Step 2/4 — Creating admin account...');
+    console.log('⏳  Step 2/3 — Creating admin account...');
     const createRes = await serviceRoleRequest('/auth/v1/admin/users', {
       email:            ADMIN_EMAIL,
       password:         ADMIN_PASSWORD,
@@ -134,7 +120,7 @@ async function main() {
   }
 
   // ── Step 3: Set role='admin' in profiles table ────────────────────────────
-  console.log('⏳  Step 3/4 — Promoting to admin role...');
+  console.log('⏳  Step 3/3 — Promoting to admin role...');
 
   // Upsert profile with role='admin' using service role (bypasses RLS + trigger check)
   const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
@@ -182,30 +168,10 @@ async function main() {
     console.log('✅  Profile role set to admin');
   }
 
-  // ── Step 4: Inject app.admin_email into DB ────────────────────────────────
-  console.log('⏳  Step 4/4 — Configuring database admin email setting...');
-  // This allows get_admin_email() to return the correct value from env
-  const sqlRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'apikey':        SERVICE_KEY,
-      'Authorization': `Bearer ${SERVICE_KEY}`,
-    },
-    body: JSON.stringify({
-      query: `ALTER DATABASE postgres SET app.admin_email = '${ADMIN_EMAIL.replace(/'/g, "''")}';`,
-    }),
-  });
-  // This may not work on hosted Supabase (requires superuser) — that's OK,
-  // the fallback in get_admin_email() handles it.
-  console.log('✅  Done (or skipped — managed Supabase may require Vault for this)');
-
   // ── Summary ───────────────────────────────────────────────────────────────
   console.log('\n══════════════════════════════════════════');
   console.log('🎉  Admin setup complete!\n');
-  console.log('   Login credentials:');
-  console.log(`   Email    : ${ADMIN_EMAIL}`);
-  console.log(`   Password : ${ADMIN_PASSWORD}`);
+  console.log(`   Admin account: ${ADMIN_EMAIL}`);
   console.log('\n   → Open the app and go to Profile → Admin Panel');
   console.log('══════════════════════════════════════════\n');
 }

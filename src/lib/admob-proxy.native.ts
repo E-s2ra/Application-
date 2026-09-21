@@ -12,7 +12,7 @@ try {
   TestIds = GoogleMobileAds.TestIds;
   isAvailable = !!RewardedAd;
 } catch (e) {
-  console.log('[AdMobProxy] Native AdMob module not available in current binary (e.g. Expo Go). Falling back to simulated modal.');
+  console.warn('[AdMobProxy] Native AdMob module is unavailable in this binary; rewarded ads are disabled.');
   isAvailable = false;
 }
 

@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
-import { Settings, Check, X, Crown, Lock } from 'lucide-react-native';
+import { Settings, X } from 'lucide-react-native';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
-
-// Qualities that require VIP
-const VIP_ONLY_QUALITIES = ['4K Ultra HD', '4K', '2160p', '1080p', 'Full HD', '1080'];
 
 interface PlayerSettingsModalProps {
   visible: boolean;
@@ -13,13 +10,7 @@ interface PlayerSettingsModalProps {
   playbackSpeed: number;
   onSelectSpeed: (speed: number) => void;
   availableQualities?: string[];
-  activeQuality?: string;
-  onSelectQuality?: (q: string) => void;
   availableAudioTracks?: string[];
-  activeAudio?: string;
-  onSelectAudio?: (a: string) => void;
-  isVIP?: boolean;
-  onOpenVipModal?: () => void;
 }
 
 
@@ -31,50 +22,23 @@ export function PlayerSettingsModal({
   playbackSpeed,
   onSelectSpeed,
   availableQualities = [],
-  activeQuality = 'Auto',
-  onSelectQuality,
   availableAudioTracks = [],
-  activeAudio = 'Default Audio',
-  onSelectAudio,
-  isVIP = false,
-  onOpenVipModal,
 }: PlayerSettingsModalProps) {
   const themeColors = useTheme();
-  const [quality, setQuality] = useState<string>(activeQuality);
-  const [audio, setAudio] = useState<string>(activeAudio);
 
-  // Build real quality list (NO FAKE HARDCODED DATA)
-  const qualityList = availableQualities && availableQualities.length > 0
-    ? ['Auto', ...availableQualities]
-    : ['Auto (Original Stream)'];
-
-  // Build real audio list (NO FAKE HARDCODED DATA)
-  const audioList = availableAudioTracks && availableAudioTracks.length > 0
-    ? availableAudioTracks
-    : ['Default Audio'];
-
-  const isVipQuality = (q: string) =>
-    VIP_ONLY_QUALITIES.some(vq => q.toLowerCase().includes(vq.toLowerCase()));
-
-  const handleQualityChange = (q: string) => {
-    if (isVipQuality(q) && !isVIP) {
-      // Non-VIP: open VIP modal instead
-      onOpenVipModal?.();
-      return;
-    }
-    setQuality(q);
-    if (onSelectQuality) onSelectQuality(q);
-  };
-
-  const handleAudioChange = (a: string) => {
-    setAudio(a);
-    if (onSelectAudio) onSelectAudio(a);
-  };
+  const audioLabel = availableAudioTracks.length > 0
+    ? availableAudioTracks.join(' · ')
+    : 'Original secure stream';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close player settings"
+        />
         
         <View style={[styles.modalCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
           {/* Header */}
@@ -83,86 +47,55 @@ export function PlayerSettingsModal({
               <Settings size={20} color={themeColors.primary} />
               <Text style={[styles.title, { color: themeColors.text }]}>Player & Stream Settings</Text>
             </View>
-            <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+            <Pressable
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+              accessibilityRole="button"
+              accessibilityLabel="Close player settings"
+              hitSlop={8}
+            >
               <X size={18} color={themeColors.text} />
             </Pressable>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* 📺 Stream Quality Selector */}
-            <Text style={[styles.sectionTitle, { color: themeColors.textSecondary }]}>
-              VIDEO STREAM QUALITY ({availableQualities.length > 0 ? `${availableQualities.length} Streams` : 'Original'})
-            </Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.textSecondary }]}>STREAM QUALITY</Text>
             <View style={styles.optionsWrap}>
-              {qualityList.map((q) => {
-                const isSelected = quality === q || (q.startsWith('Auto') && quality === 'Auto');
-                const isVipLocked = isVipQuality(q) && !isVIP;
-                return (
-                  <Pressable
-                    key={q}
-                    onPress={() => handleQualityChange(q)}
-                    style={[
-                      styles.optionItem,
-                      {
-                        backgroundColor: isSelected ? 'rgba(3, 86, 197, 0.15)' : themeColors.backgroundCard,
-                        borderColor: isVipLocked ? '#FFB800' : isSelected ? themeColors.primary : themeColors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.optionText, { color: isVipLocked ? '#FFB800' : isSelected ? themeColors.primary : themeColors.text, fontWeight: isSelected ? '800' : '600' }]}>
-                      {q}
-                    </Text>
-                    {isVipLocked ? (
-                      <View style={styles.vipLockBadge}>
-                        <Crown size={11} color="#FFB800" />
-                        <Text style={styles.vipLockText}>VIP</Text>
-                      </View>
-                    ) : isSelected ? (
-                      <Check size={16} color={themeColors.primary} />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* VIP quality note for non-VIP users */}
-            {!isVIP && (
-              <Pressable onPress={onOpenVipModal} style={styles.vipQualityNote}>
-                <Crown size={12} color="#FFB800" />
-                <Text style={styles.vipQualityNoteText}>
-                  Upgrade to VIP for 4K Ultra HD & Full HD 1080p
+              <View
+                style={[
+                  styles.optionItem,
+                  { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border },
+                ]}
+                accessible
+                accessibilityLabel={`Stream quality: ${availableQualities.length > 0 ? availableQualities.join(', ') : 'original source'}`}
+              >
+                <Text style={[styles.optionText, { color: themeColors.text, fontWeight: '700' }]}>
+                  {availableQualities.length > 0 ? availableQualities.join(' · ') : 'Original source'}
                 </Text>
-              </Pressable>
-            )}
+                <Text style={[styles.streamManagedText, { color: themeColors.textSecondary }]}>Server managed</Text>
+              </View>
+            </View>
 
             <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
             {/* 🎙️ Audio Track & Subtitle Selector */}
             <Text style={[styles.sectionTitle, { color: themeColors.textSecondary }]}>
-              AUDIO & SUBTITLES ({availableAudioTracks.length > 0 ? `${availableAudioTracks.length} Tracks` : 'Default Track'})
+              AUDIO & SUBTITLES
             </Text>
             <View style={styles.optionsWrap}>
-              {audioList.map((a) => {
-                const isSelected = audio === a || (a === 'Default Audio' && audio === 'Default Audio');
-                return (
-                  <Pressable
-                    key={a}
-                    onPress={() => handleAudioChange(a)}
-                    style={[
-                      styles.optionItem,
-                      {
-                        backgroundColor: isSelected ? 'rgba(3, 86, 197, 0.15)' : themeColors.backgroundCard,
-                        borderColor: isSelected ? themeColors.primary : themeColors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.optionText, { color: isSelected ? themeColors.primary : themeColors.text, fontWeight: isSelected ? '800' : '600' }]}>
-                      {a}
-                    </Text>
-                    {isSelected && <Check size={16} color={themeColors.primary} />}
-                  </Pressable>
-                );
-              })}
+              <View
+                accessible
+                accessibilityLabel={'Audio: ' + audioLabel + '. Server managed.'}
+                style={[
+                  styles.optionItem,
+                  { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border },
+                ]}
+              >
+                <Text style={[styles.optionText, { color: themeColors.text, fontWeight: '700' }]}>
+                  {audioLabel}
+                </Text>
+                <Text style={[styles.streamManagedText, { color: themeColors.textSecondary }]}>Server managed</Text>
+              </View>
             </View>
 
             <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
@@ -176,6 +109,9 @@ export function PlayerSettingsModal({
                   <Pressable
                     key={speed}
                     onPress={() => onSelectSpeed(speed)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`Playback speed ${speed === 1 ? 'normal' : `${speed} times`}`}
+                    accessibilityState={{ selected: isSelected }}
                     style={[
                       styles.speedChip,
                       {
@@ -262,6 +198,10 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 13,
+  },
+  streamManagedText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   divider: {
     height: 1,

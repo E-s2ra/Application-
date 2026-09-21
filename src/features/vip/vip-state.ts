@@ -13,13 +13,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function getVipStatus(profile: VipProfile | null | undefined, now = Date.now()): VipStatus {
   if (!profile) return { isVIP: false, vipDaysRemaining: 0, vipExpiresAt: null };
-  if (!profile.vip_expires_at) {
-    return profile.is_vip === true
-      ? { isVIP: true, vipDaysRemaining: 999, vipExpiresAt: null }
-      : { isVIP: false, vipDaysRemaining: 0, vipExpiresAt: null };
+  if (profile.is_vip !== true || !profile.vip_expires_at) {
+    return { isVIP: false, vipDaysRemaining: 0, vipExpiresAt: null };
   }
   const expiryMs = new Date(profile.vip_expires_at).getTime();
-  if (!Number.isFinite(expiryMs) || expiryMs <= now || profile.is_vip === false) {
+  if (!Number.isFinite(expiryMs) || expiryMs <= now) {
     return { isVIP: false, vipDaysRemaining: 0, vipExpiresAt: null };
   }
   return {

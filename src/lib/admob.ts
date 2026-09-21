@@ -18,70 +18,71 @@ export {
   ADMOB_REWARDS,
 };
 
-export type RewardedAdResult = {
-  success: boolean;
-  rewardType: 'coins' | 'xp' | 'spin' | 'vip';
-  rewardCoins: number;
-  rewardXP: number;
-  newCoins?: number;
-  newXP?: number;
-  newLevel?: number;
-  adUnitId: string;
+export type RewardedAdSession = {
+  token: string;
+  expiresAt: string;
 };
 
 /**
- * Securely records a completed rewarded ad session via the server-side
- * 'claim_rewarded_ad' SECURITY DEFINER RPC.
- * 
- * FIX CRITICAL-04: Removed the fallback direct-UPDATE path that bypassed
- * server validation and was vulnerable to TOCTOU race conditions.
- * The RPC is the single authoritative reward path.
+ * Creates a short-lived, one-time server session before a real rewarded ad is
+ * loaded. The token is attached to Google AdMob SSV custom data; only Google's
+ * signed server callback can consume it and credit the user's real balance.
  */
-export async function recordRewardedAdToSupabase(
-  userId: string,
-  rewardCoins = ADMOB_REWARDS.rewardedAdCoins,
-  rewardType = 'coins',
+export async function createRewardedAdSession(
   adUnitId = ADMOB_IDS.rewardedAdUnitId || 'admob-rewarded'
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{ success: boolean; session?: RewardedAdSession; error?: string }> {
   try {
-    if (!userId || userId.startsWith('guest-')) {
+    const { data, error } = await supabase.rpc('create_rewarded_ad_session', {
+      p_ad_unit_id: adUnitId,
+    });
+
+    if (error || !data || !(data as any).success) {
+      return { success: false, error: error?.message || 'Could not create a verified ad session.' };
+    }
+
+    const token = String((data as any).session_token || '');
+    const expiresAt = String((data as any).expires_at || '');
+    if (!token || !expiresAt) {
+      return { success: false, error: 'Reward session response was incomplete.' };
+    }
+
+    return { success: true, session: { token, expiresAt } };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Could not create a verified ad session.',
+    };
+  }
+}
+
+/**
+ * Waits briefly for the signed AdMob SSV callback to consume a reward session.
+ * This never grants coins itself; it only observes the server-owned session.
+ */
+export async function waitForRewardedAdVerification(
+  sessionToken: string,
+  attempts = 8,
+  delayMs = 900
+): Promise<{ verified: boolean; transactionId?: string }> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const { data, error } = await supabase
+      .from('rewarded_ad_sessions')
+      .select('status, verified_transaction_id')
+      .eq('id', sessionToken)
+      .maybeSingle();
+
+    if (!error && data?.status === 'credited') {
       return {
-        success: true,
-        data: { reward_coins: rewardCoins, reward_xp: ADMOB_REWARDS.rewardedAdXP },
+        verified: true,
+        transactionId: data.verified_transaction_id || undefined,
       };
     }
 
-    // Use the secure SECURITY DEFINER RPC as the single authoritative path
-    const { data: rpcData, error: rpcError } = await supabase.rpc('claim_rewarded_ad', {
-      p_ad_unit_id: adUnitId,
-      p_reward_type: rewardType,
-    });
-
-    if (rpcError) {
-      // Fallback: If RPC has a rate-limit cooldown, update profile directly so unlimited ad watching works
-      try {
-        const { data: profile } = await supabase.from('profiles').select('coins, xp').eq('id', userId).single();
-        if (profile) {
-          const newCoins = (profile.coins || 0) + rewardCoins;
-          const newXP = (profile.xp || 0) + ADMOB_REWARDS.rewardedAdXP;
-          await supabase.from('profiles').update({ coins: newCoins, xp: newXP, updated_at: new Date().toISOString() }).eq('id', userId);
-          return { success: true, data: { reward_coins: rewardCoins, reward_xp: ADMOB_REWARDS.rewardedAdXP } };
-        }
-      } catch (fallbackErr) {
-        console.warn('[AdMob] Fallback update error:', fallbackErr);
-      }
-      return { success: false, error: rpcError.message };
+    if (attempt < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
-
-    if (rpcData && (rpcData as any).success) {
-      return { success: true, data: rpcData };
-    }
-
-    // RPC returned but without success flag
-    return { success: false, error: 'Reward claim was not granted by server.' };
-  } catch (err: any) {
-    console.warn('Error recording rewarded ad in Supabase:', err);
-    return { success: false, error: err.message };
   }
+
+  return { verified: false };
 }
 

@@ -1,4 +1,4 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -16,8 +16,11 @@ import { AdMobRewardedModal } from '@/components/AdMobRewardedModal';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LanguageProvider } from '@/hooks/use-language';
+import { ToastProvider } from '@/hooks/useToast';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+const BYPASS_AUTH = __DEV__ && process.env.EXPO_PUBLIC_BYPASS_AUTH === 'true';
 
 function PrivacyProtection() {
   const { profile, isLoading } = useAuth();
@@ -36,37 +39,6 @@ function PrivacyProtection() {
   return null;
 }
 
-function AuthGuard({ onReady }: { onReady: () => void }) {
-  const { session, profile, isLoading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    // Hide native splash screen as our animated splash takes over
-    SplashScreen.hideAsync().catch(() => {});
-    onReady();
-  }, []);
-
-  useEffect(() => {
-    if (isLoading) return;
-    // Wait for profile to be fully loaded if there is an active session before navigating
-    if (session && !profile) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-    const isPasswordRecovery = String(segments[0]) === 'reset-password';
-    const isVerified = String(segments[0]) === 'verified';
-    const isLegal = String(segments[0]) === 'legal';
-
-    if (!session && !inAuthGroup && !isPasswordRecovery && !isVerified && !isLegal) {
-      router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
-      router.replace('/(tabs)');
-    }
-  }, [session, profile, isLoading, segments, router]);
-
-  return null;
-}
-
 function RootNavigation({
   showSplash,
   onFinishSplash,
@@ -76,13 +48,18 @@ function RootNavigation({
 }) {
   const themeColors = useTheme();
   const { isDark } = useColorMode();
+  const { session, profile, isLoading, isDeviceSessionReady } = useAuth();
+  const authReady = !isLoading && (!session || (!!profile && isDeviceSessionReady));
+
+  useEffect(() => {
+    if (authReady) SplashScreen.hideAsync().catch(() => {});
+  }, [authReady]);
 
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
-      <AuthGuard onReady={() => {}} />
       <PrivacyProtection />
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack
+      {authReady && <Stack
         screenOptions={{
           headerStyle: {
             backgroundColor: themeColors.backgroundElement,
@@ -91,25 +68,29 @@ function RootNavigation({
           contentStyle: { backgroundColor: themeColors.background },
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="admin" options={{ headerShown: false }} />
-        <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Protected guard={!session && !BYPASS_AUTH}>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        </Stack.Protected>
+        <Stack.Protected guard={!!session || BYPASS_AUTH}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="watch" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+          <Stack.Protected guard={profile?.role === 'admin'}>
+            <Stack.Screen name="admin" options={{ headerShown: false }} />
+          </Stack.Protected>
+        </Stack.Protected>
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         <Stack.Screen name="verified" options={{ headerShown: false }} />
         <Stack.Screen name="legal" options={{ headerShown: false }} />
 
-      </Stack>
+      </Stack>}
 
       {/* Google AdMob Rewarded Ad Modal */}
       <AdMobRewardedModal />
 
-      {showSplash && <AniFlixSplashScreen onFinish={onFinishSplash} />}
+      {(showSplash || !authReady) && <AniFlixSplashScreen onFinish={onFinishSplash} />}
     </View>
   );
 }
-
-import { ToastProvider } from '@/hooks/useToast';
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);

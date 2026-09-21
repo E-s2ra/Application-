@@ -38,14 +38,14 @@ export const MediaService = {
         .range(from, to);
 
       const res = (await Promise.race([fetchPromise, timeoutPromise])) as any;
-      const safeData: any[] = res?.data && !res.error ? res.data : [];
+      if (res?.error) throw res.error;
+      const safeData: any[] = Array.isArray(res?.data) ? res.data : [];
 
       // Apply deletions and merge any admin-edit overrides
       const items = safeData
         .filter((item: any) => !deletedIds.includes(item.id))
         .map((item: any) => ({
           ...item,
-          category: item.category || 'Anime Series',
           ...(overrides[item.id] || {}),
         })) as AnimeItem[];
 
@@ -63,7 +63,7 @@ export const MediaService = {
       return [...localOnlyItems, ...items];
     } catch (err) {
       logError(err, { screen: 'MediaService', action: 'getCatalog' });
-      return [];
+      throw err;
     }
   },
 
@@ -77,7 +77,7 @@ export const MediaService = {
 
       const { data, error } = await supabase
         .from('anime')
-        .select('*')
+        .select('id, title, description, image_url, episodes, genre, category, is_featured, created_at, updated_at, views, rating, published_at')
         .eq('id', id)
         .maybeSingle();
 

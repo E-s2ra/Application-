@@ -16,6 +16,8 @@ export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export interface ResponsiveInfo {
   width: number;
   height: number;
+  /** Width available to routed content after persistent desktop chrome. */
+  contentWidth: number;
   bp: Breakpoint;
   isXS: boolean;      // < 480
   isSmallDevice: boolean; // < 360 (small Android/iPhone)
@@ -49,7 +51,16 @@ export interface ResponsiveInfo {
   heroHeight: number;
 }
 
-export function useResponsive(): ResponsiveInfo {
+export interface ResponsiveOptions {
+  /** Width of persistent desktop chrome reserved beside routed content. */
+  desktopRailWidth?: number;
+}
+
+const DEFAULT_DESKTOP_RAIL_WIDTH = 280;
+
+export function useResponsive(
+  { desktopRailWidth = DEFAULT_DESKTOP_RAIL_WIDTH }: ResponsiveOptions = {}
+): ResponsiveInfo {
   const { width, height } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
 
@@ -69,8 +80,10 @@ export function useResponsive(): ResponsiveInfo {
   const isTablet = isMD;
   const isDesktop = isLG || isXL;
 
-  // Max content width for centered desktop layouts
-  const maxContentWidth = Math.min(width, 1400);
+  // Tab routes reserve the default persistent navigation rail. Top-level routes
+  // without that chrome can opt out explicitly with { desktopRailWidth: 0 }.
+  const contentWidth = isDesktop ? Math.max(width - Math.max(desktopRailWidth, 0), 0) : width;
+  const maxContentWidth = Math.min(contentWidth, 1440);
 
   // Horizontal page padding
   const pagePad = isSmallDevice ? 10 : isXS ? 12 : isSM ? 16 : isMD ? 24 : 32;
@@ -86,7 +99,7 @@ export function useResponsive(): ResponsiveInfo {
     width < 1440 ? 5 : 6;
 
   // Compute width for cards within maxContentWidth
-  const effectiveWidth = Math.min(width, maxContentWidth);
+  const effectiveWidth = Math.min(contentWidth, maxContentWidth);
   const cardWidth = Math.floor(
     (effectiveWidth - pagePad * 2 - cardGap * (numCols - 1)) / numCols
   );
@@ -115,6 +128,7 @@ export function useResponsive(): ResponsiveInfo {
   return {
     width,
     height,
+    contentWidth,
     bp,
     isXS,
     isSmallDevice,

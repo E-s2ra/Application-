@@ -376,20 +376,36 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          type: 'ad_reward' | 'coins_purchase' | 'spin_reward' | 'event_bonus' | 'subscription';
+          type: 'ad_reward' | 'coins_purchase' | 'spin_reward' | 'event_bonus' | 'subscription' | 'admin_grant';
           duration: number;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          type: 'ad_reward' | 'coins_purchase' | 'spin_reward' | 'event_bonus' | 'subscription';
+          type: 'ad_reward' | 'coins_purchase' | 'spin_reward' | 'event_bonus' | 'subscription' | 'admin_grant';
           duration: number;
           created_at?: string;
         };
         Update: {
-          type?: 'ad_reward' | 'coins_purchase' | 'spin_reward' | 'event_bonus' | 'subscription';
+          type?: 'ad_reward' | 'coins_purchase' | 'spin_reward' | 'event_bonus' | 'subscription' | 'admin_grant';
         };
+      };
+      wallet_ledger: {
+        Row: {
+          id: number;
+          user_id: string;
+          delta: number;
+          balance_before: number;
+          balance_after: number;
+          reason: string;
+          actor_user_id: string | null;
+          transaction_id: number;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
       };
       payments: {
         Row: {
@@ -468,10 +484,42 @@ export interface Database {
           reward_id: string;
           reward_type: string;
           reward_value: number;
-          label: string;
+          reward_label: string;
           new_coins: number;
           new_xp: number;
-          vip_days_remaining: number;
+        };
+      };
+      get_wallet_snapshot: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: {
+          coins: number;
+          xp: number;
+          level: number;
+          streak_days: number;
+          is_vip: boolean;
+          vip_expires_at: string | null;
+          ledger: {
+            id: number;
+            delta: number;
+            balance_before: number;
+            balance_after: number;
+            reason: string;
+            created_at: string;
+          }[];
+        };
+      };
+      quote_media_unlock: {
+        Args: {
+          p_media_id: string;
+          p_episode?: number | null;
+        };
+        Returns: {
+          media_id: string;
+          episode: number | null;
+          category: string;
+          cost_coins: number;
         };
       };
       unlock_theme_with_coins: {

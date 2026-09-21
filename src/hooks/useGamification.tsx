@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
@@ -40,6 +40,15 @@ export type SpinReward = {
   color: string;
 };
 
+export type WalletLedgerEntry = {
+  id: number;
+  delta: number;
+  balance_before: number;
+  balance_after: number;
+  reason: string;
+  created_at: string;
+};
+
 export type AppTheme = {
   id: string;
   name: string;
@@ -63,12 +72,12 @@ export type UserBadge = {
 };
 
 export const SPIN_REWARDS: SpinReward[] = [
-  { id: '1', label: '50 Coins', icon: 'Coins', type: 'coins', amount: 50, color: '#00E676' },
-  { id: '2', label: '40 Coins', icon: 'Coins', type: 'coins', amount: 40, color: '#FF9800' },
-  { id: '3', label: '30 Coins', icon: 'Coins', type: 'coins', amount: 30, color: '#0356C5' },
-  { id: '4', label: '25 Coins', icon: 'Coins', type: 'coins', amount: 25, color: '#00D2FF' },
-  { id: '5', label: '15 Coins', icon: 'Coins', type: 'coins', amount: 15, color: '#9C27B0' },
-  { id: '6', label: '10 Coins', icon: 'Coins', type: 'coins', amount: 10, color: '#FFB800' },
+  { id: 'slot-1', label: '50 Coins', icon: '50', type: 'coins', amount: 50, color: '#00E676' },
+  { id: 'slot-2', label: '50 XP', icon: 'XP', type: 'xp', amount: 50, color: '#00D2FF' },
+  { id: 'slot-3', label: '1-Day VIP', icon: 'VIP', type: 'vip', amount: 1, color: '#FFD166' },
+  { id: 'slot-4', label: '50 Coins', icon: '50', type: 'coins', amount: 50, color: '#8CE99A' },
+  { id: 'slot-5', label: '100 XP', icon: 'XP', type: 'xp', amount: 100, color: '#74C0FC' },
+  { id: 'slot-6', label: '500 Coins', icon: '500', type: 'coins', amount: 500, color: '#FFB800' },
 ];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
@@ -78,7 +87,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
     subtitle: 'Watch 50 Ads this weekend to unlock the exclusive Inferno Theme!',
     badgeName: 'Ad Master',
     badgeIcon: 'Fire',
-    bannerImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
+    bannerImage: '',
     themeColor: '#FF3D00',
     endDate: 'Oct 31, 2026',
     bonusMultiplier: 1, // No free coin multiplier, protecting the economy
@@ -90,7 +99,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
         rewardCoins: 0, // No free coins given
         rewardXP: 500,  // Only XP to level up
         target: 50,
-        current: 12,
+        current: 0,
         completed: false,
         claimed: false,
         category: 'event',
@@ -102,8 +111,8 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
         rewardCoins: 0, // No free coins given
         rewardXP: 100,
         target: 5,
-        current: 5,
-        completed: true,
+        current: 0,
+        completed: false,
         claimed: false,
         category: 'event',
       },
@@ -115,7 +124,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
     subtitle: 'For the next 48 hours, watching ads gives double XP!',
     badgeName: 'Golden Watcher',
     badgeIcon: 'Clock',
-    bannerImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80',
+    bannerImage: '',
     themeColor: '#FFB800',
     endDate: 'Nov 15, 2026',
     bonusMultiplier: 1, // Again, no free coin multiplier
@@ -127,7 +136,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
         rewardCoins: 0, 
         rewardXP: 300,
         target: 20,
-        current: 5,
+        current: 0,
         completed: false,
         claimed: false,
         category: 'event',
@@ -201,8 +210,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     description: 'Streamed your first title on AniFlix',
     icon: 'Film',
     color: '#0356C5',
-    isUnlocked: true,
-    unlockedAt: 'Aug 19, 2026',
+    isUnlocked: false,
   },
   {
     id: 'b-streak-3',
@@ -210,8 +218,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     description: 'Logged in for 3 consecutive days',
     icon: 'Flame',
     color: '#FF5722',
-    isUnlocked: true,
-    unlockedAt: 'Aug 18, 2026',
+    isUnlocked: false,
   },
   {
     id: 'b-critic',
@@ -219,8 +226,7 @@ export const DEFAULT_BADGES: UserBadge[] = [
     description: 'Published a helpful community review',
     icon: 'Star',
     color: '#FFB800',
-    isUnlocked: true,
-    unlockedAt: 'Aug 19, 2026',
+    isUnlocked: false,
   },
   {
     id: 'b-kurdish-sun',
@@ -232,8 +238,8 @@ export const DEFAULT_BADGES: UserBadge[] = [
   },
   {
     id: 'b-vip',
-    title: 'AniFlix VIP Sovereign',
-    description: 'Unlocked active VIP Ultra HD status',
+    title: 'AniFlix VIP',
+    description: 'Activated an AniFlix VIP membership',
     icon: 'Crown',
     color: '#9C27B0',
     isUnlocked: false,
@@ -245,11 +251,11 @@ const DEFAULT_MISSIONS: Mission[] = [
     id: 'm-daily-2',
     title: 'Critique & Rate',
     description: 'Rate any movie or write a community review',
-    rewardCoins: 10,
+    rewardCoins: 15,
     rewardXP: 60,
     target: 1,
-    current: 1,
-    completed: true,
+    current: 0,
+    completed: false,
     claimed: false,
     category: 'daily',
   },
@@ -257,10 +263,10 @@ const DEFAULT_MISSIONS: Mission[] = [
     id: 'm-daily-3',
     title: 'Curator',
     description: 'Add 2 new titles to your watchlist',
-    rewardCoins: 10,
+    rewardCoins: 25,
     rewardXP: 40,
     target: 2,
-    current: 1,
+    current: 0,
     completed: false,
     claimed: false,
     category: 'daily',
@@ -272,7 +278,7 @@ const DEFAULT_MISSIONS: Mission[] = [
     rewardCoins: 120,
     rewardXP: 250,
     target: 5,
-    current: 3,
+    current: 0,
     completed: false,
     claimed: false,
     category: 'weekly',
@@ -284,7 +290,7 @@ const DEFAULT_MISSIONS: Mission[] = [
     rewardCoins: 100,
     rewardXP: 200,
     target: 3,
-    current: 2,
+    current: 0,
     completed: false,
     claimed: false,
     category: 'weekly',
@@ -303,6 +309,10 @@ type GamificationContextType = {
   canSpinWheel: boolean;
   vipDaysRemaining: number;
   isVIP: boolean;
+  walletLedger: WalletLedgerEntry[];
+  isWalletSyncing: boolean;
+  walletSyncError: string | null;
+  walletLastVerifiedAt: number | null;
   activeEvent: SeasonalEvent;
   allEvents: SeasonalEvent[];
   missions: Mission[];
@@ -317,21 +327,20 @@ type GamificationContextType = {
   equipTheme: (themeId: string) => void;
   activateVIP: (days: number) => Promise<void>;
   awardWatchTimeReward: (minutes: number) => Promise<{ coins: number; xp: number }>;
-  addXPAndCoins: (xpGain: number, coinsGain: number, skipDbSync?: boolean) => void;
   refreshGamification: () => Promise<void>;
   unlockedMediaIds: string[];
   unlockedMediaTimestamps: Record<string, number>;
   isMediaUnlocked: (unlockKey: string | undefined | null) => boolean;
   getUnlockedMediaRemainingDays: (unlockKey: string | undefined | null) => number | null;
-  unlockMedia: (mediaId: string, episodeNum: number | undefined, cost: number, category?: string) => Promise<boolean>;
+  unlockMedia: (mediaId: string, episodeNum: number | undefined) => Promise<boolean>;
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (1 week) in milliseconds
-const GAMIFICATION_STORAGE_KEY_PREFIX = '@aniflix_gamification_v2';
+const GAMIFICATION_STORAGE_KEY_PREFIX = '@aniflix_gamification_v3';
 
 export function GamificationProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isDeviceSessionReady } = useAuth();
   const [coins, setCoins] = useState(0);
   const [xp, setXp] = useState(0);
   const [streakDays, setStreakDays] = useState(0);
@@ -340,6 +349,10 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const [isVipFlag, setIsVipFlag] = useState(false);
   const [vipDaysRemaining, setVipDaysRemaining] = useState(0);
   const [vipExpiresAt, setVipExpiresAt] = useState<string | null>(null);
+  const [walletLedger, setWalletLedger] = useState<WalletLedgerEntry[]>([]);
+  const [isWalletSyncing, setIsWalletSyncing] = useState(false);
+  const [walletSyncError, setWalletSyncError] = useState<string | null>(null);
+  const [walletLastVerifiedAt, setWalletLastVerifiedAt] = useState<number | null>(null);
   const [activeEventIndex, setActiveEventIndex] = useState(0);
   const [activeThemeId, setActiveThemeId] = useState('theme-deep-blue');
   const [unlockedThemeIds, setUnlockedThemeIds] = useState<string[]>(['theme-deep-blue']);
@@ -365,10 +378,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         return isStillValid;
       }
 
-      // Legacy fallback for entries saved before timestamp tracking
-      return unlockedMediaIds.includes(unlockKey);
+      return false;
     },
-    [isVIP, unlockedMediaTimestamps, unlockedMediaIds]
+    [isVIP, unlockedMediaTimestamps]
   );
 
   const getUnlockedMediaRemainingDays = useCallback(
@@ -384,21 +396,168 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         return Math.max(1, Math.ceil(remaining / (1000 * 60 * 60 * 24)));
       }
 
-      if (unlockedMediaIds.includes(unlockKey)) {
-        return 7;
-      }
-
       return null;
     },
-    [isVIP, unlockedMediaTimestamps, unlockedMediaIds]
+    [isVIP, unlockedMediaTimestamps]
   );
 
-  const applyVipProfile = (profile: { is_vip?: boolean | null; vip_expires_at?: string | null }) => {
+  const applyVipProfile = useCallback((profile: { is_vip?: boolean | null; vip_expires_at?: string | null }) => {
     const vip = getVipStatus(profile);
     setIsVipFlag(vip.isVIP);
     setVipDaysRemaining(vip.vipDaysRemaining);
     setVipExpiresAt(vip.vipExpiresAt);
-  };
+  }, []);
+
+  const syncWalletSnapshot = useCallback(async (userId: string) => {
+    setIsWalletSyncing(true);
+    setWalletSyncError(null);
+    try {
+      const { data: snapshot, error: snapshotError } = await supabase.rpc('get_wallet_snapshot', {
+        p_limit: 20,
+      });
+
+      if (snapshotError || !snapshot || typeof snapshot !== 'object') {
+        throw snapshotError ?? new Error('Wallet snapshot response was incomplete');
+      }
+
+      const wallet = snapshot as {
+        coins?: number;
+        xp?: number;
+        streak_days?: number;
+        is_vip?: boolean;
+        vip_expires_at?: string | null;
+        ledger?: WalletLedgerEntry[];
+      };
+
+      if (Number.isFinite(wallet.coins)) setCoins(Number(wallet.coins));
+      if (Number.isFinite(wallet.xp)) setXp(Number(wallet.xp));
+      if (Number.isFinite(wallet.streak_days)) setStreakDays(Number(wallet.streak_days));
+      applyVipProfile(wallet);
+      setWalletLedger(Array.isArray(wallet.ledger) ? wallet.ledger : []);
+      setWalletLastVerifiedAt(Date.now());
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to verify wallet state';
+      setWalletSyncError(message);
+      console.warn('[Gamification] Wallet sync failed:', message);
+    } finally {
+      setIsWalletSyncing(false);
+    }
+  }, [applyVipProfile]);
+
+  const syncActiveMediaEntitlements = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from('media_entitlements')
+      .select('unlock_key, unlocked_at, expires_at')
+      .eq('user_id', userId)
+      .gt('expires_at', new Date().toISOString());
+
+    if (error) {
+      console.warn('[Gamification] Could not sync media entitlements:', error.message);
+      return;
+    }
+
+    const activeIds: string[] = [];
+    const activeTimestamps: Record<string, number> = {};
+    for (const entitlement of data || []) {
+      if (!entitlement.unlock_key) continue;
+      const unlockedAt = new Date(entitlement.unlocked_at).getTime();
+      if (!Number.isFinite(unlockedAt)) continue;
+      activeIds.push(entitlement.unlock_key);
+      activeTimestamps[entitlement.unlock_key] = unlockedAt;
+    }
+
+    setUnlockedMediaIds(activeIds);
+    setUnlockedMediaTimestamps(activeTimestamps);
+  }, []);
+
+  const syncMissionEvidence = useCallback(async (userId: string) => {
+    const { data: mission, error: missionError } = await supabase
+      .from('missions')
+      .select('id, target, reward_coins, reward_xp')
+      .eq('code', 'm-daily-3')
+      .maybeSingle();
+
+    if (missionError || !mission) return;
+
+    const start = new Date();
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 1);
+
+    const [{ count, error: favoritesError }, { data: userMission, error: userMissionError }] = await Promise.all([
+      supabase
+        .from('favorites')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString()),
+      supabase
+        .from('user_missions')
+        .select('claimed')
+        .eq('user_id', userId)
+        .eq('mission_id', mission.id)
+        .maybeSingle(),
+    ]);
+
+    if (favoritesError || userMissionError) return;
+
+    const current = Math.max(0, Number(count ?? 0));
+    const target = Math.max(1, Number(mission.target ?? 2));
+    setMissions((previous) =>
+      previous.map((item) =>
+        item.id === 'm-daily-3'
+          ? {
+              ...item,
+              rewardCoins: Number(mission.reward_coins ?? item.rewardCoins),
+              rewardXP: Number(mission.reward_xp ?? item.rewardXP),
+              target,
+              current,
+              completed: current >= target,
+              claimed: Boolean(userMission?.claimed),
+            }
+          : item
+      )
+    );
+  }, []);
+
+  const syncDailyRewardAvailability = useCallback(async (userId: string) => {
+    const start = new Date();
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 1);
+    const todayStr = start.toISOString().slice(0, 10);
+
+    const [loginResult, spinResult] = await Promise.all([
+      supabase
+        .from('daily_logins')
+        .select('reward_claimed')
+        .eq('user_id', userId)
+        .eq('login_date', todayStr)
+        .maybeSingle(),
+      supabase
+        .from('spins')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString()),
+    ]);
+
+    if (loginResult.error) {
+      console.warn('[Gamification] Could not verify daily login availability:', loginResult.error.message);
+      // Fail open in the UI only. The RPC remains authoritative and will reject
+      // a duplicate claim, which is preferable to permanently disabling the CTA.
+      setHasClaimedDailyStreak(false);
+    } else {
+      setHasClaimedDailyStreak(Boolean(loginResult.data?.reward_claimed));
+    }
+
+    if (spinResult.error) {
+      console.warn('[Gamification] Could not verify spin availability:', spinResult.error.message);
+      setCanSpinWheel(true);
+    } else {
+      setCanSpinWheel((spinResult.count ?? 0) === 0);
+    }
+  }, []);
 
   // Level Computation: Every 300 XP = 1 Level
   const level = Math.floor(xp / 300) + 1;
@@ -429,8 +588,18 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     setVipDaysRemaining(0);
     setVipExpiresAt(null);
     setIsVipFlag(false);
+    setWalletLedger([]);
+    setWalletSyncError(null);
+    setWalletLastVerifiedAt(null);
     setHasClaimedDailyStreak(false);
     setCanSpinWheel(true);
+    setActiveEventIndex(0);
+    setActiveThemeId('theme-deep-blue');
+    setUnlockedThemeIds(['theme-deep-blue']);
+    setUnlockedMediaIds([]);
+    setUnlockedMediaTimestamps({});
+    setBadges(DEFAULT_BADGES);
+    setMissions([...DEFAULT_MISSIONS, ...SEASONAL_EVENTS[0].eventMissions]);
 
     async function loadData() {
       try {
@@ -447,76 +616,31 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         }
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed.coins !== undefined) setCoins(parsed.coins);
-          if (parsed.xp !== undefined) setXp(parsed.xp);
-          if (parsed.streakDays !== undefined) setStreakDays(parsed.streakDays);
-          if (parsed.hasClaimedDailyStreak !== undefined)
-            setHasClaimedDailyStreak(parsed.hasClaimedDailyStreak);
-          if (parsed.canSpinWheel !== undefined) setCanSpinWheel(parsed.canSpinWheel);
+          const isSignedInAccount = Boolean(user?.id && !user.id.startsWith('guest-'));
 
-          // Only restore VIP from cache if the expiry is in the future
-          const loadedExpiresAt = parsed.vipExpiresAt;
-          if (loadedExpiresAt) {
-            const diffMs = new Date(loadedExpiresAt).getTime() - Date.now();
-            const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-            // Treat as VIP only if still valid
-            if (days > 0) {
-              setVipDaysRemaining(days);
-              setVipExpiresAt(loadedExpiresAt);
-            } else {
-              // Expired — clear it
-              setVipDaysRemaining(0);
-              setVipExpiresAt(null);
-            }
+          // Signed-in economy and entitlement state is never restored as truth
+          // from device storage. It stays locked/zero until the server verifies it.
+          if (!isSignedInAccount) {
+            if (parsed.xp !== undefined) setXp(parsed.xp);
+            if (parsed.streakDays !== undefined) setStreakDays(parsed.streakDays);
           }
-          // Note: legacy vipDaysRemaining without expiry is intentionally ignored
-          // to avoid permanently granting VIP with no expiration date.
 
           if (parsed.activeThemeId) setActiveThemeId(parsed.activeThemeId);
           if (parsed.unlockedThemeIds) setUnlockedThemeIds(parsed.unlockedThemeIds);
-          if (parsed.unlockedMediaIds) setUnlockedMediaIds(parsed.unlockedMediaIds);
-          if (parsed.unlockedMediaTimestamps) setUnlockedMediaTimestamps(parsed.unlockedMediaTimestamps);
-          if (parsed.missions) setMissions(parsed.missions);
-          if (parsed.badges) setBadges(parsed.badges);
+          if (!isSignedInAccount) {
+            if (parsed.missions) setMissions(parsed.missions);
+            if (parsed.badges) setBadges(parsed.badges);
+          }
         }
 
         // Live Supabase Sync — always authoritative over local cache
-        if (user?.id && !user.id.startsWith('guest-')) {
+        if (user?.id && !user.id.startsWith('guest-') && isDeviceSessionReady) {
           const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2500));
           const syncPromise = (async () => {
-            // Fetch Profile from Supabase
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('coins, xp, level, streak_days, is_vip, vip_expires_at, unlocked_media_ids')
-              .eq('id', user.id)
-              .maybeSingle();
-
-            if (profile) {
-              if (profile.coins !== undefined && profile.coins !== null) setCoins(profile.coins);
-              if (profile.xp !== undefined && profile.xp !== null) setXp(profile.xp);
-              if (profile.streak_days !== undefined && profile.streak_days !== null)
-                setStreakDays(profile.streak_days);
-
-              // Load unlocked media from server — authoritative over local cache
-              if (Array.isArray((profile as any).unlocked_media_ids)) {
-                setUnlockedMediaIds((profile as any).unlocked_media_ids);
-              }
-
-              applyVipProfile(profile);
-            }
-
-            // Check Daily Logins for today
-            const todayStr = new Date().toISOString().split('T')[0];
-            const { data: loginData } = await supabase
-              .from('daily_logins')
-              .select('id, reward_claimed')
-              .eq('user_id', user.id)
-              .eq('login_date', todayStr)
-              .maybeSingle();
-
-            if (loginData) {
-              setHasClaimedDailyStreak(loginData.reward_claimed);
-            }
+            await syncWalletSnapshot(user.id);
+            await syncActiveMediaEntitlements(user.id);
+            await syncMissionEvidence(user.id);
+            await syncDailyRewardAvailability(user.id);
           })();
 
           await Promise.race([syncPromise, timeoutPromise]);
@@ -526,7 +650,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       }
     }
     loadData();
-  }, [user]);
+  }, [isDeviceSessionReady, syncActiveMediaEntitlements, syncDailyRewardAvailability, syncMissionEvidence, syncWalletSnapshot, user]);
 
   const persist = async (updates: any, _skipDbSync = false) => {
     try {
@@ -569,59 +693,29 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const addXPAndCoins = (xpGain: number, coinsGain: number, skipDbSync = false) => {
+  const addGuestXP = (xpGain: number) => {
+    if (user?.id && !user.id.startsWith('guest-')) return;
     const multiplier = activeEvent.bonusMultiplier || 1;
-    // VIP subscribers cannot earn coins
-    const finalCoins = isVIP ? 0 : Math.round(coinsGain * multiplier);
     const finalXP = Math.round(xpGain * multiplier);
-    const newCoins = coins + finalCoins;
     const newXp = xp + finalXP;
-    setCoins(newCoins);
     setXp(newXp);
-    persist({ coins: newCoins, xp: newXp }, skipDbSync);
-  };
-
-  // Helper for weighted Spin Wheel rewards:
-  // 50 Coins -> 35% chance
-  // 40 Coins -> 30% chance
-  // 30 Coins -> 20% chance
-  // 25 Coins -> 7% chance (rare)
-  // 15 Coins -> 5% chance (rare)
-  // 10 Coins -> 3% chance (very rare)
-  const getWeightedSpinReward = (): SpinReward => {
-    const rand = Math.random() * 100;
-    if (rand < 35) return SPIN_REWARDS.find((r) => r.amount === 50) || SPIN_REWARDS[0];
-    if (rand < 65) return SPIN_REWARDS.find((r) => r.amount === 40) || SPIN_REWARDS[1];
-    if (rand < 85) return SPIN_REWARDS.find((r) => r.amount === 30) || SPIN_REWARDS[2];
-    if (rand < 92) return SPIN_REWARDS.find((r) => r.amount === 25) || SPIN_REWARDS[3];
-    if (rand < 97) return SPIN_REWARDS.find((r) => r.amount === 15) || SPIN_REWARDS[4];
-    return SPIN_REWARDS.find((r) => r.amount === 10) || SPIN_REWARDS[5];
+    persist({ xp: newXp }, true);
   };
 
   // Server-Authoritative Daily Streak Claim (Fixed 15 coins per day)
   const claimDailyStreak = async (): Promise<{ coins: number; xp: number }> => {
     if (hasClaimedDailyStreak) return { coins: 0, xp: 0 };
 
-    if (isVIP) {
-      // VIP subscribers do not get coins
-      const rewardXP = 150;
-      const newStreak = streakDays + 1;
-      setStreakDays(newStreak);
-      setHasClaimedDailyStreak(true);
-      persist({ streakDays: newStreak, hasClaimedDailyStreak: true });
-      return { coins: 0, xp: rewardXP };
-    }
-
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
         const { data, error } = await supabase.rpc('claim_daily_login_reward');
         if (!error && data && (data as any).success) {
           const res = data as any;
-          const awardedCoins = 15; // Fixed 15 coins per day
+          const awardedCoins = Number(res.coins_awarded ?? 15);
           const awardedXp = res.xp_awarded || 150;
           const newStreak = res.streak_days || streakDays + 1;
 
-          const updatedCoins = coins + awardedCoins;
+          const updatedCoins = res.new_coins ?? (coins + awardedCoins);
           const updatedXp = res.new_xp ?? (xp + awardedXp);
 
           setStreakDays(newStreak);
@@ -638,54 +732,43 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
           return { coins: awardedCoins, xp: awardedXp };
         }
+        if (!error && (data as any)?.reason === 'already_claimed_today') {
+          setHasClaimedDailyStreak(true);
+        }
       } catch (err) {
         console.warn('claim_daily_login_reward RPC error:', err);
       }
+
+      return { coins: 0, xp: 0 };
     }
 
-    // Guest fallback — exactly 15 coins per day
-    const rewardCoins = 15;
-    const rewardXP = 150 + Math.min(streakDays, 7) * 50;
-    const newStreak = streakDays + 1;
-    const newCoins = coins + rewardCoins;
-    const newXp = xp + rewardXP;
-
-    setStreakDays(newStreak);
-    setCoins(newCoins);
-    setXp(newXp);
-    setHasClaimedDailyStreak(true);
-
-    persist({
-      coins: newCoins,
-      xp: newXp,
-      streakDays: newStreak,
-      hasClaimedDailyStreak: true,
-    }, true);
-
-    return { coins: rewardCoins, xp: rewardXP };
+    return { coins: 0, xp: 0 };
   };
 
-  // Weighted Spin Wheel
+  // Server-authoritative daily wheel. The visible slots mirror the server pool.
   const spinWheel = async (): Promise<SpinReward> => {
     if (!canSpinWheel) return SPIN_REWARDS[0];
-
-    const selectedReward = getWeightedSpinReward();
-
-    if (isVIP) {
-      // VIP subscribers do not get coins
-      setCanSpinWheel(false);
-      persist({ canSpinWheel: false });
-      return { ...selectedReward, label: 'VIP Ad-Free (0 Coins)', amount: 0, type: 'coins' };
-    }
 
     if (user?.id && !user.id.startsWith('guest-')) {
       try {
         const { data, error } = await supabase.rpc('spin_lucky_wheel');
         if (!error && data && (data as any).success) {
           const res = data as any;
-          const serverReward = selectedReward;
+          const serverAmount = Number(res.reward_value ?? 0);
+          const serverType: SpinReward['type'] = ['coins', 'xp', 'vip', 'badge'].includes(res.reward_type)
+            ? res.reward_type
+            : 'coins';
+          const baseReward = SPIN_REWARDS.find((reward) => reward.id === res.reward_id)
+            ?? SPIN_REWARDS.find((reward) => reward.type === serverType && reward.amount === serverAmount)
+            ?? SPIN_REWARDS[0];
+          const serverReward: SpinReward = {
+            ...baseReward,
+            type: serverType,
+            amount: serverAmount,
+            label: String(res.reward_label ?? baseReward.label),
+          };
 
-          const updatedCoins = coins + serverReward.amount;
+          const updatedCoins = res.new_coins ?? (serverReward.type === 'coins' ? coins + serverReward.amount : coins);
           const updatedXp = res.new_xp ?? xp;
 
           setCoins(updatedCoins);
@@ -700,30 +783,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
           return serverReward;
         }
+        if (!error && (data as any)?.reason === 'already_spun_today') {
+          setCanSpinWheel(false);
+        }
       } catch (err) {
         console.warn('spin_lucky_wheel RPC error:', err);
       }
+
+      return { ...SPIN_REWARDS[0], amount: 0, label: 'Reward unavailable' };
     }
 
-    // Guest fallback with weighted sampling
-    const reward = selectedReward;
-
-    let newCoins = coins;
-    let newXp = xp;
-    if (reward.type === 'coins') newCoins += reward.amount;
-    if (reward.type === 'xp') newXp += reward.amount;
-
-    setCoins(newCoins);
-    setXp(newXp);
-    setCanSpinWheel(false);
-
-    persist({
-      coins: newCoins,
-      xp: newXp,
-      canSpinWheel: false,
-    }, true);
-
-    return reward;
+    return { ...SPIN_REWARDS[0], amount: 0, label: 'Sign in to earn rewards' };
   };
 
   // FIX CRITICAL-06: Server-Authoritative Mission Claim via RPC with Seamless Fallback
@@ -760,20 +830,13 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           return;
         }
       } catch (err) {
-        // Silently catch network or RPC errors and fallback to local claim
+        console.warn('claim_mission_reward RPC error:', err);
       }
+
+      return;
     }
 
-    // Local / Offline fallback path: credit coins & XP locally and persist
-    const newCoins = coins + mission.rewardCoins;
-    const newXp = xp + mission.rewardXP;
-    const updatedMissions = missions.map((m) =>
-      m.id === missionId ? { ...m, claimed: true } : m
-    );
-    setCoins(newCoins);
-    setXp(newXp);
-    setMissions(updatedMissions);
-    persist({ coins: newCoins, xp: newXp, missions: updatedMissions });
+    return;
   };
 
   // Server-Authoritative Theme Unlock
@@ -799,6 +862,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       } catch (err) {
         console.warn('unlock_theme_with_coins error:', err);
       }
+
+      return false;
     }
 
     // Guest fallback
@@ -818,82 +883,43 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return true;
   };
 
-  // Server-Authoritative Media Unlock via unlock_media_with_coins RPC
-  // category is used by the server to look up the authoritative cost — prevents cost spoofing
-  const unlockMedia = async (mediaId: string, episodeNum: number | undefined, cost: number, category = 'Anime'): Promise<boolean> => {
-    if (coins < cost) return false;
+  // Server-authoritative media unlock. Pricing/category are derived entirely in
+  // PostgreSQL; the client sends only the media identity and optional episode.
+  const unlockMedia = async (mediaId: string, episodeNum: number | undefined): Promise<boolean> => {
     const unlockKey = episodeNum !== undefined ? `${mediaId}_ep_${episodeNum}` : mediaId;
     if (isMediaUnlocked(unlockKey)) return true;
+    if (!user?.id || user.id.startsWith('guest-')) return false;
 
-    // Normalize category to matched registry buckets ('Movies', 'K-Drama', or 'Anime')
-    const normalizedCategory =
-      category === 'Movies' || category === 'Anime Movies'
-        ? 'Movies'
-        : category === 'K-Drama' || category === 'Drama'
-        ? 'K-Drama'
-        : 'Anime';
+    try {
+      const { data, error } = await supabase.rpc('unlock_media_with_coins_v2', {
+        p_media_id: mediaId,
+        p_episode: episodeNum ?? null,
+      });
 
-    const now = Date.now();
-    // SECURITY FIX H3: Optimistically write timestamp BEFORE the RPC to prevent
-    // a rapid double-tap from passing the isMediaUnlocked guard twice concurrently.
-    const newTimestamps = { ...unlockedMediaTimestamps, [unlockKey]: now };
-    setUnlockedMediaTimestamps(newTimestamps);
-
-    const combinedUnlocked = Array.from(new Set([...unlockedMediaIds, unlockKey]));
-
-    if (user?.id && !user.id.startsWith('guest-')) {
-      try {
-        // SECURITY FIX C1: Only the SECURITY DEFINER RPC may deduct coins and write
-        // unlocked_media_ids. Try category-based RPC first, fallback to cost-based RPC if needed.
-        let rpcRes = await supabase.rpc('unlock_media_with_coins', {
-          p_unlock_key: unlockKey,
-          p_category: normalizedCategory,
-        });
-
-        if (rpcRes.error || !rpcRes.data || !(rpcRes.data as any).success) {
-          // Fallback to legacy 2-arg signature using integer cost
-          rpcRes = await supabase.rpc('unlock_media_with_coins', {
-            p_unlock_key: unlockKey,
-            p_cost: cost,
-          });
-        }
-
-        const { data, error } = rpcRes;
-        if (!error && data && (data as any).success) {
-          const res = data as any;
-          const remaining = res.remaining_coins ?? Math.max(0, coins - cost);
-          const serverUnlocked = Array.from(new Set([
-            ...(Array.isArray(res.unlocked_media_ids) ? res.unlocked_media_ids : []),
-            ...combinedUnlocked,
-          ]));
-          setCoins(remaining);
-          setUnlockedMediaIds(serverUnlocked);
-          persist({ coins: remaining, unlockedMediaIds: serverUnlocked, unlockedMediaTimestamps: newTimestamps });
-          return true;
-        }
-        // RPC returned an error or !success — rollback optimistic timestamp
-        console.warn('[unlockMedia] RPC failed:', error?.message, data);
-        const rolledBack = { ...newTimestamps };
-        delete rolledBack[unlockKey];
-        setUnlockedMediaTimestamps(rolledBack);
-        return false;
-      } catch (err) {
-        // Network/RPC error — rollback optimistic timestamp, report failure
-        console.warn('[unlockMedia] exception:', err);
-        const rolledBack = { ...newTimestamps };
-        delete rolledBack[unlockKey];
-        setUnlockedMediaTimestamps(rolledBack);
+      if (error || !data || !(data as any).success) {
+        console.warn('[unlockMedia] Secure unlock RPC failed:', error?.message, data);
         return false;
       }
+
+      const res = data as any;
+      const serverUnlockKey = String(res.unlock_key || unlockKey);
+      const remaining = Number(res.remaining_coins ?? coins);
+      const unlockedAt = new Date(res.unlocked_at || Date.now()).getTime();
+      const newTimestamps = {
+        ...unlockedMediaTimestamps,
+        [serverUnlockKey]: Number.isFinite(unlockedAt) ? unlockedAt : Date.now(),
+      };
+      const serverUnlocked = Array.from(new Set([...unlockedMediaIds, serverUnlockKey]));
+
+      setCoins(remaining);
+      setUnlockedMediaIds(serverUnlocked);
+      setUnlockedMediaTimestamps(newTimestamps);
+      persist({ coins: remaining, unlockedMediaIds: serverUnlocked, unlockedMediaTimestamps: newTimestamps }, true);
+      return true;
+    } catch (err) {
+      console.warn('[unlockMedia] Secure unlock exception:', err);
+      return false;
     }
-
-    // Guest / offline fallback — local-only unlock, no DB write
-    const newCoins = Math.max(0, coins - cost);
-    setCoins(newCoins);
-    setUnlockedMediaIds(combinedUnlocked);
-    persist({ coins: newCoins, unlockedMediaIds: combinedUnlocked, unlockedMediaTimestamps: newTimestamps });
-
-    return true;
   };
 
   const equipTheme = (themeId: string) => {
@@ -926,51 +952,21 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       } catch (err) {
         console.warn('activate_vip_with_coins RPC error:', err);
       }
+      return;
     }
-
-    // Guest fallback: local-only VIP (no real economy)
-    const currentExp = (vipExpiresAt && new Date(vipExpiresAt).getTime() > Date.now()) 
-        ? new Date(vipExpiresAt) 
-        : new Date();
-    currentExp.setDate(currentExp.getDate() + days);
-    const newExpiresAt = currentExp.toISOString();
-    
-    const diffMs = currentExp.getTime() - Date.now();
-    const newVipDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
-    setVipDaysRemaining(newVipDays);
-    setVipExpiresAt(newExpiresAt);
-    persist({ vipDaysRemaining: newVipDays, vipExpiresAt: newExpiresAt });
   };
 
-  // FIX CRITICAL-08: Server-Authoritative Watch Time Reward via RPC
+  // Signed-in watch rewards stay disabled until trusted playback telemetry can
+  // prove elapsed time server-side. Guest XP remains local-only and spendless.
   const awardWatchTimeReward = async (minutes: number): Promise<{ coins: number; xp: number }> => {
     if (user?.id && !user.id.startsWith('guest-')) {
-      try {
-        const { data, error } = await supabase.rpc('record_watch_time_reward', { p_minutes: minutes });
-        if (!error && data && (data as any).success) {
-          const res = data as any;
-          const awardedCoins = res.coins_awarded || 0;
-          const awardedXp = res.xp_awarded || 0;
-          
-          const updatedCoins = res.new_coins || coins + awardedCoins;
-          const updatedXp = res.new_xp || xp + awardedXp;
-
-          setCoins(updatedCoins);
-          setXp(updatedXp);
-          persist({ coins: updatedCoins, xp: updatedXp });
-          return { coins: res.coins_awarded || 0, xp: res.xp_awarded || 0 };
-        }
-        console.warn('record_watch_time_reward error:', error?.message);
-      } catch (err) {
-        console.warn('record_watch_time_reward RPC error:', err);
-      }
+      return { coins: 0, xp: 0 };
     }
 
-    // Guest fallback: disabled coin payout for PPV model, only grant local XP
+    // Guest fallback: disabled coin payout for PPV model, only grant local XP.
     const coinsEarned = 0; 
     const xpEarned = Math.max(10, Math.floor(minutes * 5));
-    addXPAndCoins(xpEarned, coinsEarned);
+    addGuestXP(xpEarned);
     return { coins: coinsEarned, xp: xpEarned };
   };
 
@@ -986,31 +982,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const refreshGamification = async () => {
-    if (!user?.id || user.id.startsWith('guest-')) return;
+  const refreshGamification = useCallback(async () => {
+    if (!user?.id || user.id.startsWith('guest-') || !isDeviceSessionReady) return;
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('coins, xp, level, streak_days, is_vip, vip_expires_at, unlocked_media_ids')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profile) {
-        if (profile.coins !== undefined && profile.coins !== null) setCoins(profile.coins);
-        if (profile.xp !== undefined && profile.xp !== null) setXp(profile.xp);
-        if (profile.streak_days !== undefined && profile.streak_days !== null)
-          setStreakDays(profile.streak_days);
-
-        if (Array.isArray((profile as any).unlocked_media_ids)) {
-          setUnlockedMediaIds((profile as any).unlocked_media_ids);
-        }
-
-        applyVipProfile(profile);
-      }
+      await syncWalletSnapshot(user.id);
+      await syncActiveMediaEntitlements(user.id);
+      await syncMissionEvidence(user.id);
+      await syncDailyRewardAvailability(user.id);
     } catch (e) {
       console.warn('[useGamification] refreshGamification error:', e);
     }
-  };
+  }, [isDeviceSessionReady, syncActiveMediaEntitlements, syncDailyRewardAvailability, syncMissionEvidence, syncWalletSnapshot, user]);
 
   useEffect(() => {
     if (!user?.id || user.id.startsWith('guest-')) return;
@@ -1018,7 +1000,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       if (state === 'active') void refreshGamification();
     });
     return () => subscription.remove();
-  }, [user?.id]);
+  }, [refreshGamification, user?.id]);
 
   return (
     <GamificationContext.Provider
@@ -1034,6 +1016,10 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         canSpinWheel,
         vipDaysRemaining,
         isVIP,
+        walletLedger,
+        isWalletSyncing,
+        walletSyncError,
+        walletLastVerifiedAt,
         activeEvent,
         allEvents: SEASONAL_EVENTS,
         missions,
@@ -1048,7 +1034,6 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         equipTheme,
         activateVIP,
         awardWatchTimeReward,
-        addXPAndCoins,
         refreshGamification,
         unlockedMediaIds,
         unlockedMediaTimestamps,

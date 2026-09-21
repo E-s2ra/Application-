@@ -3,8 +3,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
 import { MediaCategory } from '@/hooks/useFavorites';
 import { useResponsive } from '@/hooks/useResponsive';
-import { updateAnime, getEditedMediaOverrides, getDeletedMediaIds } from '@/lib/admin-operations';
-import { supabase } from '@/lib/supabase';
+import { updateAnime, getEditedMediaOverrides, getAnimePrivateForAdmin } from '@/lib/admin-operations';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, Lock, Sparkles, Plus, Trash2, Film, Link as LinkIcon, Image as ImageIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -40,7 +39,7 @@ export default function EditAnimeScreen() {
   const themeColors = useTheme();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { profile } = useAuth();
-  const { maxContentWidth, isMobile } = useResponsive();
+  const { maxContentWidth, isMobile } = useResponsive({ desktopRailWidth: 0 });
   const { showSuccess, showError } = useToast();
 
   const isAdmin = profile?.role === 'admin';
@@ -66,19 +65,13 @@ export default function EditAnimeScreen() {
     async function loadItem() {
       if (!id) return;
       try {
-        const [overrides, defaultIds] = await Promise.all([
-          getEditedMediaOverrides(),
-          getDeletedMediaIds()
-        ]);
+        const overrides = await getEditedMediaOverrides();
 
-        const { data, error } = await supabase
-          .from('anime')
-          .select('id, title, description, image_url, video_asset_key, video_url, episodes, genre, category, is_featured, episode_links')
-          .eq('id', id)
-          .single();
+        const privateResult = await getAnimePrivateForAdmin(String(id));
+        const data = privateResult.success ? privateResult.data : null;
 
         let animeData: any = null;
-        if (!error && data) {
+        if (data) {
           animeData = { ...data, ...(overrides[String(id)] || {}) };
         } else if (overrides[String(id)]) {
           animeData = overrides[String(id)];
@@ -154,7 +147,16 @@ export default function EditAnimeScreen() {
 
     const validSources = draftSources.filter((s) => s.url.trim().length > 0);
     if (validSources.length === 0) {
-      setLinkError('Please provide at least 1 valid video URL source for this episode.');
+      setLinkError('Please provide at least 1 private video bucket key for this episode.');
+      return;
+    }
+
+    const invalidSource = validSources.find((source) => {
+      const key = source.url.trim();
+      return key.length > 1000 || key.includes('\0') || key.includes('://') || key.includes('..') || key.startsWith('/');
+    });
+    if (invalidSource) {
+      setLinkError('Use a relative key inside the private video bucket, for example: series/title/episode-01.mp4');
       return;
     }
 
@@ -278,11 +280,13 @@ export default function EditAnimeScreen() {
         >
           {/* Cover Poster Preview Box */}
           <View style={[styles.posterPreviewCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <Image
-              source={{ uri: imageUrl.trim() || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&q=80' }}
-              style={styles.posterImage}
-              resizeMode="cover"
-            />
+            {imageUrl.trim() ? (
+              <Image source={{ uri: imageUrl.trim() }} style={styles.posterImage} resizeMode="cover" />
+            ) : (
+              <View style={[styles.posterImage, { backgroundColor: themeColors.backgroundElement, alignItems: 'center', justifyContent: 'center' }]}>
+                <ImageIcon size={26} color={themeColors.textMuted} />
+              </View>
+            )}
             <View style={{ flex: 1, gap: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <ImageIcon size={14} color={themeColors.primary} />
@@ -394,7 +398,7 @@ export default function EditAnimeScreen() {
               </View>
 
               <Text style={{ fontSize: 11, color: themeColors.textSecondary, fontWeight: '800', marginTop: 4 }}>
-                VIDEO SOURCES FOR EPISODE {newEpNum || '?'}:
+                PRIVATE VIDEO KEYS FOR EPISODE {newEpNum || '?'}:
               </Text>
 
               {draftSources.map((srcItem, index) => (
@@ -438,7 +442,12 @@ export default function EditAnimeScreen() {
                       </Text>
                     </Pressable>
                     {draftSources.length > 1 && (
-                      <Pressable onPress={() => handleRemoveDraftSource(index)} style={{ padding: 4 }}>
+                      <Pressable
+                        onPress={() => handleRemoveDraftSource(index)}
+                        style={{ padding: 4 }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove source ${index + 1}`}
+                      >
                         <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '900' }}>×</Text>
                       </Pressable>
                     )}
@@ -446,7 +455,7 @@ export default function EditAnimeScreen() {
 
                   <TextInput
                     style={[styles.inputField, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, color: themeColors.text, height: 36, fontSize: 12 }]}
-                    placeholder="https://... (Video Stream URL)"
+                    placeholder="series/title/episode-01.mp4"
                     placeholderTextColor={themeColors.textMuted}
                     value={srcItem.url}
                     onChangeText={(val) => handleUpdateDraftSource(index, 'url', val)}
@@ -524,7 +533,12 @@ export default function EditAnimeScreen() {
                             Default: {link.sources?.find((s) => s.is_default)?.label || link.sources?.[0]?.label || 'Server 1'} ({link.url})
                           </Text>
                         </View>
-                        <Pressable onPress={() => handleRemoveLink(link.episode)} style={{ padding: 4 }}>
+                        <Pressable
+                          onPress={() => handleRemoveLink(link.episode)}
+                          style={{ padding: 4 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remove episode ${link.episode}`}
+                        >
                           <Text style={{ color: '#EF4444', fontSize: 16, fontWeight: '900' }}>×</Text>
                         </Pressable>
                       </View>
