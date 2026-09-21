@@ -3,7 +3,7 @@
  *
  * Enforces DRM-like protections across platforms:
  *  - Web:    CSS/JS disablers for right-click, keyboard shortcuts, drag,
- *            copy, print, DevTools open detection, and video controls.
+ *            copy, print, drag, and native video controls.
  *  - Native: Screen-recording & screenshot detection via expo-screen-capture.
  *
  * Call `enableContentProtection()` when the watch screen mounts and
@@ -118,24 +118,7 @@ function enableWebProtection(): Cleanup {
   document.addEventListener('dragstart', onDragStart);
   cleanups.push(() => document.removeEventListener('dragstart', onDragStart));
 
-  // 7. Detect DevTools open via timing trick — pause video if opened
-  let devToolsOpen = false;
-  const devToolsCheck = setInterval(() => {
-    const before = Date.now();
-    // eslint-disable-next-line no-debugger
-    debugger; // pauses if DevTools is open; nearly instant otherwise
-    const delta = Date.now() - before;
-    if (delta > 100 && !devToolsOpen) {
-      devToolsOpen = true;
-      // Pause all videos when devtools is detected
-      document.querySelectorAll('video').forEach((v) => v.pause());
-    } else if (delta <= 100) {
-      devToolsOpen = false;
-    }
-  }, 1000);
-  cleanups.push(() => clearInterval(devToolsCheck));
-
-  // 8. Prevent print (Ctrl+P / window.print)
+  // 7. Prevent print (Ctrl+P / window.print)
   const onBeforePrint = () => {
     document.querySelectorAll('video').forEach((v) => v.pause());
   };
