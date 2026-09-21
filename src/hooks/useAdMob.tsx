@@ -26,11 +26,7 @@ type AdMobContextType = {
 
 const AdMobContext = createContext<AdMobContextType | undefined>(undefined);
 
-const { RewardedAd, RewardedAdEventType, AdEventType, TestIds, isAvailable } = AdMobProxy;
-
-if (!isAvailable) {
-  console.log('[AdMob] react-native-google-mobile-ads not available (web/dev), using fallback modal');
-}
+const { RewardedAd, RewardedAdEventType, AdEventType, TestIds } = AdMobProxy;
 
 export function AdMobProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
