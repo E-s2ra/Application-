@@ -1,4 +1,5 @@
 import { useTheme } from '@/hooks/use-theme';
+import { useLanguage } from '@/hooks/use-language';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
 import { ErrorState } from '@/components/ErrorState';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -58,6 +59,7 @@ import { useToast } from '@/hooks/useToast';
 export default function AdminPanelScreen() {
   const router = useRouter();
   const themeColors = useTheme();
+  const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { profile } = useAuth();
   const { maxContentWidth, isMobile, width } = useResponsive({ desktopRailWidth: 0 });
@@ -295,7 +297,7 @@ export default function AdminPanelScreen() {
     ].filter(Boolean);
 
     return (
-      <View style={[styles.card, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+      <View style={[styles.card, isSmallMobile && styles.cardMobile, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
         {item.image_url ? (
           <Image source={{ uri: item.image_url }} style={styles.cardThumbnail} resizeMode="cover" />
         ) : (
@@ -330,7 +332,7 @@ export default function AdminPanelScreen() {
           ) : null}
         </View>
 
-        <View style={styles.cardActions}>
+        <View style={[styles.cardActions, isSmallMobile && styles.cardActionsMobile]}>
           <Pressable
             onPress={() => router.push({ pathname: '/admin/edit-anime', params: { id: item.id } })}
             style={[styles.iconBtn, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
@@ -347,7 +349,8 @@ export default function AdminPanelScreen() {
               { backgroundColor: item.is_featured ? 'rgba(255, 184, 0, 0.15)' : themeColors.backgroundElement, borderColor: item.is_featured ? '#FFB800' : themeColors.border },
             ]}
             accessibilityRole="button"
-            accessibilityLabel={`Toggle featured ${itemTitle}`}
+            accessibilityLabel={item.is_featured ? `Remove ${itemTitle} from featured` : `Feature ${itemTitle} on Home`}
+            accessibilityState={{ selected: item.is_featured }}
           >
             <Star color={item.is_featured ? '#FFB800' : themeColors.textSecondary} size={14} fill={item.is_featured ? '#FFB800' : 'none'} />
           </Pressable>
@@ -387,10 +390,17 @@ export default function AdminPanelScreen() {
           <Pressable
             style={[styles.loginAdminBtn, { backgroundColor: themeColors.primary }]}
             onPress={() => router.push('/(auth)/login' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Log in as administrator"
           >
             <Text style={styles.loginAdminText}>Log In as Administrator</Text>
           </Pressable>
-          <Pressable style={{ marginTop: 16 }} onPress={() => router.replace('/(tabs)')}>
+          <Pressable
+            style={{ marginTop: 8, minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}
+            onPress={() => router.replace('/(tabs)')}
+            accessibilityRole="button"
+            accessibilityLabel="Return to Home"
+          >
             <Text style={{ color: themeColors.textSecondary, fontSize: 13 }}>Return to Home</Text>
           </Pressable>
         </View>
@@ -405,8 +415,8 @@ export default function AdminPanelScreen() {
       <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 960) }]}>
 
         {/* 📊 Responsive Analytics Metric Cards */}
-        <View style={[styles.metricsRow, isSmallMobile && styles.metricsRowMobile]}>
-          <View style={[styles.metricCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+        <View style={[styles.metricsRow, isMobile && styles.metricsRowMobile]}>
+          <View style={[styles.metricCard, isMobile && styles.metricCardMobile, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
             <View style={[styles.metricIconBox, { backgroundColor: 'rgba(3, 86, 197, 0.15)' }]}>
               <Film size={16} color={themeColors.primary} />
             </View>
@@ -416,7 +426,7 @@ export default function AdminPanelScreen() {
             </View>
           </View>
 
-          <View style={[styles.metricCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+          <View style={[styles.metricCard, isMobile && styles.metricCardMobile, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
             <View style={[styles.metricIconBox, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
               <Star size={16} color="#FFB800" />
             </View>
@@ -428,7 +438,7 @@ export default function AdminPanelScreen() {
             </View>
           </View>
 
-          <View style={[styles.metricCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+          <View style={[styles.metricCard, isMobile && styles.metricCardMobile, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
             <View style={[styles.metricIconBox, { backgroundColor: 'rgba(0, 230, 118, 0.15)' }]}>
               <Crown size={16} color="#00E676" />
             </View>
@@ -490,6 +500,7 @@ export default function AdminPanelScreen() {
                   placeholderTextColor={themeColors.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
+                  accessibilityLabel="Search catalog"
                 />
                 {searchQuery.length > 0 && (
                   <Pressable
@@ -582,7 +593,11 @@ export default function AdminPanelScreen() {
 
             {/* + Add Media Floating Action Button */}
             <Pressable
-              style={[styles.fab, { backgroundColor: themeColors.primary }]}
+              style={[
+                styles.fab,
+                { backgroundColor: themeColors.primary },
+                isRTL ? styles.fabRTL : styles.fabLTR,
+              ]}
               onPress={() => router.push('/admin/add-anime' as any)}
               accessibilityRole="button"
               accessibilityLabel="Add new media title"
@@ -615,6 +630,7 @@ export default function AdminPanelScreen() {
                 onChangeText={setInstantEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                accessibilityLabel="User registered email address"
               />
 
               <Text style={[styles.inputLabel, { color: themeColors.text, marginTop: 10 }]}>Select Subscription Plan:</Text>
@@ -748,6 +764,7 @@ const styles = StyleSheet.create({
   loginAdminBtn: {
     paddingHorizontal: 22,
     paddingVertical: 11,
+    minHeight: 44,
     borderRadius: 10,
   },
   loginAdminText: {
@@ -764,6 +781,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   metricsRowMobile: {
+    flexWrap: 'wrap',
     gap: 6,
     paddingHorizontal: 10,
   },
@@ -775,6 +793,10 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  metricCardMobile: {
+    minWidth: 140,
+    minHeight: 64,
   },
   metricIconBox: {
     width: 30,
@@ -808,6 +830,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 44,
     paddingVertical: 8,
     borderRadius: 7,
     gap: 5,
@@ -830,7 +853,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    height: 40,
+    minHeight: 44,
     borderRadius: 8,
     borderWidth: 1,
     gap: 6,
@@ -845,6 +868,8 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: 10,
     paddingVertical: 5,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 6,
     borderWidth: 1,
   },
@@ -870,6 +895,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    minHeight: 44,
+    paddingHorizontal: 8,
   },
   listContainer: {
     paddingHorizontal: 12,
@@ -885,6 +912,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     gap: 10,
+  },
+  cardMobile: {
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
   },
   cardThumbnail: {
     width: 42,
@@ -940,10 +971,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
   },
+  cardActionsMobile: {
+    width: '100%',
+    justifyContent: 'flex-end',
+    paddingTop: 2,
+  },
   iconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 7,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -951,13 +987,18 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     bottom: 24,
-    right: 16,
     width: 52,
     height: 52,
     borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
+  },
+  fabLTR: {
+    right: 16,
+  },
+  fabRTL: {
+    left: 16,
   },
   emptyCard: {
     padding: 32,
@@ -1012,6 +1053,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 9,
+    minHeight: 48,
     fontSize: 13,
   },
   durationChipRow: {
@@ -1023,6 +1065,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 7,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 7,
   },
   durationChipText: {
@@ -1032,6 +1076,7 @@ const styles = StyleSheet.create({
   grantSubmitBtn: {
     backgroundColor: '#059669',
     borderRadius: 10,
+    minHeight: 48,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 6,

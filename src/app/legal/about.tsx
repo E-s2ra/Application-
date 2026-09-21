@@ -1,16 +1,17 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, Pressable, Image, Linking } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { Image, Linking, StyleSheet, Text, View } from 'react-native';
+import { CheckCircle, Globe, Mail, MessageCircle, Send, Sparkles } from 'lucide-react-native';
+import { AppButton, AppSurface } from '@/components/ui';
+import { LegalPage } from '@/components/legal/LegalScaffold';
+import { Radius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
-import { ArrowLeft, Info, Tv, Sparkles, Globe, MessageCircle, Send, Mail, Heart, CheckCircle } from 'lucide-react-native';
+import { useToast } from '@/hooks/useToast';
 
 export default function AboutScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const themeColors = useTheme();
-  const { language } = useLanguage();
+  const { language, isRTL } = useLanguage();
+  const { showError } = useToast();
   const isKu = language === 'ku';
 
   const content = isKu
@@ -19,11 +20,11 @@ export default function AboutScreen() {
         versionLabel: 'وەشانی ئەپڵیکەیشن: 1.0.0 (پڕۆداکشن)',
         tagline: 'جیهانی تایبەتی سینەما و ئەنیمێ بە زمانی کوردی و ئینگلیزی',
         description:
-          'ئەنیفلیکس (AniFlix) بەهێزترین و پێشکەوتووترین ئەپڵیکەیشنی سینەماییە بۆ بینینی نوێترین فیلم، ئەنیمێ، درامای کۆری، و زنجیرە جیهانییەکان بە کوالێتی بەرز (Ultra HD) لەگەڵ ژێرنووس و وەرگێڕانی کوردی سۆرانی.',
+          'ئەنیفلیکس (AniFlix) پلاتفۆرمێکی سینەماییە بۆ بینینی فیلم، ئەنیمێ، درامای کۆری و زنجیرە جیهانییەکان بە زمانی کوردی سۆرانی و ئینگلیزی.',
         featuresTitle: 'تایبەتمەندییە بەرزەکانی ئەنیفلیکس',
         features: [
           'ژێرنووس و دووبلاژی زووی کوردی (سۆرانی) و ئینگلیزی',
-          'سەیرکردنی بێ پچڕان بە کوالێتی Ultra HD و 1080p',
+          'سەیرکردن بە باشترین کوالێتی بەردەست بۆ هەر ناوەڕۆکێک',
           'سیستەمی خەڵات و دراو (Coins)، چەرخی بەخت و مەدالیاکان',
           'ڕووکاری ئەپڵیکەیشن (Themes) بە خواستی بەکارهێنەر',
           'کۆمەڵگەی تێبینی و بۆچوونی بینەران لەسەر فیلمەکان',
@@ -59,217 +60,125 @@ export default function AboutScreen() {
         copyrightText: '© 2026 AniFlix. All rights reserved.',
       };
 
-  const handleOpenTelegram = () => {
-    void Linking.openURL('https://t.me/esmahil219').catch(() => {});
+  const openSupportLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      showError(
+        isKu
+          ? 'نەتوانرا بەستەری پشتیوانی بکرێتەوە. تکایە دووبارە هەوڵبدەرەوە.'
+          : 'Could not open this support link. Please try again.',
+      );
+    }
   };
 
-  const handleOpenWhatsApp = () => {
-    void Linking.openURL('https://wa.me/9647824076461').catch(() => {});
-  };
+  const textDirection = isRTL ? styles.rtlText : styles.ltrText;
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: Math.max(insets.top + 10, 20),
-            backgroundColor: themeColors.backgroundCard,
-            borderBottomColor: themeColors.border,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          style={[styles.backButton, { backgroundColor: themeColors.backgroundElement }]}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
+    <LegalPage title={content.title} meta={content.versionLabel}>
+      <AppSurface variant="card" padding="xl" style={styles.brandCard}>
+        <View
+          style={[
+            styles.logoCircle,
+            { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+          ]}
         >
-          <ArrowLeft size={20} color={themeColors.text} />
-        </Pressable>
-        <View style={styles.headerTextWrapper}>
-          <Text style={[styles.headerTitle, { color: themeColors.text }]} numberOfLines={1}>
-            {content.title}
-          </Text>
-          <Text style={[styles.headerSub, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {content.versionLabel}
+          <Image
+            source={require('../../../assets/images/icon.png')}
+            style={styles.logoImg}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
+        </View>
+        <Text style={[styles.brandName, { color: themeColors.text }]}>
+          ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
+        </Text>
+        <Text style={[styles.tagline, { color: themeColors.primary }, textDirection]}>
+          {content.tagline}
+        </Text>
+        <Text style={[styles.description, { color: themeColors.textSecondary }, textDirection]}>
+          {content.description}
+        </Text>
+      </AppSurface>
+
+      <AppSurface variant="card" padding="lg">
+        <View style={[styles.sectionHeaderRow, isRTL && styles.rowRTL]}>
+          <Sparkles size={20} color={themeColors.primary} />
+          <Text style={[styles.sectionTitle, { color: themeColors.text }, textDirection]}>
+            {content.featuresTitle}
           </Text>
         </View>
-      </View>
-
-      {/* Scroll Content */}
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom + 40, 60) },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.contentContainer}>
-          {/* Brand Card */}
-          <View
-            style={[
-              styles.brandCard,
-              {
-                backgroundColor: themeColors.backgroundCard,
-                borderColor: themeColors.border,
-              },
-            ]}
-          >
-            <View style={[styles.logoCircle, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
-              <Image
-                source={require('../../../assets/images/icon.png')}
-                style={styles.logoImg}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={[styles.brandName, { color: themeColors.text }]}>
-              ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
-            </Text>
-            <Text style={[styles.tagline, { color: themeColors.primary }]}>{content.tagline}</Text>
-            <Text style={[styles.description, { color: themeColors.textSecondary }]}>
-              {content.description}
-            </Text>
-          </View>
-
-          {/* Features Box */}
-          <View
-            style={[
-              styles.sectionCard,
-              {
-                backgroundColor: themeColors.backgroundCard,
-                borderColor: themeColors.border,
-              },
-            ]}
-          >
-            <View style={styles.sectionHeaderRow}>
-              <Sparkles size={20} color={themeColors.primary} />
-              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                {content.featuresTitle}
+        <View style={styles.featureGrid}>
+          {content.features.map((feature) => (
+            <View key={feature} style={[styles.featureItem, isRTL && styles.rowRTL]}>
+              <CheckCircle size={17} color={themeColors.success} style={styles.featureIcon} />
+              <Text style={[styles.featureText, { color: themeColors.text }, textDirection]}>
+                {feature}
               </Text>
             </View>
-            <View style={styles.featureGrid}>
-              {content.features.map((feat, idx) => (
-                <View key={idx} style={styles.featureItem}>
-                  <CheckCircle size={16} color="#10B981" style={{ marginTop: 2 }} />
-                  <Text style={[styles.featureText, { color: themeColors.text }]}>{feat}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          ))}
+        </View>
+      </AppSurface>
 
-          {/* Contact Box */}
-          <View
-            style={[
-              styles.sectionCard,
-              {
-                backgroundColor: themeColors.backgroundCard,
-                borderColor: themeColors.border,
-              },
-            ]}
-          >
-            <View style={styles.sectionHeaderRow}>
-              <Globe size={20} color={themeColors.primary} />
-              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                {content.contactTitle}
-              </Text>
-            </View>
-            <Text style={[styles.contactIntro, { color: themeColors.textSecondary }]}>
-              {content.contactText}
-            </Text>
-
-            <View style={styles.contactButtonsRow}>
-              <Pressable
-                style={[styles.contactBtn, { backgroundColor: '#0088cc' }]}
-                onPress={handleOpenTelegram}
-                accessibilityRole="button"
-                accessibilityLabel="Contact on Telegram"
-              >
-                <Send size={18} color="#FFFFFF" />
-                <Text style={styles.contactBtnText}>Telegram (@esmahil219)</Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.contactBtn, { backgroundColor: '#25D366' }]}
-                onPress={handleOpenWhatsApp}
-                accessibilityRole="button"
-                accessibilityLabel="Contact on WhatsApp"
-              >
-                <MessageCircle size={18} color="#FFFFFF" />
-                <Text style={styles.contactBtnText}>WhatsApp (+9647824076461)</Text>
-              </Pressable>
-            </View>
-
-            <View style={[styles.emailRow, { backgroundColor: themeColors.backgroundElement }]}>
-              <Mail size={16} color={themeColors.textSecondary} />
-              <Text style={[styles.emailText, { color: themeColors.text }]}>{content.emailText}</Text>
-            </View>
-          </View>
-
-          {/* Footer Copyright */}
-          <Text style={[styles.copyright, { color: themeColors.textMuted }]}>
-            {content.copyrightText}
+      <AppSurface variant="card" padding="lg">
+        <View style={[styles.sectionHeaderRow, isRTL && styles.rowRTL]}>
+          <Globe size={20} color={themeColors.primary} />
+          <Text style={[styles.sectionTitle, { color: themeColors.text }, textDirection]}>
+            {content.contactTitle}
           </Text>
         </View>
-      </ScrollView>
-    </View>
+        <Text style={[styles.contactIntro, { color: themeColors.textSecondary }, textDirection]}>
+          {content.contactText}
+        </Text>
+
+        <View style={styles.contactButtons}>
+          <AppButton
+            variant="secondary"
+            fullWidth
+            size="lg"
+            label={content.telegramText}
+            leftIcon={<Send size={18} color={themeColors.primary} />}
+            onPress={() => void openSupportLink('https://t.me/esmahil219')}
+          />
+          <AppButton
+            variant="secondary"
+            fullWidth
+            size="lg"
+            label={content.whatsappText}
+            leftIcon={<MessageCircle size={18} color={themeColors.primary} />}
+            onPress={() => void openSupportLink('https://wa.me/9647824076461')}
+          />
+          <AppButton
+            variant="ghost"
+            fullWidth
+            size="lg"
+            label={content.emailText}
+            leftIcon={<Mail size={18} color={themeColors.textSecondary} />}
+            onPress={() => void openSupportLink('mailto:support@aniflix.app')}
+          />
+        </View>
+      </AppSurface>
+
+      <Text style={[styles.copyright, { color: themeColors.textMuted }, textDirection]}>
+        {content.copyrightText}
+      </Text>
+    </LegalPage>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTextWrapper: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  headerSub: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  contentContainer: {
-    maxWidth: 720,
-    width: '100%',
-    alignSelf: 'center',
-    gap: 14,
-  },
   brandCard: {
-    padding: 24,
-    borderRadius: 20,
-    borderWidth: 1,
     alignItems: 'center',
+    borderRadius: Radius.lg,
   },
   logoCircle: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    borderWidth: 1,
+    borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
     overflow: 'hidden',
   },
   logoImg: {
@@ -277,87 +186,70 @@ const styles = StyleSheet.create({
     height: 60,
   },
   brandName: {
-    fontSize: 26,
+    ...Typography.h1,
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 1.6,
   },
   tagline: {
-    fontSize: 13,
+    ...Typography.small,
     fontWeight: '700',
-    marginTop: 4,
+    width: '100%',
     textAlign: 'center',
+    marginTop: Spacing.xs,
   },
   description: {
-    fontSize: 14,
-    lineHeight: 22,
+    ...Typography.body,
+    width: '100%',
     textAlign: 'center',
-    marginTop: 12,
-  },
-  sectionCard: {
-    padding: 18,
-    borderRadius: 16,
-    borderWidth: 1,
+    marginTop: Spacing.md,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...Typography.h3,
+    flex: 1,
   },
   featureGrid: {
-    gap: 10,
+    gap: Spacing.md,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: Spacing.sm,
+  },
+  featureIcon: {
+    marginTop: 2,
   },
   featureText: {
-    fontSize: 13,
+    ...Typography.small,
     fontWeight: '600',
     flex: 1,
   },
   contactIntro: {
-    fontSize: 13,
-    marginBottom: 14,
+    ...Typography.small,
+    marginBottom: Spacing.md,
   },
-  contactButtonsRow: {
-    gap: 10,
-    marginBottom: 12,
-  },
-  contactBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-  },
-  contactBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 13,
-  },
-  emailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 10,
-  },
-  emailText: {
-    fontSize: 13,
-    fontWeight: '600',
+  contactButtons: {
+    gap: Spacing.sm,
   },
   copyright: {
-    fontSize: 12,
+    ...Typography.caption,
     textAlign: 'center',
-    marginTop: 10,
-    fontWeight: '500',
+    marginTop: Spacing.xs,
+  },
+  rowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  rtlText: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  ltrText: {
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
 });

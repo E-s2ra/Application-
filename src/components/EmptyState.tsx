@@ -36,11 +36,13 @@ export function EmptyState({
         <Pressable
           style={({ pressed }) => [
             styles.actionButton,
-            { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1.0 },
+            { backgroundColor: pressed ? theme.primaryPressed : theme.primary },
           ]}
           onPress={onAction}
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
         >
-          <Text style={styles.actionText}>{actionLabel}</Text>
+          <Text style={[styles.actionText, { color: theme.buttonText }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -75,12 +77,14 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   actionButton: {
+    minHeight: 44,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.sm + 2,
     borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionText: {
     ...Typography.bodyBold,
-    color: '#FFFFFF',
   },
 });

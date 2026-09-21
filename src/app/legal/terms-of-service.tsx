@@ -1,14 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
-import { ArrowLeft, FileText, CheckCircle2, Crown, MessageSquare, AlertTriangle, Shield, HelpCircle } from 'lucide-react-native';
+import { LegalHero, LegalPage, LegalSection } from '@/components/legal/LegalScaffold';
+import { FileText, CheckCircle2, Crown, MessageSquare, AlertTriangle, Shield, HelpCircle } from 'lucide-react-native';
 
 export default function TermsOfServiceScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const themeColors = useTheme();
   const { language } = useLanguage();
   const isKu = language === 'ku';
@@ -94,199 +90,25 @@ export default function TermsOfServiceScreen() {
       };
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: Math.max(insets.top + 10, 20),
-            backgroundColor: themeColors.backgroundCard,
-            borderBottomColor: themeColors.border,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          style={[styles.backButton, { backgroundColor: themeColors.backgroundElement }]}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <ArrowLeft size={20} color={themeColors.text} />
-        </Pressable>
-        <View style={styles.headerTextWrapper}>
-          <Text style={[styles.headerTitle, { color: themeColors.text }]} numberOfLines={1}>
-            {content.title}
-          </Text>
-          <Text style={[styles.headerSub, { color: themeColors.textSecondary }]} numberOfLines={1}>
-            {content.effectiveDate}
-          </Text>
-        </View>
-      </View>
-
-      {/* Scrollable Content */}
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom + 40, 60) },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.contentContainer}>
-          {/* Hero Banner */}
-          <View
-            style={[
-              styles.heroBanner,
-              {
-                backgroundColor: themeColors.backgroundCard,
-                borderColor: themeColors.border,
-              },
-            ]}
-          >
-            <View style={[styles.iconBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-              <FileText size={28} color="#10B981" />
-            </View>
-            <Text style={[styles.heroTitle, { color: themeColors.text }]}>{content.title}</Text>
-            <Text style={[styles.heroSub, { color: themeColors.textSecondary }]}>
-              {content.subtitle}
-            </Text>
-            <Text style={[styles.introText, { color: themeColors.text }]}>{content.intro}</Text>
-          </View>
-
-          {/* Terms Sections */}
-          {content.sections.map((sec, idx) => {
-            const IconComponent = sec.icon;
-            return (
-              <View
-                key={idx}
-                style={[
-                  styles.sectionCard,
-                  {
-                    backgroundColor: themeColors.backgroundCard,
-                    borderColor: themeColors.border,
-                  },
-                ]}
-              >
-                <View style={styles.sectionHeaderRow}>
-                  <View
-                    style={[
-                      styles.sectionIconBox,
-                      { backgroundColor: themeColors.backgroundElement },
-                    ]}
-                  >
-                    <IconComponent size={20} color={themeColors.primary} />
-                  </View>
-                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                    {sec.title}
-                  </Text>
-                </View>
-                <Text style={[styles.sectionText, { color: themeColors.textSecondary }]}>
-                  {sec.text}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-      </ScrollView>
-    </View>
+    <LegalPage title={content.title} meta={content.effectiveDate}>
+      <LegalHero
+        icon={<FileText size={28} color={themeColors.success} />}
+        title={content.title}
+        subtitle={content.subtitle}
+        intro={content.intro}
+        tone="success"
+      />
+      {content.sections.map((section) => {
+        const IconComponent = section.icon;
+        return (
+          <LegalSection
+            key={section.title}
+            icon={<IconComponent size={20} color={themeColors.primary} />}
+            title={section.title}
+            text={section.text}
+          />
+        );
+      })}
+    </LegalPage>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTextWrapper: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  headerSub: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  contentContainer: {
-    maxWidth: 720,
-    width: '100%',
-    alignSelf: 'center',
-    gap: 14,
-  },
-  heroBanner: {
-    padding: 20,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  iconBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  heroSub: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 2,
-    marginBottom: 12,
-  },
-  introText: {
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  sectionCard: {
-    padding: 18,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 10,
-  },
-  sectionIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    flex: 1,
-  },
-  sectionText: {
-    fontSize: 13,
-    lineHeight: 22,
-  },
-});

@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Animated, Easing, Dimensions, Platform, Image, Pressable } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Animated,
+  Easing,
+  Platform,
+  Image,
+  Pressable,
+  AccessibilityInfo,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, useColorMode } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -18,6 +29,8 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const { isDark, toggleColorMode } = useColorMode();
   const { language, toggleLanguage } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
+  const { width } = useWindowDimensions();
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   const [progressAnim] = useState(() => new Animated.Value(0));
   const [logoScaleAnim] = useState(() => new Animated.Value(0.8));
@@ -31,50 +44,63 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   const [percent, setPercent] = useState(0);
 
   useEffect(() => {
-    // 1. Logo Entrance Animation
-    Animated.parallel([
-      Animated.timing(logoScaleAnim, {
-        toValue: 1,
-        duration: 800,
-        easing: Easing.out(Easing.back(1.4)),
-        useNativeDriver: isNativeDriver,
-      }),
-      Animated.timing(logoOpacityAnim, {
-        toValue: 1,
-        duration: 700,
-        useNativeDriver: isNativeDriver,
-      }),
-    ]).start();
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => subscription.remove();
+  }, []);
 
-    // 2. Pulse Glow Animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowPulseAnim, {
-          toValue: 1.15,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
+  useEffect(() => {
+    const pulse = reduceMotion
+      ? null
+      : Animated.loop(
+          Animated.sequence([
+            Animated.timing(glowPulseAnim, {
+              toValue: 1.15,
+              duration: 900,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: isNativeDriver,
+            }),
+            Animated.timing(glowPulseAnim, {
+              toValue: 0.85,
+              duration: 900,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: isNativeDriver,
+            }),
+          ])
+        );
+
+    if (reduceMotion) {
+      logoScaleAnim.setValue(1);
+      logoOpacityAnim.setValue(1);
+      glowPulseAnim.setValue(1);
+    } else {
+      Animated.parallel([
+        Animated.timing(logoScaleAnim, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.out(Easing.back(1.4)),
           useNativeDriver: isNativeDriver,
         }),
-        Animated.timing(glowPulseAnim, {
-          toValue: 0.85,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(logoOpacityAnim, {
+          toValue: 1,
+          duration: 700,
           useNativeDriver: isNativeDriver,
         }),
-      ])
-    ).start();
+      ]).start();
+      pulse?.start();
+    }
 
     // 3. Progress Bar Animation
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: TOTAL_DURATION - 350,
+      duration: reduceMotion ? 0 : TOTAL_DURATION - 350,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
       useNativeDriver: false,
     }).start();
 
     // 4. Status Text & Percentage Updates
     const textT1 = setTimeout(() => {
-      setLoadingText(language === 'ku' ? 'بارکردنی کاتەلۆگەکان...' : 'Loading 4K streams & catalogs...');
+      setLoadingText(language === 'ku' ? 'بارکردنی کاتەلۆگەکان...' : 'Loading catalog and account data...');
     }, 400);
 
     const textT2 = setTimeout(() => {
@@ -97,6 +123,10 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
 
     // 5. Fade Out & Finish Callback
     const finishTimer = setTimeout(() => {
+      if (reduceMotion) {
+        onFinish();
+        return;
+      }
       Animated.timing(screenFadeAnim, {
         toValue: 0,
         duration: 350,
@@ -112,8 +142,9 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
       clearTimeout(textT3);
       clearTimeout(finishTimer);
       clearInterval(interval);
+      pulse?.stop();
     };
-  }, [language, onFinish, glowPulseAnim, logoOpacityAnim, logoScaleAnim, progressAnim, screenFadeAnim]);
+  }, [language, onFinish, reduceMotion, glowPulseAnim, logoOpacityAnim, logoScaleAnim, progressAnim, screenFadeAnim]);
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -136,6 +167,8 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
           <Pressable
             style={[styles.themePill, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
             onPress={toggleColorMode}
+            accessibilityRole="button"
+            accessibilityLabel={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? <Moon size={14} color={themeColors.textSecondary} /> : <Sun size={14} color={themeColors.primary} />}
           </Pressable>
@@ -143,6 +176,8 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
           <Pressable
             style={[styles.langPill, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
             onPress={toggleLanguage}
+            accessibilityRole="button"
+            accessibilityLabel={language === 'ku' ? 'Switch language to English' : 'Switch language to Kurdish'}
           >
             <Globe size={14} color={themeColors.primary} />
             <Text style={[styles.langPillText, { color: themeColors.text }]}>
@@ -157,7 +192,10 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
         style={[
           styles.glowCircle,
           {
-            backgroundColor: isDark ? 'rgba(3, 86, 197, 0.18)' : 'rgba(3, 86, 197, 0.10)',
+            backgroundColor: themeColors.primaryGlow,
+            width: Math.min(width * 0.9, 420),
+            height: Math.min(width * 0.9, 420),
+            borderRadius: Math.min(width * 0.9, 420) / 2,
             transform: [{ scale: glowPulseAnim }],
           },
         ]}
@@ -215,8 +253,6 @@ export function AniFlixSplashScreen({ onFinish }: AniFlixSplashScreenProps) {
   );
 }
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
@@ -240,9 +276,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   themePill: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -253,6 +289,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    minHeight: 44,
     borderRadius: 16,
     borderWidth: 1,
   },
@@ -262,9 +299,6 @@ const styles = StyleSheet.create({
   },
   glowCircle: {
     position: 'absolute',
-    width: Math.min(width * 0.9, 420),
-    height: Math.min(width * 0.9, 420),
-    borderRadius: 210,
   },
   logoContent: {
     alignItems: 'center',

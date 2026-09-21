@@ -1,27 +1,16 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  Pressable,
-  Text,
-  ActivityIndicator,
-  Image,
-  Dimensions,
-  Platform,
-} from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { PrimaryGradient } from '@/components/PrimaryGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AlertCircle, Eye, EyeOff, Globe, Lock, LogIn, Mail } from 'lucide-react-native';
+import { AppButton, AppSurface, AppTextField } from '@/components/ui';
+import { Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation, useLanguage } from '@/hooks/use-language';
-import { AlertCircle, Eye, EyeOff, Globe, Mail, Lock, Sparkles, LogIn } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useToast } from '@/hooks/useToast';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -30,7 +19,7 @@ export default function LoginScreen() {
   const { t, isRTL } = useTranslation();
   const { language, toggleLanguage } = useLanguage();
   const { signIn } = useAuth();
-  const { isDesktop, isTablet } = useResponsive();
+  const { pagePad, isSmallDevice } = useResponsive({ desktopRailWidth: 0 });
   const { showError, showSuccess } = useToast();
 
   const [email, setEmail] = useState('');
@@ -38,230 +27,240 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-
   const passwordInput = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     setErrorMessage(null);
     if (!email.trim() || !password.trim()) {
-      const msg = isRTL ? 'تکایە ئیمەیڵ و تێپەڕەوشەکەت بنووسە.' : 'Please enter your email and password.';
+      const msg = isRTL
+        ? 'تکایە ئیمەیڵ و تێپەڕەوشەکەت بنووسە.'
+        : 'Please enter your email and password.';
       setErrorMessage(msg);
       showError(msg);
       return;
     }
+
     setLoading(true);
-    let formattedEmail = email.trim();
-    const { error } = await signIn(formattedEmail, password);
+    const { error } = await signIn(email.trim(), password);
     setLoading(false);
+
     if (error) {
       setErrorMessage(error);
       showError(error);
-    } else {
-      showSuccess('Welcome back to AniFlix');
-      setEmail('');
-      setPassword('');
-      setErrorMessage(null);
-      router.replace('/(tabs)');
+      return;
     }
+
+    showSuccess(isRTL ? 'بەخێربێیتەوە بۆ AniFlix' : 'Welcome back to AniFlix');
+    setEmail('');
+    setPassword('');
+    router.replace('/(tabs)');
   };
+
+  const fieldText = isRTL ? styles.rtlText : styles.ltrText;
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* 🔮 Ambient Background Glow Orbs */}
-      <View style={[styles.glowOrbTop, { backgroundColor: themeColors.primary, opacity: 0.18, pointerEvents: 'none' }]} />
-      <View style={[styles.glowOrbBottom, { backgroundColor: '#00D2FF', opacity: 0.12, pointerEvents: 'none' }]} />
+      <View
+        style={[styles.glowOrbTop, { backgroundColor: themeColors.primary, opacity: themeColors.mode === 'dark' ? 0.14 : 0.08, pointerEvents: 'none' }]}
+      />
+      <View
+        style={[styles.glowOrbBottom, { backgroundColor: themeColors.primary, opacity: themeColors.mode === 'dark' ? 0.09 : 0.05, pointerEvents: 'none' }]}
+      />
 
-      {/* 🌐 Top Bar: Language Switcher Pill */}
-      <View style={[styles.topFloatingBar, { paddingTop: Math.max(insets.top + 6, 16) }]}>
-        <Pressable
-          onPress={toggleLanguage}
-          accessibilityRole="button"
+      <View
+        style={[
+          styles.topBar,
+          {
+            paddingTop: Math.max(insets.top + Spacing.sm, Spacing.lg),
+            paddingHorizontal: pagePad,
+            alignItems: isRTL ? 'flex-start' : 'flex-end',
+          },
+        ]}
+      >
+        <AppButton
+          variant="secondary"
+          size="md"
+          label={language === 'ku' ? 'کوردی (سۆرانی)' : 'English (EN)'}
           accessibilityLabel={language === 'ku' ? 'Switch to English' : 'گۆڕین بۆ کوردی'}
-          style={[
-            styles.langPill,
-            { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-          ]}
-        >
-          <Globe size={14} color={themeColors.primary} />
-          <Text style={[styles.langText, { color: themeColors.text }]}>
-            {language === 'ku' ? 'کوردی (سۆرانی)' : 'English (EN)'}
-          </Text>
-        </Pressable>
+          leftIcon={<Globe size={16} color={themeColors.primary} />}
+          onPress={toggleLanguage}
+        />
       </View>
 
       <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: Math.max(insets.top + 50, 60) },
+          {
+            paddingHorizontal: pagePad,
+            paddingTop: Math.max(insets.top + 64, 72),
+            paddingBottom: Math.max(insets.bottom + Spacing.xl, Spacing.xxl),
+          },
         ]}
         keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        extraScrollHeight={20}
+        enableOnAndroid
+        enableAutomaticScroll
+        extraScrollHeight={Spacing.xl}
       >
         <View style={styles.centerWrapper}>
-          <View
-            style={[
-              styles.authCard,
-              {
-                backgroundColor: themeColors.backgroundCard,
-                borderColor: themeColors.border,
-                maxWidth: Math.min(SCREEN_WIDTH - 32, 440),
-              },
-            ]}
+          <AppSurface
+            variant="raised"
+            padding={isSmallDevice ? 'lg' : 'xl'}
+            style={styles.authCard}
           >
-            {/* 🎬 Brand Header */}
             <View style={styles.header}>
-              <View style={[styles.logoContainer, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+              <View
+                style={[
+                  styles.logoContainer,
+                  {
+                    backgroundColor: themeColors.backgroundElement,
+                    borderColor: themeColors.border,
+                  },
+                ]}
+              >
                 <Image
                   source={require('../../../assets/images/icon.png')}
                   style={styles.brandLogoImage}
                   resizeMode="contain"
+                  accessibilityIgnoresInvertColors
                 />
               </View>
               <Text style={[styles.brandTitle, { color: themeColors.text }]}>
                 ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
               </Text>
-              <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: themeColors.textSecondary },
+                  isRTL && styles.rtlText,
+                ]}
+              >
                 {t('signInToAccount', 'Sign in to continue watching your favorite movies & series')}
               </Text>
             </View>
 
-            {/* Error Message Box */}
-            {errorMessage && (
-              <View style={[styles.errorBox, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: '#EF4444' }]}>
-                <AlertCircle color="#EF4444" size={18} />
-                <Text style={[styles.errorText, { color: '#EF4444' }]}>{errorMessage}</Text>
+            {errorMessage ? (
+              <View
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+                style={[
+                  styles.statusBanner,
+                  {
+                    backgroundColor: themeColors.errorSoft,
+                    borderColor: themeColors.error,
+                  },
+                  isRTL && styles.rowRTL,
+                ]}
+              >
+                <AlertCircle color={themeColors.error} size={18} />
+                <Text style={[styles.statusText, { color: themeColors.error }, fieldText]}>
+                  {errorMessage}
+                </Text>
               </View>
-            )}
+            ) : null}
 
-            {/* 📝 Form Inputs */}
             <View style={styles.form}>
-              {/* Email Field */}
               <View style={styles.fieldGroup}>
-                <Text style={[styles.fieldLabel, { color: themeColors.textSecondary }]}>
+                <Text style={[styles.fieldLabel, { color: themeColors.textSecondary }, fieldText]}>
                   {t('email', 'Email Address or Username')}
                 </Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: themeColors.backgroundElement,
-                      borderColor: emailFocused ? themeColors.primary : themeColors.border,
-                    },
-                  ]}
-                >
-                  <Mail size={18} color={emailFocused ? themeColors.primary : themeColors.textSecondary} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { color: themeColors.text }, isRTL && { textAlign: 'right' }]}
-                    placeholder="name@example.com"
-                    placeholderTextColor={themeColors.textSecondary}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={email}
-                    onChangeText={(val) => {
-                      setEmail(val);
-                      if (errorMessage) setErrorMessage(null);
-                    }}
-                    onFocus={() => setEmailFocused(true)}
-                    onBlur={() => setEmailFocused(false)}
-                    editable={!loading}
-                    returnKeyType="next"
-                    onSubmitEditing={() => passwordInput.current?.focus()}
-                    blurOnSubmit={false}
-                  />
-                </View>
+                <AppTextField
+                  inputStyle={fieldText}
+                  leftIcon={<Mail size={18} color={themeColors.textSecondary} />}
+                  accessibilityLabel={t('email', 'Email Address or Username')}
+                  placeholder="name@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="username"
+                  textContentType="username"
+                  value={email}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  editable={!loading}
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordInput.current?.focus()}
+                  blurOnSubmit={false}
+                />
               </View>
 
-              {/* Password Field */}
               <View style={styles.fieldGroup}>
-                <View style={styles.passwordLabelRow}>
-                  <Text style={[styles.fieldLabel, { color: themeColors.textSecondary }]}>
+                <View style={[styles.passwordLabelRow, isRTL && styles.rowRTL]}>
+                  <Text style={[styles.fieldLabel, { color: themeColors.textSecondary }, fieldText]}>
                     {t('password', 'Password')}
                   </Text>
                   <Pressable
                     onPress={() => router.push('/(auth)/forgot-password')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('forgotPassword', 'Forgot Password?')}
+                    hitSlop={6}
+                    style={styles.textAction}
                   >
-                    <Text style={[styles.forgotText, { color: themeColors.primary }]}>
+                    <Text style={[styles.textActionLabel, { color: themeColors.primary }, fieldText]}>
                       {t('forgotPassword', 'Forgot Password?')}
                     </Text>
                   </Pressable>
                 </View>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: themeColors.backgroundElement,
-                      borderColor: passwordFocused ? themeColors.primary : themeColors.border,
-                    },
-                  ]}
-                >
-                  <Lock size={18} color={passwordFocused ? themeColors.primary : themeColors.textSecondary} style={styles.inputIcon} />
-                  <TextInput
-                    ref={passwordInput}
-                    style={[styles.input, { color: themeColors.text }, isRTL && { textAlign: 'right' }]}
-                    placeholder="••••••••"
-                    secureTextEntry={!showPassword}
-                    placeholderTextColor={themeColors.textSecondary}
-                    value={password}
-                    onChangeText={(val) => {
-                      setPassword(val);
-                      if (errorMessage) setErrorMessage(null);
-                    }}
-                    onFocus={() => setPasswordFocused(true)}
-                    onBlur={() => setPasswordFocused(false)}
-                    editable={!loading}
-                    returnKeyType="go"
-                    onSubmitEditing={() => void handleLogin()}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeButton}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={18} color={themeColors.textSecondary} />
-                    ) : (
-                      <Eye size={18} color={themeColors.textSecondary} />
-                    )}
-                  </Pressable>
-                </View>
+                <AppTextField
+                  ref={passwordInput}
+                  inputStyle={fieldText}
+                  leftIcon={<Lock size={18} color={themeColors.textSecondary} />}
+                  rightIcon={
+                    showPassword
+                      ? <EyeOff size={19} color={themeColors.textSecondary} />
+                      : <Eye size={19} color={themeColors.textSecondary} />
+                  }
+                  onRightIconPress={() => setShowPassword((value) => !value)}
+                  rightIconLabel={
+                    showPassword
+                      ? (isRTL ? 'شاردنەوەی تێپەڕەوشە' : 'Hide password')
+                      : (isRTL ? 'نیشاندانی تێپەڕەوشە' : 'Show password')
+                  }
+                  accessibilityLabel={t('password', 'Password')}
+                  placeholder="••••••••"
+                  secureTextEntry={!showPassword}
+                  autoComplete="current-password"
+                  textContentType="password"
+                  value={password}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  editable={!loading}
+                  returnKeyType="go"
+                  onSubmitEditing={() => void handleLogin()}
+                />
               </View>
 
-              {/* Submit Button */}
-              <Pressable
-                style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.75 : 1 }]}
-                onPress={handleLogin}
-                disabled={loading}
-              >
-                <PrimaryGradient borderRadius={14} />
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <View style={styles.buttonContent}>
-                    <LogIn size={18} color="#FFFFFF" />
-                    <Text style={styles.buttonText}>{t('signInBtn', 'Sign In')}</Text>
-                  </View>
-                )}
-              </Pressable>
+              <AppButton
+                label={t('signInBtn', 'Sign In')}
+                onPress={() => void handleLogin()}
+                loading={loading}
+                fullWidth
+                size="lg"
+                leftIcon={<LogIn size={18} color={themeColors.buttonText} />}
+                style={styles.submitButton}
+              />
             </View>
 
-            {/* Footer Register Prompt */}
-            <View style={styles.footer}>
-              <Text style={{ color: themeColors.textSecondary, fontSize: 14 }}>
-                {t('dontHaveAccount', "Don't have an account?")}{' '}
+            <View style={[styles.footer, isRTL && styles.rowRTL]}>
+              <Text style={[styles.footerText, { color: themeColors.textSecondary }, fieldText]}>
+                {isRTL ? 'هەژمارت نییە؟' : "Don't have an account?"}
               </Text>
-              <Pressable onPress={() => router.push('/(auth)/signup')}>
-                <Text style={{ color: themeColors.primary, fontWeight: '800', fontSize: 14 }}>
-                  {t('createAccount', 'Sign Up')}
+              <Pressable
+                onPress={() => router.push('/(auth)/signup')}
+                accessibilityRole="button"
+                accessibilityLabel={t('createAccount', 'Create Account')}
+                hitSlop={6}
+                style={styles.textAction}
+              >
+                <Text style={[styles.footerLink, { color: themeColors.primary }, fieldText]}>
+                  {t('createAccount', 'Create Account')}
                 </Text>
               </Pressable>
             </View>
-          </View>
+          </AppSurface>
         </View>
       </KeyboardAwareScrollView>
     </View>
@@ -276,46 +275,29 @@ const styles = StyleSheet.create({
   },
   glowOrbTop: {
     position: 'absolute',
-    top: -100,
-    right: -100,
+    top: -110,
+    right: -90,
     width: 300,
     height: 300,
     borderRadius: 150,
   },
   glowOrbBottom: {
     position: 'absolute',
-    bottom: -100,
+    bottom: -120,
     left: -100,
     width: 300,
     height: 300,
     borderRadius: 150,
   },
-  topFloatingBar: {
+  topBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
-    alignItems: 'flex-end',
     zIndex: 20,
-  },
-  langPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  langText: {
-    fontSize: 12,
-    fontWeight: '700',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 40,
     justifyContent: 'center',
   },
   centerWrapper: {
@@ -324,121 +306,101 @@ const styles = StyleSheet.create({
   },
   authCard: {
     width: '100%',
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    elevation: 10,
-    boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.2)',
+    maxWidth: 440,
+    borderRadius: Radius.xl,
+    boxShadow: Shadows.raised,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: Spacing.xl,
   },
   logoContainer: {
-    padding: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 12,
+    padding: Spacing.sm,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: Spacing.md,
   },
   brandLogoImage: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: Radius.md,
   },
   brandTitle: {
-    fontSize: 28,
+    ...Typography.h1,
     fontWeight: '900',
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 13,
-    marginTop: 6,
+    ...Typography.small,
+    marginTop: Spacing.sm,
     textAlign: 'center',
-    lineHeight: 18,
-    maxWidth: 280,
+    maxWidth: 300,
   },
-  errorBox: {
+  statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
-    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
   },
-  errorText: {
-    fontSize: 13,
+  statusText: {
+    ...Typography.small,
     fontWeight: '600',
     flex: 1,
   },
   form: {
-    gap: 16,
+    gap: Spacing.lg,
   },
   fieldGroup: {
-    gap: 6,
+    gap: Spacing.sm,
   },
   fieldLabel: {
-    fontSize: 12,
+    ...Typography.caption,
     fontWeight: '700',
-    marginLeft: 2,
   },
   passwordLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.md,
   },
-  inputWrapper: {
-    height: 50,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontSize: 14,
-    fontWeight: '600',
-    backgroundColor: 'transparent',
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
-  },
-  eyeButton: {
-    paddingLeft: 10,
-    height: '100%',
+  textAction: {
+    minHeight: 44,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  forgotText: {
-    fontSize: 12,
+  textActionLabel: {
+    ...Typography.caption,
     fontWeight: '700',
   },
-  button: {
-    height: 50,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
+  submitButton: {
+    marginTop: Spacing.xs,
   },
   footer: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 22,
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.lg,
+  },
+  footerText: {
+    ...Typography.small,
+  },
+  footerLink: {
+    ...Typography.small,
+    fontWeight: '800',
+  },
+  rowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  rtlText: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  ltrText: {
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
 });

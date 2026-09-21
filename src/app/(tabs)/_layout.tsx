@@ -1,12 +1,12 @@
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
-import { useTranslation } from '@/hooks/use-language';
-import { Home, LayoutGrid, Bookmark, User, Menu } from 'lucide-react-native';
-import { Platform, View, Pressable } from 'react-native';
+import { useLanguage } from '@/hooks/use-language';
+import { Home, LayoutGrid, Bookmark, User } from 'lucide-react-native';
+import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sidebar } from '@/components/Sidebar';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useState, createContext, useContext } from 'react';
+import { useState } from 'react';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 
 import { SidebarContext, useSidebar } from '@/context/SidebarContext';
@@ -14,7 +14,7 @@ export { useSidebar };
 
 export default function TabLayout() {
   const themeColors = useTheme();
-  const { t } = useTranslation();
+  const { t, isRTL } = useLanguage();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { isDesktop } = useResponsive();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -30,7 +30,7 @@ export default function TabLayout() {
       openSidebar: () => setIsSidebarOpen(true),
       closeSidebar: () => setIsSidebarOpen(false),
     }}>
-      <View style={{ flex: 1, flexDirection: 'row' }}>
+      <View style={{ flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }}>
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
@@ -45,16 +45,22 @@ export default function TabLayout() {
           backgroundColor: themeColors.backgroundElement,
           borderTopColor: themeColors.border,
           borderTopWidth: 1,
-          elevation: 8,
           height: tabBarHeight,
           paddingBottom: tabBarPaddingBottom,
-          paddingTop: 6,
+          paddingTop: 7,
         },
         tabBarActiveTintColor: themeColors.primary,
-        tabBarInactiveTintColor: themeColors.textSecondary,
+        tabBarInactiveTintColor: themeColors.textMuted,
+        tabBarActiveBackgroundColor: themeColors.primarySoft,
+        tabBarHideOnKeyboard: true,
+        tabBarItemStyle: {
+          minHeight: 44,
+          borderRadius: 12,
+          marginHorizontal: 2,
+        },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontWeight: '700',
           marginTop: 2,
         },
       }}>

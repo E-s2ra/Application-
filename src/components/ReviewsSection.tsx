@@ -28,8 +28,6 @@ import {
 import { useReviews, Review } from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocial } from '@/hooks/useSocial';
-import { useResponsive } from '@/hooks/useResponsive';
-import { PrimaryGradient } from './PrimaryGradient';
 
 interface ReviewsSectionProps {
   mediaId: string;
@@ -59,7 +57,6 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
     toggleHelpful,
   } = useReviews();
   const { isFollowing, toggleFollow } = useSocial();
-  const { isXS } = useResponsive();
 
   const reviews = getReviewsForMedia(mediaId);
   const stats = getStatsForMedia(mediaId);
@@ -155,7 +152,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
   const totalCount = stats.count || 1;
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
       {/* 🌟 Section Header */}
       <View style={styles.headerRow}>
@@ -163,13 +160,13 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
           <MessageSquare size={20} color={themeColors.primary} />
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Ratings & Reviews</Text>
         </View>
-        <View style={[styles.countBadge, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+        <View style={[styles.countBadge, { backgroundColor: themeColors.backgroundElement }]}>
           <Text style={[styles.countBadgeText, { color: themeColors.textSecondary }]}>{stats.count} Ratings</Text>
         </View>
       </View>
 
       {/* 📊 Rating Breakdown Dashboard */}
-      <View style={[styles.dashboardCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+      <View style={[styles.dashboardCard, { backgroundColor: themeColors.backgroundElement }]}>
         <View style={styles.scoreBox}>
           <Text style={[styles.scoreNumber, { color: themeColors.text }]}>{stats.average.toFixed(1)}</Text>
           <View style={styles.scoreStarsRow}>
@@ -205,13 +202,19 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
       </View>
 
       {/* ✍️ Interactive Composer (Stars + Written Comment Text Input) */}
-      <View style={[styles.composerCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+      <View style={[styles.composerCard, { backgroundColor: themeColors.backgroundElement }]}>
         <View style={styles.composerHeader}>
           <Text style={[styles.composerTitle, { color: themeColors.text }]}>
             {userReview ? 'Your Rating & Review' : `Rate & Comment on ${mediaTitle || 'this title'}`}
           </Text>
           {userReview && (
-            <Pressable style={styles.deleteTopBtn} onPress={() => handleDeleteReview(userReview.id)}>
+            <Pressable
+              style={styles.deleteTopBtn}
+              onPress={() => handleDeleteReview(userReview.id)}
+              accessibilityRole="button"
+              accessibilityLabel="Delete your review"
+              hitSlop={6}
+            >
               <Trash2 size={13} color="#FF5252" />
               <Text style={styles.deleteTopBtnText}>Delete</Text>
             </Pressable>
@@ -227,6 +230,9 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
               onHoverIn={() => setHoverRating(star)}
               onHoverOut={() => setHoverRating(null)}
               style={styles.starBtn}
+              accessibilityRole="radio"
+              accessibilityLabel={`${star} star${star === 1 ? '' : 's'}`}
+              accessibilityState={{ selected: selectedRating === star }}
             >
               <Star
                 size={26}
@@ -235,7 +241,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
               />
             </Pressable>
           ))}
-          <Text style={[styles.ratingDescriptor, { color: themeColors.accent || '#FFB800' }]}>
+          <Text style={[styles.ratingDescriptor, { color: themeColors.textSecondary }]}>
             {RATING_LABELS[displayRating] || 'Select rating'}
           </Text>
         </View>
@@ -250,6 +256,7 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
             onChangeText={setCommentText}
             multiline
             numberOfLines={3}
+            accessibilityLabel="Review comment"
           />
         </View>
 
@@ -271,6 +278,9 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
             ]}
             disabled={isSubmitting}
             onPress={handleSubmitReview}
+            accessibilityRole="button"
+            accessibilityLabel={userReview ? 'Update review' : 'Post review'}
+            accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
           >
             <Send size={15} color="#FFFFFF" />
             <Text style={styles.submitBtnText}>
@@ -287,12 +297,14 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
           <Pressable
             style={[
               styles.tabPill,
-              { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-              activeSort === 'top' && { backgroundColor: themeColors.primary, borderColor: themeColors.primary }
+              { backgroundColor: activeSort === 'top' ? themeColors.backgroundSelected : 'transparent' },
             ]}
             onPress={() => setActiveSort('top')}
+            accessibilityRole="tab"
+            accessibilityLabel="Sort reviews by most helpful"
+            accessibilityState={{ selected: activeSort === 'top' }}
           >
-            <Text style={[styles.tabPillText, { color: activeSort === 'top' ? '#FFF' : themeColors.textSecondary }]}>
+            <Text style={[styles.tabPillText, { color: activeSort === 'top' ? themeColors.text : themeColors.textSecondary }]}>
               Top Helpful
             </Text>
           </Pressable>
@@ -300,12 +312,14 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
           <Pressable
             style={[
               styles.tabPill,
-              { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-              activeSort === 'recent' && { backgroundColor: themeColors.primary, borderColor: themeColors.primary }
+              { backgroundColor: activeSort === 'recent' ? themeColors.backgroundSelected : 'transparent' },
             ]}
             onPress={() => setActiveSort('recent')}
+            accessibilityRole="tab"
+            accessibilityLabel="Sort reviews by latest"
+            accessibilityState={{ selected: activeSort === 'recent' }}
           >
-            <Text style={[styles.tabPillText, { color: activeSort === 'recent' ? '#FFF' : themeColors.textSecondary }]}>
+            <Text style={[styles.tabPillText, { color: activeSort === 'recent' ? themeColors.text : themeColors.textSecondary }]}>
               Latest
             </Text>
           </Pressable>
@@ -334,8 +348,8 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                 key={rev.id}
                 style={[
                   styles.reviewCard,
-                  { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-                  isUserAuthor && { borderColor: themeColors.primary, backgroundColor: themeColors.backgroundCard }
+                  { backgroundColor: themeColors.backgroundElement },
+                  isUserAuthor && { backgroundColor: themeColors.backgroundSelected }
                 ]}
               >
                 {/* Author Header */}
@@ -354,15 +368,15 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                           {rev.userName} {isUserAuthor ? '(You)' : ''}
                         </Text>
                         {rev.isVip && (
-                          <View style={styles.vipBadge}>
-                            <Crown size={11} color="#FFB800" />
-                            <Text style={styles.vipText}>VIP</Text>
+                          <View style={[styles.vipBadge, { backgroundColor: themeColors.backgroundSelected }]}>
+                            <Crown size={11} color={themeColors.primary} />
+                            <Text style={[styles.vipText, { color: themeColors.primary }]}>VIP</Text>
                           </View>
                         )}
                         {rev.isVerified && (
                           <View style={styles.verifiedBadge}>
-                            <CheckCircle size={11} color="#00D2FF" />
-                            <Text style={styles.verifiedText}>Verified</Text>
+                            <CheckCircle size={11} color={themeColors.primary} />
+                            <Text style={[styles.verifiedText, { color: themeColors.primary }]}>Verified</Text>
                           </View>
                         )}
                         {!isUserAuthor && rev.userId && !rev.userId.startsWith('guest-') && (
@@ -373,6 +387,10 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                               isFollowing(rev.userId) && { borderColor: '#00E676' },
                             ]}
                             onPress={() => toggleFollow(rev.userId)}
+                            accessibilityRole="button"
+                            accessibilityLabel={isFollowing(rev.userId) ? `Unfollow ${rev.userName}` : `Follow ${rev.userName}`}
+                            accessibilityState={{ selected: isFollowing(rev.userId) }}
+                            hitSlop={4}
                           >
                             {isFollowing(rev.userId) ? (
                               <UserCheck size={10} color="#00E676" />
@@ -416,7 +434,14 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                   <View style={styles.inlineEditBox}>
                     <View style={styles.inlineStarsRow}>
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <Pressable key={star} onPress={() => setInlineEditRating(star)}>
+                        <Pressable
+                          key={star}
+                          style={styles.inlineStarBtn}
+                          onPress={() => setInlineEditRating(star)}
+                          accessibilityRole="radio"
+                          accessibilityLabel={`Set edited rating to ${star} star${star === 1 ? '' : 's'}`}
+                          accessibilityState={{ selected: inlineEditRating === star }}
+                        >
                           <Star
                             size={20}
                             color="#FFB800"
@@ -432,14 +457,25 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                       value={inlineEditComment}
                       onChangeText={setInlineEditComment}
                       multiline
+                      accessibilityLabel="Edit review comment"
                     />
 
                     <View style={styles.inlineActionsRow}>
-                      <Pressable style={styles.inlineCancelBtn} onPress={() => setEditingReviewId(null)}>
+                      <Pressable
+                        style={styles.inlineCancelBtn}
+                        onPress={() => setEditingReviewId(null)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Cancel editing review"
+                      >
                         <X size={14} color={themeColors.textMuted} />
                         <Text style={[styles.inlineCancelText, { color: themeColors.textMuted }]}>Cancel</Text>
                       </Pressable>
-                      <Pressable style={[styles.inlineSaveBtn, { backgroundColor: themeColors.primary }]} onPress={() => saveInlineEdit(rev.id)}>
+                      <Pressable
+                        style={[styles.inlineSaveBtn, { backgroundColor: themeColors.primary }]}
+                        onPress={() => saveInlineEdit(rev.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Save edited review"
+                      >
                         <Check size={14} color="#FFF" />
                         <Text style={styles.inlineSaveText}>Save</Text>
                       </Pressable>
@@ -451,11 +487,21 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                 <View style={styles.reviewFooter}>
                   {isUserAuthor && !isEditing ? (
                     <View style={styles.authorActionsRow}>
-                      <Pressable style={styles.authorActionBtn} onPress={() => startInlineEdit(rev)}>
+                      <Pressable
+                        style={styles.authorActionBtn}
+                        onPress={() => startInlineEdit(rev)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Edit your review"
+                      >
                         <Edit3 size={13} color={themeColors.primary} />
                         <Text style={[styles.authorActionText, { color: themeColors.primary }]}>Edit</Text>
                       </Pressable>
-                      <Pressable style={styles.authorActionBtn} onPress={() => handleDeleteReview(rev.id)}>
+                      <Pressable
+                        style={styles.authorActionBtn}
+                        onPress={() => handleDeleteReview(rev.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Delete your review"
+                      >
                         <Trash2 size={13} color="#FF5252" />
                         <Text style={[styles.authorActionText, { color: '#FF5252' }]}>Delete</Text>
                       </Pressable>
@@ -465,6 +511,8 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
                   <Pressable
                     style={[styles.helpfulBtn, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
                     onPress={() => toggleHelpful(rev.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mark ${rev.userName}'s review as helpful`}
                   >
                     <ThumbsUp size={12} color={themeColors.textSecondary} />
                     <Text style={[styles.helpfulText, { color: themeColors.textSecondary }]}>
@@ -485,10 +533,8 @@ export function ReviewsSection({ mediaId, mediaTitle }: ReviewsSectionProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginHorizontal: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
     marginTop: 8,
   },
   headerRow: {
@@ -503,14 +549,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   countBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
+    borderRadius: 999,
   },
   countBadgeText: {
     fontSize: 11,
@@ -521,8 +567,7 @@ const styles = StyleSheet.create({
   dashboardCard: {
     flexDirection: 'row',
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
     gap: 16,
     marginBottom: 16,
     alignItems: 'center',
@@ -536,7 +581,7 @@ const styles = StyleSheet.create({
   },
   scoreNumber: {
     fontSize: 32,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   scoreStarsRow: {
     flexDirection: 'row',
@@ -580,9 +625,8 @@ const styles = StyleSheet.create({
 
   /* COMPOSER CARD */
   composerCard: {
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    padding: 16,
+    borderRadius: 16,
     marginBottom: 16,
   },
   composerHeader: {
@@ -593,7 +637,7 @@ const styles = StyleSheet.create({
   },
   composerTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   deleteTopBtn: {
     flexDirection: 'row',
@@ -608,15 +652,19 @@ const styles = StyleSheet.create({
   starSelectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
     marginBottom: 12,
   },
   starBtn: {
-    padding: 2,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   ratingDescriptor: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
     marginLeft: 8,
   },
   inputBoxContainer: {
@@ -634,6 +682,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   toastSuccess: {
     flexDirection: 'row',
@@ -651,7 +701,8 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 9,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: 10,
     marginLeft: 'auto',
   },
   submitBtnDisabled: {
@@ -660,7 +711,7 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
   },
 
   /* COMMUNITY COMMENTS FILTER */
@@ -668,12 +719,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 12,
   },
   communitySubheader: {
     fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 0.7,
   },
   tabPills: {
     flexDirection: 'row',
@@ -682,8 +735,9 @@ const styles = StyleSheet.create({
   tabPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
+    minHeight: 44,
+    justifyContent: 'center',
+    borderRadius: 10,
   },
   tabPillText: {
     fontSize: 11,
@@ -705,9 +759,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   reviewCard: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    padding: 14,
+    borderRadius: 14,
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -746,21 +799,19 @@ const styles = StyleSheet.create({
   },
   userNameText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   vipBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: 'rgba(255, 184, 0, 0.15)',
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
   },
   vipText: {
-    color: '#FFB800',
     fontSize: 9,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   verifiedBadge: {
     flexDirection: 'row',
@@ -768,7 +819,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   verifiedText: {
-    color: '#00D2FF',
     fontSize: 10,
     fontWeight: '700',
   },
@@ -780,6 +830,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     borderWidth: 1,
+    minHeight: 36,
   },
   followBtnText: {
     fontSize: 9,
@@ -807,6 +858,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  inlineStarBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   inlineRatingLabel: {
     color: '#FFB800',
     fontSize: 11,
@@ -831,6 +888,8 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   inlineCancelText: {
     fontSize: 12,
@@ -843,6 +902,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 6,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   inlineSaveText: {
     color: '#FFFFFF',
@@ -863,6 +924,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   authorActionText: {
     fontSize: 11,
@@ -876,6 +939,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
+    minHeight: 44,
   },
   helpfulText: {
     fontSize: 11,

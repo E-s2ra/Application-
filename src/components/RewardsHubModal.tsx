@@ -10,6 +10,7 @@ import {
   Easing,
   Platform,
   Dimensions,
+  AccessibilityInfo,
 } from 'react-native';
 import Svg, { Path, G, Text as SvgText, Circle } from 'react-native-svg';
 import { useTheme } from '@/hooks/use-theme';
@@ -131,11 +132,12 @@ interface RewardsHubModalProps {
 
 export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   const themeColors = useTheme();
-  const { t, language, isRTL } = useLanguage();
+  const { t, language } = useLanguage();
   const { showRewardedAd } = useAdMob();
-  const { width: windowWidth, isXS, isSmallDevice } = useResponsive();
+  const { isXS, isSmallDevice } = useResponsive();
   const [showVipModal, setShowVipModal] = useState(false);
   const [showSourcesInfo, setShowSourcesInfo] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   const wheelSize = isSmallDevice ? 160 : isXS ? 180 : 210;
   const bulbRadius = Math.round(wheelSize / 2) + 4;
@@ -173,6 +175,12 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
   useEffect(() => {
     if (visible) void refreshGamification();
   }, [refreshGamification, visible]);
+
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => subscription.remove();
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'wallet' | 'spin' | 'streak' | 'missions' | 'themes' | 'badges'>('wallet');
 
@@ -213,7 +221,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
     spinAnim.setValue(0);
     Animated.timing(spinAnim, {
       toValue: finalDegree,
-      duration: 3500,
+      duration: reduceMotion ? 0 : 3500,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: Platform.OS !== 'web',
     }).start(() => {
@@ -229,8 +237,11 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <View style={[styles.modalOverlay, { direction: isRTL ? 'rtl' : 'ltr' }]}>
-        <View style={[styles.modalCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+      <View style={[styles.modalOverlay, { backgroundColor: themeColors.scrim }]}>
+        <View
+          accessibilityViewIsModal
+          style={[styles.modalCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+        >
           <View style={[styles.modalHeader, { backgroundColor: themeColors.backgroundCard, borderBottomColor: themeColors.border }]}>
             <View style={styles.headerTitleRow}>
               <View style={[styles.headerIconGlow, { backgroundColor: themeColors.backgroundSelected }]}>
@@ -245,7 +256,10 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             </View>
 
             <Pressable
-              style={[styles.closeBtn, { backgroundColor: themeColors.backgroundElement }]}
+              style={({ pressed }) => [
+                styles.closeBtn,
+                { backgroundColor: pressed ? themeColors.backgroundSelected : themeColors.backgroundElement },
+              ]}
               onPress={onClose}
               hitSlop={10}
               accessibilityRole="button"
@@ -744,8 +758,8 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
             {activeTab === 'themes' && (
               <View style={styles.themesSection}>
                 <View style={styles.sectionHeaderLeft}>
-                  <Text style={styles.sectionTitle}>{t('themesTitle', 'AniFlix Cinema Themes')}</Text>
-                  <Text style={styles.sectionSub}>{t('themesSub', 'Custom accent colors and styles for your app')}</Text>
+                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>{t('themesTitle', 'AniFlix Cinema Themes')}</Text>
+                  <Text style={[styles.sectionSub, { color: themeColors.textSecondary }]}>{t('themesSub', 'Custom accent colors and styles for your app')}</Text>
                 </View>
 
                 <View style={styles.themesCardsList}>
@@ -753,38 +767,60 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                     const isEquipped = activeTheme.id === th.id;
                     const canAfford = coins >= th.costCoins;
                     return (
-                      <View key={th.id} style={styles.themeCardItem}>
+                      <View
+                        key={th.id}
+                        style={[
+                          styles.themeCardItem,
+                          { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
+                        ]}
+                      >
                         <View style={[styles.themeAccentStripe, { backgroundColor: th.primary }]} />
                         <View style={styles.themeCardContent}>
                           <View style={styles.themeHeaderRow}>
-                            <Text style={styles.themeName}>{th.name}</Text>
+                            <Text style={[styles.themeName, { color: themeColors.text }]}>{th.name}</Text>
                             {isEquipped && (
-                              <View style={styles.equippedPill}>
-                                <CheckCircle size={11} color="#00E676" />
-                                <Text style={styles.equippedPillText}>{t('activeThemeLabel', 'Active')}</Text>
+                              <View style={[styles.equippedPill, { backgroundColor: themeColors.successSoft }]}>
+                                <CheckCircle size={11} color={themeColors.success} />
+                                <Text style={[styles.equippedPillText, { color: themeColors.success }]}>{t('activeThemeLabel', 'Active')}</Text>
                               </View>
                             )}
                           </View>
-                          <Text style={styles.themeDesc}>{th.description}</Text>
+                          <Text style={[styles.themeDesc, { color: themeColors.textSecondary }]}>{th.description}</Text>
 
                           <View style={styles.themeActionRow}>
                             {th.isUnlocked ? (
                               <Pressable
-                                style={[styles.themeBtn, isEquipped && styles.themeBtnActive]}
+                                style={[
+                                  styles.themeBtn,
+                                  {
+                                    backgroundColor: themeColors.backgroundElevated,
+                                    borderColor: isEquipped ? themeColors.success : themeColors.border,
+                                  },
+                                  isEquipped && { backgroundColor: themeColors.backgroundSelected },
+                                ]}
                                 disabled={isEquipped}
                                 onPress={() => equipTheme(th.id)}
+                                accessibilityRole="button"
+                                accessibilityLabel={isEquipped ? `${th.name} theme is equipped` : `Equip ${th.name} theme`}
+                                accessibilityState={{ disabled: isEquipped, selected: isEquipped }}
                               >
-                                <Text style={styles.themeBtnText}>
+                                <Text style={[styles.themeBtnText, { color: themeColors.text }]}>
                                   {isEquipped ? t('equippedTheme', 'Equipped') : t('equipThemeBtn', 'Equip Theme')}
                                 </Text>
                               </Pressable>
                             ) : (
                               <Pressable
-                                style={[styles.themeBuyBtn, !canAfford && styles.themeBuyBtnDisabled]}
+                                style={[
+                                  styles.themeBuyBtn,
+                                  { backgroundColor: canAfford ? themeColors.primary : themeColors.backgroundSelected },
+                                ]}
                                 disabled={!canAfford}
                                 onPress={() => unlockTheme(th.id)}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Unlock ${th.name} theme for ${th.costCoins} coins`}
+                                accessibilityState={{ disabled: !canAfford }}
                               >
-                                <Text style={styles.themeBuyBtnText}>
+                                <Text style={[styles.themeBuyBtnText, { color: canAfford ? themeColors.buttonText : themeColors.textMuted }]}>
                                   {t('unlockForCoins', `Unlock for ${th.costCoins} Coins`).replace('{coins}', String(th.costCoins))}
                                 </Text>
                               </Pressable>
@@ -848,7 +884,6 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 10,
@@ -896,8 +931,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1521,32 +1556,29 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   themeBtn: {
-    backgroundColor: '#22263C',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   themeBtnActive: {
-    backgroundColor: '#181C2E',
-    borderWidth: 1,
-    borderColor: '#00E676',
   },
   themeBtnText: {
-    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
   },
   themeBuyBtn: {
-    backgroundColor: '#0356C5',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   themeBuyBtnDisabled: {
-    backgroundColor: '#1F2338',
   },
   themeBuyBtnText: {
-    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
   },
@@ -1752,10 +1784,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   claimMissionBtn: {
-    backgroundColor: '#0356C5',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   claimMissionBtnDisabled: {
     backgroundColor: '#1F2338',

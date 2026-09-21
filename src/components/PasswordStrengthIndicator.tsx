@@ -62,7 +62,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
                 style={[
                   styles.barSegment,
                   {
-                    backgroundColor: isFilled ? color : 'rgba(255, 255, 255, 0.08)',
+                    backgroundColor: isFilled ? color : themeColors.backgroundSelected,
                   },
                 ]}
               />
@@ -87,8 +87,8 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
           return (
             <View key={rule.id} style={[styles.ruleRow, isRTL && styles.ruleRowRTL]}>
               {isPassed ? (
-                <View style={styles.checkCircle}>
-                  <Check size={11} color="#10B981" strokeWidth={3} />
+                <View style={[styles.checkCircle, { backgroundColor: themeColors.successSoft }]}>
+                  <Check size={11} color={themeColors.success} strokeWidth={3} />
                 </View>
               ) : (
                 <Circle size={13} color={themeColors.textMuted} />
@@ -97,7 +97,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
                 style={[
                   styles.ruleText,
                   {
-                    color: isPassed ? '#10B981' : themeColors.textSecondary,
+                    color: isPassed ? themeColors.success : themeColors.textSecondary,
                     fontWeight: isPassed ? '600' : '400',
                   },
                   isRTL && { textAlign: 'right' },
@@ -167,7 +167,6 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },

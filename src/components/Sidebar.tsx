@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, Animated, StyleSheet, Switch, Platform, Image } from 'react-native';
+import { View, Text, Pressable, Animated, StyleSheet, Switch, Platform, Image, AccessibilityInfo } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   Home, LayoutGrid, Bookmark, User, ShieldAlert, Sparkles, X,
-  Film, Clapperboard, Tv, Zap, Flame, Crown, Gift, Moon, Sun, ChevronRight, LogOut
+  Film, Clapperboard, Tv, Zap, Crown, Gift, Moon, Sun, ChevronLeft, ChevronRight, LogOut, Play
 } from 'lucide-react-native';
 import { useTheme, useColorMode } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/use-language';
 import { useGamification } from '@/hooks/useGamification';
-import { PrimaryGradient } from '@/components/PrimaryGradient';
+import { Radius, Spacing } from '@/constants/theme';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -28,7 +28,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
   const pathname = usePathname();
   const params = useLocalSearchParams();
   const { user, profile, signOut } = useAuth();
-  const { t } = useTranslation();
+  const { t, isRTL } = useTranslation();
   const { isVIP, vipDaysRemaining } = useGamification();
 
   const isAdmin = profile?.role === 'admin';
@@ -43,19 +43,37 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
     router.replace('/(auth)/login');
   };
 
-  const [slideAnim] = useState(new Animated.Value(-320));
+  const [slideAnim] = useState(new Animated.Value(isRTL ? 320 : -320));
+  const [isRendered, setIsRendered] = useState(isDesktop || isOpen);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (isDesktop) {
+      slideAnim.stopAnimation();
       slideAnim.setValue(0);
+      setIsRendered(true);
     } else {
+      slideAnim.stopAnimation();
+      if (isOpen) {
+        setIsRendered(true);
+      }
       Animated.timing(slideAnim, {
-        toValue: isOpen ? 0 : -320,
-        duration: 250,
+        toValue: isOpen ? 0 : isRTL ? 320 : -320,
+        duration: reduceMotion ? 0 : 250,
         useNativeDriver: Platform.OS !== 'web',
-      }).start();
+      }).start(({ finished }) => {
+        if (finished && !isOpen) {
+          setIsRendered(false);
+        }
+      });
     }
-  }, [isOpen, isDesktop, slideAnim]);
+  }, [isOpen, isDesktop, isRTL, reduceMotion, slideAnim]);
 
   const navItems = [
     { label: t('tabHome', 'Home'), icon: Home, route: '/' },
@@ -75,44 +93,61 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
 
   const content = (
     <Animated.View
+      accessibilityViewIsModal={!isDesktop}
       style={[
         styles.sidebarContent,
         {
           backgroundColor: themeColors.backgroundElement,
-          borderRightColor: themeColors.border,
+          ...(isRTL
+            ? { right: 0, borderLeftColor: themeColors.border, borderLeftWidth: 1 }
+            : { left: 0, borderRightColor: themeColors.border, borderRightWidth: 1 }),
           width: sidebarWidth,
           paddingTop: Math.max(insets.top + 10, 20),
           transform: [{ translateX: isDesktop ? 0 : slideAnim }],
         },
       ]}
     >
-      {/* 🎬 Brand & Close Bar */}
-      <View style={styles.header}>
-        <View style={styles.brandRow}>
+      <View style={[styles.header, isRTL && styles.rowReverse]}>
+        <View style={[styles.brandRow, isRTL && styles.rowReverse]}>
           <View style={[styles.brandIcon, { backgroundColor: themeColors.primary }]}>
-            <PrimaryGradient borderRadius={8} />
-            <Sparkles color="#FFFFFF" size={16} />
+            <Play color="#FFFFFF" fill="#FFFFFF" size={13} />
           </View>
           <Text style={[styles.brandName, { color: themeColors.text }]}>
             ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
           </Text>
         </View>
         {!isDesktop && (
-          <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [
+              styles.closeBtn,
+              {
+                backgroundColor: pressed ? themeColors.backgroundSelected : themeColors.backgroundCard,
+                borderColor: themeColors.border,
+              },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Close navigation sidebar"
+          >
             <X color={themeColors.text} size={18} />
           </Pressable>
         )}
       </View>
 
-      {/* 👤 Mini User Profile Card */}
       <Pressable
-        style={[styles.userProfileCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+        style={({ pressed }) => [
+          styles.userProfileCard,
+          isRTL && styles.rowReverse,
+          { backgroundColor: pressed ? themeColors.backgroundSelected : 'transparent' },
+        ]}
         onPress={() => {
-          router.push('/(tabs)/profile' as any);
           if (!isDesktop) onClose();
+          router.push('/(tabs)/profile' as any);
         }}
+        accessibilityRole="button"
+        accessibilityLabel="Open profile"
       >
-        <View style={[styles.userAvatarBox, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.primary }]}>
+        <View style={[styles.userAvatarBox, { backgroundColor: themeColors.backgroundSelected }]}>
           {profile?.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
           ) : (
@@ -123,14 +158,18 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
           <Text style={[styles.userNameText, { color: themeColors.text }]} numberOfLines={1}>
             {profile?.full_name || user?.email?.split('@')[0] || 'AniFlix User'}
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-            <Crown size={11} color={isVIP ? '#FFB800' : themeColors.textSecondary} />
-            <Text style={[styles.userRoleText, { color: isVIP ? '#FFB800' : themeColors.textSecondary }]}>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+            <Crown size={11} color={isVIP ? themeColors.primary : themeColors.textMuted} />
+            <Text style={[styles.userRoleText, { color: isVIP ? themeColors.primary : themeColors.textMuted }]}>
               {isAdmin ? 'ADMIN' : isVIP ? `VIP MEMBER (${vipDaysRemaining}d)` : 'FREE PLAN'}
             </Text>
           </View>
         </View>
-        <ChevronRight size={16} color={themeColors.textSecondary} />
+        {isRTL ? (
+          <ChevronLeft size={16} color={themeColors.textSecondary} />
+        ) : (
+          <ChevronRight size={16} color={themeColors.textSecondary} />
+        )}
       </Pressable>
 
       <Animated.ScrollView 
@@ -138,8 +177,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60, gap: 4 }}
       >
-        {/* 🧭 MAIN NAVIGATION */}
-        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>MAIN MENU</Text>
+        <Text style={[styles.sectionHeader, { color: themeColors.textMuted }]}>LIBRARY</Text>
         {navItems.map((item) => {
           const isActive = pathname === item.route || (item.route === '/' && (pathname === '/(tabs)' || pathname === '/(tabs)/index'));
           const Icon = item.icon;
@@ -147,24 +185,27 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
             <Pressable
               key={item.route}
               onPress={() => {
-                router.push(item.route as any);
                 if (!isDesktop) onClose();
+                router.push(item.route as any);
               }}
-              style={[
+              style={({ pressed }) => [
                 styles.navItem,
-                { backgroundColor: isActive ? 'rgba(3, 86, 197, 0.12)' : 'transparent' },
+                isRTL && styles.rowReverse,
+                { backgroundColor: isActive || pressed ? themeColors.backgroundSelected : 'transparent' },
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: isActive }}
             >
-              {isActive && <View style={[styles.activeIndicator, { backgroundColor: themeColors.primary }]} />}
               <Icon
                 color={isActive ? themeColors.primary : themeColors.textSecondary}
-                size={18}
-                strokeWidth={isActive ? 2.5 : 2}
+                size={19}
+                strokeWidth={isActive ? 2.4 : 1.9}
               />
               <Text
                 style={[
                   styles.navItemText,
-                  { color: isActive ? themeColors.primary : themeColors.textSecondary, fontWeight: isActive ? '800' : '600' },
+                  { color: isActive ? themeColors.text : themeColors.textSecondary, fontWeight: isActive ? '700' : '500' },
                 ]}
               >
                 {item.label}
@@ -173,9 +214,7 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
           );
         })}
 
-        {/* 🍿 CATEGORIES SECTION */}
-        <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
-        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>CATEGORIES</Text>
+        <Text style={[styles.sectionHeader, { color: themeColors.textMuted }]}>DISCOVER</Text>
         
         {categories.map((item) => {
           const isActive = pathname === item.route && params.category === item.params.category;
@@ -184,24 +223,27 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
             <Pressable
               key={item.params.category}
               onPress={() => {
-                router.push({ pathname: item.route, params: item.params } as any);
                 if (!isDesktop) onClose();
+                router.push({ pathname: item.route, params: item.params } as any);
               }}
-              style={[
+              style={({ pressed }) => [
                 styles.navItem,
-                { backgroundColor: isActive ? 'rgba(3, 86, 197, 0.12)' : 'transparent' },
+                isRTL && styles.rowReverse,
+                { backgroundColor: isActive || pressed ? themeColors.backgroundSelected : 'transparent' },
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: isActive }}
             >
-              {isActive && <View style={[styles.activeIndicator, { backgroundColor: themeColors.primary }]} />}
               <Icon
                 color={isActive ? themeColors.primary : themeColors.textSecondary}
-                size={18}
-                strokeWidth={isActive ? 2.5 : 2}
+                size={19}
+                strokeWidth={isActive ? 2.4 : 1.9}
               />
               <Text
                 style={[
                   styles.navItemText,
-                  { color: isActive ? themeColors.primary : themeColors.textSecondary, fontWeight: isActive ? '800' : '600' },
+                  { color: isActive ? themeColors.text : themeColors.textSecondary, fontWeight: isActive ? '700' : '500' },
                 ]}
               >
                 {item.label}
@@ -210,47 +252,54 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
           );
         })}
 
-        {/* 🎁 REWARDS & MISSIONS */}
-        <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
-        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>REWARDS & GAMIFICATION</Text>
+        <Text style={[styles.sectionHeader, { color: themeColors.textMuted }]}>EXTRAS</Text>
         <Pressable
           onPress={() => {
             if (onOpenRewards) onOpenRewards();
             if (!isDesktop) onClose();
           }}
-          style={styles.navItem}
+          style={({ pressed }) => [
+            styles.navItem,
+            isRTL && styles.rowReverse,
+            { backgroundColor: pressed ? themeColors.backgroundSelected : 'transparent' },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Open rewards"
         >
-          <Gift color={themeColors.primary} size={18} strokeWidth={2} />
-          <Text style={[styles.navItemText, { color: themeColors.primary, fontWeight: '800' }]}>
-            Daily Missions & Spin
+          <Gift color={themeColors.textSecondary} size={19} strokeWidth={1.9} />
+          <Text style={[styles.navItemText, { color: themeColors.textSecondary, fontWeight: '500' }]}>
+            Rewards
           </Text>
         </Pressable>
 
         {/* 🛡️ ADMIN SECTION */}
         {isAdmin && (
           <>
-            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
-            <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>ADMINISTRATION</Text>
+            <Text style={[styles.sectionHeader, { color: themeColors.textMuted }]}>ADMIN</Text>
             <Pressable
               onPress={() => {
-                router.push('/admin' as any);
                 if (!isDesktop) onClose();
+                router.push('/admin' as any);
               }}
-              style={styles.navItem}
+              style={({ pressed }) => [
+                styles.navItem,
+                isRTL && styles.rowReverse,
+                { backgroundColor: pressed ? themeColors.errorSoft : 'transparent' },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Open Admin Control Center"
             >
-              <ShieldAlert color="#EF4444" size={18} strokeWidth={2} />
-              <Text style={[styles.navItemText, { color: '#EF4444', fontWeight: '800' }]}>
+              <ShieldAlert color={themeColors.error} size={18} strokeWidth={2} />
+              <Text style={[styles.navItemText, { color: themeColors.error, fontWeight: '800' }]}>
                 Admin Control Center
               </Text>
             </Pressable>
           </>
         )}
 
-        {/* ⚙️ PREFERENCES & THEME */}
-        <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
-        <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>PREFERENCES</Text>
-        <View style={[styles.navItem, { justifyContent: 'space-between' }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Text style={[styles.sectionHeader, { color: themeColors.textMuted }]}>PREFERENCES</Text>
+        <View style={[styles.navItem, isRTL && styles.rowReverse, { justifyContent: 'space-between' }]}>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
             {isDark ? <Moon color={themeColors.textSecondary} size={18} /> : <Sun color={themeColors.textSecondary} size={18} />}
             <Text style={[styles.navItemText, { color: themeColors.textSecondary }]}>
               {isDark ? 'Dark Mode' : 'Light Mode'}
@@ -261,17 +310,22 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
             onValueChange={toggleColorMode} 
             trackColor={{ false: themeColors.backgroundCard, true: themeColors.primary }}
             thumbColor={'#FFFFFF'}
+            accessibilityLabel="Dark mode"
           />
         </View>
 
-        {/* 🚪 LOGOUT BUTTON */}
-        <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
         <Pressable
           onPress={handleLogout}
-          style={[styles.navItem, { backgroundColor: 'rgba(239, 68, 68, 0.08)' }]}
+          style={({ pressed }) => [
+            styles.navItem,
+            isRTL && styles.rowReverse,
+            { backgroundColor: pressed ? themeColors.errorSoft : 'transparent' },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
         >
-          <LogOut color="#EF4444" size={18} strokeWidth={2} />
-          <Text style={[styles.navItemText, { color: '#EF4444', fontWeight: '800' }]}>
+          <LogOut color={themeColors.error} size={18} strokeWidth={2} />
+          <Text style={[styles.navItemText, { color: themeColors.error, fontWeight: '800' }]}>
             Sign Out
           </Text>
         </Pressable>
@@ -283,12 +337,22 @@ export function Sidebar({ isOpen, onClose, onOpenRewards }: SidebarProps) {
     return <View style={{ width: sidebarWidth, height: '100%' }}>{content}</View>;
   }
 
-  if (!isOpen && (slideAnim as any)._value === -320) return null;
+  if (!isRendered) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, pointerEvents: 'box-none' as const }]}>
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        { zIndex: 9999, pointerEvents: isOpen ? 'box-none' : 'none' },
+      ]}
+    >
       {isOpen && (
-        <Pressable onPress={onClose} style={StyleSheet.absoluteFill}>
+        <Pressable
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+          accessibilityRole="button"
+          accessibilityLabel="Close navigation sidebar"
+        >
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.65)' }]} />
         </Pressable>
       )}
@@ -301,19 +365,16 @@ const styles = StyleSheet.create({
   sidebarContent: {
     height: '100%',
     position: 'absolute',
-    left: 0,
     top: 0,
     bottom: 0,
-    borderRightWidth: 1,
-    paddingHorizontal: 16,
-    elevation: 10,
+    paddingHorizontal: Spacing.md,
     zIndex: 10000,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   brandRow: {
     flexDirection: 'row',
@@ -321,39 +382,37 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brandIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   brandName: {
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   userProfileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 16,
-    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: Radius.md,
+    marginBottom: 18,
+    gap: 11,
   },
   userAvatarBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
+    width: 38,
+    height: 38,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -364,47 +423,43 @@ const styles = StyleSheet.create({
   },
   userNameText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   userRoleText: {
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 0.35,
   },
   navScroll: {
     flex: 1,
   },
   sectionHeader: {
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-    paddingHorizontal: 8,
-    marginTop: 6,
-    marginBottom: 4,
+    fontWeight: '700',
+    letterSpacing: 1.1,
+    paddingHorizontal: 10,
+    marginTop: 16,
+    marginBottom: 6,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minHeight: 44,
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingHorizontal: 11,
+    borderRadius: Radius.md,
     position: 'relative',
   },
-  activeIndicator: {
-    position: 'absolute',
-    left: 0,
-    top: 6,
-    bottom: 6,
-    width: 3,
-    borderRadius: 2,
-  },
   navItemText: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   divider: {
     height: 1,
-    marginVertical: 10,
-    opacity: 0.6,
+    marginVertical: 8,
+    opacity: 0.45,
+  },
+  rowReverse: {
+    flexDirection: 'row-reverse',
   },
 });

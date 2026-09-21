@@ -4,12 +4,11 @@ import {
   StyleSheet,
   View,
   Text,
-  TextInput,
   FlatList,
   Pressable,
-  Image,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { Search as SearchIcon, X, Heart, Film, Clapperboard, Tv, Flame, Compass, Sparkles } from 'lucide-react-native';
@@ -23,6 +22,7 @@ import { ErrorState } from '@/components/ErrorState';
 import { MediaCardSkeleton } from '@/components/MediaCardSkeleton';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
 import { AdMobBanner } from '@/components/AdMobBanner';
+import { AppSectionHeader, AppTextField } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
 import { releaseWebFocus } from '@/lib/web-focus';
 
@@ -41,7 +41,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const themeColors = useTheme();
-  const { language, isRTL } = useLanguage();
+  const { language, t } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth } = useResponsive();
 
@@ -49,6 +49,16 @@ export default function SearchScreen() {
   const [selectedCategory, setSelectedCategory] = useState<'All' | MediaCategory>((params.category as MediaCategory) || 'All');
   const [selectedGenre, setSelectedGenre] = useState((params.genre as string) || 'All');
   const hasActiveFilters = selectedCategory !== 'All' || selectedGenre !== 'All';
+
+  const getCategoryLabel = (id: string, fallback: string) => {
+    if (id === 'All') return t('catAll', fallback);
+    if (id === 'Movies') return t('catMovies', fallback);
+    if (id === 'Anime Movies') return t('catAnimeMovies', fallback);
+    if (id === 'K-Drama') return t('catKDrama', fallback);
+    if (id === 'Drama') return t('catDrama', fallback);
+    if (id === 'Anime Series') return t('catAnimeSeries', fallback);
+    return fallback;
+  };
 
   useEffect(() => {
     if (params.category) setSelectedCategory(params.category as MediaCategory);
@@ -159,6 +169,9 @@ export default function SearchScreen() {
 
   const renderStandardCard = ({ item }: { item: AnimeItem }) => {
     const favorited = isFavorite(item.id);
+    const cardImg = item?.image_url && String(item.image_url).trim().length > 0
+      ? String(item.image_url).trim()
+      : null;
 
     return (
       <View
@@ -166,33 +179,45 @@ export default function SearchScreen() {
       >
         <View style={{ position: 'relative', height: cardWidth * 1.45 }}>
           <Pressable
-            style={[styles.posterCard, { backgroundColor: themeColors.backgroundCard, height: cardWidth * 1.45 }]}
+            style={({ pressed }) => [
+              styles.posterCard,
+              { backgroundColor: themeColors.backgroundCard, height: cardWidth * 1.45, opacity: pressed ? 0.84 : 1 },
+            ]}
             onPress={() => handleWatch(item.id)}
             accessibilityRole="button"
             accessibilityLabel={`Open ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
           >
-            {item.image_url ? (
-              <Image source={{ uri: item.image_url }} style={styles.posterImage} resizeMode="cover" />
+            {cardImg ? (
+              <Image
+                source={cardImg}
+                style={styles.posterImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={120}
+              />
             ) : (
               <View style={[styles.posterImage, styles.posterPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
                 <Film color={themeColors.textMuted} size={28} />
-                <Text style={[styles.posterPlaceholderText, { color: themeColors.textMuted }]}>No artwork</Text>
+                <Text style={[styles.posterPlaceholderText, { color: themeColors.textMuted }]}>
+                  {language === 'ku' ? 'وێنە بەردەست نییە' : 'Artwork unavailable'}
+                </Text>
               </View>
             )}
             <View style={styles.cardImageOverlay} />
 
             {item.category && (
               <View style={styles.cardCategoryBadge}>
-                <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
+                <Text style={styles.cardCategoryText}>{getCategoryLabel(item.category, item.category).toUpperCase()}</Text>
               </View>
             )}
           </Pressable>
 
           <Pressable
-            style={[
+            style={({ pressed }) => [
               styles.cardHeartBtn,
               {
                 backgroundColor: favorited ? themeColors.primary : 'rgba(7,9,13,0.66)',
+                opacity: pressed ? 0.72 : 1,
               },
             ]}
             onPress={() => toggleFavorite(item)}
@@ -210,7 +235,7 @@ export default function SearchScreen() {
         </View>
 
         <Pressable
-          style={styles.standardCardInfo}
+          style={({ pressed }) => [styles.standardCardInfo, pressed && { opacity: 0.72 }]}
           onPress={() => handleWatch(item.id)}
           accessibilityRole="button"
           accessibilityLabel={`Open details for ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
@@ -220,7 +245,7 @@ export default function SearchScreen() {
           </Text>
           {(item.genre || item.category) && <View style={styles.cardMetaRow}>
             <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-              {item.genre ?? item.category}
+              {item.genre ?? getCategoryLabel(item.category ?? '', item.category ?? '')}
             </Text>
           </View>}
         </Pressable>
@@ -228,56 +253,41 @@ export default function SearchScreen() {
     );
   };
 
-  const pageTitle = selectedCategory === 'All' ? 'Browse Catalog' : selectedCategory;
+  const pageTitle = selectedCategory === 'All'
+    ? t('browseMedia', 'Browse Catalog')
+    : getCategoryLabel(selectedCategory, selectedCategory);
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background, direction: isRTL ? 'rtl' : 'ltr' }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <GlobalNavbar title={pageTitle} showBrandLogo={false} />
 
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        {/* 🔍 Search Input Bar */}
-        <View style={styles.searchHeader}>
-          <View
-            style={[
-              styles.searchBar,
-              { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-            ]}
-          >
-            <SearchIcon color={themeColors.textSecondary} size={18} />
-            <TextInput
-              style={[styles.input, { color: themeColors.text }]}
-              placeholder="Search anime, movies, series, or genres..."
-              placeholderTextColor={themeColors.textSecondary}
-              value={query}
-              onChangeText={setQuery}
-              autoCorrect={false}
-              accessibilityLabel="Search catalog"
-            />
-            {query.length > 0 && (
-              <Pressable
-                onPress={() => setQuery('')}
-                style={styles.clearBtn}
-                accessibilityRole="button"
-                accessibilityLabel="Clear search"
-                hitSlop={4}
-              >
-                <X color={themeColors.textSecondary} size={16} />
-              </Pressable>
-            )}
-          </View>
-
-
+        <View style={[styles.searchHeader, { paddingHorizontal: pagePad }]}>
+          <AppTextField
+            leftIcon={<SearchIcon color={themeColors.textSecondary} size={18} />}
+            rightIcon={query.length > 0 ? <X color={themeColors.textSecondary} size={18} /> : undefined}
+            onRightIconPress={query.length > 0 ? () => setQuery('') : undefined}
+            rightIconLabel={language === 'ku' ? 'سڕینەوەی گەڕان' : 'Clear search'}
+            placeholder={t('searchPlaceholder', 'Search anime, movies, series, or genres...')}
+            value={query}
+            onChangeText={setQuery}
+            autoCorrect={false}
+            returnKeyType="search"
+            accessibilityLabel={language === 'ku' ? 'گەڕان لە کەتەلۆگ' : 'Search catalog'}
+          />
         </View>
 
         {loading ? (
           <View style={{ padding: pagePad, flexDirection: 'row', flexWrap: 'wrap', gap: cardGap }}>
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <MediaCardSkeleton key={i} />
+            {Array.from({ length: Math.max(numCols * 2, 4) }).map((_, i) => (
+              <MediaCardSkeleton key={i} width={cardWidth} height={cardWidth * 1.45} />
             ))}
           </View>
         ) : loadError ? (
           <ErrorState
-            message="Couldn't load the catalog. Check your connection and try again."
+            message={language === 'ku'
+              ? 'کەتەلۆگ بار نەبوو. پەیوەندی ئینتەرنێتەکەت بپشکنە و دووبارە هەوڵ بدە.'
+              : "Couldn't load the catalog. Check your connection and try again."}
             onRetry={() => setReloadKey((value) => value + 1)}
           />
         ) : (
@@ -289,18 +299,23 @@ export default function SearchScreen() {
             key={`search-grid-${numCols}`}
             contentContainerStyle={{ padding: pagePad, paddingBottom: 60 }}
             columnWrapperStyle={numCols > 1 ? { gap: cardGap, marginBottom: cardGap } : undefined}
+            keyboardShouldPersistTaps="handled"
             ListHeaderComponent={
               <View style={styles.filterContainer}>
                 <View style={styles.filterLabelRow}>
-                  <Text style={[styles.filterLabel, { color: themeColors.textSecondary }]}>Category</Text>
+                  <Text style={[styles.filterLabel, { color: themeColors.textSecondary }]}>
+                    {language === 'ku' ? 'بەش' : 'Category'}
+                  </Text>
                   {hasActiveFilters && (
                     <Pressable
                       onPress={resetFilters}
-                      style={styles.resetFiltersBtn}
+                      style={({ pressed }) => [styles.resetFiltersBtn, pressed && { opacity: 0.65 }]}
                       accessibilityRole="button"
                       accessibilityLabel="Reset category and genre filters"
                     >
-                      <Text style={[styles.resetFiltersText, { color: themeColors.primary }]}>Reset</Text>
+                      <Text style={[styles.resetFiltersText, { color: themeColors.primary }]}>
+                        {language === 'ku' ? 'پاککردنەوە' : 'Reset'}
+                      </Text>
                     </Pressable>
                   )}
                 </View>
@@ -311,31 +326,33 @@ export default function SearchScreen() {
                 >
                   {CATEGORIES.map(({ id, label, icon: Icon }) => {
                     const isSelected = selectedCategory === id;
+                    const localizedLabel = getCategoryLabel(id, label);
                     return (
                       <Pressable
                         key={id}
                         onPress={() => setSelectedCategory(id)}
-                        style={[
+                        style={({ pressed }) => [
                           styles.categoryChip,
                           {
                             backgroundColor: isSelected ? themeColors.backgroundSelected : themeColors.backgroundElement,
                             borderColor: isSelected ? themeColors.primary : themeColors.border,
+                            opacity: pressed ? 0.72 : 1,
                           },
                         ]}
                         accessibilityRole="button"
-                        accessibilityLabel={`Filter by ${label}`}
+                        accessibilityLabel={`${language === 'ku' ? 'پاڵاوتن بە' : 'Filter by'} ${localizedLabel}`}
                         accessibilityState={{ selected: isSelected }}
                       >
                         <Icon size={14} color={isSelected ? themeColors.primary : themeColors.textSecondary} />
                         <Text style={[styles.categoryText, { color: isSelected ? themeColors.primary : themeColors.text }]}>
-                          {label}
+                          {localizedLabel}
                         </Text>
                       </Pressable>
                     );
                   })}
                 </ScrollView>
 
-                <Text style={[styles.filterLabel, { color: themeColors.textSecondary }]}>Genre</Text>
+                <Text style={[styles.filterLabel, { color: themeColors.textSecondary }]}>{t('genre', 'Genre')}</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -347,11 +364,12 @@ export default function SearchScreen() {
                       <Pressable
                         key={genre}
                         onPress={() => setSelectedGenre(genre)}
-                        style={[
+                        style={({ pressed }) => [
                           styles.genreChip,
                           {
                             backgroundColor: isSelected ? themeColors.backgroundSelected : themeColors.backgroundElement,
                             borderColor: isSelected ? themeColors.primary : themeColors.border,
+                            opacity: pressed ? 0.72 : 1,
                           },
                         ]}
                         accessibilityRole="button"
@@ -366,14 +384,17 @@ export default function SearchScreen() {
                   })}
                 </ScrollView>
 
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                    {selectedCategory === 'All' ? 'Catalog' : selectedCategory}
-                  </Text>
-                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                    {filteredList.length} titles
-                  </Text>
-                </View>
+                <AppSectionHeader
+                  style={styles.sectionHeader}
+                  title={selectedCategory === 'All'
+                    ? t('allPublishedMedia', 'Catalog')
+                    : getCategoryLabel(selectedCategory, selectedCategory)}
+                  action={
+                    <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+                      {language === 'ku' ? `${filteredList.length} بەرهەم` : `${filteredList.length} titles`}
+                    </Text>
+                  }
+                />
               </View>
             }
             ListFooterComponent={
@@ -384,9 +405,9 @@ export default function SearchScreen() {
             ListEmptyComponent={
               <EmptyState
                 icon={SearchIcon}
-                title="No Results Found"
-                description="Try searching with a different title or clearing your genre filters."
-                actionLabel="Clear Search Filters"
+                title={t('noSearchResults', 'No results found')}
+                description={t('noSearchResultsSub', 'Try a different search or clear the active filters.')}
+                actionLabel={language === 'ku' ? 'پاککردنەوەی گەڕان و پاڵێوەرەکان' : 'Clear search and filters'}
                 onAction={() => {
                   setQuery('');
                   resetFilters();
@@ -595,9 +616,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,

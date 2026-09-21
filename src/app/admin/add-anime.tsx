@@ -38,7 +38,7 @@ export default function AddAnimeScreen() {
   const themeColors = useTheme();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { profile } = useAuth();
-  const { maxContentWidth } = useResponsive({ desktopRailWidth: 0 });
+  const { maxContentWidth, isMobile } = useResponsive({ desktopRailWidth: 0 });
   const { showSuccess, showError } = useToast();
 
   const isAdmin = profile?.role === 'admin';
@@ -214,8 +214,10 @@ export default function AddAnimeScreen() {
             Only platform administrators have permission to publish new media to AniFlix.
           </Text>
           <Pressable
-            style={{ backgroundColor: themeColors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
+            style={{ backgroundColor: themeColors.primary, paddingHorizontal: 24, minHeight: 44, justifyContent: 'center', borderRadius: 10 }}
             onPress={() => router.push('/(auth)/login' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Log in as administrator"
           >
             <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}>Log In as Administrator</Text>
           </Pressable>
@@ -235,6 +237,7 @@ export default function AddAnimeScreen() {
       <View style={[styles.contentWrapper, { maxWidth: Math.min(maxContentWidth, 800) }]}>
 
         <ScrollView
+          style={styles.formScroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -261,6 +264,7 @@ export default function AddAnimeScreen() {
                 value={imageUrl}
                 onChangeText={setImageUrl}
                 autoCapitalize="none"
+                accessibilityLabel="Cover poster image URL"
               />
               <Text style={{ fontSize: 10, color: themeColors.textSecondary }}>Live preview updates above as you type URL.</Text>
             </View>
@@ -275,6 +279,7 @@ export default function AddAnimeScreen() {
               placeholderTextColor={themeColors.textMuted}
               value={title}
               onChangeText={setTitle}
+              accessibilityLabel="Media title"
             />
           </View>
 
@@ -302,6 +307,9 @@ export default function AddAnimeScreen() {
                         borderColor: selected ? themeColors.primary : themeColors.border,
                       },
                     ]}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`Category ${cat.label}`}
+                    accessibilityState={{ selected }}
                   >
                     <Text
                       style={[
@@ -318,8 +326,8 @@ export default function AddAnimeScreen() {
           </View>
 
           {/* Episodes & Genre Row */}
-          <View style={styles.row}>
-            <View style={[styles.fieldGroup, { flex: 1 }]}>
+          <View style={[styles.row, isMobile && styles.rowMobile]}>
+            <View style={[styles.fieldGroup, !isMobile && { flex: 1 }]}>
               <Text style={[styles.fieldLabel, { color: themeColors.text }]}>EPISODES COUNT</Text>
               <TextInput
                 style={[styles.inputField, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
@@ -328,9 +336,10 @@ export default function AddAnimeScreen() {
                 value={episodes}
                 onChangeText={setEpisodes}
                 keyboardType="numeric"
+                accessibilityLabel="Episodes count"
               />
             </View>
-            <View style={[styles.fieldGroup, { flex: 2 }]}>
+            <View style={[styles.fieldGroup, !isMobile && { flex: 2 }]}>
               <Text style={[styles.fieldLabel, { color: themeColors.text }]}>GENRE / TAGS</Text>
               <TextInput
                 style={[styles.inputField, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border, color: themeColors.text }]}
@@ -338,13 +347,14 @@ export default function AddAnimeScreen() {
                 placeholderTextColor={themeColors.textMuted}
                 value={genre}
                 onChangeText={setGenre}
+                accessibilityLabel="Genre or tags"
               />
             </View>
           </View>
 
           {/* Episode Multi-Source Video Links Manager */}
           <View style={[styles.episodeManagerCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <View style={[styles.episodeManagerHeader, isMobile && styles.episodeManagerHeaderMobile]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <LinkIcon size={16} color={themeColors.primary} />
                 <Text style={[styles.fieldLabel, { color: themeColors.text, marginBottom: 0 }]}>EPISODE MULTI-SOURCE MANAGER</Text>
@@ -363,6 +373,7 @@ export default function AddAnimeScreen() {
                   onChangeText={setNewEpNum}
                   keyboardType="number-pad"
                   editable={!loading}
+                  accessibilityLabel="Episode number"
                 />
               </View>
 
@@ -382,14 +393,15 @@ export default function AddAnimeScreen() {
                     gap: 6,
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={[styles.sourceHeaderRow, isMobile && styles.sourceHeaderRowMobile]}>
                     <TextInput
-                      style={[styles.inputField, { flex: 1, backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, color: themeColors.text, height: 36, fontSize: 12 }]}
+                      style={[styles.inputField, { flex: 1, backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, color: themeColors.text, fontSize: 12 }, isMobile && styles.sourceNameInputMobile]}
                       placeholder={`Source Name (e.g. Server ${index + 1})`}
                       placeholderTextColor={themeColors.textMuted}
                       value={srcItem.label}
                       onChangeText={(val) => handleUpdateDraftSource(index, 'label', val)}
                       editable={!loading}
+                      accessibilityLabel={`Source ${index + 1} name`}
                     />
                     <Pressable
                       onPress={() => handleSetDefaultDraftSource(index)}
@@ -398,12 +410,16 @@ export default function AddAnimeScreen() {
                         alignItems: 'center',
                         gap: 4,
                         paddingHorizontal: 8,
-                        paddingVertical: 6,
+                        minHeight: 44,
+                        justifyContent: 'center',
                         borderRadius: 6,
                         borderWidth: 1,
                         backgroundColor: srcItem.is_default ? 'rgba(0, 230, 118, 0.15)' : themeColors.backgroundCard,
                         borderColor: srcItem.is_default ? '#00E676' : themeColors.border,
                       }}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Set source ${index + 1} as default`}
+                      accessibilityState={{ selected: srcItem.is_default }}
                     >
                       <Check size={12} color={srcItem.is_default ? '#00E676' : themeColors.textMuted} />
                       <Text style={{ color: srcItem.is_default ? '#00E676' : themeColors.textMuted, fontSize: 10, fontWeight: '800' }}>
@@ -413,7 +429,7 @@ export default function AddAnimeScreen() {
                     {draftSources.length > 1 && (
                       <Pressable
                         onPress={() => handleRemoveDraftSource(index)}
-                        style={{ padding: 4 }}
+                        style={styles.removeIconBtn}
                         accessibilityRole="button"
                         accessibilityLabel={`Remove source ${index + 1}`}
                       >
@@ -423,7 +439,7 @@ export default function AddAnimeScreen() {
                   </View>
 
                   <TextInput
-                    style={[styles.inputField, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, color: themeColors.text, height: 36, fontSize: 12 }]}
+                    style={[styles.inputField, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, color: themeColors.text, fontSize: 12 }]}
                     placeholder="series/title/episode-01.mp4"
                     placeholderTextColor={themeColors.textMuted}
                     value={srcItem.url}
@@ -431,6 +447,7 @@ export default function AddAnimeScreen() {
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!loading}
+                    accessibilityLabel={`Source ${index + 1} private video key`}
                   />
                 </View>
               ))}
@@ -441,7 +458,7 @@ export default function AddAnimeScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
-                  paddingVertical: 7,
+                  minHeight: 44,
                   borderRadius: 8,
                   borderWidth: 1,
                   borderStyle: 'dashed',
@@ -450,6 +467,9 @@ export default function AddAnimeScreen() {
                 }}
                 onPress={handleAddDraftSource}
                 disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Add another source server"
+                accessibilityState={{ disabled: loading }}
               >
                 <Plus size={13} color={themeColors.primary} />
                 <Text style={{ color: themeColors.primary, fontSize: 11, fontWeight: '800' }}>+ Add Another Source Server</Text>
@@ -462,6 +482,9 @@ export default function AddAnimeScreen() {
               style={[styles.saveEpLinkBtn, { backgroundColor: themeColors.primary, marginTop: 4 }]}
               onPress={handleAddEpisodeWithSources}
               disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel={`Save episode ${newEpNum || ''} with sources`}
+              accessibilityState={{ disabled: loading }}
             >
               <Plus size={14} color="#FFFFFF" />
               <Text style={styles.saveEpLinkText}>Save Episode {newEpNum ? `#${newEpNum}` : ''} with Sources</Text>
@@ -504,7 +527,7 @@ export default function AddAnimeScreen() {
                         </View>
                         <Pressable
                           onPress={() => handleRemoveLink(link.episode)}
-                          style={{ padding: 4 }}
+                          style={styles.removeIconBtn}
                           accessibilityRole="button"
                           accessibilityLabel={`Remove episode ${link.episode}`}
                         >
@@ -528,6 +551,7 @@ export default function AddAnimeScreen() {
               onChangeText={setDescription}
               multiline
               numberOfLines={4}
+              accessibilityLabel="Synopsis or description"
             />
           </View>
 
@@ -547,14 +571,19 @@ export default function AddAnimeScreen() {
               onValueChange={setIsFeatured}
               trackColor={{ false: '#3A3A3C', true: themeColors.primary }}
               thumbColor={isFeatured ? '#FFFFFF' : '#F4F3F4'}
+              accessibilityLabel="Feature in Home hero carousel"
             />
           </View>
+        </ScrollView>
 
-          {/* Primary CTA Submit Button */}
+        <View style={[styles.submitFooter, { backgroundColor: themeColors.background, borderTopColor: themeColors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
           <Pressable
             style={[styles.submitBtn, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
             onPress={handleSubmit}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="Publish new media title"
+            accessibilityState={{ disabled: loading, busy: loading }}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -565,7 +594,7 @@ export default function AddAnimeScreen() {
               </View>
             )}
           </Pressable>
-        </ScrollView>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -610,8 +639,11 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     padding: 12,
-    paddingBottom: 220,
+    paddingBottom: 24,
     gap: 12,
+  },
+  formScroll: {
+    flex: 1,
   },
 
   /* POSTER PREVIEW */
@@ -636,6 +668,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
+  rowMobile: {
+    flexDirection: 'column',
+  },
   fieldLabel: {
     fontSize: 11,
     fontWeight: '800',
@@ -646,6 +681,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 9,
+    minHeight: 48,
     fontSize: 13,
   },
   textArea: {
@@ -663,6 +699,8 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: 12,
     paddingVertical: 7,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 8,
     borderWidth: 1,
   },
@@ -678,6 +716,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
   },
+  episodeManagerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 4,
+  },
+  episodeManagerHeaderMobile: {
+    flexWrap: 'wrap',
+  },
+  sourceHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sourceHeaderRowMobile: {
+    flexWrap: 'wrap',
+  },
+  sourceNameInputMobile: {
+    flexBasis: '100%',
+  },
   epInputRow: {
     flexDirection: 'row',
     gap: 8,
@@ -687,6 +746,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    minHeight: 48,
     paddingVertical: 9,
     borderRadius: 8,
   },
@@ -706,6 +766,13 @@ const styles = StyleSheet.create({
   epChipText: {
     fontSize: 11,
     fontWeight: '800',
+  },
+  removeIconBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
   },
 
   /* SWITCH CARD */
@@ -728,11 +795,15 @@ const styles = StyleSheet.create({
 
   /* SUBMIT BUTTON */
   submitBtn: {
-    height: 48,
+    minHeight: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 4,
+  },
+  submitFooter: {
+    borderTopWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 10,
   },
   submitBtnInner: {
     flexDirection: 'row',

@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
+import { useLanguage } from '@/hooks/use-language';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useGamification } from '@/hooks/useGamification';
 import { useSidebar } from '@/context/SidebarContext';
 import { useRouter } from 'expo-router';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
-import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
-import { Sparkles, Menu, ArrowLeft, Coins, Crown } from 'lucide-react-native';
+import { Play, Menu, ArrowLeft, ArrowRight, Crown } from 'lucide-react-native';
+import { Layout, Radius, Spacing, Typography } from '@/constants/theme';
 
 export type GlobalNavbarProps = {
   title?: string;
@@ -28,17 +29,15 @@ export function GlobalNavbar({
 }: GlobalNavbarProps) {
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const themeColors = useTheme();
+  const { isRTL } = useLanguage();
   const router = useRouter();
   const { isDesktop } = useResponsive();
   const { openSidebar } = useSidebar();
 
   const gamification = useGamification() || {};
-  const coins = gamification.coins ?? 0;
-  const streakDays = gamification.streakDays ?? 0;
   const isVIP = gamification.isVIP ?? false;
   const vipDaysRemaining = gamification.vipDaysRemaining ?? 0;
 
-  const [showRewardsModal, setShowRewardsModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
 
   const handleBack = () => {
@@ -57,28 +56,38 @@ export function GlobalNavbar({
         style={[
           styles.navbarContainer,
           {
-            backgroundColor: themeColors.backgroundElement,
+            backgroundColor: themeColors.background,
             borderBottomColor: themeColors.border,
-            paddingTop: Math.max(insets.top + 4, 12),
+            paddingTop: Math.max(insets.top + 2, 10),
           },
         ]}
       >
-        <View style={styles.navbarInner}>
+        <View style={[styles.navbarInner, isRTL && styles.rowReverse]}>
           {/* Left Section: Back Arrow or Sidebar Menu */}
-          <View style={styles.leftSection}>
+          <View style={[styles.leftSection, isRTL && styles.rowReverse]}>
             {showBack ? (
               <Pressable
                 onPress={handleBack}
-                style={[styles.iconBtn, { borderColor: themeColors.border }]}
+                style={({ pressed }) => [
+                  styles.iconBtn,
+                  { backgroundColor: pressed ? themeColors.backgroundSelected : 'transparent' },
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel="Go Back"
               >
-                <ArrowLeft color={themeColors.text} size={18} />
+                {isRTL ? (
+                  <ArrowRight color={themeColors.text} size={18} />
+                ) : (
+                  <ArrowLeft color={themeColors.text} size={18} />
+                )}
               </Pressable>
             ) : !isDesktop ? (
               <Pressable
                 onPress={openSidebar}
-                style={[styles.iconBtn, { borderColor: themeColors.border }]}
+                style={({ pressed }) => [
+                  styles.iconBtn,
+                  { backgroundColor: pressed ? themeColors.backgroundSelected : 'transparent' },
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel="Open Navigation Sidebar"
               >
@@ -88,35 +97,46 @@ export function GlobalNavbar({
 
             {/* Brand Logo or Custom Title */}
             {showBrandLogo ? (
-              <View style={styles.brandRow}>
+              <View style={[styles.brandRow, isRTL && styles.rowReverse]}>
                 <View style={[styles.brandIcon, { backgroundColor: themeColors.primary }]}>
-                  <PrimaryGradient borderRadius={8} />
-                  <Sparkles color="#FFFFFF" size={14} />
+                  <PrimaryGradient borderRadius={10} />
+                  <Play color="#FFFFFF" fill="#FFFFFF" size={12} />
                 </View>
                 <Text style={[styles.brandName, { color: themeColors.text }]}>
                   ANI<Text style={{ color: themeColors.primary }}>FLIX</Text>
                 </Text>
               </View>
             ) : title ? (
-              <Text style={[styles.pageTitle, { color: themeColors.text }]} numberOfLines={1}>
+              <Text
+                style={[styles.pageTitle, { color: themeColors.text, textAlign: isRTL ? 'right' : 'left' }]}
+                numberOfLines={1}
+              >
                 {title}
               </Text>
             ) : null}
           </View>
 
           {/* Right Section: VIP Badge or Custom Actions */}
-          <View style={styles.rightSection}>
+          <View style={[styles.rightSection, isRTL && styles.rowReverse]}>
             {rightActions ? (
               rightActions
             ) : (
               <>
                 {/* VIP Subscription Button */}
                 <Pressable
-                  style={styles.vipBtn}
+                  style={({ pressed }) => [
+                    styles.vipBtn,
+                    {
+                      backgroundColor: pressed ? themeColors.backgroundSelected : themeColors.backgroundElement,
+                      borderColor: themeColors.border,
+                    },
+                  ]}
                   onPress={() => setShowVipModal(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={isVIP ? `VIP membership, ${vipDaysRemaining} days remaining` : 'Open VIP membership options'}
                 >
-                  <Crown size={14} color="#FFB800" />
-                  <Text style={styles.vipText}>
+                  <Crown size={14} color={themeColors.primary} />
+                  <Text style={[styles.vipText, { color: themeColors.text }]}>
                     {isVIP ? `VIP (${vipDaysRemaining}d)` : 'VIP'}
                   </Text>
                 </Pressable>
@@ -127,7 +147,6 @@ export function GlobalNavbar({
       </View>
 
       {/* Modals */}
-      <RewardsHubModal visible={showRewardsModal} onClose={() => setShowRewardsModal(false)} />
       <VipSubscriptionModal visible={showVipModal} onClose={() => setShowVipModal(false)} />
     </>
   );
@@ -137,15 +156,15 @@ const styles = StyleSheet.create({
   navbarContainer: {
     width: '100%',
     borderBottomWidth: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 9,
     zIndex: 100,
   },
   navbarInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    maxWidth: 1200,
+    maxWidth: Layout.maxContentWidth,
     width: '100%',
     alignSelf: 'center',
   },
@@ -155,10 +174,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -168,64 +186,41 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brandIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: Radius.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
   brandName: {
-    fontSize: 19,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  pageTitle: {
     fontSize: 18,
     fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  pageTitle: {
+    ...Typography.h3,
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  rewardsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 4,
-    backgroundColor: 'rgba(255, 215, 0, 0.08)',
-  },
-  coinsText: {
-    color: '#FFD700',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  dotDivider: {
-    color: '#888899',
-    fontSize: 11,
-  },
-  streakText: {
-    color: '#0356C5',
-    fontSize: 11,
-    fontWeight: '800',
-  },
   vipBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     borderWidth: 1,
-    borderColor: '#FFB800',
-    backgroundColor: 'rgba(255, 184, 0, 0.12)',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 16,
+    paddingHorizontal: 11,
+    minHeight: 44,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.full,
   },
   vipText: {
-    color: '#FFB800',
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  rowReverse: {
+    flexDirection: 'row-reverse',
   },
 });

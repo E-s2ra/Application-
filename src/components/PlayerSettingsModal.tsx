@@ -32,7 +32,7 @@ export function PlayerSettingsModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: themeColors.scrim }]}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onClose}
@@ -40,7 +40,10 @@ export function PlayerSettingsModal({
           accessibilityLabel="Close player settings"
         />
         
-        <View style={[styles.modalCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}>
+        <View
+          accessibilityViewIsModal
+          style={[styles.modalCard, { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
@@ -138,7 +141,6 @@ export function PlayerSettingsModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -167,8 +169,8 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   closeBtn: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 44,
     borderRadius: 10,
     borderWidth: 1,
     justifyContent: 'center',
@@ -211,10 +213,13 @@ const styles = StyleSheet.create({
   speedRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
   speedChip: {
     flex: 1,
+    minWidth: 64,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,

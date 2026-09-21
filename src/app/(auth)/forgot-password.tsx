@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  Pressable,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Mail,
+  ShieldCheck,
+} from 'lucide-react-native';
+import { AppButton, AppIconButton, AppSurface, AppTextField } from '@/components/ui';
+import { Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { ShieldCheck, ArrowLeft, AlertCircle } from 'lucide-react-native';
+import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/hooks/useAuth';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useToast } from '@/hooks/useToast';
@@ -24,132 +23,213 @@ export default function ForgotPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const themeColors = useTheme();
+  const { language, isRTL } = useLanguage();
   const { resetPassword } = useAuth();
-  const { isDesktop, isTablet } = useResponsive();
+  const { pagePad, isSmallDevice } = useResponsive({ desktopRailWidth: 0 });
+  const { showError, showSuccess } = useToast();
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { showError, showSuccess } = useToast();
+
+  const copy = language === 'ku'
+    ? {
+        back: 'گەڕانەوە بۆ چوونەژوورەوە',
+        title: 'گۆڕینی تێپەڕەوشە',
+        subtitle: 'ئیمەیڵی هەژمارت بنووسە بۆ وەرگرتنی بەستەری گەڕاندنەوە.',
+        email: 'ئیمەیڵی هەژمار',
+        emailPlaceholder: 'ناونیشانی ئیمەیڵ',
+        send: 'ناردنی بەستەری گەڕاندنەوە',
+        emptyError: 'تکایە ناونیشانی ئیمەیڵەکەت بنووسە.',
+        invalidError: 'ناونیشانی ئیمەیڵێکی دروست بنووسە.',
+        success: 'بەستەری گۆڕینی تێپەڕەوشە نێردرا. تکایە ئیمەیڵەکەت بپشکنە.',
+        return: 'گەڕانەوە بۆ چوونەژوورەوە',
+        unknownError: 'هەڵەیەکی چاوەڕواننەکراو ڕوویدا. تکایە دووبارە هەوڵبدەرەوە.',
+      }
+    : {
+        back: 'Back to sign in',
+        title: 'Reset password',
+        subtitle: 'Enter your AniFlix email to receive a secure recovery link.',
+        email: 'Account email',
+        emailPlaceholder: 'name@example.com',
+        send: 'Send reset link',
+        emptyError: 'Please enter your email address.',
+        invalidError: 'Enter a valid email address.',
+        success: 'Reset link sent. Check your email to continue.',
+        return: 'Return to sign in',
+        unknownError: 'An unexpected error occurred. Please try again.',
+      };
+
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(auth)/login');
+  };
 
   const handleReset = async () => {
     setErrorMessage(null);
     if (!email.trim()) {
-      const msg = 'Please enter your email address.';
-      setErrorMessage(msg);
-      showError(msg);
+      setErrorMessage(copy.emptyError);
+      showError(copy.emptyError);
       return;
     }
-    if (!isValidEmail(normalizeEmail(email))) {
-      const msg = 'Enter a valid email address.';
-      setErrorMessage(msg);
-      showError(msg);
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!isValidEmail(normalizedEmail)) {
+      setErrorMessage(copy.invalidError);
+      showError(copy.invalidError);
       return;
     }
+
     setLoading(true);
     try {
-      const { error } = await resetPassword(normalizeEmail(email));
+      const { error } = await resetPassword(normalizedEmail);
       if (error) {
         setErrorMessage(error);
         showError(error);
-        setLoading(false);
         return;
       }
 
       setIsSuccess(true);
-      showSuccess('Check your email to reset your password!');
       setEmail('');
-      setErrorMessage(null);
-    } catch (err: any) {
-      const msg = err.message || 'An unexpected error occurred. Please try again.';
-      setErrorMessage(msg);
-      showError(msg);
+      showSuccess(copy.success);
+    } catch (error: unknown) {
+      const message = error instanceof Error && error.message ? error.message : copy.unknownError;
+      setErrorMessage(message);
+      showError(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const textDirection = isRTL ? styles.rtlText : styles.ltrText;
+
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.container, { backgroundColor: themeColors.background }]}
     >
+      <View
+        style={[styles.glowOrbTop, { backgroundColor: themeColors.primary, opacity: themeColors.mode === 'dark' ? 0.14 : 0.08, pointerEvents: 'none' }]}
+      />
+      <View
+        style={[styles.glowOrbBottom, { backgroundColor: themeColors.primary, opacity: themeColors.mode === 'dark' ? 0.09 : 0.05, pointerEvents: 'none' }]}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          (isDesktop || isTablet) && styles.scrollCentered,
+          {
+            paddingTop: Math.max(insets.top + Spacing.xl, Spacing.xxl),
+            paddingBottom: Math.max(insets.bottom + Spacing.xl, Spacing.xxl),
+            paddingHorizontal: pagePad,
+          },
         ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentInsetAdjustmentBehavior="automatic"
       >
-        <View style={[styles.authCard, (isDesktop || isTablet) && styles.authCardDesktop]}>
-          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/login'))} style={styles.backBtn}>
-            <ArrowLeft color="#fff" size={20} />
-            <Text style={[styles.backText, { color: themeColors.textSecondary }]}>Back to Sign In</Text>
-          </Pressable>
+        <AppSurface
+          variant="raised"
+          padding={isSmallDevice ? 'lg' : 'xl'}
+          style={styles.authCard}
+        >
+          <View style={[styles.cardHeaderRow, isRTL && styles.rowRTL]}>
+            <AppIconButton
+              variant="surface"
+              accessibilityLabel={copy.back}
+              icon={
+                isRTL
+                  ? <ArrowRight color={themeColors.text} size={19} />
+                  : <ArrowLeft color={themeColors.text} size={19} />
+              }
+              onPress={goBack}
+            />
+          </View>
 
           <View style={styles.header}>
-            <View style={[styles.iconCircle, { backgroundColor: themeColors.backgroundElement }]}>
-              <ShieldCheck color={themeColors.primary} size={40} />
+            <View style={[styles.iconCircle, { backgroundColor: themeColors.primarySoft }]}>
+              <ShieldCheck color={themeColors.primary} size={34} />
             </View>
-            <Text style={[styles.title, { color: themeColors.text }]}>Reset Password</Text>
-            <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-              Enter your AniFlix email to receive a secure recovery link.
+            <Text style={[styles.title, { color: themeColors.text }, textDirection]}>
+              {copy.title}
+            </Text>
+            <Text style={[styles.subtitle, { color: themeColors.textSecondary }, textDirection]}>
+              {copy.subtitle}
             </Text>
           </View>
 
           {isSuccess ? (
-            <View style={[styles.form, { alignItems: 'center', paddingVertical: 16 }]}>
-              <Text style={{ color: '#4ade80', fontSize: 16, fontWeight: '600', textAlign: 'center', marginBottom: 16, lineHeight: 24 }}>
-                Check your email to reset your password!
+            <View
+              accessibilityLiveRegion="polite"
+              style={styles.successState}
+            >
+              <View style={[styles.successIcon, { backgroundColor: themeColors.successSoft }]}>
+                <CheckCircle2 color={themeColors.success} size={30} />
+              </View>
+              <Text style={[styles.successText, { color: themeColors.text }, textDirection]}>
+                {copy.success}
               </Text>
-              <Pressable
-                style={[styles.button, { backgroundColor: themeColors.primary, width: '100%' }]}
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/login'))}
-              >
-                <Text style={styles.buttonText}>Return to Login</Text>
-              </Pressable>
+              <AppButton
+                label={copy.return}
+                fullWidth
+                size="lg"
+                onPress={goBack}
+              />
             </View>
           ) : (
             <View style={styles.form}>
-              {errorMessage && (
-                <View style={styles.errorContainer}>
-                  <AlertCircle color="#ef4444" size={16} />
-                  <Text style={styles.errorText}>{errorMessage}</Text>
+              {errorMessage ? (
+                <View
+                  accessibilityRole="alert"
+                  accessibilityLiveRegion="polite"
+                  style={[
+                    styles.statusBanner,
+                    { backgroundColor: themeColors.errorSoft, borderColor: themeColors.error },
+                    isRTL && styles.rowRTL,
+                  ]}
+                >
+                  <AlertCircle color={themeColors.error} size={18} />
+                  <Text style={[styles.statusText, { color: themeColors.error }, textDirection]}>
+                    {errorMessage}
+                  </Text>
                 </View>
-              )}
+              ) : null}
 
-              <TextInput
-                style={[styles.input, { backgroundColor: themeColors.backgroundElement, color: themeColors.text }]}
-                placeholder="Your Account Email"
-                placeholderTextColor={themeColors.textSecondary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={setEmail}
-                editable={!loading}
-                returnKeyType="send"
-                onSubmitEditing={() => void handleReset()}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { color: themeColors.textSecondary }, textDirection]}>
+                  {copy.email}
+                </Text>
+                <AppTextField
+                  inputStyle={textDirection}
+                  leftIcon={<Mail size={18} color={themeColors.textSecondary} />}
+                  accessibilityLabel={copy.email}
+                  placeholder={copy.emailPlaceholder}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  value={email}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  editable={!loading}
+                  returnKeyType="send"
+                  onSubmitEditing={() => void handleReset()}
+                />
+              </View>
+
+              <AppButton
+                label={copy.send}
+                fullWidth
+                size="lg"
+                loading={loading}
+                onPress={() => void handleReset()}
               />
-
-              <Pressable
-                style={[styles.button, { backgroundColor: themeColors.primary, opacity: loading ? 0.7 : 1 }]}
-                onPress={handleReset}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Send Reset Link</Text>
-                )}
-              </Pressable>
             </View>
           )}
-        </View>
+        </AppSurface>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -158,100 +238,112 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  glowOrbTop: {
+    position: 'absolute',
+    top: -110,
+    right: -90,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+  },
+  glowOrbBottom: {
+    position: 'absolute',
+    bottom: -120,
+    left: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
   },
   scroll: {
     flexGrow: 1,
-    padding: 24,
     justifyContent: 'center',
-  },
-  scrollCentered: {
     alignItems: 'center',
   },
   authCard: {
     width: '100%',
-  },
-  authCardDesktop: {
     maxWidth: 440,
-    padding: 32,
-    borderRadius: 20,
-    backgroundColor: 'rgba(18, 18, 26, 0.75)',
-    borderWidth: 1,
-    borderColor: '#242436',
+    borderRadius: Radius.xl,
+    boxShadow: Shadows.raised,
   },
-  backBtn: {
+  cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
-    alignSelf: 'flex-start',
-  },
-  backText: {
-    fontSize: 14,
-    fontWeight: '600',
+    marginBottom: Spacing.md,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: Spacing.xl,
   },
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
+    width: 64,
+    height: 64,
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#242436',
+    marginBottom: Spacing.lg,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    ...Typography.h1,
+    textAlign: 'center',
+    width: '100%',
   },
   subtitle: {
-    fontSize: 14,
-    marginTop: 8,
+    ...Typography.body,
+    marginTop: Spacing.sm,
     textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 12,
+    width: '100%',
   },
   form: {
-    gap: 16,
+    gap: Spacing.lg,
   },
-  input: {
-    height: 52,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: '#242436',
-    backgroundColor: 'transparent',
-    ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
+  fieldGroup: {
+    gap: Spacing.sm,
   },
-  button: {
-    height: 52,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
+  fieldLabel: {
+    ...Typography.caption,
+    fontWeight: '700',
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  errorContainer: {
+  statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-    gap: 8,
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 14,
+  statusText: {
+    ...Typography.small,
     flex: 1,
+    fontWeight: '600',
+  },
+  successState: {
+    alignItems: 'center',
+    gap: Spacing.lg,
+  },
+  successIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successText: {
+    ...Typography.body,
+    textAlign: 'center',
+    width: '100%',
+  },
+  rowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  rtlText: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  ltrText: {
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
 });

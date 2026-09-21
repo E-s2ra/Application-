@@ -45,12 +45,13 @@ export function SourceSelector({
               style={[
                 styles.chipItem,
                 {
-                  backgroundColor: isSelected ? 'rgba(3, 86, 197, 0.18)' : themeColors.backgroundElement,
+                  backgroundColor: isSelected ? themeColors.primarySoft : themeColors.backgroundElement,
                   borderColor: isSelected ? themeColors.primary : themeColors.border,
                 },
               ]}
               accessibilityRole="button"
               accessibilityLabel={`Select ${srcItem.label || `Server ${index + 1}`}`}
+              accessibilityState={{ selected: isSelected }}
             >
               <View style={styles.chipContent}>
                 {isSelected ? (
@@ -96,6 +97,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   headerTitleRow: {
     flexDirection: 'row',
@@ -117,6 +120,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chipItem: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,

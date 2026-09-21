@@ -17,7 +17,7 @@ export function ErrorState({
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-      <View style={[styles.iconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+      <View style={[styles.iconContainer, { backgroundColor: theme.errorSoft }]}>
         <AlertCircle size={24} color={theme.error} />
       </View>
       <Text style={[styles.message, { color: theme.text }]}>{message}</Text>
@@ -25,15 +25,15 @@ export function ErrorState({
         <Pressable
           style={({ pressed }) => [
             styles.retryButton,
-            { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1.0 },
+            { backgroundColor: pressed ? theme.primaryPressed : theme.primary },
           ]}
           onPress={onRetry}
           accessibilityRole="button"
           accessibilityLabel="Retry"
           accessibilityHint="Try loading this content again"
         >
-          <RefreshCw size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
-          <Text style={styles.retryText}>Retry</Text>
+          <RefreshCw size={14} color={theme.buttonText} style={{ marginRight: 6 }} />
+          <Text style={[styles.retryText, { color: theme.buttonText }]}>Retry</Text>
         </Pressable>
       ) : null}
     </View>
@@ -66,13 +66,14 @@ const styles = StyleSheet.create({
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm + 1,
     borderRadius: Radius.md,
   },
   retryText: {
     ...Typography.bodyBold,
-    color: '#FFFFFF',
     fontSize: 13,
   },
 });

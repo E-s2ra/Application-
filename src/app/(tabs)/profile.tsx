@@ -8,8 +8,8 @@ import {
   ScrollView,
   Image,
   Modal,
-  TextInput,
   Alert,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,11 +18,10 @@ import { useLanguage } from '@/hooks/use-language';
 import {
   LogOut,
   User as UserIcon,
-  Shield,
   Heart,
   Sparkles,
   Tv,
-  ChevronRight,
+  ChevronLeft,
   Flame,
   Coins,
   Crown,
@@ -30,7 +29,6 @@ import {
   Award,
   Users,
   Camera,
-  Check,
   X,
   Sun,
   Moon,
@@ -51,25 +49,18 @@ import { useAdMob } from '@/hooks/useAdMob';
 import { RewardsHubModal } from '@/components/RewardsHubModal';
 import { VipSubscriptionModal } from '@/components/VipSubscriptionModal';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
-
-const PRESET_AVATARS = [
-  { id: '1', name: 'Original Hero', url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=300&q=80' },
-  { id: '2', name: 'Shadow Shinobi', url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&q=80' },
-  { id: '3', name: 'Cyber Samurai', url: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=300&q=80' },
-  { id: '4', name: 'Solar Legend', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&q=80' },
-  { id: '5', name: 'Neon Valkyrie', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300&q=80' },
-  { id: '6', name: 'Crimson Hunter', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=300&q=80' },
-];
+import { AppButton, AppListRow, AppSurface, AppTextField } from '@/components/ui';
+import { Spacing, Typography } from '@/constants/theme';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const themeColors = useTheme();
   const { isDark, toggleColorMode } = useColorMode();
-  const { language, toggleLanguage, t } = useLanguage();
+  const { language, isRTL, toggleLanguage, t } = useLanguage();
   const { user, profile, signOut, isLoading, updateProfile } = useAuth();
   const { favorites } = useFavorites();
-  const { isDesktop, isTablet } = useResponsive();
+  const { isDesktop, isTablet, isSmallDevice, pagePad } = useResponsive();
   const {
     coins,
     xp,
@@ -122,8 +113,11 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.centerLoading, { backgroundColor: themeColors.background }]}>
-        <ActivityIndicator size="large" color={activeTheme?.primary || themeColors.primary} />
+      <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <GlobalNavbar title={language === 'ku' ? 'پرۆفایل و ڕێکخستنەکان' : 'Profile & Settings'} showBrandLogo={false} />
+        <View style={styles.centerLoading}>
+          <ActivityIndicator size="large" color={activeTheme?.primary || themeColors.primary} />
+        </View>
       </View>
     );
   }
@@ -133,10 +127,11 @@ export default function ProfileScreen() {
   const levelXPTarget = nextLevelXP - currentLevelBaseXP;
   const xpPercent = Math.min(100, Math.max(0, (levelXPProgress / levelXPTarget) * 100));
   const primaryColor = activeTheme?.primary || themeColors.primary;
+  const rtlDisclosure = isRTL ? <ChevronLeft color={themeColors.textMuted} size={18} /> : undefined;
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <GlobalNavbar title="Profile & Settings" showBrandLogo={false} />
+      <GlobalNavbar title={language === 'ku' ? 'پرۆفایل و ڕێکخستنەکان' : 'Profile & Settings'} showBrandLogo={false} />
 
       <ScrollView 
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 80, 100) }}
@@ -144,11 +139,13 @@ export default function ProfileScreen() {
       >
         <View style={[styles.profileWrapper, (isDesktop || isTablet) && styles.profileWrapperDesktop]}>
         
-        {/* 👤 Hero Profile Card */}
-        <View style={[styles.heroCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+        <View style={[styles.heroCard, { marginHorizontal: pagePad }]}>
           <Pressable
             onPress={() => setShowAvatarModal(true)}
-            style={[styles.avatarGlow, { borderColor: isAdmin ? primaryColor : themeColors.border }]}
+            style={({ pressed }) => [
+              styles.avatarGlow,
+              { borderColor: themeColors.border, opacity: pressed ? 0.76 : 1 },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Change avatar image"
           >
@@ -172,7 +169,10 @@ export default function ProfileScreen() {
           </Text>
 
           <Pressable
-            style={[styles.roleBadge, { backgroundColor: isAdmin ? primaryColor : themeColors.backgroundElement, borderColor: themeColors.border }]}
+            style={({ pressed }) => [
+              styles.roleBadge,
+              { backgroundColor: isAdmin ? primaryColor : themeColors.backgroundSelected, opacity: pressed ? 0.76 : 1 },
+            ]}
             onPress={() => (isAdmin ? handleAdminPanel() : setShowVipModal(true))}
             accessibilityRole="button"
             accessibilityLabel="Membership status"
@@ -180,7 +180,7 @@ export default function ProfileScreen() {
             {isAdmin ? (
               <Sparkles color="#FFFFFF" size={14} />
             ) : (
-              <Tv color={themeColors.accentCyan || primaryColor} size={14} />
+              <Tv color={primaryColor} size={14} />
             )}
             <Text style={[styles.roleText, { color: isAdmin ? '#FFFFFF' : themeColors.text }]}>
               {isAdmin ? t('platformAdmin', 'Platform Admin') : isVIP ? `VIP Member (${vipDaysRemaining}d)` : t('standardStreamerGetVip', 'Get VIP Access')}
@@ -188,81 +188,87 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* 🏆 User Level & XP Progress Bar Card */}
-        <View style={[styles.levelCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+        <View style={[styles.levelCard, { backgroundColor: themeColors.backgroundElement, marginHorizontal: pagePad }]}>
           <View style={styles.levelCardHeader}>
-            <View style={[styles.levelBadge, { backgroundColor: themeColors.mode === 'light' ? 'rgba(217, 119, 6, 0.12)' : 'rgba(255, 184, 0, 0.12)', borderColor: themeColors.mode === 'light' ? '#D97706' : '#FFB800' }]}>
-              <Crown size={14} color={themeColors.mode === 'light' ? '#D97706' : '#FFB800'} />
-              <Text style={[styles.levelLabel, { color: themeColors.mode === 'light' ? '#D97706' : '#FFB800' }]}>Level {level}</Text>
+            <View style={[styles.levelBadge, { backgroundColor: themeColors.backgroundSelected }]}>
+              <Crown size={14} color={primaryColor} />
+              <Text style={[styles.levelLabel, { color: primaryColor }]}>{t('level', 'LVL')} {level}</Text>
             </View>
             <Text style={[styles.levelTitle, { color: themeColors.text }]}>{t(levelTitle as any, levelTitle)}</Text>
           </View>
 
-          <View style={[styles.xpTrack, { backgroundColor: themeColors.backgroundElement }]}>
+          <View style={[styles.xpTrack, { backgroundColor: themeColors.backgroundSelected }]}>
             <View style={[styles.xpFill, { width: `${xpPercent}%`, backgroundColor: primaryColor }]} />
           </View>
 
           <Text style={[styles.xpText, { color: themeColors.textSecondary }]}>
-            {levelXPProgress} / {levelXPTarget} XP to Level {level + 1}
+            {levelXPProgress} / {levelXPTarget} {t('xpToLevel', 'XP to Level')} {level + 1}
           </Text>
         </View>
 
-        {/* 📊 Gamification Stats Row */}
-        <View style={styles.statsGrid}>
-          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <Coins size={18} color={themeColors.mode === 'light' ? '#D97706' : '#FFB800'} style={{ marginBottom: 4 }} />
+        <View style={[styles.statsGrid, { paddingHorizontal: pagePad }, isSmallDevice && styles.statsGridCompact]}>
+          <View style={[styles.statBox, isSmallDevice && styles.statBoxCompact, { backgroundColor: themeColors.backgroundElement }]}>
+            <Coins size={18} color={primaryColor} style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, { color: themeColors.text }]}>{coins}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Coins</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1}>{t('coins', 'Coins')}</Text>
           </View>
 
-          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <Flame size={18} color={themeColors.mode === 'light' ? '#EA580C' : '#F97316'} style={{ marginBottom: 4 }} />
+          <View style={[styles.statBox, isSmallDevice && styles.statBoxCompact, { backgroundColor: themeColors.backgroundElement }]}>
+            <Flame size={18} color={primaryColor} style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, { color: themeColors.text }]}>{streakDays}d</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Streak</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1}>{t('streak', 'Streak')}</Text>
           </View>
 
           <Pressable
-            style={[styles.statBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+            style={({ pressed }) => [
+              styles.statBox,
+              isSmallDevice && styles.statBoxCompact,
+              { backgroundColor: pressed ? themeColors.backgroundSelected : themeColors.backgroundElement },
+            ]}
             onPress={() => router.push('/(tabs)/favorites' as any)}
             accessibilityRole="button"
             accessibilityLabel="View favorite titles"
           >
             <Heart size={18} color={primaryColor} style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, { color: themeColors.text }]}>{favorites.length}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Favorites</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1}>{t('favorites', 'Favorites')}</Text>
           </Pressable>
 
-          <View style={[styles.statBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-            <Users size={18} color={themeColors.mode === 'light' ? '#0891B2' : '#06B6D4'} style={{ marginBottom: 4 }} />
+          <View style={[styles.statBox, isSmallDevice && styles.statBoxCompact, { backgroundColor: themeColors.backgroundElement }]}>
+            <Users size={18} color={primaryColor} style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, { color: themeColors.text }]}>{followingCount}</Text>
-            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Following</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]} numberOfLines={1}>{t('following', 'Following')}</Text>
           </View>
         </View>
 
-        {/* 🏆 Achievements & Badges Strip */}
         <View style={styles.badgesBlock}>
-          <View style={styles.badgesHeader}>
-            <Text style={[styles.badgesTitle, { color: themeColors.textSecondary }]}>MY BADGES</Text>
-            <Pressable onPress={() => setShowRewardsModal(true)}>
-              <Text style={[styles.viewAllText, { color: primaryColor }]}>View All</Text>
+          <View style={[styles.badgesHeader, { paddingHorizontal: pagePad }]}>
+            <Text style={[styles.badgesTitle, { color: themeColors.textSecondary }]}>{t('myBadges', 'MY BADGES')}</Text>
+            <Pressable
+              onPress={() => setShowRewardsModal(true)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.64 : 1, minHeight: 44, justifyContent: 'center' })}
+              accessibilityRole="button"
+              accessibilityLabel="View all rewards and badges"
+            >
+              <Text style={[styles.viewAllText, { color: primaryColor }]}>{t('viewAll', 'View All')}</Text>
             </Pressable>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgesScroll}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.badgesScroll, { paddingHorizontal: pagePad }]}>
             {badges.map((b) => (
               <View
                 key={b.id}
                 style={[
                   styles.badgeChip,
                   !b.isUnlocked && styles.badgeChipLocked,
-                  { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }
+                  { backgroundColor: themeColors.backgroundElement }
                 ]}
               >
-                <Text style={styles.badgeEmoji}>{b.icon}</Text>
+                <Award size={18} color={b.isUnlocked ? primaryColor : themeColors.textMuted} />
                 <View>
                   <Text style={[styles.badgeName, { color: themeColors.text }]}>{t(b.title as any, b.title)}</Text>
-                  <Text style={[styles.badgeStatus, { color: b.isUnlocked ? '#00E676' : themeColors.textMuted }]}>
-                    {b.isUnlocked ? 'Unlocked' : 'Locked'}
+                  <Text style={[styles.badgeStatus, { color: b.isUnlocked ? primaryColor : themeColors.textMuted }]}>
+                    {b.isUnlocked ? t('unlocked', 'Unlocked') : t('locked', 'Locked')}
                   </Text>
                 </View>
               </View>
@@ -270,203 +276,109 @@ export default function ProfileScreen() {
           </ScrollView>
         </View>
 
-        {/* ⚙️ Action Menu Options */}
-        <View style={styles.menuSection}>
-          
-          {/* Admin Panel Button */}
-          {isAdmin && (
-            <Pressable 
-              style={[styles.menuCard, { backgroundColor: primaryColor, borderColor: primaryColor }]}
-              onPress={handleAdminPanel}
-              accessibilityRole="button"
-              accessibilityLabel="Admin Management Center"
-            >
-              <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
-                <ShieldAlert color="#FFFFFF" size={20} />
-              </View>
-              <View style={styles.menuTextContent}>
-                <Text style={[styles.menuTitle, { color: '#FFFFFF' }]}>Admin Management Center</Text>
-                <Text style={[styles.menuSub, { color: 'rgba(255, 255, 255, 0.85)' }]}>Manage Catalog, Users & Edge Settings</Text>
-              </View>
-              <ChevronRight color="rgba(255,255,255,0.7)" size={20} />
-            </Pressable>
-          )}
+        <View style={[styles.menuSection, { paddingHorizontal: pagePad }]}>
+          <Text style={[styles.menuGroupLabel, { color: themeColors.textMuted }]}>
+            {language === 'ku' ? 'ئەزموون' : 'EXPERIENCE'}
+          </Text>
+          <AppSurface variant="subtle" padding="sm" style={styles.menuGroup}>
+            {isAdmin && (
+              <AppListRow
+                title={language === 'ku' ? 'ناوەندی بەڕێوەبردنی ئەدمین' : 'Admin Management Center'}
+                subtitle={language === 'ku' ? 'کەتەلۆگ، بەکارهێنەر و ڕێکخستنەکان بەڕێوەببە' : 'Manage catalog, users, and edge settings'}
+                icon={<ShieldAlert color={primaryColor} size={20} />}
+                trailing={rtlDisclosure}
+                onPress={handleAdminPanel}
+                accessibilityLabel="Admin Management Center"
+              />
+            )}
+            <AppListRow
+              title={t('rewardsHub', 'Quests & Rewards Hub')}
+              subtitle={t('rewardsSub', 'Complete daily quests and claim coins')}
+              icon={<Trophy color={primaryColor} size={20} />}
+              trailing={rtlDisclosure}
+              onPress={() => setShowRewardsModal(true)}
+              accessibilityLabel="Quests & Rewards Hub"
+            />
+            {!isVIP && Platform.OS !== 'web' && (
+              <AppListRow
+                title={t('watchAdEarn', 'Watch Ad & Earn Coins')}
+                subtitle={`${t('watchAdSub', 'Watch a verified sponsored ad to earn coins')} · +12 ${t('coinsText', 'Coins')}`}
+                icon={<Disc3 color={primaryColor} size={20} />}
+                trailing={rtlDisclosure}
+                onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
+                accessibilityLabel="Watch sponsored ad to earn 12 coins"
+              />
+            )}
+          </AppSurface>
 
+          <Text style={[styles.menuGroupLabel, { color: themeColors.textMuted }]}>
+            {language === 'ku' ? 'ڕێکخستنەکان' : 'PREFERENCES'}
+          </Text>
+          <AppSurface variant="subtle" padding="sm" style={styles.menuGroup}>
+            <AppListRow
+              title={isDark
+                ? (language === 'ku' ? 'ڕووکاری ڕووناک' : 'Light appearance')
+                : (language === 'ku' ? 'ڕووکاری تاریک' : 'Dark appearance')}
+              subtitle={language === 'ku' ? 'ڕەنگی ئەپ بگۆڕە' : 'Switch the app color mode'}
+              icon={isDark ? <Sun color={primaryColor} size={20} /> : <Moon color={primaryColor} size={20} />}
+              trailing={rtlDisclosure}
+              onPress={toggleColorMode}
+              accessibilityLabel="Toggle Dark / Light Theme Mode"
+            />
+            <AppListRow
+              title={`${t('languageSetting', 'App Language')} · ${language === 'ku' ? 'کوردی سۆرانی' : 'English'}`}
+              subtitle={t('switchLanguageSub', 'Switch between English and Kurdish')}
+              icon={<Globe color={primaryColor} size={20} />}
+              trailing={rtlDisclosure}
+              onPress={toggleLanguage}
+              accessibilityLabel="Switch language"
+            />
+          </AppSurface>
 
+          <Text style={[styles.menuGroupLabel, { color: themeColors.textMuted }]}>
+            {language === 'ku' ? 'زانیاری و یاسا' : 'INFORMATION'}
+          </Text>
+          <AppSurface variant="subtle" padding="sm" style={styles.menuGroup}>
+            <AppListRow
+              title={language === 'ku' ? 'یاسای تایبەتمەندی' : 'Privacy Policy'}
+              subtitle={language === 'ku' ? 'پاراستنی زانیارییەکان و هەژمار' : 'Data protection and security policies'}
+              icon={<ShieldCheck color={primaryColor} size={20} />}
+              trailing={rtlDisclosure}
+              onPress={() => router.push('/legal/privacy-policy' as any)}
+            />
+            <AppListRow
+              title={language === 'ku' ? 'مەرجەکانی بەکارهێنان' : 'Terms of Service'}
+              subtitle={language === 'ku' ? 'یاسا و مەرجەکانی بەکارهێنانی ئەپ' : 'App rules, VIP terms, and guidelines'}
+              icon={<FileText color={primaryColor} size={20} />}
+              trailing={rtlDisclosure}
+              onPress={() => router.push('/legal/terms-of-service' as any)}
+            />
+            <AppListRow
+              title={language === 'ku' ? 'مافی کۆپیکردن (DMCA)' : 'DMCA & Copyright'}
+              subtitle={language === 'ku' ? 'ڕاگەیەندراوی مافی فکری و کۆپیکردن' : 'Intellectual property and takedown notices'}
+              icon={<ShieldAlert color={primaryColor} size={20} />}
+              trailing={rtlDisclosure}
+              onPress={() => router.push('/legal/dmca' as any)}
+            />
+            <AppListRow
+              title={language === 'ku' ? 'دەربارەی ئەنیفلیکس' : 'About AniFlix'}
+              subtitle={language === 'ku' ? 'وەشانی ئەپ، پشتیوانی و پەیوەندی' : 'Version 1.0.0, support, and contacts'}
+              icon={<Info color={primaryColor} size={20} />}
+              trailing={rtlDisclosure}
+              onPress={() => router.push('/legal/about' as any)}
+            />
+          </AppSurface>
 
-          {/* Rewards Hub Modal Trigger */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={() => setShowRewardsModal(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Quests & Rewards Hub"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(217, 119, 6, 0.12)' : 'rgba(255, 184, 0, 0.15)' }]}>
-              <Trophy color={themeColors.mode === 'light' ? '#D97706' : '#FFB800'} size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>{t('rewardsHub', 'Quests & Rewards Hub')}</Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>{t('rewardsSub', 'Complete daily quests and claim coins')}</Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
-
-          {/* Watch Ad for Free Coins */}
-          {!isVIP && (
-            <Pressable 
-              style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-              onPress={() => showRewardedAd({ rewardCoins: 12, rewardType: 'coins' })}
-              accessibilityRole="button"
-              accessibilityLabel="Watch Ad for Coins"
-            >
-              <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(0, 230, 118, 0.15)' }]}>
-                <Disc3 color={themeColors.mode === 'light' ? '#059669' : '#00E676'} size={20} />
-              </View>
-              <View style={styles.menuTextContent}>
-                <Text style={[styles.menuTitle, { color: themeColors.text }]}>{t('watchAdEarn', 'Watch Ad & Earn Coins')}</Text>
-                <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>{t('watchAdSub', 'Get +100 Coins instantly per view')}</Text>
-              </View>
-              <ChevronRight color={themeColors.textSecondary} size={20} />
-            </Pressable>
-          )}
-
-          {/* Dark / Light Mode Toggle */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={toggleColorMode}
-            accessibilityRole="button"
-            accessibilityLabel="Toggle Dark / Light Theme Mode"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: isDark ? 'rgba(255, 184, 0, 0.15)' : 'rgba(3, 86, 197, 0.15)' }]}>
-              {isDark ? <Sun color="#FFB800" size={20} /> : <Moon color={primaryColor} size={20} />}
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
-                {isDark ? 'Light Theme Mode' : 'Dark Theme Mode'}
-              </Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
-                {isDark ? 'Switch to bright clean mode' : 'Switch to sleek dark mode'}
-              </Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
-
-          {/* Language Switcher */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={toggleLanguage}
-            accessibilityRole="button"
-            accessibilityLabel="Switch language"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: themeColors.mode === 'light' ? 'rgba(8, 145, 178, 0.12)' : 'rgba(6, 182, 212, 0.15)' }]}>
-              <Globe color={themeColors.mode === 'light' ? '#0891B2' : '#06B6D4'} size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
-                {t('languageSetting', 'App Language')} ({language === 'ku' ? 'کوردی سۆرانی' : 'English'})
-              </Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
-                {t('switchLanguageSub', 'Switch between English and Kurdish')}
-              </Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
-
-          {/* 📜 Privacy Policy */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={() => router.push('/legal/privacy-policy' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Privacy Policy"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-              <ShieldCheck color="#3B82F6" size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
-                {language === 'ku' ? 'یاسای تایبەتمەندی' : 'Privacy Policy'}
-              </Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
-                {language === 'ku' ? 'پاراستنی زانیارییەکان و هەژمار' : 'Data protection & security policies'}
-              </Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
-
-          {/* 📜 Terms of Service */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={() => router.push('/legal/terms-of-service' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Terms of Service"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-              <FileText color="#10B981" size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
-                {language === 'ku' ? 'مەرجەکانی بەکارهێنان' : 'Terms of Service'}
-              </Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
-                {language === 'ku' ? 'یاسا و مەرجەکانی بەکارهێنانی ئەپ' : 'App rules, VIP terms & guidelines'}
-              </Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
-
-          {/* 🛡️ DMCA Policy */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={() => router.push('/legal/dmca' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="DMCA Policy"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-              <ShieldAlert color="#EF4444" size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
-                {language === 'ku' ? 'مافی کۆپیکردن (DMCA)' : 'DMCA & Copyright'}
-              </Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
-                {language === 'ku' ? 'ڕاگەیەندراوی مافی فکری و کۆپیکردن' : 'Intellectual property & takedown notices'}
-              </Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
-
-          {/* ℹ️ About AniFlix */}
-          <Pressable 
-            style={[styles.menuCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
-            onPress={() => router.push('/legal/about' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="About AniFlix"
-          >
-            <View style={[styles.menuIconCircle, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-              <Info color="#A855F7" size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={[styles.menuTitle, { color: themeColors.text }]}>
-                {language === 'ku' ? 'دەربارەی ئەنیفلیکس' : 'About AniFlix'}
-              </Text>
-              <Text style={[styles.menuSub, { color: themeColors.textSecondary }]}>
-                {language === 'ku' ? 'وەشانی ئەپ، پشتیوانی و پەیوەندی' : 'Version 1.0.0, support & contacts'}
-              </Text>
-            </View>
-            <ChevronRight color={themeColors.textSecondary} size={20} />
-          </Pressable>
-
-          {/* Sign Out Button */}
-          <Pressable 
-            style={[styles.signOutBtn, { backgroundColor: themeColors.mode === 'light' ? 'rgba(220, 38, 38, 0.08)' : 'rgba(239, 68, 68, 0.1)', borderColor: themeColors.mode === 'light' ? 'rgba(220, 38, 38, 0.3)' : 'rgba(239, 68, 68, 0.3)' }]}
-            onPress={handleLogout}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out of account"
-          >
-            <LogOut color={themeColors.mode === 'light' ? '#DC2626' : '#EF4444'} size={18} />
-            <Text style={[styles.signOutText, { color: themeColors.mode === 'light' ? '#DC2626' : '#EF4444' }]}>{t('signOut', 'Sign Out')}</Text>
-          </Pressable>
-
+          <AppSurface variant="subtle" padding="sm" style={styles.menuGroup}>
+            <AppListRow
+              title={t('signOut', 'Sign Out')}
+              icon={<LogOut color={themeColors.error} size={18} />}
+              trailing={rtlDisclosure}
+              onPress={handleLogout}
+              accessibilityLabel="Sign out of account"
+              destructive
+            />
+          </AppSurface>
         </View>
 
       </View>
@@ -486,56 +398,40 @@ export default function ProfileScreen() {
           <View style={[styles.modalCard, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
             <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
               <Text style={[styles.modalTitleText, { color: themeColors.text }]}>Select Profile Avatar</Text>
-              <Pressable onPress={() => setShowAvatarModal(false)} style={[styles.modalCloseBtn, { backgroundColor: themeColors.backgroundElement }]}>
+              <Pressable
+                onPress={() => setShowAvatarModal(false)}
+                style={[styles.modalCloseBtn, { backgroundColor: themeColors.backgroundElement }]}
+                accessibilityRole="button"
+                accessibilityLabel="Close avatar picker"
+                hitSlop={6}
+              >
                 <X size={18} color={themeColors.text} />
               </Pressable>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 18 }}>
-              <Text style={[styles.modalSubTitle, { color: themeColors.textSecondary }]}>Choose an official Anime Avatar:</Text>
-              <View style={styles.presetGrid}>
-                {PRESET_AVATARS.map((av) => {
-                  const isSelected = profile?.avatar_url === av.url;
-                  return (
-                    <Pressable
-                      key={av.id}
-                      style={[
-                        styles.presetItem,
-                        { backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border },
-                        isSelected && { borderColor: primaryColor, borderWidth: 2 }
-                      ]}
-                      onPress={() => handleSelectAvatar(av.url)}
-                      disabled={isUpdatingAvatar}
-                    >
-                      <Image source={{ uri: av.url }} style={styles.presetImg} resizeMode="cover" />
-                      <Text style={[styles.presetNameText, { color: themeColors.text }]} numberOfLines={1}>{av.name}</Text>
-                      {isSelected && (
-                        <View style={[styles.selectedCheckBadge, { backgroundColor: primaryColor }]}>
-                          <Check size={12} color="#FFFFFF" />
-                        </View>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <Text style={[styles.modalSubTitle, { marginTop: 18, color: themeColors.textSecondary }]}>Or enter image URL:</Text>
+              <Text style={[styles.modalSubTitle, { color: themeColors.textSecondary }]}>
+                {language === 'ku' ? 'وێنەیەک بەکاربهێنە کە مافی بەکارهێنانیت هەیە.' : 'Use an image you own or have permission to use.'}
+              </Text>
               <View style={styles.customUrlRow}>
-                <TextInput
-                  style={[styles.customUrlInput, { color: themeColors.text, backgroundColor: themeColors.backgroundElement, borderColor: themeColors.border }]}
+                <AppTextField
+                  label={language === 'ku' ? 'بەستەری وێنەی پرۆفایل' : 'Profile image URL'}
                   placeholder="https://example.com/photo.jpg"
-                  placeholderTextColor={themeColors.textMuted}
                   value={customAvatarUrl}
                   onChangeText={setCustomAvatarUrl}
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  accessibilityLabel="Custom avatar image URL"
+                  containerStyle={styles.customUrlField}
                 />
-                <Pressable
-                  style={[styles.customSaveBtn, { backgroundColor: primaryColor }, (!customAvatarUrl.trim() || isUpdatingAvatar) && { opacity: 0.5 }]}
+                <AppButton
+                  label={t('save', 'Save')}
                   disabled={!customAvatarUrl.trim() || isUpdatingAvatar}
+                  loading={isUpdatingAvatar}
                   onPress={() => handleSelectAvatar(customAvatarUrl)}
-                >
-                  {isUpdatingAvatar ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.customSaveText}>Save</Text>}
-                </Pressable>
+                  accessibilityLabel="Save custom avatar"
+                  style={styles.customSaveButton}
+                />
               </View>
             </ScrollView>
           </View>
@@ -560,25 +456,23 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   profileWrapperDesktop: {
-    maxWidth: 680,
-    marginTop: 20,
+    maxWidth: 760,
+    marginTop: 24,
   },
 
   /* HERO PROFILE CARD */
   heroCard: {
     alignItems: 'center',
-    paddingVertical: 28,
-    paddingHorizontal: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 20,
-    borderWidth: 1,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+    marginHorizontal: 20,
+    marginTop: 18,
   },
   avatarGlow: {
-    padding: 4,
+    padding: 3,
     borderRadius: 54,
-    borderWidth: 2,
-    marginBottom: 12,
+    borderWidth: 1,
+    marginBottom: 14,
     position: 'relative',
   },
   avatar: {
@@ -607,8 +501,10 @@ const styles = StyleSheet.create({
     borderColor: '#000000',
   },
   userName: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
   userEmail: {
     fontSize: 13,
@@ -618,25 +514,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
+    marginTop: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
   },
   roleText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 
   /* LEVEL CARD */
   levelCard: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
+    marginHorizontal: 20,
+    marginTop: 8,
+    borderRadius: 18,
+    padding: 18,
   },
   levelCardHeader: {
     flexDirection: 'row',
@@ -648,19 +542,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   levelLabel: {
-    color: '#FFB800',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   levelTitle: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '600',
   },
   xpTrack: {
     height: 6,
@@ -681,70 +573,74 @@ const styles = StyleSheet.create({
   /* STATS GRID */
   statsGrid: {
     flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 16,
-    marginTop: 14,
+    gap: 8,
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  statsGridCompact: {
+    flexWrap: 'wrap',
   },
   statBox: {
     flex: 1,
-    paddingVertical: 14,
+    minHeight: 88,
+    paddingVertical: 16,
     borderRadius: 14,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+  },
+  statBoxCompact: {
+    flexGrow: 1,
+    flexBasis: '46%',
   },
   statNumber: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 16,
+    fontWeight: '700',
   },
   statLabel: {
-    fontSize: 10,
-    marginTop: 2,
-    fontWeight: '600',
+    fontSize: 11,
+    marginTop: 3,
+    fontWeight: '500',
   },
 
   /* BADGES BLOCK */
   badgesBlock: {
-    marginTop: 16,
+    marginTop: 24,
   },
   badgesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
   badgesTitle: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   viewAllText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   badgesScroll: {
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: 20,
+    gap: 8,
   },
   badgeChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   badgeChipLocked: {
     opacity: 0.45,
   },
-  badgeEmoji: {
-    fontSize: 18,
-  },
   badgeName: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   badgeStatus: {
     fontSize: 10,
@@ -753,22 +649,31 @@ const styles = StyleSheet.create({
 
   /* MENU CARDS */
   menuSection: {
-    paddingHorizontal: 16,
-    marginTop: 18,
-    gap: 10,
+    paddingHorizontal: 20,
+    marginTop: 24,
+    gap: Spacing.sm,
+  },
+  menuGroupLabel: {
+    ...Typography.overline,
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+  },
+  menuGroup: {
+    gap: Spacing.xs,
   },
   menuCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    minHeight: 62,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
     borderRadius: 14,
-    borderWidth: 1,
-    gap: 12,
+    gap: 13,
   },
   menuIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -777,26 +682,26 @@ const styles = StyleSheet.create({
   },
   menuTitle: {
     fontSize: 14,
-    fontWeight: '800',
-    marginBottom: 2,
+    fontWeight: '600',
+    marginBottom: 3,
   },
   menuSub: {
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: 16,
   },
   signOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 12,
+    minHeight: 48,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginTop: 10,
   },
   signOutText: {
-    color: '#EF4444',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
 
   /* MODAL */
@@ -875,8 +780,15 @@ const styles = StyleSheet.create({
   },
   customUrlRow: {
     flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
+    gap: Spacing.sm,
+    alignItems: 'flex-end',
+  },
+  customUrlField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  customSaveButton: {
+    minWidth: 84,
   },
   customUrlInput: {
     flex: 1,

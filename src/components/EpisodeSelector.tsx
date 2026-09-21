@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Pressable, ScrollView, Image } from 'react-native';
+import { StyleSheet, View, Text, Pressable, ScrollView } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
-import { Play, Sparkles, Tv, CheckCircle2 } from 'lucide-react-native';
+import { Play, Tv, CheckCircle2 } from 'lucide-react-native';
 import { PrimaryGradient } from '@/components/PrimaryGradient';
 
 export interface EpisodeItem {
@@ -63,6 +63,9 @@ export function EpisodeSelector({
                 borderColor: selectedSeason === 1 ? themeColors.primary : themeColors.border,
               },
             ]}
+            accessibilityRole="tab"
+            accessibilityLabel="Season 1"
+            accessibilityState={{ selected: selectedSeason === 1 }}
           >
             {selectedSeason === 1 && <PrimaryGradient borderRadius={12} />}
             <Text style={[styles.seasonText, { color: selectedSeason === 1 ? '#FFFFFF' : themeColors.textSecondary }]}>
@@ -88,10 +91,13 @@ export function EpisodeSelector({
               style={[
                 styles.episodeCard,
                 {
-                  backgroundColor: isPlaying ? 'rgba(3, 86, 197, 0.12)' : themeColors.backgroundElement,
+                  backgroundColor: isPlaying ? themeColors.primarySoft : themeColors.backgroundElement,
                   borderColor: isPlaying ? themeColors.primary : themeColors.border,
                 },
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={isPlaying ? `Episode ${ep.episode}, currently playing` : `Play episode ${ep.episode}`}
+              accessibilityState={{ selected: isPlaying }}
             >
               {/* Play / Active Icon Box */}
               <View style={[styles.epBadgeBox, { backgroundColor: isPlaying ? themeColors.primary : themeColors.backgroundCard }]}>
@@ -132,6 +138,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
   heading: {
@@ -155,6 +162,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   seasonPill: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -178,6 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     width: 140,
+    minHeight: 52,
   },
   epBadgeBox: {
     width: 30,

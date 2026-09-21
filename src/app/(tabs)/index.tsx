@@ -6,7 +6,6 @@ import {
   Text,
   FlatList,
   Pressable,
-  ActivityIndicator,
   RefreshControl,
   AccessibilityInfo,
   AppState,
@@ -34,6 +33,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsive } from '@/hooks/useResponsive';
 import { AdMobBanner } from '@/components/AdMobBanner';
 import { ErrorState } from '@/components/ErrorState';
+import { MediaCardSkeleton } from '@/components/MediaCardSkeleton';
+import { AppButton, AppSectionHeader } from '@/components/ui';
 import { Radius, Spacing, Typography } from '@/constants/theme';
 import { releaseWebFocus } from '@/lib/web-focus';
 
@@ -51,7 +52,7 @@ export const DEFAULT_CATALOG: AnimeItem[] = [];
 export default function HomeScreen() {
   const router = useRouter();
   const themeColors = useTheme();
-  const { t, language, isRTL } = useLanguage();
+  const { t, language } = useLanguage();
   const { profile } = useAuth();
   const insets = useSafeAreaInsets() || { top: 0, bottom: 0, left: 0, right: 0 };
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -225,7 +226,7 @@ export default function HomeScreen() {
           <View style={styles.heroEyebrow}>
             <View style={[styles.heroAccentDot, { backgroundColor: themeColors.primary }]} />
             <Text style={styles.heroEyebrowText}>
-              {item.category ? getCategoryLabel(item.category, item.category).toUpperCase() : 'FEATURED'}
+              {item.category ? getCategoryLabel(item.category, item.category).toUpperCase() : t('featured', 'FEATURED')}
             </Text>
             {item.genre ? (
               <>
@@ -236,7 +237,7 @@ export default function HomeScreen() {
             {item.episodes > 1 ? (
               <>
                 <Text style={styles.heroMetaText}>•</Text>
-                <Text style={styles.heroMetaText}>{item.episodes} EPS</Text>
+                <Text style={styles.heroMetaText}>{item.episodes} {t('ep', 'EPS')}</Text>
               </>
             ) : null}
           </View>
@@ -279,9 +280,10 @@ export default function HomeScreen() {
             </Pressable>
 
             <Pressable
-              style={[
+              style={({ pressed }) => [
                 styles.listBtn,
                 { backgroundColor: favorited ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.10)' },
+                pressed && { opacity: 0.78 },
               ]}
               onPress={() => toggleFavorite(item)}
               accessibilityRole="button"
@@ -326,7 +328,10 @@ export default function HomeScreen() {
       >
         <View style={{ position: 'relative', width: gridCardWidth, height: gridCardWidth * 1.45 }}>
           <Pressable
-            style={[styles.standardImageWrapper, { width: gridCardWidth, height: gridCardWidth * 1.45 }]}
+            style={({ pressed }) => [
+              styles.standardImageWrapper,
+              { width: gridCardWidth, height: gridCardWidth * 1.45, opacity: pressed ? 0.84 : 1 },
+            ]}
             onPress={() => handleWatch(item.id)}
             accessibilityRole="button"
             accessibilityLabel={`Open ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
@@ -342,7 +347,9 @@ export default function HomeScreen() {
             ) : (
               <View style={[styles.standardImage, styles.artworkPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
                 <Film color={themeColors.textMuted} size={28} />
-                <Text style={[styles.artworkPlaceholderText, { color: themeColors.textMuted }]}>No artwork</Text>
+                <Text style={[styles.artworkPlaceholderText, { color: themeColors.textMuted }]}>
+                  {language === 'ku' ? 'وێنە بەردەست نییە' : 'Artwork unavailable'}
+                </Text>
               </View>
             )}
             <View style={styles.cardImageOverlay} />
@@ -355,7 +362,10 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            style={[styles.cardHeartBtn, { backgroundColor: favorited ? themeColors.primary : 'rgba(7,9,13,0.66)' }]}
+            style={({ pressed }) => [
+              styles.cardHeartBtn,
+              { backgroundColor: favorited ? themeColors.primary : 'rgba(7,9,13,0.66)', opacity: pressed ? 0.72 : 1 },
+            ]}
             onPress={() => toggleFavorite(item)}
             hitSlop={7}
             accessibilityRole="button"
@@ -393,14 +403,32 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: themeColors.background }]}>
-        <ActivityIndicator size="large" color={themeColors.primary} />
+      <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+        <GlobalNavbar showBrandLogo={true} />
+        <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
+          <View style={[styles.loadingBody, { paddingHorizontal: pagePad }]}>
+            <MediaCardSkeleton width={heroWidth} height={heroHeight} style={styles.heroLoadingSkeleton} />
+            <AppSectionHeader
+              title={language === 'ku' ? 'کتێبخانەکەت بار دەکرێت' : 'Loading your catalog'}
+              subtitle={language === 'ku' ? 'بەرهەمەکان ئامادە دەکرێن' : 'Preparing titles for you'}
+            />
+            <View style={[styles.loadingGrid, { gap: gridGap }]}>
+              {Array.from({ length: Math.max(gridNumColumns * 2, 4) }).map((_, index) => (
+                <MediaCardSkeleton
+                  key={`home-skeleton-${index}`}
+                  width={gridCardWidth}
+                  height={gridCardWidth * 1.45}
+                />
+              ))}
+            </View>
+          </View>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: themeColors.background, direction: isRTL ? 'rtl' : 'ltr' }}>
+    <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       <GlobalNavbar showBrandLogo={true} />
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
         <FlatList
@@ -446,7 +474,7 @@ export default function HomeScreen() {
                   {featured.length > 1 && (
                     <>
                       <Pressable
-                        style={[styles.navArrow, styles.navArrowLeft]}
+                        style={({ pressed }) => [styles.navArrow, styles.navArrowLeft, pressed && { opacity: 0.7 }]}
                         onPress={prevHero}
                         accessibilityRole="button"
                         accessibilityLabel="Previous featured title"
@@ -454,7 +482,7 @@ export default function HomeScreen() {
                         <ChevronLeft color="#FFFFFF" size={22} />
                       </Pressable>
                       <Pressable
-                        style={[styles.navArrow, styles.navArrowRight]}
+                        style={({ pressed }) => [styles.navArrow, styles.navArrowRight, pressed && { opacity: 0.7 }]}
                         onPress={nextHero}
                         accessibilityRole="button"
                         accessibilityLabel="Next featured title"
@@ -491,15 +519,15 @@ export default function HomeScreen() {
               )}
 
               {!loadError && categoryFiltered.length > 0 && (
-                <View style={{ paddingHorizontal: pagePad, paddingTop: 28 }}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                      {activeCategory === 'All' ? 'All titles' : getCategoryLabel(activeCategory, activeCategory)}
-                    </Text>
-                    <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                      {categoryFiltered.length} Titles
-                    </Text>
-                  </View>
+                <View style={{ paddingHorizontal: pagePad, paddingTop: Spacing.xl, paddingBottom: Spacing.md }}>
+                  <AppSectionHeader
+                    title={activeCategory === 'All' ? t('allPublishedMedia', 'All titles') : getCategoryLabel(activeCategory, activeCategory)}
+                    action={
+                      <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+                        {language === 'ku' ? `${categoryFiltered.length} بەرهەم` : `${categoryFiltered.length} titles`}
+                      </Text>
+                    }
+                  />
                 </View>
               )}
             </>
@@ -511,7 +539,7 @@ export default function HomeScreen() {
               <View style={[styles.emptyBox, { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
                 <Film size={40} color={themeColors.primary} style={{ marginBottom: 10 }} />
                 <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
-                  {t('noMediaTitle', 'No Products Published Yet')}
+                  {language === 'ku' ? 'هێشتا هیچ بەرهەمێک بەردەست نییە' : 'No titles available yet'}
                 </Text>
                 <Text style={[styles.emptySub, { color: themeColors.textSecondary }]}>
                   {isAdmin
@@ -521,15 +549,11 @@ export default function HomeScreen() {
                       : 'There are no published titles available right now.'}
                 </Text>
                 {isAdmin && (
-                  <Pressable
-                    style={[styles.adminBtn, { backgroundColor: themeColors.primary }]}
+                  <AppButton
+                    label={language === 'ku' ? 'بەڕێوەبردنی کەتەلۆگ' : 'Open Admin Console'}
                     onPress={() => router.push('/admin' as any)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open Admin Console"
-                  >
-                    <Film size={15} color="#FFFFFF" />
-                    <Text style={styles.adminBtnText}>Admin Console</Text>
-                  </Pressable>
+                    leftIcon={<Film size={16} color={themeColors.buttonText} />}
+                  />
                 )}
               </View>
             )
@@ -788,7 +812,7 @@ const styles = StyleSheet.create({
     bottom: 10,
     alignSelf: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: 0,
     zIndex: 10,
   },
   dot: {
@@ -805,7 +829,21 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: -19,
+  },
+
+  loadingBody: {
+    flex: 1,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+    gap: Spacing.xl,
+  },
+  heroLoadingSkeleton: {
+    alignSelf: 'center',
+    borderRadius: Radius.xl,
+  },
+  loadingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
 
   /* RAILS & CARDS */

@@ -6,9 +6,9 @@ import {
   Text,
   FlatList,
   Pressable,
-  Image,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useFavorites, AnimeItem, MediaCategory } from '@/hooks/useFavorites';
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react-native';
 import { EmptyState } from '@/components/EmptyState';
 import { GlobalNavbar } from '@/components/GlobalNavbar';
+import { AppSectionHeader } from '@/components/ui';
 import { Radius, Spacing, Typography } from '@/constants/theme';
 import { releaseWebFocus } from '@/lib/web-focus';
 
@@ -33,11 +34,21 @@ const CATEGORIES: { id: 'All' | MediaCategory; label: string; icon: any }[] = [
 export default function FavoritesScreen() {
   const router = useRouter();
   const themeColors = useTheme();
-  const { language, isRTL } = useLanguage();
+  const { language, t } = useLanguage();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const { numCols, cardWidth, cardGap, pagePad, maxContentWidth } = useResponsive();
 
   const [activeCategory, setActiveCategory] = useState<'All' | MediaCategory>('All');
+
+  const getCategoryLabel = (id: string, fallback: string) => {
+    if (id === 'All') return t('catAll', fallback);
+    if (id === 'Movies') return t('catMovies', fallback);
+    if (id === 'Anime Movies') return t('catAnimeMovies', fallback);
+    if (id === 'K-Drama') return t('catKDrama', fallback);
+    if (id === 'Drama') return t('catDrama', fallback);
+    if (id === 'Anime Series') return t('catAnimeSeries', fallback);
+    return fallback;
+  };
 
   const filteredFavorites = activeCategory === 'All' 
     ? favorites 
@@ -50,6 +61,9 @@ export default function FavoritesScreen() {
 
   const renderStandardCard = ({ item }: { item: AnimeItem }) => {
     const favorited = isFavorite(item.id);
+    const cardImg = item?.image_url && String(item.image_url).trim().length > 0
+      ? String(item.image_url).trim()
+      : null;
 
     return (
       <View
@@ -57,41 +71,53 @@ export default function FavoritesScreen() {
       >
         <View style={{ position: 'relative', height: cardWidth * 1.45 }}>
           <Pressable
-            style={[styles.posterCard, { backgroundColor: themeColors.backgroundCard, height: cardWidth * 1.45 }]}
+            style={({ pressed }) => [
+              styles.posterCard,
+              { backgroundColor: themeColors.backgroundCard, height: cardWidth * 1.45, opacity: pressed ? 0.84 : 1 },
+            ]}
             onPress={() => handleWatch(item.id)}
             accessibilityRole="button"
             accessibilityLabel={`Open ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
           >
-            {item.image_url ? (
-              <Image source={{ uri: item.image_url }} style={styles.posterImage} resizeMode="cover" />
+            {cardImg ? (
+              <Image
+                source={cardImg}
+                style={styles.posterImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={120}
+              />
             ) : (
               <View style={[styles.posterImage, styles.posterPlaceholder, { backgroundColor: themeColors.backgroundElement }]}>
                 <Film color={themeColors.textMuted} size={28} />
-                <Text style={[styles.posterPlaceholderText, { color: themeColors.textMuted }]}>No artwork</Text>
+                <Text style={[styles.posterPlaceholderText, { color: themeColors.textMuted }]}>
+                  {language === 'ku' ? 'وێنە بەردەست نییە' : 'Artwork unavailable'}
+                </Text>
               </View>
             )}
             <View style={styles.cardImageOverlay} />
 
             {item.category && (
               <View style={styles.cardCategoryBadge}>
-                <Text style={styles.cardCategoryText}>{item.category.toUpperCase()}</Text>
+                <Text style={styles.cardCategoryText}>{getCategoryLabel(item.category, item.category).toUpperCase()}</Text>
               </View>
             )}
 
-            {(item.episodes > 1 || item.category) && (
+            {item.episodes > 1 && (
               <View style={styles.epBadge}>
                 <Text style={styles.epBadgeText}>
-                  {item.episodes > 1 ? `${item.episodes} EPS` : item.category}
+                  {item.episodes} {t('ep', 'EPS')}
                 </Text>
               </View>
             )}
           </Pressable>
 
           <Pressable
-            style={[
+            style={({ pressed }) => [
               styles.cardHeartBtn,
               {
                 backgroundColor: favorited ? themeColors.primary : 'rgba(7,9,13,0.66)',
+                opacity: pressed ? 0.72 : 1,
               },
             ]}
             onPress={() => toggleFavorite(item)}
@@ -109,7 +135,7 @@ export default function FavoritesScreen() {
         </View>
 
         <Pressable
-          style={styles.standardCardInfo}
+          style={({ pressed }) => [styles.standardCardInfo, pressed && { opacity: 0.72 }]}
           onPress={() => handleWatch(item.id)}
           accessibilityRole="button"
           accessibilityLabel={`Open details for ${language === 'ku' && item.title_ku ? item.title_ku : item.title}`}
@@ -119,7 +145,7 @@ export default function FavoritesScreen() {
           </Text>
           <View style={styles.cardMetaRow}>
             <Text style={[styles.cardMeta, { color: themeColors.textSecondary }]} numberOfLines={1}>
-              {item.genre ?? item.category ?? ''}
+              {item.genre ?? getCategoryLabel(item.category ?? '', item.category ?? '')}
             </Text>
           </View>
         </Pressable>
@@ -128,8 +154,8 @@ export default function FavoritesScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background, direction: isRTL ? 'rtl' : 'ltr' }]}>
-      <GlobalNavbar title="My Saved List" showBrandLogo={false} />
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <GlobalNavbar title={t('myFavoritesList', 'My Saved List')} showBrandLogo={false} />
 
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
         {favorites.length > 0 ? (
@@ -161,15 +187,16 @@ export default function FavoritesScreen() {
                       <Pressable
                         key={cat.id}
                         onPress={() => setActiveCategory(cat.id)}
-                        style={[
+                        style={({ pressed }) => [
                           styles.categoryChip,
                           {
                             backgroundColor: isActive ? themeColors.backgroundSelected : 'transparent',
                             borderColor: isActive ? themeColors.backgroundSelected : themeColors.border,
+                            opacity: pressed ? 0.72 : 1,
                           },
                         ]}
                         accessibilityRole="button"
-                        accessibilityLabel={`Filter saved titles by ${cat.label}`}
+                        accessibilityLabel={`${language === 'ku' ? 'پاڵاوتنی خەزنکراوەکان بە' : 'Filter saved titles by'} ${getCategoryLabel(cat.id, cat.label)}`}
                         accessibilityState={{ selected: isActive }}
                       >
                         <Icon size={13} color={isActive ? themeColors.primary : themeColors.textSecondary} />
@@ -182,40 +209,46 @@ export default function FavoritesScreen() {
                             },
                           ]}
                         >
-                          {cat.label} ({count})
+                          {getCategoryLabel(cat.id, cat.label)} ({count})
                         </Text>
                       </Pressable>
                     );
                   })}
                 </ScrollView>
 
-                {/* Section Header */}
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
-                    {activeCategory === 'All' ? 'Saved titles' : activeCategory}
-                  </Text>
-                  <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
-                    {filteredFavorites.length} titles
-                  </Text>
-                </View>
+                <AppSectionHeader
+                  style={styles.sectionHeader}
+                  title={activeCategory === 'All'
+                    ? (language === 'ku' ? 'بەرهەمە خەزنکراوەکان' : 'Saved titles')
+                    : getCategoryLabel(activeCategory, activeCategory)}
+                  action={
+                    <Text style={[styles.sectionCount, { color: themeColors.textSecondary }]}>
+                      {language === 'ku' ? `${filteredFavorites.length} بەرهەم` : `${filteredFavorites.length} titles`}
+                    </Text>
+                  }
+                />
               </View>
             }
             ListEmptyComponent={
-              <View style={[styles.emptyFilterBox, { backgroundColor: themeColors.backgroundElement }]}>
-                <Bookmark size={36} color={themeColors.textSecondary} style={{ marginBottom: 8 }} />
-                <Text style={[styles.emptyFilterTitle, { color: themeColors.text }]}>No Saved Titles in {activeCategory}</Text>
-                <Text style={[styles.emptyFilterSub, { color: themeColors.textSecondary }]}>
-                  Select another category filter above or add titles to your watchlist.
-                </Text>
-              </View>
+              <EmptyState
+                icon={Bookmark}
+                title={language === 'ku'
+                  ? `هیچ بەرهەمێکی خەزنکراو لە ${getCategoryLabel(activeCategory, activeCategory)} نییە`
+                  : `No saved titles in ${getCategoryLabel(activeCategory, activeCategory)}`}
+                description={language === 'ku'
+                  ? 'بەشێکی تر هەڵبژێرە یان بەرهەم بۆ لیستەکەت زیاد بکە.'
+                  : 'Choose another category or add more titles to your list.'}
+                actionLabel={language === 'ku' ? 'هەموو خەزنکراوەکان' : 'Show all saved titles'}
+                onAction={() => setActiveCategory('All')}
+              />
             }
           />
         ) : (
           <EmptyState
             icon={Bookmark}
-            title="Your Watchlist is Empty"
-            description="Tap the heart icon on any movie or series to save it to your personal watchlist."
-            actionLabel="Explore Catalog"
+            title={t('noFavoritesTitle', 'Your list is empty')}
+            description={t('noFavoritesSub', 'Save movies and series to find them here later.')}
+            actionLabel={t('browseMedia', 'Explore Catalog')}
             onAction={() => router.push('/(tabs)/search' as any)}
           />
         )}

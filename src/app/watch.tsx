@@ -28,6 +28,7 @@ import {
   Play,
   Pause,
   ArrowLeft,
+  ArrowRight,
   RotateCw,
   RotateCcw,
   Volume1,
@@ -74,7 +75,7 @@ export default function WatchScreen() {
   const themeColors = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getStatsForMedia } = useReviews();
-  const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet, pagePad } = useResponsive({ desktopRailWidth: 0 });
+  const { maxContentWidth, railCardWidth, railCardHeight, isDesktop, isTablet, isMobile, pagePad } = useResponsive({ desktopRailWidth: 0 });
   const { width: windowWidth } = useWindowDimensions();
   const defaultVideoHeight = Math.round((windowWidth * 9) / 16);
   const { language, isRTL, t } = useLanguage();
@@ -885,6 +886,7 @@ export default function WatchScreen() {
       {/* Backdrop Pressable to toggle controls when tapping empty video space */}
       <Pressable
         style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+        accessible={false}
         onPress={() => {
           setShowControls((prev) => !prev);
           setShowSpeedMenu(false);
@@ -943,6 +945,8 @@ export default function WatchScreen() {
             <Pressable
               style={styles.youtubeSkipBtn}
               onPress={handleSeekBackward10}
+              accessibilityRole="button"
+              accessibilityLabel="Rewind 10 seconds"
             >
               <View style={styles.skipBtnBox}>
                 <RotateCcw color="#FFFFFF" size={26} />
@@ -953,6 +957,8 @@ export default function WatchScreen() {
             <Pressable
               style={styles.youtubePlayBtn}
               onPress={handlePlayPause}
+              accessibilityRole="button"
+              accessibilityLabel={isPlaying ? 'Pause video' : 'Play video'}
             >
               <View style={styles.youtubePlayBtnBg}>
                 {isLoadingVideo ? (
@@ -968,6 +974,8 @@ export default function WatchScreen() {
             <Pressable
               style={styles.youtubeSkipBtn}
               onPress={handleSeekForward10}
+              accessibilityRole="button"
+              accessibilityLabel="Forward 10 seconds"
             >
               <View style={styles.skipBtnBox}>
                 <RotateCw color="#FFFFFF" size={26} />
@@ -991,6 +999,23 @@ export default function WatchScreen() {
                   }
                 }}
                 hitSlop={{ top: 16, bottom: 16, left: 10, right: 10 }}
+                accessible
+                accessibilityRole="adjustable"
+                accessibilityLabel="Playback position"
+                accessibilityValue={{
+                  min: 0,
+                  max: Math.max(0, Math.round(duration)),
+                  now: Math.max(0, Math.round(displayTime)),
+                  text: `${formatTime(displayTime)} of ${formatTime(duration)}`,
+                }}
+                accessibilityActions={[
+                  { name: 'decrement', label: 'Rewind 10 seconds' },
+                  { name: 'increment', label: 'Forward 10 seconds' },
+                ]}
+                onAccessibilityAction={({ nativeEvent }) => {
+                  if (nativeEvent.actionName === 'increment') handleSeekForward10();
+                  if (nativeEvent.actionName === 'decrement') handleSeekBackward10();
+                }}
                 {...scrubberPanResponder.panHandlers}
               >
                 <View
@@ -1038,30 +1063,44 @@ export default function WatchScreen() {
                   )}
                 </Pressable>
 
-                <View
-                  ref={volumeTrackRef}
-                  style={styles.volumeBarTrack}
-                  onLayout={(e) => {
-                    const w = e.nativeEvent.layout.width;
-                    if (w > 0) volumeTrackWidthRef.current = w;
-                  }}
-                  hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-                  {...volumePanResponder.panHandlers}
-                >
+                {!isMobile && (
                   <View
-                    style={[
-                      styles.volumeBarFill,
-                      { width: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
+                    ref={volumeTrackRef}
+                    style={styles.volumeBarTrack}
+                    onLayout={(e) => {
+                      const w = e.nativeEvent.layout.width;
+                      if (w > 0) volumeTrackWidthRef.current = w;
+                    }}
+                    hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                    accessible
+                    accessibilityRole="adjustable"
+                    accessibilityLabel="Volume"
+                    accessibilityValue={{ min: 0, max: 100, now: Math.round((isMuted ? 0 : volume) * 100), text: `${Math.round((isMuted ? 0 : volume) * 100)} percent` }}
+                    accessibilityActions={[
+                      { name: 'decrement', label: 'Decrease volume' },
+                      { name: 'increment', label: 'Increase volume' },
                     ]}
-                  />
-                  <View
-                    style={[
-                      styles.volumeBarThumb,
-                      isDraggingVolume && styles.volumeBarThumbActive,
-                      { left: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
-                    ]}
-                  />
-                </View>
+                    onAccessibilityAction={({ nativeEvent }) => {
+                      if (nativeEvent.actionName === 'increment') handleVolumeChange(Math.min(1, volume + 0.1));
+                      if (nativeEvent.actionName === 'decrement') handleVolumeChange(Math.max(0, volume - 0.1));
+                    }}
+                    {...volumePanResponder.panHandlers}
+                  >
+                    <View
+                      style={[
+                        styles.volumeBarFill,
+                        { width: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.volumeBarThumb,
+                        isDraggingVolume && styles.volumeBarThumbActive,
+                        { left: `${isMuted ? 0 : volume * 100}%`, pointerEvents: 'none' }
+                      ]}
+                    />
+                  </View>
+                )}
               </View>
 
               <View style={{ flex: 1 }} />
@@ -1071,6 +1110,8 @@ export default function WatchScreen() {
                 <Pressable
                   style={styles.nextEpPillBtn}
                   onPress={handleNextEpisode}
+                  accessibilityRole="button"
+                  accessibilityLabel="Play next episode"
                 >
                   <Text style={styles.nextEpPillText}>Next Ep</Text>
                   <SkipForward size={13} color="#FFFFFF" />
@@ -1081,6 +1122,8 @@ export default function WatchScreen() {
               <Pressable
                 style={styles.youtubeIconBtn}
                 onPress={() => setShowSettingsModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Open player settings"
               >
                 <Settings color="#FFFFFF" size={20} />
               </Pressable>
@@ -1089,6 +1132,8 @@ export default function WatchScreen() {
               <Pressable
                 style={styles.youtubeIconBtn}
                 onPress={handleFullscreen}
+                accessibilityRole="button"
+                accessibilityLabel={isLayoutFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
                 {isLayoutFullscreen ? <Minimize2 color="#FFFFFF" size={20} /> : <Maximize2 color="#FFFFFF" size={20} />}
               </Pressable>
@@ -1100,7 +1145,7 @@ export default function WatchScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background, direction: isRTL ? 'rtl' : 'ltr' }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
       {/* 🔙 Minimalist Navigation Header Bar (Hidden during Fullscreen) */}
       {!isLayoutFullscreen && (
@@ -1118,7 +1163,7 @@ export default function WatchScreen() {
             accessibilityRole="button"
             accessibilityLabel="Back"
           >
-            <ArrowLeft color={themeColors.text} size={20} />
+            {isRTL ? <ArrowRight color={themeColors.text} size={20} /> : <ArrowLeft color={themeColors.text} size={20} />}
           </Pressable>
 
           <Text style={[styles.headerTitle, { color: themeColors.text }]} numberOfLines={1}>
@@ -1259,6 +1304,8 @@ export default function WatchScreen() {
                     <Pressable
                       style={styles.vipUpsellStrip}
                       onPress={() => setShowVipModal(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Open VIP membership options"
                     >
                       <Text style={styles.vipUpsellText}>
                         VIP members watch everything free — Ad-Free
@@ -1313,7 +1360,7 @@ export default function WatchScreen() {
             {anime && (
               <View style={[
                 styles.mediaRichCard,
-                { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }
+                { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border, marginHorizontal: pagePad }
               ]}>
                 <View style={styles.mediaHeaderFlex}>
                   {/* Poster Artwork Image */}
@@ -1378,6 +1425,9 @@ export default function WatchScreen() {
                       favorited && { borderColor: themeColors.primary, backgroundColor: 'rgba(77, 124, 254, 0.15)' }
                     ]}
                     onPress={() => toggleFavorite(anime)}
+                    accessibilityRole="button"
+                    accessibilityLabel={favorited ? `Remove ${anime.title} from My List` : `Add ${anime.title} to My List`}
+                    accessibilityState={{ selected: favorited }}
                   >
                     <Heart
                       color={favorited ? themeColors.primary : themeColors.text}
@@ -1394,6 +1444,9 @@ export default function WatchScreen() {
                 <Pressable
                   style={[styles.synopsisWrapper, { backgroundColor: themeColors.backgroundElement }]}
                   onPress={() => setIsExpandedSynopsis(!isExpandedSynopsis)}
+                  accessibilityRole="button"
+                  accessibilityLabel={isExpandedSynopsis ? 'Collapse synopsis' : 'Expand synopsis'}
+                  accessibilityState={{ expanded: isExpandedSynopsis }}
                 >
                   <Text style={[styles.synopsisText, { color: themeColors.textSecondary }]} numberOfLines={isExpandedSynopsis ? undefined : 3}>
                     {language === 'ku' && anime.description_ku ? anime.description_ku : (anime.description || 'No description available.')}
@@ -1406,23 +1459,27 @@ export default function WatchScreen() {
             )}
 
             {/* 📡 Dynamic Multi-Source Server Selector Component */}
-            <SourceSelector
-              sources={currentEpSources}
-              activeSourceId={activeSourceId}
-              onSelectSource={handleSelectSource}
-            />
+            <View style={{ paddingHorizontal: pagePad }}>
+              <SourceSelector
+                sources={currentEpSources}
+                activeSourceId={activeSourceId}
+                onSelectSource={handleSelectSource}
+              />
+            </View>
 
             {/* 🍿 Enhanced Interactive Episode & Season Selector Component */}
-            <EpisodeSelector
-              totalEpisodes={anime?.episodes || 1}
-              selectedEpisode={selectedEpisode}
-              onSelectEpisode={(ep) => setSelectedEpisode(ep)}
-              category={anime?.category}
-            />
+            <View style={{ paddingHorizontal: pagePad }}>
+              <EpisodeSelector
+                totalEpisodes={anime?.episodes || 1}
+                selectedEpisode={selectedEpisode}
+                onSelectEpisode={(ep) => setSelectedEpisode(ep)}
+                category={anime?.category}
+              />
+            </View>
 
             {/* 🌟 RECOMMENDATIONS RAIL (Theme-aware Poster Cards) */}
             {recommendations.length > 0 && (
-              <View style={styles.sectionContainer}>
+              <View style={[styles.sectionContainer, { paddingHorizontal: pagePad }]}>
                 <View style={styles.sectionHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Layers color={themeColors.primary} size={18} />
@@ -1542,9 +1599,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1761,8 +1818,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(77, 124, 254, 0.28)',
     borderWidth: 1,
     borderColor: '#4D7CFE',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
     borderRadius: 8,
   },
   nextEpPillText: {
@@ -1885,8 +1943,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   youtubeIconBtn: {
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
   },
   youtubeSpeedText: {
     color: '#fff',
@@ -1918,6 +1979,7 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#4D7CFE',
     paddingHorizontal: 14,
+    minHeight: 44,
     paddingVertical: 8,
     borderRadius: 8,
     marginTop: 8,
@@ -2035,8 +2097,9 @@ const styles = StyleSheet.create({
     marginTop: 14,
     backgroundColor: 'rgba(156, 39, 176, 0.2)',
     borderWidth: 1, borderColor: 'rgba(156, 39, 176, 0.5)',
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 10, paddingHorizontal: 14, minHeight: 44,
     width: '100%',
+    justifyContent: 'center',
   },
   vipUpsellText: {
     color: '#CE93D8', fontSize: 11, fontWeight: '700',
@@ -2102,7 +2165,6 @@ const styles = StyleSheet.create({
 
   /* MEDIA RICH CARD */
   mediaRichCard: {
-    marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 16,
     padding: 16,
@@ -2205,6 +2267,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    minHeight: 44,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
@@ -2244,7 +2307,6 @@ const styles = StyleSheet.create({
   /* SECTIONS */
   sectionContainer: {
     marginTop: 18,
-    paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: 'row',

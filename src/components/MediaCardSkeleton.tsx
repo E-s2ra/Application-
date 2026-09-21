@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Animated, StyleSheet, Platform } from 'react-native';
+import { View, Animated, StyleSheet, Platform, AccessibilityInfo } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 import { Radius, Spacing } from '@/constants/theme';
 
@@ -12,8 +12,21 @@ type MediaCardSkeletonProps = {
 export function MediaCardSkeleton({ width = 140, height = 200, style }: MediaCardSkeletonProps) {
   const theme = useTheme();
   const [opacityAnim] = useState(() => new Animated.Value(0.4));
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      opacityAnim.stopAnimation();
+      opacityAnim.setValue(0.6);
+      return;
+    }
+
     const isNativeDriver = Platform.OS !== 'web';
     const pulse = Animated.loop(
       Animated.sequence([
@@ -31,7 +44,7 @@ export function MediaCardSkeleton({ width = 140, height = 200, style }: MediaCar
     );
     pulse.start();
     return () => pulse.stop();
-  }, [opacityAnim]);
+  }, [opacityAnim, reduceMotion]);
 
   return (
     <Animated.View
@@ -48,8 +61,8 @@ export function MediaCardSkeleton({ width = 140, height = 200, style }: MediaCar
       ]}
     >
       <View style={styles.contentPlaceholder}>
-        <View style={[styles.titlePlaceholder, { backgroundColor: theme.border }]} />
-        <View style={[styles.subPlaceholder, { backgroundColor: theme.border }]} />
+        <View style={[styles.titlePlaceholder, { backgroundColor: theme.backgroundSelected }]} />
+        <View style={[styles.subPlaceholder, { backgroundColor: theme.backgroundSelected }]} />
       </View>
     </Animated.View>
   );
