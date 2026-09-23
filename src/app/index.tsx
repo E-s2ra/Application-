@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Index() {
-  const { isLoading } = useAuth();
+  const { session, isLoading } = useAuth();
   const themeColors = useTheme();
 
   if (isLoading) {
@@ -15,5 +15,6 @@ export default function Index() {
     );
   }
 
-  return <Redirect href="/(tabs)" />;
+  const bypassAuth = __DEV__ && process.env.EXPO_PUBLIC_BYPASS_AUTH === 'true';
+  return <Redirect href={(session || bypassAuth) ? '/(tabs)' : '/(auth)/login'} />;
 }

@@ -22,8 +22,8 @@ export default function TabLayout() {
 
   // Dynamically compute tab bar dimensions from device safe area with comfortable mobile clearance
   const bottomInset = Math.max(insets.bottom, 0);
-  const tabBarPaddingBottom = Math.max(bottomInset + 4, Platform.OS === 'ios' ? 24 : 14);
-  const tabBarHeight = 52 + tabBarPaddingBottom;
+  const tabBarPaddingBottom = Platform.OS === 'web' ? 8 : Math.max(bottomInset + 4, Platform.OS === 'ios' ? 24 : 14);
+  const tabBarHeight = (Platform.OS === 'web' ? 58 : 52) + tabBarPaddingBottom;
 
   return (
     <SidebarContext.Provider value={{

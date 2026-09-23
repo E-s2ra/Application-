@@ -81,6 +81,7 @@ function RootNavigation({
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         <Stack.Screen name="verified" options={{ headerShown: false }} />
         <Stack.Screen name="legal" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
 
       </Stack>}
 

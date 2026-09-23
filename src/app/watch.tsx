@@ -2095,14 +2095,14 @@ const styles = StyleSheet.create({
   },
   vipUpsellStrip: {
     marginTop: 14,
-    backgroundColor: 'rgba(156, 39, 176, 0.2)',
-    borderWidth: 1, borderColor: 'rgba(156, 39, 176, 0.5)',
+    backgroundColor: 'rgba(255, 184, 0, 0.15)',
+    borderWidth: 1, borderColor: 'rgba(255, 184, 0, 0.45)',
     borderRadius: 10, paddingHorizontal: 14, minHeight: 44,
     width: '100%',
     justifyContent: 'center',
   },
   vipUpsellText: {
-    color: '#CE93D8', fontSize: 11, fontWeight: '700',
+    color: '#FFB800', fontSize: 11, fontWeight: '700',
     textAlign: 'center', lineHeight: 16,
   },
 

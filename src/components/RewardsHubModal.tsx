@@ -605,7 +605,7 @@ export function RewardsHubModal({ visible, onClose }: RewardsHubModalProps) {
                   <View style={[styles.wonRewardBanner, { borderColor: wonReward.color || '#FFB800' }]}>
                     <Sparkles size={18} color={wonReward.color || '#FFD700'} />
                     <Text style={[styles.wonRewardText, { color: wonReward.color || '#FFD700' }]}>
-                      🎉 {t('congratsWon', 'Congratulations! You won')} {wonReward.label}!
+                      {t('congratsWon', 'Congratulations! You won')} {wonReward.label}!
                     </Text>
                   </View>
                 )}
