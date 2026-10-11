@@ -1,0 +1,838 @@
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+
+/* DENG / a private collector's shelf. Everything lives under .deng-lib. */
+.app-page.deng-lib {
+  --lib-paper: #f6f4ee;
+  --lib-ink: #181a17;
+  --lib-soft-ink: #636860;
+  --lib-rule: #cfcfc4;
+  --lib-acid: #dcff73;
+  --lib-serif: 'Instrument Serif', Georgia, serif;
+  --lib-sans: 'Manrope', 'DM Sans', sans-serif;
+  container: deng-library / inline-size;
+  max-width: 1600px;
+  min-width: 0;
+  margin-inline: auto;
+  padding: 41px clamp(23px, 4.75vw, 87px) 120px;
+  color: var(--lib-ink);
+  background: var(--lib-paper);
+  overflow: clip;
+}
+
+.deng-lib *,
+.deng-lib *::before,
+.deng-lib *::after {
+  box-sizing: border-box;
+}
+
+.deng-lib button {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.deng-lib button:disabled {
+  cursor: not-allowed;
+  opacity: .44;
+}
+
+.deng-lib button:focus-visible {
+  outline: 2px solid #355b2d;
+  outline-offset: 5px;
+}
+
+.deng-lib__masthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 25px;
+  border-top: 2px solid var(--lib-ink);
+  border-bottom: 1px solid var(--lib-rule);
+  padding: 15px 0 16px;
+  color: #51564d;
+  font-size: 9px;
+  line-height: 1.5;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+.deng-lib__masthead > span:first-child { color: var(--lib-ink); }
+.deng-lib__masthead > span:first-child span { color: #a0a69a; margin: 0 11px; }
+.deng-lib__masthead > span:last-child span { font-size: 17px; vertical-align: -2px; margin-left: 6px; }
+
+/* The opening spread: typography to the left, a real book object to the right. */
+.deng-lib__opening {
+  display: grid;
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+  min-width: 0;
+  border-bottom: 1px solid var(--lib-rule);
+}
+
+.deng-lib__opening-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(60px, 6.2cqi, 104px) 30px 37px 0;
+}
+
+.deng-lib__chapter-label,
+.deng-lib__micro {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 9px;
+  font-weight: 760;
+  line-height: 1.4;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+}
+
+.deng-lib__chapter-label { color: #7b7e73; }
+.deng-lib__chapter-line { display: block; width: 28px; height: 1px; background: #20251b; }
+
+.deng-lib__opening-copy h1 {
+  margin: 44px 0 29px;
+  font-family: var(--lib-sans);
+  font-size: clamp(65px, 8.5cqi, 123px);
+  font-weight: 650;
+  letter-spacing: -.095em;
+  line-height: .89;
+}
+
+.deng-lib__opening-copy h1 em {
+  font-family: var(--lib-serif);
+  font-size: 1.1em;
+  font-weight: 400;
+  line-height: .9;
+  letter-spacing: -.053em;
+}
+
+.deng-lib__opening-copy h1 > span {
+  color: #a0aa83;
+}
+
+.deng-lib__opening-copy > p {
+  max-width: 345px;
+  margin: 14px 0 70px;
+  font-size: 13px;
+  line-height: 1.85;
+  color: #777c73;
+}
+
+.deng-lib__opening-colophon {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: auto;
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: .13em;
+  color: #777b70;
+}
+
+.deng-lib__opening-colophon > span:first-child { color: #1b221b; }
+.deng-lib__opening-colophon > span:nth-child(2) { color: #81946d; font-size: 17px; }
+
+.deng-lib__installation {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  min-height: 655px;
+  min-width: 0;
+  overflow: hidden;
+  background: #e3e4da;
+}
+
+.deng-lib__installation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 11%;
+  width: 1px;
+  background: rgb(22 29 23 / 13%);
+}
+
+.deng-lib__installation-index {
+  position: absolute;
+  z-index: -1;
+  right: -1%;
+  bottom: 48px;
+  color: #d1d5c7;
+  font: 400 clamp(265px, 42cqi, 660px)/.8 var(--lib-serif);
+  letter-spacing: -.15em;
+  user-select: none;
+  pointer-events: none;
+}
+
+.deng-lib__installation-caption {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 15px;
+  padding: 24px 29px;
+  color: #525c4d;
+  font-size: 9px;
+  line-height: 1.4;
+  font-weight: 780;
+  letter-spacing: .1em;
+}
+
+.deng-lib__installation-caption > :last-child {
+  color: #828c7b;
+  text-align: right;
+}
+
+.deng-lib__installation-books {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.deng-lib__primary-book {
+  position: absolute;
+  z-index: 4;
+  bottom: 59px;
+  left: 48%;
+  display: block;
+  width: clamp(197px, 23cqi, 322px);
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translateX(-50%) perspective(900px) rotateY(-12deg) rotate(-5deg);
+  transform-style: preserve-3d;
+  box-shadow: 11px 13px 0 #19231f, 18px 22px 0 #101b17, 30px 36px 47px rgb(20 32 20 / 24%);
+  transition: transform .5s cubic-bezier(.19,.83,.26,1), box-shadow .5s ease;
+}
+
+.deng-lib__primary-book:hover,
+.deng-lib__primary-book:focus-visible {
+  transform: translateX(-50%) translateY(-12px) perspective(900px) rotateY(-8deg) rotate(-3deg);
+  box-shadow: 11px 17px 0 #19231f, 19px 25px 0 #101b17, 35px 44px 55px rgb(20 32 20 / 27%);
+}
+
+.deng-lib__primary-book:focus-visible { outline-offset: 12px; }
+.deng-lib__primary-book img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.deng-lib__primary-book::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  inset: 0 auto 0 0;
+  width: 7%;
+  background: rgb(7 18 14 / 32%);
+  pointer-events: none;
+}
+
+.deng-lib__primary-book-spine {
+  position: absolute;
+  left: -14px;
+  top: 5px;
+  bottom: 0;
+  width: 16px;
+  background: #d1d0bb;
+  transform: skewY(-33deg);
+  transform-origin: right top;
+}
+
+.deng-lib__side-book {
+  position: absolute;
+  z-index: 1;
+  bottom: 71px;
+  width: clamp(125px, 15cqi, 206px);
+  aspect-ratio: 2 / 3;
+  pointer-events: none;
+  box-shadow: 11px 15px 20px rgb(24 32 22 / 17%);
+  filter: saturate(.8);
+}
+
+.deng-lib__side-book img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+.deng-lib__side-book--1 {
+  left: 10%;
+  transform: rotate(-18deg) translateY(26px);
+}
+
+.deng-lib__side-book--2 {
+  right: 7%;
+  z-index: 2;
+  transform: rotate(15deg) translateY(30px);
+}
+
+.deng-lib__installation-plinth {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  min-height: 46px;
+  border-top: 3px solid #1b241b;
+  background: #263028;
+  padding: 9px 27px;
+  color: #c8d0c2;
+  font-size: 8px;
+  font-weight: 740;
+  letter-spacing: .14em;
+}
+
+.deng-lib__installation-plinth > :last-child { color: #8f9e8f; text-align: right; }
+
+.deng-lib__empty-installation {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 350px;
+  margin: 0 35px;
+}
+
+.deng-lib__empty-outline {
+  width: clamp(190px, 24cqi, 275px);
+  aspect-ratio: 2 / 3;
+  border: 1px solid #9da997;
+  box-shadow: 13px 13px 0 transparent, 14px 14px 0 #b2b9a8, 27px 27px 0 transparent, 28px 28px 0 #c3cabd;
+  transform: rotate(-7deg);
+}
+
+.deng-lib__empty-imprint {
+  position: absolute;
+  bottom: 7%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #626b5c;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.6;
+  letter-spacing: .16em;
+}
+
+/* One slim playback bookmark, only displayed when an actual recent sample exists. */
+.deng-lib__listening {
+  margin-top: 86px;
+  border-top: 2px solid var(--lib-ink);
+  border-bottom: 1px solid var(--lib-rule);
+}
+
+.deng-lib__listening-rubric {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 17px 0;
+  border-bottom: 1px solid var(--lib-rule);
+  color: #747c6f;
+  font-size: 9px;
+  font-weight: 780;
+  letter-spacing: .17em;
+}
+
+.deng-lib__listening-rubric > :first-child { color: #191b16; }
+
+.deng-lib__listening-body {
+  display: grid;
+  grid-template-columns: 75px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(20px, 3.3vw, 53px);
+  padding: 21px 0 25px;
+}
+
+.deng-lib__listening-cover {
+  display: block;
+  width: 74px;
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: 0;
+  background: #d8dcd0;
+  box-shadow: 4px 6px 0 #bcc4b3;
+  transform: rotate(-2deg);
+  transition: transform .2s ease;
+}
+
+.deng-lib__listening-cover:hover { transform: rotate(0) translateY(-3px); }
+.deng-lib__listening-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.deng-lib__listening-story { min-width: 0; }
+.deng-lib__listening-story .deng-lib__micro { color: #7b8576; }
+
+.deng-lib__listening-story h2 {
+  margin: 11px 0 6px;
+  font-family: var(--lib-serif);
+  font-size: clamp(27px, 3.4cqi, 43px);
+  font-weight: 400;
+  line-height: 1.03;
+  letter-spacing: -.036em;
+}
+
+.deng-lib__listening-story p {
+  margin: 0;
+  color: #83877e;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.deng-lib__listening-track,
+.deng-lib__ledger-track {
+  display: block;
+  overflow: hidden;
+  height: 2px;
+  background: #d1d5c8;
+}
+
+.deng-lib__listening-track {
+  max-width: 330px;
+  margin-top: 15px;
+}
+
+.deng-lib__listening-track > span,
+.deng-lib__ledger-track > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #252d20;
+}
+
+.deng-lib__resume {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  min-height: 60px;
+  padding: 0 19px;
+  border: 1px solid #20241e;
+  background: var(--lib-acid);
+  color: var(--lib-ink);
+  font-size: 10px !important;
+  font-weight: 820 !important;
+  letter-spacing: .12em;
+  white-space: nowrap;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.deng-lib__resume:hover { background: #e9ffa7; transform: translateY(-2px); }
+.deng-lib__resume > svg:last-child { margin-left: 7px; }
+
+/* Catalogue typography and thin rules — no cards, no ornamental badges. */
+.deng-lib__catalogue { margin-top: 95px; }
+.deng-lib__catalogue-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+}
+
+.deng-lib__catalogue-heading .deng-lib__micro { color: #72786d; }
+
+.deng-lib__catalogue-heading h2 {
+  margin: 20px 0 35px;
+  font-family: var(--lib-sans);
+  font-size: clamp(40px, 5.4cqi, 76px);
+  line-height: 1.05;
+  font-weight: 630;
+  letter-spacing: -.086em;
+  text-wrap: balance;
+}
+
+.deng-lib__catalogue-heading h2 em {
+  font-family: var(--lib-serif);
+  font-size: 1.08em;
+  font-weight: 400;
+  letter-spacing: -.054em;
+}
+
+.deng-lib__catalogue-endnote {
+  padding-bottom: 43px;
+  color: #a1a69b;
+  text-align: right;
+  font-size: 9px;
+  line-height: 1.6;
+  font-weight: 760;
+  letter-spacing: .1em;
+}
+
+.deng-lib__tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 30px;
+  overflow-x: auto;
+  border-top: 1px solid #242b21;
+  border-bottom: 1px solid var(--lib-rule);
+  scrollbar-width: thin;
+}
+
+.deng-lib__tab {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 77px;
+  padding: 14px 0 11px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #979a90;
+  text-align: left;
+  font-size: 12px !important;
+  font-weight: 720 !important;
+  letter-spacing: .075em;
+  white-space: nowrap;
+  transition: color .2s ease, border-color .2s ease;
+}
+
+.deng-lib__tab:hover,
+.deng-lib__tab--active {
+  color: #1b2118;
+}
+
+.deng-lib__tab--active { border-bottom-color: #1b2118; }
+.deng-lib__tab-index { color: #a2ac98; font-size: 10px; }
+.deng-lib__tab--active .deng-lib__tab-index { color: #4b5c44; }
+.deng-lib__tab-count { font-family: var(--lib-serif); font-size: 25px; font-weight: 400; letter-spacing: -.04em; }
+
+.deng-lib__tab-panel:focus-visible { outline: 2px solid #4d6b36; outline-offset: 5px; }
+.deng-lib__tab-panel[hidden] { display: none; }
+
+.deng-lib__ledger {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deng-lib__ledger-item {
+  display: grid;
+  grid-template-columns: 36px 92px minmax(0, 1fr) minmax(237px, .46fr);
+  align-items: center;
+  gap: clamp(18px, 3cqi, 46px);
+  min-width: 0;
+  min-height: 170px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--lib-rule);
+  transition: background-color .2s ease;
+}
+
+.deng-lib__ledger-item:hover { background: #eeeee6; }
+
+.deng-lib__ledger-number {
+  align-self: start;
+  margin-top: 12px;
+  color: #969e90;
+  font-family: var(--lib-serif);
+  font-size: 24px;
+  font-style: italic;
+  letter-spacing: -.05em;
+}
+
+.deng-lib__ledger-cover {
+  display: block;
+  width: 90px;
+  aspect-ratio: 2 / 3;
+  border: 0;
+  padding: 0;
+  background: #e1dfd1;
+  box-shadow: 5px 7px 0 #cbd1c1, 11px 14px 15px #11181120;
+  transform: rotate(-3deg);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.deng-lib__ledger-cover:hover {
+  transform: rotate(0deg) translateY(-5px);
+  box-shadow: 4px 10px 0 #cbd1c1, 11px 20px 20px #11181122;
+}
+
+.deng-lib__ledger-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.deng-lib__ledger-copy { min-width: 0; }
+.deng-lib__ledger-kicker {
+  display: block;
+  color: #91988b;
+  font-size: 9px;
+  font-weight: 730;
+  letter-spacing: .1em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.deng-lib__ledger-kicker > span { margin: 0 7px; color: #afb4a8; }
+
+.deng-lib__ledger-title {
+  display: block;
+  max-width: 100%;
+  margin: 9px 0 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1d201a;
+  text-align: left;
+  font-family: var(--lib-serif) !important;
+  font-size: clamp(28px, 3.2cqi, 47px) !important;
+  font-weight: 400 !important;
+  line-height: 1.04;
+  letter-spacing: -.036em;
+}
+
+.deng-lib__ledger-title:hover { color: #4b6342; }
+.deng-lib__ledger-author { display: block; color: #788075; font-size: 12px; line-height: 1.5; }
+
+.deng-lib__ledger-position {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 295px;
+  margin-top: 13px;
+  color: #888f82;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.deng-lib__ledger-track { width: 85px; flex: 0 0 85px; }
+
+.deng-lib__ledger-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.deng-lib__ledger-open,
+.deng-lib__ledger-play,
+.deng-lib__ledger-save {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 44px;
+  border: 1px solid #c4c8ba;
+  background: transparent;
+  color: #303a2c;
+  font-size: 9px !important;
+  font-weight: 770 !important;
+  letter-spacing: .12em;
+  transition: background .22s ease, color .22s ease, border-color .22s ease;
+}
+
+.deng-lib__ledger-open { border: 0; padding: 0 10px; }
+.deng-lib__ledger-play { min-width: 89px; padding: 0 12px; }
+.deng-lib__ledger-save { width: 44px; padding: 0; flex: 0 0 44px; }
+.deng-lib__ledger-open svg { transition: transform .23s ease; }
+.deng-lib__ledger-open:hover svg { transform: translate(3px, -3px); }
+.deng-lib__ledger-play:not(:disabled):hover,
+.deng-lib__ledger-save:hover { background: #1d241b; border-color: #1d241b; color: var(--lib-acid); }
+.deng-lib__ledger-play:disabled { min-width: 120px; color: #92978d; }
+
+.deng-lib__empty {
+  display: grid;
+  grid-template-columns: minmax(150px, .32fr) 1fr;
+  align-items: center;
+  gap: clamp(24px, 5vw, 70px);
+  min-height: 395px;
+  padding: 50px 25px;
+  border-bottom: 1px solid var(--lib-rule);
+}
+
+.deng-lib__empty-mark {
+  display: block;
+  color: #d8dccf;
+  font-family: var(--lib-serif);
+  font-size: clamp(135px, 22cqi, 280px);
+  line-height: .95;
+  text-align: center;
+  user-select: none;
+}
+
+.deng-lib__empty-content { max-width: 590px; }
+.deng-lib__empty-content .deng-lib__micro { color: #92998c; }
+.deng-lib__empty-content h3 {
+  margin: 23px 0 13px;
+  font-family: var(--lib-sans);
+  font-size: clamp(34px, 4.4cqi, 57px);
+  font-weight: 600;
+  letter-spacing: -.075em;
+  line-height: 1.04;
+}
+
+.deng-lib__empty-content h3 em {
+  font-family: var(--lib-serif);
+  font-size: 1.1em;
+  font-weight: 400;
+}
+
+.deng-lib__empty-content p { margin: 0 0 24px; color: #777e73; font-size: 13px; line-height: 1.75; }
+
+.deng-lib__text-link,
+.deng-lib__closing button {
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid #232b23;
+  background: transparent;
+  color: #252b23;
+  font-size: 12px !important;
+  font-weight: 730 !important;
+  letter-spacing: .01em;
+}
+
+.deng-lib__text-link:hover,
+.deng-lib__closing button:hover { color: #658946; border-color: #658946; }
+
+.deng-lib__closing {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 25px;
+  margin-top: 100px;
+  padding: 23px 0 0;
+  border-top: 2px solid #1a221c;
+}
+
+.deng-lib__closing > div > span {
+  color: #8d9488;
+  font-size: 9px;
+  font-weight: 780;
+  letter-spacing: .16em;
+}
+
+.deng-lib__closing p {
+  margin: 15px 0 0;
+  font-family: var(--lib-serif);
+  font-size: clamp(23px, 3cqi, 38px);
+  line-height: 1.1;
+  letter-spacing: -.04em;
+}
+
+.deng-lib__closing button {
+  flex: 0 0 auto;
+  padding-bottom: 12px;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: .1em;
+  white-space: nowrap;
+}
+
+@container deng-library (max-width: 1080px) {
+  .deng-lib__opening-copy h1 { font-size: clamp(65px, 9cqi, 102px); }
+  .deng-lib__installation { min-height: 560px; }
+  .deng-lib__installation-caption { font-size: 8px; padding: 22px 20px; }
+  .deng-lib__primary-book { width: clamp(185px, 24cqi, 270px); bottom: 48px; }
+  .deng-lib__side-book { width: clamp(125px, 15cqi, 176px); bottom: 58px; }
+  .deng-lib__ledger-item { grid-template-columns: 27px 79px minmax(0, 1fr) minmax(190px, .43fr); gap: 19px; }
+  .deng-lib__ledger-cover { width: 77px; }
+  .deng-lib__ledger-open > span { display: none; }
+  .deng-lib__ledger-open { padding-inline: 5px; }
+  .deng-lib__ledger-play { min-width: 72px; padding-inline: 8px; }
+  .deng-lib__ledger-play:disabled { min-width: 72px; }
+  .deng-lib__ledger-play:disabled > span { display: none; }
+}
+
+@container deng-library (max-width: 775px) {
+  .deng-lib__opening { display: block; }
+  .deng-lib__opening-copy { padding: 54px 0 46px; }
+  .deng-lib__opening-copy h1 { font-size: clamp(74px, 13cqi, 122px); margin: 32px 0 26px; }
+  .deng-lib__opening-copy > p { max-width: 490px; margin-bottom: 33px; }
+  .deng-lib__installation { min-height: 545px; }
+  .deng-lib__primary-book { width: clamp(207px, 35cqi, 300px); bottom: 48px; }
+  .deng-lib__side-book { width: clamp(145px, 21cqi, 185px); }
+  .deng-lib__installation-index { font-size: 67cqi; }
+  .deng-lib__catalogue-heading h2 { font-size: clamp(43px, 7cqi, 63px); }
+  .deng-lib__listening-body { grid-template-columns: 68px minmax(0, 1fr) auto; gap: 17px; }
+  .deng-lib__listening-cover { width: 66px; }
+  .deng-lib__resume { padding-inline: 15px; gap: 9px; }
+  .deng-lib__ledger-item { grid-template-columns: 22px 76px minmax(0, 1fr); gap: 18px; }
+  .deng-lib__ledger-cover { width: 74px; }
+  .deng-lib__ledger-actions { grid-column: 3; justify-content: flex-start; margin-top: 11px; }
+  .deng-lib__ledger-item { grid-template-rows: auto auto; }
+  .deng-lib__ledger-number { grid-column: 1; grid-row: 1 / 3; }
+  .deng-lib__ledger-cover { grid-column: 2; grid-row: 1 / 3; }
+  .deng-lib__ledger-copy { grid-column: 3; grid-row: 1; }
+  .deng-lib__ledger-actions { grid-row: 2; }
+}
+
+@media (max-width: 690px) {
+  .app-page.deng-lib { padding: 31px 21px 90px; }
+}
+
+@container deng-library (max-width: 510px) {
+  .deng-lib__masthead { padding-block: 12px; font-size: 9px; letter-spacing: .09em; }
+  .deng-lib__masthead > :last-child { display: none; }
+  .deng-lib__opening-copy { padding: 45px 0 40px; }
+  .deng-lib__opening-copy h1 { font-size: clamp(67px, 16cqi, 89px); line-height: .9; margin: 31px 0 19px; }
+  .deng-lib__opening-copy > p { font-size: 12px; line-height: 1.7; max-width: 290px; margin: 11px 0 36px; }
+  .deng-lib__opening-colophon { font-size: 9px; letter-spacing: .06em; gap: 9px; }
+  .deng-lib__installation { min-height: 430px; }
+  .deng-lib__installation-caption { padding: 18px; font-size: 9px; letter-spacing: .05em; }
+  .deng-lib__installation-caption > :last-child { display: none; }
+  .deng-lib__primary-book { bottom: 46px; width: clamp(190px, 52cqi, 237px); }
+  .deng-lib__side-book { bottom: 64px; width: 118px; }
+  .deng-lib__side-book--1 { left: 3%; }
+  .deng-lib__side-book--2 { right: 2%; }
+  .deng-lib__installation-index { font-size: 75cqi; bottom: 40px; }
+  .deng-lib__installation-plinth { min-height: 42px; padding-inline: 17px; font-size: 9px; }
+  .deng-lib__installation-plinth > :last-child { display: none; }
+  .deng-lib__empty-installation { min-height: 300px; }
+  .deng-lib__empty-outline { width: 190px; }
+  .deng-lib__listening { margin-top: 68px; }
+  .deng-lib__listening-rubric { font-size: 9px; letter-spacing: .1em; }
+  .deng-lib__listening-rubric > :last-child { display: none; }
+  .deng-lib__listening-body { grid-template-columns: 63px minmax(0,1fr); padding-block: 21px; column-gap: 19px; row-gap: 20px; }
+  .deng-lib__listening-cover { width: 62px; }
+  .deng-lib__listening-story h2 { font-size: clamp(24px, 7cqi, 32px); }
+  .deng-lib__listening-story .deng-lib__micro { font-size: 9px; }
+  .deng-lib__resume { grid-column: 2; width: 100%; min-height: 50px; justify-content: center; font-size: 10px !important; }
+  .deng-lib__catalogue { margin-top: 66px; }
+  .deng-lib__catalogue-heading h2 { font-size: clamp(37px, 9.5cqi, 47px); margin: 17px 0 25px; }
+  .deng-lib__catalogue-endnote { display: none; }
+  .deng-lib__tabs { gap: 22px; }
+  .deng-lib__tab { min-height: 70px; gap: 7px; font-size: 10px !important; letter-spacing: .02em; }
+  .deng-lib__tab-index { font-size: 9px; }
+  .deng-lib__tab-count { font-size: 22px; }
+  .deng-lib__ledger-item { grid-template-columns: 19px 65px minmax(0,1fr); column-gap: 12px; row-gap: 0; min-height: 145px; padding-block: 19px; }
+  .deng-lib__ledger-number { font-size: 16px; }
+  .deng-lib__ledger-cover { width: 63px; }
+  .deng-lib__ledger-kicker { font-size: 9px; letter-spacing: .04em; }
+  .deng-lib__ledger-kicker > span { margin-inline: 2px; }
+  .deng-lib__ledger-title { font-size: clamp(24px, 6.8cqi, 31px) !important; margin: 6px 0 4px; }
+  .deng-lib__ledger-author { font-size: 10px; }
+  .deng-lib__ledger-actions { margin-top: 14px; justify-content: flex-start; gap: 5px; }
+  .deng-lib__ledger-open,.deng-lib__ledger-play,.deng-lib__ledger-save { height: 40px; }
+  .deng-lib__ledger-open { padding: 0 4px; }
+  .deng-lib__ledger-play { min-width: 74px; padding-inline: 8px; font-size: 9px !important; }
+  .deng-lib__ledger-save { width: 40px; flex-basis: 40px; }
+  .deng-lib__ledger-position { flex-direction: column; align-items: flex-start; gap: 7px; font-size: 9px; margin-top: 9px; }
+  .deng-lib__ledger-track { width: 90px; flex-basis: auto; }
+  .deng-lib__empty { grid-template-columns: 1fr; min-height: 345px; gap: 12px; padding: 35px 0; }
+  .deng-lib__empty-mark { display: none; }
+  .deng-lib__empty-content h3 { font-size: 40px; margin: 19px 0 12px; }
+  .deng-lib__closing { margin-top: 77px; align-items: flex-start; flex-direction: column; }
+  .deng-lib__closing p { font-size: 32px; }
+  .deng-lib__closing button { margin-top: 13px; }
+}
+
+@media (max-width: 390px) {
+  .app-page.deng-lib { padding-left: 17px; padding-right: 17px; }
+  .deng-lib__opening-copy h1 { font-size: 65px; }
+  .deng-lib__side-book--2 { right: -7%; }
+  .deng-lib__side-book--1 { left: -6%; }
+  .deng-lib__installation { min-height: 405px; }
+  .deng-lib__primary-book { width: 195px; }
+  .deng-lib__tab { font-size: 10px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deng-lib *,
+  .deng-lib *::before,
+  .deng-lib *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}

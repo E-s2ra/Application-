@@ -15,15 +15,16 @@ Open the local URL shown by Vite. The app is already designed for desktop, table
 
 ## Features
 
-- Editorial public landing page with interactive mood explorer, listening-room preview, custom art, and membership journey.
-- Curated discover page, featured title, listening recommendations, and genre browsing.
-- Catalog search, filtering by genre, and sorting.
+- Art-directed editorial landing page with an interactive audio-installation hero, physical book compositions, sound edition and literary catalog.
+- Curated discover page with cover-led featured edition, listening selections and a seven-subject printed directory.
+- Catalog search, filtering by genre, sorting, and two switchable layouts: **Gallery** (featured hero-sized first book) and **Index** (compact ledger).
 - 12 custom illustrated SVG classics covers; source files are in the public/covers/ directory.
 - Detailed book views, chapter listings, curated descriptions, saved books, and share links.
 - A real HTML audio player with resume, seek, playback speed, volume, persistent mini-player, full-screen player, and keyboard shortcuts.
 - Browser-persisted favorite books, recently played, preview progress, profile display name, and preferences.
 - Membership pricing design, account onboarding preview, demo interest form, and honest empty/error states.
-- Mobile bottom navigation, compact player, accessible focus states, and reduced-motion support.
+- A private collection page with original physical-book staging, numbered saved-book ledger, tabs for saved/recently played and resume controls.
+- Hugeicons throughout the app with a slim dark desktop navigation rail, mobile navigation, visible focus states and reduced-motion support.
 
 **Keyboard:** Cmd/Ctrl + K opens catalog search; Space toggles playback when focus is away from controls; Escape closes dialogs.
 
@@ -44,9 +45,11 @@ Marketing has a small number of decorative listening-room compositions, presente
 npm run typecheck
 npm run build
 npm run qa:visual
+npm run qa:layout
+npm run qa:functional
 ~~~
 
-Visual QA uses Playwright Chromium and takes screenshots for major desktop/mobile routes under qa/screens/. If necessary, first run npx playwright install chromium.
+Visual QA uses Playwright Chromium and takes screenshots for major desktop/mobile routes under qa/screens/. Layout QA checks every route at 1440, 1024, 768, 390 and 360 pixels. Functional QA tests catalog view switching, saved book persistence, searching, library tabs, player lifecycle, default playback speed and mobile navigation. If necessary, first run npx playwright install chromium.
 
 ## Deployment
 
@@ -56,4 +59,4 @@ This is the **frontend and design foundation**. Before real paid production laun
 
 ### Design decisions
 
-The system draws high-level inspiration from ElevenLabs' restrained audio-product interfaces and Shopify's editorial commerce presentation. Everything here is original branding and artwork, including the DENG identity. The overall palette is warm off-white, soft sage, deep pine ink, and sparing lime accents. Type uses DM Sans / Manrope / a literary serif.
+The system draws high-level inspiration from ElevenLabs' restrained audio-product interfaces and Shopify's editorial commerce presentation. The resulting direction is a Swiss editorial publication crossed with an independent literary record label: original DENG identity, warm bone paper, black ink, chartreuse used sparingly, precise hairline rules, asymmetric book installations, and the typographic contrast of Manrope with Instrument Serif. All twelve cover artworks are original.

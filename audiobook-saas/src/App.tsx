@@ -4,8 +4,10 @@ import {
   Clock3, Compass, Heart, Headphones, Library, ListMusic, LockKeyhole, Menu, Minus, MoreHorizontal,
   Pause, Play, Plus, Search, Settings2, Share2, ShieldCheck, SkipBack, SkipForward, SlidersHorizontal,
   Sparkles, Volume2, VolumeX, X,
-} from 'lucide-react'
+} from './icons'
 import Marketing from './Marketing'
+import LibraryEdition from './LibraryEdition'
+import { FeaturedStory, GenreIndex } from './EditorialFeatures'
 import { books, coverFor, genres, type Book, type Genre } from './books'
 
 type Route = 'landing' | 'discover' | 'explore' | 'library' | 'pricing' | 'settings' | 'book'
@@ -51,7 +53,7 @@ function duration(seconds: number) {
 function DMark({ compact = false }: { compact?: boolean }) {
   return <span className={'brand-lockup' + (compact ? ' compact' : '')} aria-label="DENG">
     <span className="brand-symbol" aria-hidden="true"><span /><span /><span /><span /></span>
-    {!compact && <span className="brand-word">deng<span className="brand-period">.</span></span>}
+    {!compact && <span className="brand-word">deng<span className="brand-period">®</span></span>}
   </span>
 }
 
@@ -71,15 +73,17 @@ function BookTile({ book, saved, onOpen, onSave, onPlay, variant = 'normal' }: T
       <button className="tile-cover-button" onClick={() => onOpen(book)} aria-label={'View ' + book.title}>
         <BookCover book={book} />
       </button>
+      <span className="tile-index" aria-hidden="true">{String(books.findIndex(b => b.id === book.id) + 1).padStart(2, '0')}</span>
       <div className="tile-actions">
         <button type="button" aria-label={saved ? 'Remove from library' : 'Save to library'} className={'tile-action save' + (saved ? ' is-saved' : '')} onClick={e => stop(e, () => onSave(book))}><Heart size={17} fill={saved ? 'currentColor' : 'none'} /></button>
-        <button type="button" aria-label={'Preview ' + book.title} className="tile-action play" onClick={e => stop(e, () => onPlay(book))}><Play size={17} fill="currentColor" /></button>
+        <button type="button" aria-label={book.sample ? 'Preview ' + book.title : 'Audio preview coming soon for ' + book.title} title={book.sample ? 'Play chapter preview' : 'Preview coming soon'} disabled={!book.sample} className="tile-action play" onClick={e => stop(e, () => onPlay(book))}><Play size={17} fill="currentColor" /></button>
       </div>
     </div>
     <div className="tile-meta">
+      <span className="tile-category">{book.genre} / DENG ARCHIVE</span>
       <button className="tile-title" onClick={() => onOpen(book)}>{book.title}</button>
       <span className="tile-author">{book.author}</span>
-      <span className="tile-info">{book.genre}<i />{book.duration}</span>
+      <span className="tile-info">AUDIO EDITION <i />{book.duration}</span>
     </div>
   </article>
 }
@@ -88,7 +92,7 @@ function BookRow({ book, progress, onOpen, onPlay }: { book: Book; progress: num
   return <article className="continue-card">
     <button className="continue-cover" onClick={() => onOpen(book)} aria-label={'Details for ' + book.title}><BookCover book={book} /></button>
     <div className="continue-text">
-      <div className="tiny-label">{progress ? 'CONTINUE YOUR PREVIEW' : 'A STORY TO START'}</div>
+      <div className="tiny-label">{progress ? 'LISTENING / IN PROGRESS' : 'A STORY TO START / PREVIEW'}</div>
       <button onClick={() => onOpen(book)} className="continue-title">{book.title}</button>
       <span className="continue-author">{book.author}</span>
       <div className="continue-progress"><span style={{ width: Math.round(progress * 100) + '%' }} /></div>
@@ -100,7 +104,7 @@ function BookRow({ book, progress, onOpen, onPlay }: { book: Book; progress: num
 
 function SectionHead({ eyebrow, title, link, onLink }: { eyebrow?: string; title: string; link?: string; onLink?: () => void }) {
   return <div className="section-heading">
-    <div>{eyebrow && <div className="eyebrow">{eyebrow}</div>}<h2>{title}</h2></div>
+    <div>{eyebrow && <div className="eyebrow section-kicker"><span className="section-kicker-bar" />{eyebrow}</div>}<h2>{title}<span className="section-head-stop">.</span></h2></div>
     {link && <button className="inline-link" onClick={onLink}>{link}<ArrowUpRight size={16} /></button>}
   </div>
 }
@@ -127,32 +131,23 @@ function Sidebar({ route, onNavigate, onSignIn, active, mobileOpen, closeMobile 
   return <>
     {mobileOpen && <button className="sidebar-scrim" aria-label="Close navigation" onClick={closeMobile} />}
     <aside className={'sidebar ' + (mobileOpen ? 'sidebar-visible' : '')} aria-label="Primary">
-      <div className="sidebar-brand"><button onClick={() => nav('/')} aria-label="DENG landing"><DMark /></button><IconButton label="Close menu" className="sidebar-close" onClick={closeMobile}><X size={19} /></IconButton></div>
+      <div className="sidebar-brand"><button onClick={() => nav('/')} aria-label="DENG landing" title="DENG / Home"><DMark compact /></button><IconButton label="Close menu" className="sidebar-close" onClick={closeMobile}><X size={19} /></IconButton></div>
       <div className="sidebar-scroll">
-        <span className="sidebar-label">LISTEN</span>
+        <span className="sidebar-label">01 /</span>
         <nav className="sidebar-nav" aria-label="Main navigation">
-          <button className={route === 'discover' ? 'selected' : ''} onClick={() => nav('/discover')}><Compass size={19}/><span>Discover</span>{route === 'discover' && <span className="nav-selected-dot" />}</button>
-          <button className={route === 'explore' ? 'selected' : ''} onClick={() => nav('/explore')}><Search size={19}/><span>Explore</span>{route === 'explore' && <span className="nav-selected-dot" />}</button>
-          <button className={route === 'library' ? 'selected' : ''} onClick={() => nav('/library')}><Library size={19}/><span>Your library</span>{route === 'library' && <span className="nav-selected-dot" />}</button>
+          <button aria-label="Discover" title="Discover" data-label="Discover" className={route === 'discover' ? 'selected' : ''} onClick={() => nav('/discover')}><Compass size={24}/><span>Discover</span></button>
+          <button aria-label="Explore books" title="Explore books" data-label="Explore books" className={route === 'explore' ? 'selected' : ''} onClick={() => nav('/explore')}><Search size={24}/><span>Explore</span></button>
+          <button aria-label="Your library" title="Your library" data-label="Your library" className={route === 'library' ? 'selected' : ''} onClick={() => nav('/library')}><Library size={24}/><span>Library</span></button>
         </nav>
         <div className="sidebar-divider" />
-        <span className="sidebar-label">YOUR SPACE</span>
-        <nav className="sidebar-nav secondary" aria-label="Personal collections">
-          <button onClick={() => nav('/library')}><Heart size={19}/><span>Saved books</span></button>
-          <button onClick={() => nav('/library')}><Clock3 size={19}/><span>Recently played</span></button>
+        <nav className="sidebar-nav secondary" aria-label="Additional navigation">
+          <button aria-label="Membership" title="Membership" data-label="Membership" className={route === 'pricing' ? 'selected' : ''} onClick={() => nav('/pricing')}><Sparkles size={24}/><span>Membership</span></button>
         </nav>
-        <div className="sidebar-bottom-panel">
-          <div className="sidebar-promo-art" aria-hidden="true"><span className="promo-record" /><span className="promo-star">✳</span></div>
-          <div className="promo-subtitle">A little more listening.</div>
-          <h3>Stories without limits.</h3>
-          <p>Find your next favorite world with DENG Plus.</p>
-          <button onClick={() => nav('/pricing')}>Discover Plus <ArrowUpRight size={15} /></button>
-        </div>
+        <div className="rail-motto" aria-hidden="true"><span>A PLACE FOR THE STORIES THAT STAY.</span><span className="rail-motto-index">EST. MMXXVI</span></div>
       </div>
       <div className="sidebar-user">
-        <button onClick={() => nav('/settings')} className="user-avatar" aria-label="Your account">D</button>
-        <button className="sidebar-user-details" onClick={() => nav('/settings')}><strong>My listening space</strong><span>Personal account</span></button>
-        <IconButton label="Settings" onClick={() => nav('/settings')}><Settings2 size={19}/></IconButton>
+        <button onClick={() => nav('/settings')} className="user-avatar" aria-label="Your account" title="Your account">D</button>
+        <button className="sidebar-user-details" onClick={() => nav('/settings')}><strong>Your account</strong><span>Listening settings</span></button>
       </div>
       {active && <div className="sidebar-active-line" />}
     </aside>
@@ -160,13 +155,14 @@ function Sidebar({ route, onNavigate, onSignIn, active, mobileOpen, closeMobile 
 }
 
 function Topbar({ route, onNavigate, onSignIn, onMenu }: { route: Route; onNavigate: (p: string) => void; onSignIn: () => void; onMenu: () => void }) {
-  const title: Record<Route, string> = { landing: '', discover: 'Discover', explore: 'Explore audiobooks', library: 'Your library', pricing: 'Membership', settings: 'Account & preferences', book: 'Audiobook' }
+  const title: Record<Route, string> = { landing: '', discover: 'The listening room', explore: 'The catalog', library: 'Your collection', pricing: 'Membership', settings: 'Your account', book: 'Book notes' }
+  const edition: Record<Route, string> = { landing: '01', discover: '01', explore: '02', library: '03', pricing: '04', settings: '05', book: '06' }
   return <div className="topbar">
-    <div className="topbar-leading"><IconButton label="Open menu" className="mobile-menu-trigger" onClick={onMenu}><Menu size={22}/></IconButton><span className="topbar-location">{title[route]}</span></div>
+    <div className="topbar-leading"><IconButton label="Open menu" className="mobile-menu-trigger" onClick={onMenu}><Menu size={22}/></IconButton><span className="topbar-number">{edition[route]} <span>/</span> DENG</span><span className="topbar-divider" /><span className="topbar-location">{title[route]}</span></div>
     <div className="topbar-actions">
-      <button className="top-search" onClick={() => onNavigate('/explore')}><Search size={17}/><span>Search titles, authors, genres...</span><kbd>⌘ K</kbd></button>
-      <button className="top-member-link" onClick={() => onNavigate('/pricing')}>Get Plus <ArrowUpRight size={15}/></button>
-      <IconButton label="Account preferences" onClick={onSignIn} className="top-avatar"><span>D</span></IconButton>
+      <button className="top-search" onClick={() => onNavigate('/explore')}><Search size={19}/><span>Find something worth hearing</span><kbd>⌘ K</kbd></button>
+      <button className="top-member-link" onClick={() => onNavigate('/pricing')}>MEMBERSHIP <ArrowUpRight size={17}/></button>
+      <IconButton label="Account preferences" onClick={() => onNavigate('/settings')} className="top-avatar"><Settings2 size={20}/></IconButton>
     </div>
   </div>
 }
@@ -179,40 +175,21 @@ function Discover({ onNavigate, onOpen, onPlay, onSave, saved, progress, recent 
   const picks = [books[1], books[2], books[3], books[4], books[6], books[9]]
   return <div className="app-page discover-page">
     <div className="page-intro">
-      <div className="eyebrow"><span className="eyebrow-dot" /> YOUR DAILY DOSE OF STORY</div>
-      <h1>A good day starts<br />with a <em>good story.</em></h1>
-      <p>Take a moment, press play, and go somewhere new.</p>
+      <div className="eyebrow"><span className="eyebrow-dot" /> DENG / THE LISTENING ROOM <span className="intro-edition">EDITION N°001 — 2026</span></div>
+      <h1>The listening<br /><em>room.</em></h1>
+      <p>Collected classics, considered voices, and room to hear the whole story.</p>
     </div>
-    <section className="spotlight-card" aria-label="Featured audiobook">
-      <div className="spotlight-copy">
-        <span className="spotlight-label"><span className="live-dot" /> THE DENG EDIT · 01 / 04</span>
-        <h2>Some stories<br />stay with you.</h2>
-        <p>Step into the extraordinary world of Jay Gatsby. A timeless story, beautifully told.</p>
-        <div className="spotlight-actions">
-          <button className="button button-lime" onClick={() => onPlay(books[0])}><Play size={16} fill="currentColor"/> Listen now</button>
-          <button className="spotlight-secondary" onClick={() => onOpen(books[0])}>Explore the book <ArrowUpRight size={16}/></button>
-        </div>
-      </div>
-      <div className="spotlight-visual" aria-hidden="true"><div className="spotlight-ring ring-one" /><div className="spotlight-ring ring-two" /><div className="spotlight-orbit">THE GREAT GATSBY · 1925 · F. SCOTT FITZGERALD ·</div><BookCover book={books[0]} /></div>
-      <span className="spotlight-corner">D / 001</span>
-    </section>
+    <FeaturedStory book={books[0]} onOpen={onOpen} onPlay={onPlay} />
     <section className="content-section">
-      <SectionHead eyebrow={recent.length ? 'PICK UP WHERE YOU LEFT OFF' : 'A GOOD PLACE TO BEGIN'} title={recent.length ? 'Keep the story going' : 'Your first listening picks'} link="Your library" onLink={() => onNavigate('/library')} />
+      <SectionHead eyebrow={recent.length ? 'IN YOUR LISTENING QUEUE' : 'CHAPTER PREVIEWS AVAILABLE'} title={recent.length ? 'Continue listening' : 'Press play'} link="Your collection" onLink={() => onNavigate('/library')} />
       <div className="continue-grid">{continuing.map(book => <BookRow book={book} key={book.id} progress={progress[book.id] ?? 0} onOpen={onOpen} onPlay={onPlay} />)}</div>
     </section>
     <section className="content-section">
-      <SectionHead eyebrow="HANDPICKED FOR YOU" title="The listening edit" link="Explore all books" onLink={() => onNavigate('/explore')} />
+      <SectionHead eyebrow="SELECTED WORKS · VOL. 001" title="On the shelf" link="All works" onLink={() => onNavigate('/explore')} />
       <div className="book-grid">{picks.map(book => <BookTile key={book.id} book={book} saved={saved.includes(book.id)} onOpen={onOpen} onPlay={onPlay} onSave={onSave} />)}</div>
     </section>
-    <section className="genre-feature">
-      <div className="genre-feature-text"><div className="eyebrow">THERE’S A WORLD FOR EVERY MOOD</div><h2>Where to<br/><em>next?</em></h2><p>From heart-racing adventures to slow Sunday classics, there’s something worth getting lost in.</p><button onClick={() => onNavigate('/explore')} className="button button-dark">Explore all genres <ArrowUpRight size={17}/></button></div>
-      <div className="genre-stack" aria-hidden="true"><BookCover book={books[8]}/><BookCover book={books[5]}/><BookCover book={books[7]}/></div>
-    </section>
-    <section className="content-section">
-      <SectionHead eyebrow="A LITTLE SOMETHING FOR EVERYONE" title="Explore by feeling" />
-      <div className="genre-chip-grid">{genres.slice(0, 6).map((genre, i) => <button key={genre} onClick={() => onNavigate('/explore?genre=' + encodeURIComponent(genre))} className={'genre-chip genre-chip-' + i}><span>{genre}</span><ArrowUpRight size={19}/></button>)}</div>
-    </section>
-    <div className="discover-footer"><span>Thoughtfully picked. Beautifully heard.</span><DMark compact /></div>
+    <GenreIndex onSelect={genre => onNavigate('/explore?genre=' + encodeURIComponent(genre))} />
+    <div className="discover-footer"><span>THE LISTENING NEVER REALLY ENDS.</span><span>DENG EDITIONS ® 2026</span></div>
   </div>
 }
 
@@ -221,6 +198,7 @@ function Explore({ onOpen, onSave, onPlay, saved, onNavigate }: { onOpen: (b: Bo
   const [query, setQuery] = useState(params.get('q') ?? '')
   const [genre, setGenre] = useState(params.get('genre') ?? 'All')
   const [sort, setSort] = useState('featured')
+  const [view, setView] = useState<'gallery' | 'index'>('gallery')
   useEffect(() => {
     const next = new URLSearchParams(getPath().split('?')[1] || '')
     setGenre(next.get('genre') ?? 'All')
@@ -235,29 +213,32 @@ function Explore({ onOpen, onSave, onPlay, saved, onNavigate }: { onOpen: (b: Bo
     return result
   }, [query, genre, sort])
   return <div className="app-page explore-page">
-    <div className="page-intro smaller"><div className="eyebrow"><span className="eyebrow-dot"/> THE CATALOG</div><h1>Find your next <em>listen.</em></h1><p>A little adventure is always just one play away.</p></div>
+    <div className="page-intro smaller"><div className="eyebrow"><span className="eyebrow-dot"/> DENG EDITIONS <span className="intro-edition">CATALOG / 001</span></div><h1>The <em>archive.</em></h1><p>Browse the full collection by work, author or subject.</p></div>
     <div className="explore-tools">
-      <div className="explore-input"><Search size={20}/><input id="catalog-search" autoComplete="off" type="search" placeholder="Search a title, author, or a feeling..." value={query} onChange={e => setQuery(e.target.value)}/>{query && <IconButton label="Clear search" onClick={() => setQuery('')}><X size={16}/></IconButton>}</div>
+      <div className="explore-input"><Search size={20}/><input id="catalog-search" aria-label="Search the audiobook catalog" autoComplete="off" type="search" placeholder="Search a title, author, or a feeling..." value={query} onChange={e => setQuery(e.target.value)}/>{query && <IconButton label="Clear search" onClick={() => setQuery('')}><X size={16}/></IconButton>}</div>
       <div className="filter-control"><SlidersHorizontal size={17}/><select aria-label="Sort audiobooks" value={sort} onChange={e => setSort(e.target.value)}><option value="featured">Featured</option><option value="longest">Longest first</option><option value="shortest">Shortest first</option><option value="az">Title A–Z</option></select><ChevronDown size={15}/></div>
     </div>
     <div className="genre-filters" role="group" aria-label="Filter by genre">{['All', ...genres].map(item => <button key={item} className={genre === item ? 'active' : ''} aria-pressed={genre === item} onClick={() => { setGenre(item); onNavigate('/explore' + (item === 'All' ? '' : '?genre=' + encodeURIComponent(item))) }}>{item}</button>)}</div>
-    <div className="catalog-count"><strong>{filtered.length}</strong> {filtered.length === 1 ? 'audiobook' : 'audiobooks'} to explore <span>CURATED COLLECTION · VOL. 01</span></div>
-    {filtered.length ? <div className="book-grid catalog-grid">{filtered.map(book => <BookTile key={book.id} book={book} saved={saved.includes(book.id)} onOpen={onOpen} onPlay={onPlay} onSave={onSave}/>)}</div> : <div className="empty-state"><Search size={30}/><h3>No stories found</h3><p>Try another title or widen your search.</p><button className="button button-dark" onClick={() => { setQuery(''); setGenre('All'); onNavigate('/explore') }}>Clear filters <ArrowRight size={16}/></button></div>}
-  </div>
-}
-
-function LibraryPage({ saved, recent, progress, onNavigate, onOpen, onPlay, onSave }: {
-  saved: string[]; recent: string[]; progress: Record<string, number>; onNavigate: (p: string) => void; onOpen: (b: Book) => void; onPlay: (b: Book) => void; onSave: (b: Book) => void
-}) {
-  const [tab, setTab] = useState<'saved' | 'recent'>('saved')
-  const items = (tab === 'saved' ? saved : recent).map(id => books.find(book => book.id === id)).filter((b): b is Book => Boolean(b))
-  const recentBooks = recent.map(id => books.find(book => book.id === id)).filter((b): b is Book => Boolean(b))
-  return <div className="app-page library-page">
-    <div className="page-intro smaller"><div className="eyebrow"><span className="eyebrow-dot"/> YOUR OWN CORNER</div><h1>Your listening <em>library.</em></h1><p>All your favorite worlds, waiting right where you left them.</p></div>
-    <div className="library-summary"><div><span>BOOKS ON YOUR SHELF</span><strong>{saved.length.toString().padStart(2, '0')}</strong></div><div><span>STORIES STARTED</span><strong>{recent.length.toString().padStart(2, '0')}</strong></div><div className="library-quote">“There is no friend as loyal as a book.”<small>— ERNEST HEMINGWAY</small></div></div>
-    {recentBooks.length > 0 && <section className="content-section"><SectionHead title="Keep listening"/><div className="continue-grid">{recentBooks.slice(0, 2).map(b => <BookRow key={b.id} book={b} progress={progress[b.id] ?? 0} onOpen={onOpen} onPlay={onPlay}/>)}</div></section>}
-    <div className="library-tabs" role="tablist" aria-label="Library selection"><button role="tab" aria-selected={tab === 'saved'} className={tab === 'saved' ? 'active' : ''} onClick={() => setTab('saved')}>Saved books <span>{saved.length}</span></button><button role="tab" aria-selected={tab === 'recent'} className={tab === 'recent' ? 'active' : ''} onClick={() => setTab('recent')}>Recently played <span>{recent.length}</span></button></div>
-    {items.length ? <div className="book-grid catalog-grid">{items.map(book => <BookTile key={book.id} book={book} saved={saved.includes(book.id)} onOpen={onOpen} onPlay={onPlay} onSave={onSave}/>)}</div> : <div className="empty-state library-empty"><div className="empty-art"><BookOpen size={37} strokeWidth={1.25}/></div><h3>{tab === 'saved' ? 'Your next favorite is out there.' : 'Every story starts with play.'}</h3><p>{tab === 'saved' ? 'Save the books that catch your eye and find them here whenever you like.' : 'Start listening to a book and it will appear in your recent listens.'}</p><button className="button button-dark" onClick={() => onNavigate('/explore')}>Explore audiobooks <ArrowUpRight size={16}/></button></div>}
+    <div className="catalog-toolbar">
+      <div className="catalog-count"><strong>{String(filtered.length).padStart(2, '0')}</strong> {filtered.length === 1 ? 'TITLE' : 'TITLES'} <span>THE DENG COLLECTION / 001</span></div>
+      <div className="catalog-views" role="group" aria-label="Catalog view">
+        <button className={view === 'gallery' ? 'is-active' : ''} aria-pressed={view === 'gallery'} onClick={() => setView('gallery')}><BookOpen size={18}/> Gallery</button>
+        <button className={view === 'index' ? 'is-active' : ''} aria-pressed={view === 'index'} onClick={() => setView('index')}><ListMusic size={18}/> Index</button>
+      </div>
+    </div>
+    {filtered.length ? view === 'gallery'
+      ? <div className="book-grid catalog-grid">{filtered.map((book, index) => <BookTile key={book.id} book={book} variant={index === 0 ? 'large' : 'normal'} saved={saved.includes(book.id)} onOpen={onOpen} onPlay={onPlay} onSave={onSave}/>)}</div>
+      : <div className="archive-index">
+          <div className="archive-index-head"><span>NO.</span><span>WORK / AUTHOR</span><span>SUBJECT</span><span>DURATION</span><span>LISTEN</span></div>
+          {filtered.map((book, index) => <article className="archive-index-entry" key={book.id}>
+            <span className="archive-index-no">{String(index + 1).padStart(2, '0')}</span>
+            <button className="archive-index-title" onClick={() => onOpen(book)}><BookCover book={book}/><span><strong>{book.title}</strong><small>{book.author}</small></span></button>
+            <span className="archive-index-genre">{book.genre}</span>
+            <span className="archive-index-duration">{book.duration}</span>
+            <div className="archive-index-actions"><button aria-label={saved.includes(book.id) ? 'Remove ' + book.title + ' from library' : 'Save ' + book.title + ' to library'} onClick={() => onSave(book)}><Heart size={20}/></button><button aria-label={'Preview ' + book.title} disabled={!book.sample} onClick={() => onPlay(book)}><Play size={19}/></button><button aria-label={'View ' + book.title} onClick={() => onOpen(book)}><ArrowUpRight size={19}/></button></div>
+          </article>)}
+        </div>
+      : <div className="empty-state"><Search size={30}/><h3>No titles found.</h3><p>Try a different author, title, or subject.</p><button className="button button-dark" onClick={() => { setQuery(''); setGenre('All'); onNavigate('/explore') }}>Clear filters <ArrowRight size={16}/></button></div>}
   </div>
 }
 
@@ -271,25 +252,25 @@ function Detail({ book, saved, progress, onSave, onPlay, onNavigate, showToast }
         <h1>{book.title}</h1>
         <div className="detail-author">By <strong>{book.author}</strong></div>
         <p className="detail-description">{book.description}</p>
-        <div className="detail-facts"><span><Headphones size={17}/>{book.duration}</span><span><Sparkles size={17}/>Curated classic</span><span><BookOpen size={17}/>{book.chapters.length} chapters</span></div>
-        <div className="detail-actions"><button className="button button-dark detail-listen" onClick={() => onPlay(book)}><Play size={17} fill="currentColor"/>{book.sample ? (progress ? 'Continue preview' : 'Listen to preview') : 'Try audio preview'}</button><button className={'button button-outline ' + (saved ? 'saved-detail' : '')} onClick={() => onSave(book)}><Heart size={17} fill={saved ? 'currentColor' : 'none'}/>{saved ? 'Saved to library' : 'Add to library'}</button><IconButton label="Share book" className="detail-share" onClick={() => { navigator.clipboard?.writeText(window.location.href).then(() => showToast('Book link copied to clipboard')).catch(() => showToast('Copy this page URL to share this book')) }}><Share2 size={19}/></IconButton></div>
-        <div className="detail-perk"><Check size={15}/> A selection from our public-domain classics collection</div>
+        <div className="detail-facts"><span><Headphones size={17}/>{book.duration}</span><span><Sparkles size={17}/>{book.sample ? 'Preview available' : 'Audio in preparation'}</span><span><BookOpen size={17}/>{book.chapters.length} listed chapters</span></div>
+        <div className="detail-actions"><button className="button button-dark detail-listen" disabled={!book.sample} onClick={() => onPlay(book)}><Play size={17} fill="currentColor"/>{book.sample ? (progress ? 'Continue preview' : 'Listen to preview') : 'Audio coming soon'}</button><button className={'button button-outline ' + (saved ? 'saved-detail' : '')} onClick={() => onSave(book)}><Heart size={17} fill={saved ? 'currentColor' : 'none'}/>{saved ? 'Saved to library' : 'Add to library'}</button><IconButton label="Share book" className="detail-share" onClick={() => { navigator.clipboard?.writeText(window.location.href).then(() => showToast('Book link copied to clipboard')).catch(() => showToast('Copy this page URL to share this book')) }}><Share2 size={19}/></IconButton></div>
+        <div className="detail-perk"><Check size={15}/> From the DENG classics collection. Full audio availability varies by title.</div>
       </div>
     </div>
     <div className="detail-below">
-      <div className="detail-about"><div className="eyebrow">BEHIND THE STORY</div><h2>The story behind<br/><em>the story.</em></h2><p>{book.editorial}</p><p>Beautiful stories deserve your full attention. Settle in, find your rhythm, and experience this timeless work in a new way.</p><div className="detail-chips">{book.tags.map(t => <span key={t}>{t}</span>)}<span>{book.genre}</span></div></div>
+      <div className="detail-about"><div className="eyebrow">ABOUT THE WORK</div><h2>An edition<br/><em>in sound.</em></h2><p>{book.editorial}</p><div className="book-colophon"><div><span>AUTHOR</span><strong>{book.author}</strong></div><div><span>ORIGINAL PUBLICATION</span><strong>{book.year < 0 ? 'c. ' + Math.abs(book.year) + ' BCE' : book.year}</strong></div><div><span>SUBJECT</span><strong>{book.genre}</strong></div></div><div className="detail-chips">{book.tags.filter(t => t.toLowerCase() !== book.genre.toLowerCase()).map(t => <span key={t}>{t}</span>)}</div></div>
       <div className="chapter-list"><div className="chapter-header"><div><div className="eyebrow">INSIDE THE AUDIOBOOK</div><h2>Chapters <small>({book.chapters.length})</small></h2></div><span>{book.duration} total</span></div>{book.chapters.map((chapter, i) => <button key={chapter} className="chapter-item" onClick={() => { if (i === 0) onPlay(book); else showToast('Additional chapter audio will be available when the full library launches.') }}><span className="chapter-number">{String(i + 1).padStart(2, '0')}</span><span className="chapter-name">{chapter}</span><span className="chapter-time">{i === 0 && book.sample ? 'Preview available' : 'Chapter ' + (i + 1)}</span><Play size={15}/></button>)}</div>
     </div>
-    <section className="detail-related"><SectionHead title="You might also love" link="Browse library" onLink={() => onNavigate('/explore')}/><div className="related-strip">{books.filter(b => b.id !== book.id && b.genre === book.genre).concat(books.filter(b => b.id !== book.id && b.genre !== book.genre)).slice(0, 4).map(b => <button key={b.id} className="related-item" onClick={() => onNavigate('/book/' + b.id)}><BookCover book={b}/><span>{b.title}</span></button>)}</div></section>
+    <section className="detail-related"><SectionHead eyebrow="CONTINUE THROUGH THE CATALOG" title="More from the archive" link="All works" onLink={() => onNavigate('/explore')}/><div className="related-strip">{books.filter(b => b.id !== book.id && b.genre === book.genre).concat(books.filter(b => b.id !== book.id && b.genre !== book.genre)).slice(0, 4).map(b => <button key={b.id} className="related-item" onClick={() => onNavigate('/book/' + b.id)}><BookCover book={b}/><span>{b.title}</span></button>)}</div></section>
   </div>
 }
 
 function Pricing({ onPlan }: { onPlan: (name: string) => void }) {
   return <div className="app-page pricing-page">
-    <div className="pricing-intro"><span className="eyebrow"><span className="eyebrow-dot"/> MADE FOR THE LOVE OF LISTENING</span><h1>A world of stories.<br/><em>One simple membership.</em></h1><p>Start with the classics, stay for everything that moves you. Beautiful listening should feel effortless.</p></div>
-    <div className="pricing-grid"><article className="plan-card"><div className="plan-number">01 / EXPLORE</div><h2>Free</h2><p>A lovely place to begin.</p><div className="price-amount">$0 <span>/ month</span></div><button onClick={() => onPlan('Free')} className="button button-outline">Continue with Free <ArrowRight size={16}/></button><div className="plan-divider"/><div className="plan-features"><span><Check size={16}/> Explore the curated catalog</span><span><Check size={16}/> Sample selected audiobooks</span><span><Check size={16}/> Save your favorite titles</span><span><Check size={16}/> Personal listening history</span></div></article><article className="plan-card featured-plan"><div className="plan-number">02 / LISTEN MORE <span>COMING SOON</span></div><h2>DENG Plus</h2><p>For the love of a really good story.</p><div className="price-amount">$4 <span>/ month · proposed</span></div><button onClick={() => onPlan('DENG Plus')} className="button button-lime">Join the early-access list <ArrowUpRight size={17}/></button><div className="plan-divider"/><div className="plan-features"><span><Check size={16}/> Everything in Free</span><span><Check size={16}/> Planned full audiobook access</span><span><Check size={16}/> Planned unlimited listening</span><span><Check size={16}/> Planned listening across devices</span><span><Check size={16}/> Planned new titles every month</span></div><div className="plan-mark">✳</div></article></div>
+    <div className="pricing-intro"><span className="eyebrow"><span className="eyebrow-dot"/> DENG / MEMBERSHIP</span><h1>Another chapter<br/><em>is coming.</em></h1><p>The preview library is free today. Full audio editions are being planned for DENG Plus.</p></div>
+    <div className="pricing-grid"><article className="plan-card"><div className="plan-number">01 / OPEN LIBRARY</div><h2>Free</h2><p>Explore the preview collection.</p><div className="price-amount">$0 <span>/ month</span></div><button onClick={() => onPlan('Free')} className="button button-outline">Explore for free <ArrowRight size={16}/></button><div className="plan-divider"/><div className="plan-features"><span><Check size={16}/> Browse the complete catalog</span><span><Check size={16}/> Play selected chapter previews</span><span><Check size={16}/> Collect books on your shelf</span><span><Check size={16}/> Keep listening history on this device</span></div></article><article className="plan-card featured-plan"><div className="plan-number">02 / FULL EDITIONS <span>IN DEVELOPMENT</span></div><h2>DENG Plus</h2><p>For longer listening sessions.</p><div className="price-amount">$4 <span>/ month · proposed</span></div><button onClick={() => onPlan('DENG Plus')} className="button button-lime">Preview early access <ArrowUpRight size={17}/></button><div className="plan-divider"/><div className="plan-features"><span><Check size={16}/> Everything in Free</span><span><Check size={16}/> Planned full audiobook access</span><span><Check size={16}/> Planned unlimited listening</span><span><Check size={16}/> Planned listening across devices</span><span><Check size={16}/> Planned new titles every month</span></div></article></div>
     <div className="pricing-footnote"><ShieldCheck size={19}/><span>Membership features and pricing are previews. No payments are collected in this demo.</span></div>
-    <div className="faq-block"><div className="eyebrow">GOOD TO KNOW</div><h2>A few things you<br/>might be <em>wondering.</em></h2><FAQ question="Can I listen for free?" answer="Yes. The free preview includes discovery, saved books, and playable samples from selected public-domain audiobook recordings."/ ><FAQ question="Is DENG Plus live?" answer="Not yet. The $4 per month figure is a proposed price. Join the early-access interest list for updates; checkout and billing are not active."/ ><FAQ question="Will my library be saved?" answer="Your saved titles and listening progress are stored in this browser for the demo. Account synchronization will require the production backend."/ ><FAQ question="Can I listen on my phone?" answer="Yes. This responsive web experience works on desktop and mobile browsers; the demo audio samples require an internet connection."/ ></div>
+    <div className="faq-block"><div className="eyebrow">THE FINE PRINT</div><h2>Before you<br/><em>begin.</em></h2><FAQ question="Can I listen for free?" answer="Yes. The free preview includes discovery, saved books, and playable samples from selected public-domain audiobook recordings."/ ><FAQ question="Is DENG Plus live?" answer="Not yet. The $4 per month figure is a proposed price. Checkout and billing are not active, and the early-access form is currently a design preview."/ ><FAQ question="Will my library be saved?" answer="Your saved titles and listening progress are stored in this browser for the demo. Account synchronization will require the production backend."/ ><FAQ question="Can I listen on my phone?" answer="Yes. This responsive web experience works on desktop and mobile browsers; the demo audio samples require an internet connection."/ ></div>
   </div>
 }
 
@@ -298,12 +279,11 @@ function FAQ({ question, answer }: { question: string; answer: string }) {
   return <div className={'faq-item ' + (open ? 'faq-open' : '')}><button aria-expanded={open} onClick={() => setOpen(o => !o)}>{question}<span>{open ? <Minus size={20}/> : <Plus size={20}/>}</span></button>{open && <p>{answer}</p>}</div>
 }
 
-function SettingsPage({ displayName, setDisplayName, onNavigate, showToast }: { displayName: string; setDisplayName: (name: string) => void; onNavigate: (p: string) => void; showToast: (s: string) => void }) {
+function SettingsPage({ displayName, setDisplayName, speed, setSpeed, onNavigate, showToast }: { displayName: string; setDisplayName: (name: string) => void; speed: number; setSpeed: (value: number) => void; onNavigate: (p: string) => void; showToast: (s: string) => void }) {
   const [name, setName] = useState(displayName)
-  const [emails, setEmails] = usePersisted('deng-email-pref', false)
-  return <div className="app-page settings-page"><div className="page-intro smaller"><div className="eyebrow"><span className="eyebrow-dot"/> MAKE YOURSELF AT HOME</div><h1>Your space, <em>your way.</em></h1><p>The little details that make listening feel like yours.</p></div>
+  return <div className="app-page settings-page"><div className="page-intro smaller"><div className="eyebrow"><span className="eyebrow-dot"/> DENG / YOUR ACCOUNT</div><h1>Listening <em>preferences.</em></h1><p>Profile and playback settings for this device.</p></div>
     <div className="settings-layout"><div className="settings-main"><section className="settings-card"><div className="settings-section-top"><h2>Profile</h2><p>What should we call you around here?</p></div><div className="settings-profile"><div className="settings-avatar">{(displayName[0] || 'D').toUpperCase()}</div><div><strong>{displayName || 'DENG listener'}</strong><span>Local demo profile</span></div></div><form onSubmit={e => { e.preventDefault(); setDisplayName(name.trim() || 'DENG listener'); showToast('Profile name saved to this browser') }}><label htmlFor="display-name">Display name</label><input id="display-name" value={name} maxLength={32} onChange={e => setName(e.target.value)}/><button className="button button-dark" type="submit">Save changes <Check size={16}/></button></form></section>
-    <section className="settings-card"><div className="settings-section-top"><h2>Listening preferences</h2><p>A quiet place to make things comfortable.</p></div><div className="settings-option"><div><strong>Product updates</strong><span>Opt in to local preferences for release updates.</span></div><button role="switch" aria-checked={emails} onClick={() => setEmails(!emails)} className={'switch ' + (emails ? 'on' : '')}><span/></button></div><div className="settings-option"><div><strong>Language</strong><span>More listening languages are planned.</span></div><span className="settings-value">English <ChevronDown size={15}/></span></div></section></div><aside className="settings-aside"><div className="account-plan"><div className="eyebrow">YOUR MEMBERSHIP</div><strong>Free listening</strong><p>A personal shelf, curated discoveries, and selected previews.</p><button onClick={() => onNavigate('/pricing')}>Explore membership <ArrowUpRight size={16}/></button></div><div className="privacy-note"><LockKeyhole size={19}/><p>This is a frontend demo. Profile preferences and your library are saved only in this browser. No account or payment information is sent to a server.</p></div></aside></div></div>
+    <section className="settings-card"><div className="settings-section-top"><h2>Playback</h2><p>Choose your default listening pace.</p></div><div className="settings-option"><div><strong>Playback speed</strong><span>Used for available audio previews.</span></div><select className="settings-speed" aria-label="Default playback speed" value={speed} onChange={e => setSpeed(Number(e.target.value))}>{[0.75,1,1.25,1.5,1.75,2].map(rate => <option key={rate} value={rate}>{rate.toFixed(rate % 1 === 0 ? 0 : 2).replace(/0$/, '')}×</option>)}</select></div><div className="settings-option"><div><strong>Audio language</strong><span>English previews in this collection.</span></div><span className="settings-value">English</span></div></section></div><aside className="settings-aside"><div className="account-plan"><div className="eyebrow">CURRENT ACCESS</div><strong>Free preview</strong><p>Explore the catalog, save books and listen to available first chapters.</p><button onClick={() => onNavigate('/pricing')}>Membership details <ArrowUpRight size={16}/></button></div><div className="privacy-note"><LockKeyhole size={19}/><p>Settings, saved books and playback history are stored only in this browser. The demo has no connected account service.</p></div></aside></div></div>
 }
 
 function Player({ book, playing, progress, durationSeconds, volume, speed, expanded, onToggle, onClose, onSeek, onVolume, onSpeed, onExpand, onNext, onPrev }: {
@@ -346,7 +326,7 @@ function App() {
   const [audioTime, setAudioTime] = useState(0)
   const [audioDuration, setAudioDuration] = useState(0)
   const [volume, setVolume] = useState(0.8)
-  const [speed, setSpeed] = useState(1)
+  const [speed, setSpeed] = usePersisted('deng-playback-rate-v1', 1)
   const [expanded, setExpanded] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [interest, setInterest] = useState<string | null>(null)
@@ -468,9 +448,9 @@ function App() {
       <div className="app-content"><Topbar route={route} onNavigate={navigate} onSignIn={() => setSignIn(true)} onMenu={() => setMobileOpen(true)}/><main id="main-content" tabIndex={-1} key={route === 'book' ? path : route}>
         {route === 'discover' && <Discover onNavigate={navigate} onOpen={openBook} onPlay={playBook} onSave={saveBook} saved={reading.saved} recent={reading.recent} progress={reading.progress}/>}
         {route === 'explore' && <Explore onNavigate={navigate} onOpen={openBook} onPlay={playBook} onSave={saveBook} saved={reading.saved}/>}
-        {route === 'library' && <LibraryPage onNavigate={navigate} onOpen={openBook} onPlay={playBook} onSave={saveBook} saved={reading.saved} recent={reading.recent} progress={reading.progress}/>}
+        {route === 'library' && <LibraryEdition onNavigate={navigate} onOpen={openBook} onPlay={playBook} onSave={saveBook} saved={reading.saved} recent={reading.recent} progress={reading.progress}/>}
         {route === 'pricing' && <Pricing onPlan={setInterest}/>}
-        {route === 'settings' && <SettingsPage displayName={displayName} setDisplayName={setDisplayName} onNavigate={navigate} showToast={notify}/>}
+        {route === 'settings' && <SettingsPage displayName={displayName} setDisplayName={setDisplayName} speed={speed} setSpeed={setSpeed} onNavigate={navigate} showToast={notify}/>}
         {route === 'book' && (() => { const book = books.find(b => b.id === path.slice('/book/'.length).split('?')[0]); return book ? <Detail book={book} saved={reading.saved.includes(book.id)} progress={reading.progress[book.id] ?? 0} onSave={saveBook} onPlay={playBook} onNavigate={navigate} showToast={notify}/> : <div className="empty-state"><h2>We couldn't find that story.</h2><button className="button button-dark" onClick={() => navigate('/explore')}>Back to the catalog</button></div> })()}
       </main></div>
       <div className="mobile-bottom-nav"><button className={route === 'discover' ? 'active' : ''} onClick={() => navigate('/discover')}><Compass size={21}/><span>Discover</span></button><button className={route === 'explore' ? 'active' : ''} onClick={() => navigate('/explore')}><Search size={21}/><span>Explore</span></button><button className={route === 'library' ? 'active' : ''} onClick={() => navigate('/library')}><Library size={21}/><span>Library</span></button><button className={route === 'settings' ? 'active' : ''} onClick={() => navigate('/settings')}><Settings2 size={21}/><span>Account</span></button></div>

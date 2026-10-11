@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-labelledby="title">
+ <title id="title">DENG</title>
+ <rect width="80" height="80" fill="#151813"/>
+ <rect x="18" y="32" width="8" height="16" fill="#dcff70"/>
+ <rect x="30" y="18" width="8" height="44" fill="#dcff70"/>
+ <rect x="42" y="25" width="8" height="30" fill="#dcff70"/>
+ <rect x="54" y="35" width="8" height="10" fill="#dcff70"/>
+</svg>
