@@ -382,6 +382,15 @@
 }
 .deng-booklight--opening .deng-booklight__backdrop,
 .deng-booklight--closing .deng-booklight__backdrop { opacity: 0; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); }
+/* After the reverse FLIP, retain the book at its source size while the R3F
+   canvas redraws the real book. Never let cancelled WAAPI fill frames flash a
+   full-screen backdrop over the handoff. */
+.deng-booklight--returning .deng-booklight__backdrop {
+  opacity: 0 !important;
+  -webkit-backdrop-filter: blur(0) !important;
+  backdrop-filter: blur(0) !important;
+  transition: none !important;
+}
 .deng-booklight__dialog {
   position: relative;
   display: flex;
@@ -526,11 +535,19 @@
   transition: opacity 410ms ease 130ms, transform 520ms cubic-bezier(.2,.75,.22,1) 90ms;
 }
 .deng-booklight--opening .deng-booklight__details,
-.deng-booklight--closing .deng-booklight__details {
+.deng-booklight--closing .deng-booklight__details,
+.deng-booklight--returning .deng-booklight__details {
   opacity: 0;
   transform: translateY(25px);
   transition-delay: 0ms;
   pointer-events: none;
+}
+.deng-booklight--returning .deng-booklight__details {
+  transition: none;
+}
+.deng-booklight--returning .deng-booklight__stage-shadow {
+  opacity: 0;
+  transition: none;
 }
 .deng-booklight__genre {
   color: #c1cbb6;

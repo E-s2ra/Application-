@@ -72,30 +72,36 @@ function BookLightbox({
   onSave,
   onPlay,
   onOpen,
-  onExit,
+  onReturnToShelf,
+  onCloseRequested,
 }: {
   selection: Selection
   saved: boolean
   onSave: (book: Book) => void
   onPlay: (book: Book) => void
   onOpen: (book: Book) => void
-  onExit: () => void
+  onReturnToShelf: () => void
+  onCloseRequested: (forcePark: () => void) => void
 }) {
   const { book, origin } = selection
-  const [phase, setPhase] = useState<'opening' | 'open' | 'closing'>('opening')
+  const [phase, setPhase] = useState<'opening' | 'open' | 'closing' | 'returning'>('opening')
   const overlayRef = useRef<HTMLDivElement>(null)
   const dialogRef = useRef<HTMLElement>(null)
   const coverRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
-  const phaseRef = useRef<'opening' | 'open' | 'closing'>('opening')
+  const phaseRef = useRef<'opening' | 'open' | 'closing' | 'returning'>('opening')
   const reducedMotion = useRef(false)
   const flightRef = useRef<Animation | null>(null)
   const backdropRef = useRef<HTMLDivElement>(null)
   const backdropAnimationRef = useRef<Animation | null>(null)
   const exitTimer = useRef<number | null>(null)
   const revealFrame = useRef<number | null>(null)
-  const onExitRef = useRef(onExit)
-  onExitRef.current = onExit
+  const sourceTransformRef = useRef('')
+  const returnedRef = useRef(false)
+  const onReturnRef = useRef(onReturnToShelf)
+  onReturnRef.current = onReturnToShelf
+  const onCloseRequestedRef = useRef(onCloseRequested)
+  onCloseRequestedRef.current = onCloseRequested
 
   const cancelFlight = useCallback(() => {
     flightRef.current?.cancel()
@@ -106,34 +112,49 @@ function BookLightbox({
     revealFrame.current = null
   }, [])
 
-  const finish = useCallback(() => {
+  const parkAtShelf = useCallback(() => {
+    if (returnedRef.current) return
+    returnedRef.current = true
     if (exitTimer.current !== null) window.clearTimeout(exitTimer.current)
     exitTimer.current = null
+    // WAAPI fill:'both' reverts to the element's full-sized CSS box on cancel().
+    // Persist the exact FIRST frame *before* cancellation so React's delayed
+    // scene update can never reveal a one-frame, full-sized hardcover.
+    if (coverRef.current) coverRef.current.style.transform = sourceTransformRef.current
+    if (backdropRef.current) backdropRef.current.style.opacity = '0'
     cancelFlight()
-    onExitRef.current()
+    phaseRef.current = 'returning'
+    setPhase('returning')
+    // Keep the small, opaque cover parked on its shelf until WebGL confirms it
+    // has drawn the source book. The parent alone owns the final unmount.
+    onReturnRef.current()
   }, [cancelFlight])
 
   const close = useCallback(() => {
-    if (phaseRef.current === 'closing') return
+    if (phaseRef.current === 'closing' || phaseRef.current === 'returning') return
     phaseRef.current = 'closing'
     setPhase('closing')
+    // Arm the parent's independent hard-stop at the FIRST close request,
+    // not after WAAPI / WebGL finishes. This remains active even when its
+    // normal finish event or animation frames are starved by a busy GPU.
+    onCloseRequestedRef.current(parkAtShelf)
     if (reducedMotion.current) {
-      finish()
+      parkAtShelf()
       return
     }
     const flight = flightRef.current
     if (flight) {
       // Reversing one compositor timeline preserves position and velocity,
       // including if the book is dismissed in the middle of opening.
-      flight.onfinish = finish
+      flight.onfinish = parkAtShelf
       flight.reverse()
       backdropAnimationRef.current?.reverse()
     } else {
-      finish()
+      parkAtShelf()
       return
     }
-    exitTimer.current = window.setTimeout(finish, FLIP_DURATION + 100)
-  }, [finish])
+    exitTimer.current = window.setTimeout(parkAtShelf, FLIP_DURATION + 100)
+  }, [parkAtShelf])
 
   useLayoutEffect(() => {
     const cover = coverRef.current
@@ -145,6 +166,7 @@ function BookLightbox({
     const scaleX = Math.max(.015, origin.width / rect.width)
     const scaleY = Math.max(.015, origin.height / rect.height)
     const sourceTransform = `translate3d(${dx}px, ${dy}px, 0) scale(${scaleX}, ${scaleY})`
+    sourceTransformRef.current = sourceTransform
     if (reducedMotion.current) {
       phaseRef.current = 'open'
       setPhase('open')
@@ -235,8 +257,9 @@ function BookLightbox({
       <div className="deng-booklight__backdrop deng-lib__book-dialog-backdrop" ref={backdropRef} onClick={close} aria-hidden="true" />
       <section
         className="deng-booklight__dialog"
-        role="dialog"
-        aria-modal="true"
+        role={phase === 'returning' ? undefined : 'dialog'}
+        aria-modal={phase === 'returning' ? undefined : true}
+        aria-hidden={phase === 'returning' ? true : undefined}
         aria-labelledby="deng-booklight-title"
         aria-describedby="deng-booklight-author"
         ref={dialogRef}
@@ -285,6 +308,12 @@ function BookLightbox({
 export default function LibraryEdition({ saved, recent, progress, onNavigate, onOpen, onPlay, onSave }: Props) {
   const [tab, setTab] = useState<Tab>('saved')
   const [modal, setModal] = useState<Selection | null>(null)
+  const [returningToShelf, setReturningToShelf] = useState(false)
+  const returningRef = useRef(false)
+  const exitQueuedRef = useRef(false)
+  const exitFramesRef = useRef<number[]>([])
+  const exitTimeoutRef = useRef<number | null>(null)
+  const closeTimeoutRef = useRef<number | null>(null)
   const roomRef = useRef<HTMLElement>(null)
   const triggerRef = useRef<HTMLElement | null>(null)
   const selectionSerial = useRef(0)
@@ -295,8 +324,25 @@ export default function LibraryEdition({ saved, recent, progress, onNavigate, on
   const recentlyPlayable = recentBooks.find(book => book.sample) ?? null
   const savedSet = new Set(saved)
 
+  const cancelExitWait = () => {
+    for (const frame of exitFramesRef.current) cancelAnimationFrame(frame)
+    exitFramesRef.current = []
+    if (exitTimeoutRef.current !== null) window.clearTimeout(exitTimeoutRef.current)
+    exitTimeoutRef.current = null
+    if (closeTimeoutRef.current !== null) window.clearTimeout(closeTimeoutRef.current)
+    closeTimeoutRef.current = null
+  }
+
+  useEffect(() => () => {
+    cancelExitWait()
+  }, [])
+
   const showBook = (book: Book, origin?: BookOrigin, trigger?: HTMLElement | null) => {
-    if (modal) return
+    if (modal || returningRef.current) return
+    cancelExitWait()
+    exitQueuedRef.current = false
+    returningRef.current = false
+    setReturningToShelf(false)
     triggerRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null)
     const room = roomRef.current?.getBoundingClientRect()
     const fallback: BookOrigin = room
@@ -306,12 +352,58 @@ export default function LibraryEdition({ saved, recent, progress, onNavigate, on
   }
 
   const exitBook = () => {
+    if (!returningRef.current) return
+    returningRef.current = false
+    exitQueuedRef.current = false
+    cancelExitWait()
     setModal(null)
+    setReturningToShelf(false)
     const previous = triggerRef.current
     requestAnimationFrame(() => {
       const target = previous?.isConnected ? previous : tabRefs.current[tab]
       target?.focus({ preventScroll: true })
     })
+  }
+
+  const scheduleReturn = () => {
+    if (!returningRef.current || exitQueuedRef.current) return
+    exitQueuedRef.current = true
+    // R3F acknowledges a drawn frame. Give the browser one more full paint
+    // opportunity before the 2D cover ceases to cover the 3D counterpart.
+    const first = requestAnimationFrame(() => {
+      const second = requestAnimationFrame(exitBook)
+      exitFramesRef.current.push(second)
+    })
+    exitFramesRef.current.push(first)
+  }
+
+  const returnToShelf = () => {
+    if (returningRef.current) return
+    if (closeTimeoutRef.current !== null) window.clearTimeout(closeTimeoutRef.current)
+    closeTimeoutRef.current = null
+    returningRef.current = true
+    setReturningToShelf(true)
+    // Independent hard stop: a scene ACK can queue the two paint rAFs while
+    // heavy WebGL work starves them indefinitely. The old fallback also called
+    // scheduleReturn(), which did nothing once exitQueuedRef was true.
+    // Crucially, call exitBook DIRECTLY regardless of ACK / rAF progress.
+    // The reverse FLIP has already parked the tiny cover before this timer
+    // begins, so cancelling the portal cannot flash a full-size hardcover.
+    exitTimeoutRef.current = window.setTimeout(exitBook, 1300)
+  }
+
+  const onCloseRequested = (forcePark: () => void) => {
+    if (closeTimeoutRef.current !== null || returningRef.current) return
+    // Independent of Web Animations finish events and R3F frame scheduling.
+    // It always parks the *small* cover before releasing the 3D volume.
+    closeTimeoutRef.current = window.setTimeout(() => {
+      closeTimeoutRef.current = null
+      forcePark()
+    }, 1200)
+  }
+
+  const onBookRestored = (bookId: string) => {
+    if (returningRef.current && modal?.book.id === bookId) scheduleReturn()
   }
 
   const changeTab = (next: Tab, focus = false) => {
@@ -341,7 +433,12 @@ export default function LibraryEdition({ saved, recent, progress, onNavigate, on
 
       <section className="deng-lib__room" aria-label="Your private 3D home library" ref={roomRef}>
         <Suspense fallback={<div className="deng-lib__room-canvas"><div className="deng-lib__room-loading" role="status">Opening the room…</div></div>}>
-          <LibraryRoom3D saved={savedBooks} selectedId={modal?.book.id ?? null} onSelect={(book, origin) => showBook(book, origin)} />
+          <LibraryRoom3D
+            saved={savedBooks}
+            selectedId={modal && !returningToShelf ? modal.book.id : null}
+            onSelect={(book, origin) => showBook(book, origin)}
+            onBookRestored={onBookRestored}
+          />
         </Suspense>
       </section>
 
@@ -407,7 +504,18 @@ export default function LibraryEdition({ saved, recent, progress, onNavigate, on
         </div>
       </section>
 
-      {modal && <BookLightbox key={modal.serial} selection={modal} saved={savedSet.has(modal.book.id)} onSave={onSave} onPlay={onPlay} onOpen={onOpen} onExit={exitBook} />}
+      {modal && (
+        <BookLightbox
+          key={modal.serial}
+          selection={modal}
+          saved={savedSet.has(modal.book.id)}
+          onSave={onSave}
+          onPlay={onPlay}
+          onOpen={onOpen}
+          onReturnToShelf={returnToShelf}
+          onCloseRequested={onCloseRequested}
+        />
+      )}
     </div>
   )
 }

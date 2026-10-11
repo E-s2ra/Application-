@@ -23,8 +23,8 @@ Open the local URL shown by Vite. Select **Explore** for the catalog or open **L
 - A real HTML audio player with resume, seek, playback speed, volume, persistent mini-player, full-screen player, and keyboard shortcuts.
 - Browser-persisted favorite books, recently played, preview progress, profile display name, and preferences.
 - Membership information clearly identifying DENG Plus as not yet available; no fake checkout or inactive email form.
-- **Front-facing 3D home library** with modeled oak shelves, wall, floor, window, chair, lamp and 3D books with real catalog cover textures, spines and visible page blocks. All twelve volumes correspond to unique catalog entries; there are no anonymous filler books.
-- Hovering gently raises/tilts books with demand-driven WebGL animation. Clicking a volume enlarges the real cover from its projected shelf position into a centered book preview using reversible FLIP movement and a blurred room backdrop; only books with recordings show Play.
+- **Front-facing 3D home library** with modeled beveled oak joinery, limewashed plaster, stone accents, an exterior landscape window, a linen chair, warm wall lighting, and 3D hardcovers with real catalog textures, spines and visible pages. Procedural grain, linen, mineral and outdoor textures are generated locally. All twelve volumes correspond to unique catalog entries; there are no anonymous filler books.
+- Hovering gently raises/tilts books with demand-driven WebGL animation. Clicking a volume enlarges its real cover from the shelf into a centered hardcover preview using reversible FLIP movement and a blurred room backdrop; only books with recordings show Play. On closing, the source cover remains parked at the shelf until Three.js confirms it has redrawn the restored volume, preventing a last-frame flash.
 - Saved/recently played book lists, continuation controls and a keyboard-accessible alternative to 3D selection.
 - Dynamically loaded Three.js room, limited camera orbit, touch-friendly mobile rendering, reduced pixel density on small screens, and a usable non-WebGL fallback.
 - Hugeicons throughout the app with a slim dark desktop navigation rail, mobile navigation, visible focus states and reduced-motion support.
@@ -51,9 +51,10 @@ npm run qa:visual
 npm run qa:layout
 npm run qa:functional
 npm run qa:library-motion
+npm run qa:library-seam
 ~~~
 
-Visual QA uses Playwright Chromium and takes screenshots for major desktop/mobile routes under qa/screens/. Layout QA checks every route at 1440, 1024, 768, 390 and 360 pixels. Functional QA tests the 3D room or accessible fallback, catalog view switching, saved book persistence, selecting books, searching, library tabs, player lifecycle, playback speed and mobile navigation. The motion audit checks the enlarged cover, center alignment, backdrop blur and Escape-to-close behavior at desktop and phone widths. If necessary, first run npx playwright install chromium. WebGL appearance depends on the browser's GPU/driver support.
+Visual QA uses Playwright Chromium and takes screenshots for major desktop/mobile routes under qa/screens/. Layout QA checks every route at 1440, 1024, 768, 390 and 360 pixels. Functional QA checks the 3D room and accessible fallback, saving, search, tabs and playback. The motion and closing-seam audits measure intermediate FLIP frames, repeated close cycles, page geometry restoration, reduced motion and WebGL-disabled operation. If necessary, first run npx playwright install chromium. WebGL appearance depends on the browser's GPU/driver support.
 
 ## Deployment
 
