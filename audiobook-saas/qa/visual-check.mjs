@@ -13,6 +13,7 @@ async function visit(page, pathname, name) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2)
   const heading = await page.locator('h1').first().textContent().catch(() => '')
   console.log(name + ' | heading=' + heading?.replace(/\s+/g, ' ').slice(0, 100) + ' | overflow=' + overflow)
+  if (!heading?.trim()) errors.push(name + ' missing heading')
   if (overflow) errors.push(name + ' horizontal overflow')
 }
 

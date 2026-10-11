@@ -35,27 +35,11 @@ export function FeaturedStory({ book, onOpen, onPlay }: FeaturedStoryProps) {
 
   return (
     <section className="deng-ed-feature" aria-labelledby={headingId}>
-      <div className="deng-ed-feature__folio">
-        <span className="deng-ed-feature__folio-left">
-          <span className="deng-ed-feature__monogram" aria-hidden="true">D<span>.</span></span>
-          <span>THE LISTENING EDIT</span>
-        </span>
-        <span className="deng-ed-feature__folio-right">A STORY IN FOCUS <span aria-hidden="true">↗</span></span>
-      </div>
-
       <div className="deng-ed-feature__main">
         <div className="deng-ed-feature__copy">
-          <div className="deng-ed-feature__overline">
-            <span className="deng-ed-feature__overline-rule" aria-hidden="true" />
-            FEATURED / 001
-          </div>
-
           <h2 id={headingId} className="deng-ed-feature__title">{book.title}</h2>
 
-          <div className="deng-ed-feature__author">
-            <span>WRITTEN BY</span>
-            <strong>{book.author}</strong>
-          </div>
+          <div className="deng-ed-feature__author"><strong>{book.author}</strong></div>
 
           <p className="deng-ed-feature__synopsis">{book.description}</p>
 
@@ -69,11 +53,10 @@ export function FeaturedStory({ book, onOpen, onPlay }: FeaturedStoryProps) {
               <span className="deng-ed-feature__listen-icon" aria-hidden="true">
                 <HugeiconsIcon icon={PlayIcon} size={20} strokeWidth={2.1} />
               </span>
-              <span>{hasSample ? 'Listen to a preview' : 'Preview coming soon'}</span>
-              <HugeiconsIcon icon={ArrowUpRight01Icon} size={17} strokeWidth={1.8} aria-hidden="true" />
+              <span>{hasSample ? 'Listen to preview' : 'Preview unavailable'}</span>
             </button>
             <button className="deng-ed-feature__details" type="button" onClick={() => onOpen(book)}>
-              Discover this book
+              Book details
               <HugeiconsIcon icon={ArrowRight01Icon} size={22} strokeWidth={1.7} aria-hidden="true" />
             </button>
           </div>
@@ -81,8 +64,6 @@ export function FeaturedStory({ book, onOpen, onPlay }: FeaturedStoryProps) {
 
         <div className="deng-ed-feature__stage">
           <div className="deng-ed-feature__accent" aria-hidden="true" />
-          <span className="deng-ed-feature__giant-number" aria-hidden="true">01</span>
-          <span className="deng-ed-feature__stage-top" aria-hidden="true">DENG — IN PRINT / IN SOUND</span>
           <div className="deng-ed-feature__book">
             <div className="deng-ed-feature__book-spine" aria-hidden="true" />
             <img
@@ -93,16 +74,9 @@ export function FeaturedStory({ book, onOpen, onPlay }: FeaturedStoryProps) {
               decoding="async"
             />
           </div>
-          <span className="deng-ed-feature__stage-bottom" aria-hidden="true">A WORLD BETWEEN TWO COVERS.</span>
-          <span className="deng-ed-feature__stage-side" aria-hidden="true">COVER STORY — DENG</span>
         </div>
       </div>
 
-      <div className="deng-ed-feature__colophon">
-        <span>01 <span className="deng-ed-feature__separator" aria-hidden="true">/</span> SELECTED LISTEN</span>
-        <span className="deng-ed-feature__colophon-center">{book.genre}</span>
-        <span>{book.duration} <span className="deng-ed-feature__separator" aria-hidden="true">/</span> AUDIOBOOK</span>
-      </div>
     </section>
   )
 }
