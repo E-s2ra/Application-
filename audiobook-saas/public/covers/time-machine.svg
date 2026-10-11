@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">The Time Machine — H. G. Wells</title><desc id="description">Teal science fiction chronograph with copper orbital rings and a spiralling time portal.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><radialGradient id="deep" cx=".5" cy=".55" r=".75"><stop stop-color="#1c6673"/><stop offset=".6" stop-color="#0b3647"/><stop offset="1" stop-color="#081e34"/></radialGradient><radialGradient id="portal"><stop stop-color="#ffca83"/><stop offset=".28" stop-color="#e27a60"/><stop offset=".57" stop-color="#297f91"/><stop offset="1" stop-color="#092739"/></radialGradient></defs>
+
+<rect width="600" height="900" fill="url(#deep)"/>
+<path d="M35 35H565V865H35Z" stroke="#b9866c" stroke-width="3" fill="none"/>
+<path d="M51 51H549V849H51Z" stroke="#5da4a8" stroke-width="1" fill="none"/>
+<g fill="#f2cda3" text-anchor="middle" font-family="Georgia,'Times New Roman',serif">
+<text x="300" y="132" font-size="83" letter-spacing="-4">THE TIME</text>
+<text x="300" y="228" font-size="89" letter-spacing="-5">MACHINE</text>
+</g>
+<circle cx="300" cy="533" r="218" fill="#081e2d" stroke="#e4a875" stroke-width="4"/>
+<circle cx="300" cy="533" r="205" fill="url(#portal)"/>
+<circle cx="300" cy="533" r="190" fill="none" stroke="#eac08e" stroke-width="2"/>
+<circle cx="300" cy="533" r="172" fill="none" stroke="#eac08e" stroke-width="9" stroke-dasharray="3 16"/>
+<circle cx="300" cy="533" r="146" fill="none" stroke="#132e41" stroke-width="11"/>
+<circle cx="300" cy="533" r="129" fill="none" stroke="#edb18c" stroke-width="3"/>
+<circle cx="300" cy="533" r="107" fill="none" stroke="#eec29a" opacity=".6" stroke-width="2"/>
+<circle cx="300" cy="533" r="81" fill="none" stroke="#edb18c" opacity=".8" stroke-width="4"/>
+<circle cx="300" cy="533" r="51" fill="none" stroke="#f2d3a1" stroke-width="4"/>
+<g stroke="#071f2f" stroke-width="3" opacity=".75">
+<path d="M300 327V738M95 533H505M152 385L448 681M152 681L448 385"/>
+</g>
+<g fill="#f5c591" font-family="Georgia,serif" font-size="26" text-anchor="middle">
+<text x="300" y="376">XII</text><text x="460" y="542">III</text><text x="300" y="706">VI</text><text x="139" y="542">IX</text>
+</g>
+<path d="M300 533L256 406L291 540Z" fill="#0d3440" stroke="#f4cd9e" stroke-width="3"/>
+<path d="M300 533L401 585L292 544Z" fill="#f3c48f"/>
+<circle cx="300" cy="533" r="18" fill="#f6d2a2" stroke="#123745" stroke-width="7"/>
+<path d="M68 762H532M68 778H532" stroke="#dfb488" stroke-width="2"/>
+<text x="300" y="824" text-anchor="middle" font-family="Georgia,serif" font-size="36" letter-spacing="6" fill="#f6d0a3">H. G. WELLS</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#f0c998">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>

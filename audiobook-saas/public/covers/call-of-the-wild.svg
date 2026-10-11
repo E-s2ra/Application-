@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">The Call of the Wild — Jack London</title><desc id="description">Cold midnight pine, moonlit alpine wilderness and a stylized howling wolf.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><linearGradient id="north" x2="0" y2="1"><stop stop-color="#092d44"/><stop offset=".5" stop-color="#1d5970"/><stop offset="1" stop-color="#061e30"/></linearGradient><linearGradient id="moon"><stop stop-color="#f5e9ce"/><stop offset="1" stop-color="#c5ddcf"/></linearGradient></defs>
+
+<rect width="600" height="900" fill="url(#north)"/>
+<path d="M27 27H573V873H27Z" stroke="#b2d4c6" stroke-width="2" fill="none"/>
+<path d="M45 45H555V855H45Z" stroke="#b2d4c6" opacity=".4" fill="none"/>
+<text x="300" y="128" text-anchor="middle" fill="#e6f1df" font-family="Georgia,'Times New Roman',serif" font-size="68" letter-spacing="-1">THE CALL</text>
+<text x="300" y="195" text-anchor="middle" fill="#e6f1df" font-family="Georgia,'Times New Roman',serif" font-size="48" letter-spacing="2">OF THE</text>
+<text x="300" y="294" text-anchor="middle" fill="#e6f1df" font-family="Georgia,'Times New Roman',serif" font-size="125" letter-spacing="-6">WILD</text>
+<circle cx="304" cy="499" r="163" fill="url(#moon)"/>
+<path d="M0 653L77 576L128 608L239 479L313 578L386 503L496 614L557 547L600 593V900H0Z" fill="#9fbcc0"/>
+<path d="M0 682L75 612L147 658L252 545L328 633L410 551L495 657L600 585V900H0Z" fill="#4f8994"/>
+<path d="M175 554L239 479L290 552L254 534L239 506L215 543Z" fill="#e8ebd9"/>
+<path d="M338 554L386 503L434 566L393 540L386 526L361 550Z" fill="#e8ebd9"/>
+<path d="M0 744L88 689L172 722L295 680L410 716L496 679L600 721V900H0Z" fill="#123c4b"/>
+<g fill="#0a2837">
+<path d="M85 783V581L40 665H73L26 724H70L10 783ZM143 783V632L106 686H128L87 741H127L82 783ZM514 790V585L467 660H499L449 725H497L437 790ZM572 796V642L532 705H556L519 753H553L512 796Z"/>
+</g>
+<path d="M0 809L103 775L180 812L263 765L332 796L408 758L480 800L600 764V900H0Z" fill="#071f2c"/>
+<g fill="#071e2c">
+<path d="M220 749L209 699L225 655L251 641L276 607L293 552L309 595L332 570L337 618L354 646L377 671L400 676L419 691L393 692L378 707L357 711L345 740L324 752L299 751L278 761L253 757Z"/>
+<path d="M275 631L304 618L332 634L321 659L293 672L274 658Z"/>
+<path d="M394 689L440 684L422 698L388 702Z"/>
+</g>
+<circle cx="323" cy="644" r="3" fill="#e8f0dc"/>
+<g fill="none" stroke="#a2c8c4" stroke-width="2" opacity=".6"><path d="M85 570L101 552M450 573L463 549M497 475L514 450"/></g>
+<text x="300" y="835" text-anchor="middle" fill="#e6f1df" font-family="Georgia,'Times New Roman',serif" font-size="34" letter-spacing="5">JACK LONDON</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#e6f1df">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>

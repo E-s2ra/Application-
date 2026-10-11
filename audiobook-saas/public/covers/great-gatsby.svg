@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">The Great Gatsby — F. Scott Fitzgerald</title><desc id="description">Midnight blue and brass Art Deco skyline beneath a radiant golden sun.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><linearGradient id="night" x2="0" y2="1"><stop stop-color="#071427"/><stop offset="1" stop-color="#132f43"/></linearGradient><radialGradient id="sun"><stop stop-color="#fae3a1"/><stop offset="1" stop-color="#bf8a3a"/></radialGradient><pattern id="windows" width="18" height="23" patternUnits="userSpaceOnUse"><rect x="7" y="7" width="3" height="9" fill="#dcaf55" opacity=".65"/></pattern></defs>
+
+<rect width="600" height="900" fill="url(#night)"/>
+<rect x="29" y="29" width="542" height="842" fill="none" stroke="#bc934d" stroke-width="2"/>
+<rect x="39" y="39" width="522" height="822" fill="none" stroke="#bc934d" opacity=".5"/>
+<g fill="none" stroke="#caa65d" stroke-width="2" opacity=".9">
+<path d="M80 102H520M80 111H520M85 336H515M85 345H515"/>
+<path d="M110 310L300 365L490 310M145 308L300 349L455 308"/>
+</g>
+<g fill="#d7b574"><path d="M300 49l5 13h14l-11 9 4 14-12-8-12 8 4-14-11-9h14z"/><circle cx="100" cy="69" r="3"/><circle cx="500" cy="69" r="3"/></g>
+<text x="300" y="145" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="44" letter-spacing="9" fill="#f6e2a9">THE GREAT</text>
+<text x="300" y="270" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="103" letter-spacing="-4" fill="#f1d58c">GATSBY</text>
+<circle cx="300" cy="568" r="180" fill="url(#sun)"/>
+<g stroke="#061b2c" stroke-width="5" opacity=".75"><path d="M300 395V740M120 570H480M170 442L430 698M170 698L430 442"/><circle cx="300" cy="568" r="156" fill="none"/><circle cx="300" cy="568" r="120" fill="none"/></g>
+<g fill="#071724">
+<path d="M0 735H40V641H83V703H109V614H141V700H158V552H180V526H201V696H217V588H241V545H265V695H280V494H295V467H305V494H320V695H339V526H365V703H382V620H421V697H442V588H468V708H496V641H529V718H559V667H600V900H0Z"/>
+<path d="M158 550l31-54 32 54M270 492l30-56 30 56M341 526l12-38 12 38"/>
+</g>
+<path d="M0 792H600M0 810H600" stroke="#b98d49" opacity=".65"/>
+<g fill="url(#windows)"><path d="M0 735H600V815H0Z"/><path d="M158 552H201V815H158ZM280 495H320V815H280ZM340 527H365V815H340Z"/></g>
+<text x="300" y="843" text-anchor="middle" fill="#e7c882" font-family="Georgia,'Times New Roman',serif" font-size="27" letter-spacing="3">F. SCOTT FITZGERALD</text>
+<text x="300" y="83" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" fill="#f1d58c" letter-spacing="5">DENG CLASSICS</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#d7b574">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>

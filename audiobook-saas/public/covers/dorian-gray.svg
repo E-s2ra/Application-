@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">The Picture of Dorian Gray — Oscar Wilde</title><desc id="description">Emerald Victorian portrait mirror with gilt details and a fractured reflection.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><linearGradient id="green" x2="1" y2="1"><stop stop-color="#092d2e"/><stop offset=".55" stop-color="#12423a"/><stop offset="1" stop-color="#062123"/></linearGradient><linearGradient id="glass" x2="1" y2="0"><stop stop-color="#a7c29e"/><stop offset=".49" stop-color="#4c7e73"/><stop offset=".50" stop-color="#203f3e"/><stop offset="1" stop-color="#102b2f"/></linearGradient></defs>
+
+<rect width="600" height="900" fill="url(#green)"/>
+<rect x="28" y="28" width="544" height="844" fill="none" stroke="#c49a4d" stroke-width="2"/>
+<rect x="42" y="42" width="516" height="816" fill="none" stroke="#c49a4d" opacity=".6"/>
+<text x="300" y="115" text-anchor="middle" font-size="23" font-family="Georgia,serif" letter-spacing="5" fill="#dec583">THE PICTURE OF</text>
+<text x="300" y="192" text-anchor="middle" font-size="71" letter-spacing="1" font-family="Georgia,'Times New Roman',serif" fill="#f5dfaa">DORIAN</text>
+<text x="300" y="264" text-anchor="middle" font-size="79" letter-spacing="1" font-family="Georgia,'Times New Roman',serif" fill="#f5dfaa">GRAY</text>
+<path d="M300 293C193 293 130 384 130 502V716H470V502C470 384 407 293 300 293Z" fill="#bb914f" stroke="#e1bd71" stroke-width="7"/>
+<path d="M300 308C200 308 147 397 147 505V699H453V505C453 397 400 308 300 308Z" fill="url(#glass)" stroke="#19372e" stroke-width="6"/>
+<path d="M300 325V695" stroke="#f0d49d" stroke-width="3" opacity=".7"/>
+<g fill="#193d39"><path d="M184 694L201 619Q218 602 245 601L250 560Q233 545 231 511Q216 496 218 480Q214 448 240 423Q264 398 286 416Q310 436 303 469L292 525Q284 550 274 560L278 611Q305 626 311 694Z"/></g>
+<path d="M250 426Q252 395 277 409Q301 419 304 443Q271 430 253 464L230 475Q222 437 250 426Z" fill="#071e21"/>
+<path d="M312 697Q327 624 344 612L347 565Q320 542 317 509Q309 484 323 454Q345 412 381 431Q405 458 386 500L379 541L373 569L391 602Q417 612 431 695Z" fill="#092c2b"/>
+<g fill="none" stroke="#d7cd9e" stroke-width="4" opacity=".65"><path d="M337 319L377 410L349 482L415 523L373 574L449 644"/><path d="M377 410L447 392M349 482L313 523M415 523L450 485M373 574L325 643"/></g>
+<g fill="none" stroke="#d6ae5f" stroke-width="4"><path d="M125 727H475M141 740H459"/><path d="M192 357Q300 263 408 357" opacity=".7"/></g>
+<g fill="#d0aa63"><circle cx="300" cy="291" r="14"/><circle cx="130" cy="716" r="11"/><circle cx="470" cy="716" r="11"/></g>
+<text x="300" y="813" font-family="Georgia,'Times New Roman',serif" text-anchor="middle" font-size="33" letter-spacing="6" fill="#f0d89e">OSCAR WILDE</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#cfa96c">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>

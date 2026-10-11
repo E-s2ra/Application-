@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">The Metamorphosis — Franz Kafka</title><desc id="description">Modernist cream, vermilion and charcoal cover featuring a monumental geometric beetle.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><linearGradient id="cream" x2="0" y2="1"><stop stop-color="#f5e9d4"/><stop offset="1" stop-color="#e0cbae"/></linearGradient><pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><path d="M0 0V12" stroke="#d25a42" stroke-width="3" opacity=".5"/></pattern></defs>
+
+<rect width="600" height="900" fill="url(#cream)"/>
+<path d="M0 0H36V900H0ZM564 0H600V900H564Z" fill="#312d2a"/>
+<path d="M54 54H546M54 848H546" stroke="#382f2b" stroke-width="2"/>
+<circle cx="300" cy="535" r="212" fill="#d84b34"/>
+<circle cx="300" cy="535" r="179" fill="#e36b49"/>
+<path d="M87 535a213 213 0 0 0 426 0" fill="url(#hatch)"/>
+<g fill="#292626">
+<ellipse cx="300" cy="570" rx="111" ry="156"/>
+<path d="M299 415Q224 437 210 525Q227 602 295 667V415ZM301 415Q376 437 390 525Q373 602 305 667V415Z" fill="#181919" stroke="#e16651" stroke-width="4"/>
+<ellipse cx="300" cy="437" rx="65" ry="59"/>
+<circle cx="300" cy="393" r="31"/>
+</g>
+<g fill="none" stroke="#232424" stroke-width="15" stroke-linecap="round">
+<path d="M216 496L142 454L109 397M203 559L123 556L89 608M224 629L158 707L152 754M384 496L458 454L491 397M397 559L477 556L511 608M376 629L442 707L448 754"/>
+</g>
+<g fill="none" stroke="#292626" stroke-width="7" stroke-linecap="round"><path d="M283 370L258 330L241 315M317 370L342 330L359 315"/></g>
+<g text-anchor="middle" fill="#211e1c" font-family="Arial Black,Impact,Arial,sans-serif" font-weight="900">
+<text x="300" y="116" font-size="34" letter-spacing="13">THE</text>
+<text x="300" y="203" font-size="85" letter-spacing="-5">META</text>
+<text x="300" y="279" font-size="59" letter-spacing="-2">MORPHOSIS</text>
+</g>
+<rect x="64" y="790" width="472" height="2" fill="#211e1c"/>
+<text x="300" y="826" fill="#292626" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" letter-spacing="6">FRANZ KAFKA</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#292626">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>

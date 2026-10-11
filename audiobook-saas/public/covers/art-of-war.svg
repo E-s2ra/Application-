@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">The Art of War — Sun Tzu</title><desc id="description">Ink-brush woodblock landscape on aged rice paper with a red rising sun and sword.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><linearGradient id="rice" x2="0" y2="1"><stop stop-color="#f0e3c6"/><stop offset="1" stop-color="#dbcaab"/></linearGradient><linearGradient id="sun" x2="1" y2="1"><stop stop-color="#cf4831"/><stop offset="1" stop-color="#9f2b26"/></linearGradient></defs>
+
+<rect width="600" height="900" fill="url(#rice)"/>
+<rect x="30" y="30" width="540" height="840" fill="none" stroke="#161e1d" stroke-width="3"/>
+<g fill="#202322">
+<rect x="47" y="47" width="8" height="80"/><rect x="545" y="47" width="8" height="80"/>
+<rect x="47" y="772" width="8" height="80"/><rect x="545" y="772" width="8" height="80"/>
+</g>
+<text x="300" y="144" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="82" font-weight="bold" letter-spacing="-4" fill="#222522">THE ART</text>
+<text x="300" y="231" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="97" font-weight="bold" letter-spacing="-4" fill="#222522">OF WAR</text>
+<path d="M91 265H510" stroke="#222522" stroke-width="2"/>
+<circle cx="348" cy="464" r="155" fill="url(#sun)"/>
+<circle cx="348" cy="464" r="143" fill="none" stroke="#e98a66" opacity=".36" stroke-width="2"/>
+<g fill="#1e2928">
+<path d="M0 696L71 622L121 635L225 512L290 588L342 536L407 618L470 564L555 650L600 634V900H0Z"/>
+<path d="M0 762L85 711L175 752L293 646L378 702L478 665L600 737V900H0Z" fill="#35413a"/>
+<path d="M0 809L99 784L213 810L323 772L429 805L529 783L600 811V900H0Z" fill="#111e1c"/>
+</g>
+<g fill="none" stroke="#e7dcc6" opacity=".55" stroke-width="4"><path d="M116 642L216 530L267 592M290 661L371 706L470 668"/></g>
+<g transform="rotate(32 298 493)">
+<path d="M295 301L309 301L314 621L288 621Z" fill="#ebe0c5" stroke="#1f2423" stroke-width="6"/>
+<path d="M288 321L315 321L304 274Z" fill="#28302d"/>
+<rect x="255" y="615" width="95" height="16" rx="4" fill="#161e1d"/>
+<rect x="289" y="627" width="26" height="123" rx="12" fill="#1e2422"/>
+<path d="M292 645L312 645M292 669L312 669M292 693L312 693M292 717L312 717" stroke="#bfaa86" stroke-width="4"/>
+</g>
+<g fill="#a4382b"><rect x="68" y="663" width="59" height="59"/><path d="M78 681H118M85 676V710M109 676V710M78 706H118" stroke="#e8cab1" stroke-width="4"/></g>
+<text x="300" y="824" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="37" letter-spacing="9" fill="#1e2928">SUN TZU</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#202322">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>

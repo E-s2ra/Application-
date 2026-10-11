@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">Jane Eyre — Charlotte Brontë</title><desc id="description">Gothic moorland silhouette, glowing copper moon, Victorian ornament and solitary manor.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><linearGradient id="moor" x2="0" y2="1"><stop stop-color="#422b43"/><stop offset=".6" stop-color="#693f44"/><stop offset="1" stop-color="#1b2831"/></linearGradient><radialGradient id="moon"><stop stop-color="#f8dfb0"/><stop offset=".8" stop-color="#e2ad7f"/><stop offset="1" stop-color="#b77962"/></radialGradient></defs>
+
+<rect width="600" height="900" fill="url(#moor)"/>
+<rect x="30" y="29" width="540" height="842" fill="none" stroke="#c99c78" stroke-width="2"/>
+<path d="M76 76H524M76 291H524M76 815H524" stroke="#d0a887" stroke-width="1.5" opacity=".65"/>
+<g fill="none" stroke="#ca9e7f" stroke-width="3"><path d="M77 55Q145 100 211 55Q250 31 300 69Q350 31 389 55Q455 100 523 55"/><path d="M77 842Q145 797 211 842Q250 866 300 828Q350 866 389 842Q455 797 523 842"/></g>
+<text x="300" y="164" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="116" letter-spacing="1" fill="#f1d9b6">JANE</text>
+<text x="300" y="268" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="111" letter-spacing="1" fill="#f1d9b6">EYRE</text>
+<circle cx="314" cy="488" r="175" fill="url(#moon)"/>
+<circle cx="314" cy="488" r="156" fill="none" stroke="#f8e3c3" stroke-width="2" opacity=".5"/>
+<path d="M0 644L87 611L145 636L236 582L303 614L398 558L474 600L600 562V900H0Z" fill="#3d3940"/>
+<path d="M0 705L112 661L204 700L317 649L414 701L519 659L600 687V900H0Z" fill="#252b34"/>
+<g fill="#1d2730">
+<path d="M364 609V476L385 458V427L397 410L411 428V458L430 473V608Z"/>
+<rect x="335" y="521" width="115" height="91"/>
+<path d="M335 521L391 477L450 521Z"/>
+<rect x="356" y="495" width="15" height="53"/>
+<path d="M353 495L364 477L374 495Z"/>
+<rect x="425" y="498" width="14" height="48"/>
+<path d="M421 498L432 481L442 498Z"/>
+</g>
+<g fill="#e4b487"><rect x="382" y="523" width="12" height="27"/><rect x="352" y="555" width="10" height="22"/><rect x="425" y="555" width="10" height="22"/></g>
+<path d="M0 769Q90 722 174 773T348 777T600 749V900H0Z" fill="#17232b"/>
+<path d="M311 757Q304 728 290 706Q275 675 286 643L293 624Q284 610 289 598Q300 581 314 595Q326 607 318 627L327 657Q343 702 347 760Z" fill="#101b27"/>
+<path d="M306 628L349 671L368 702L340 684L315 664Z" fill="#101b27"/>
+<path d="M0 833Q117 802 260 823T600 811" stroke="#ad806d" stroke-width="3" fill="none" opacity=".7"/>
+<text x="300" y="797" text-anchor="middle" fill="#f1d4ae" font-family="Georgia,serif" font-size="32" letter-spacing="3">CHARLOTTE BRONTË</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#eccba5">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>

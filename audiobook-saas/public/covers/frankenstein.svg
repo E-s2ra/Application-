@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title description">
+<title id="title">Frankenstein — Mary Shelley</title><desc id="description">Acid chartreuse and stark black constructivist collage with a stitched face and lightning.</desc>
+<defs><filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".58" numOctaves="3" seed="7" stitchTiles="stitch"/></filter><linearGradient id="acid" x2="1" y2="1"><stop stop-color="#e8f889"/><stop offset="1" stop-color="#b8d74e"/></linearGradient><pattern id="cross" width="27" height="27" patternUnits="userSpaceOnUse"><path d="M0 13.5H27M13.5 0V27" stroke="#547125" opacity=".22" stroke-width="1"/></pattern></defs>
+
+<rect width="600" height="900" fill="url(#acid)"/>
+<rect width="600" height="900" fill="url(#cross)"/>
+<rect x="27" y="27" width="546" height="846" stroke="#18231f" stroke-width="8" fill="none"/>
+<rect x="49" y="46" width="502" height="230" fill="#141c1b"/>
+<g fill="#e7f68d" text-anchor="middle" font-family="Arial Black,Impact,Arial,sans-serif" font-weight="900">
+<text x="300" y="139" font-size="79" letter-spacing="-5">FRANKEN</text>
+<text x="300" y="242" font-size="112" letter-spacing="-7">STEIN</text>
+</g>
+<g fill="#f7fbcc"><path d="M72 320L145 392L105 427L189 501L131 499L75 590L98 460L50 431Z"/><path d="M510 299L444 387L487 415L399 498L454 492L510 579L486 450L549 415Z"/></g>
+<g fill="#1b2221">
+<path d="M190 743L196 631Q153 588 155 500Q155 422 201 379L205 343L391 343L397 379Q445 435 447 507Q451 591 404 629L412 743Z"/>
+<path d="M156 470L126 465L134 531L160 535ZM445 470L472 465L467 531L445 535Z"/>
+</g>
+<path d="M211 368L388 368V495H211Z" fill="#43564d"/>
+<path d="M211 368H388L383 425L331 441L260 420L216 464Z" fill="#141c1b"/>
+<path d="M199 524Q218 602 277 627L297 638Q345 620 382 573L397 522V578Q369 661 303 673Q227 653 199 579Z" fill="#8ba276"/>
+<g fill="#f0efbd">
+<rect x="228" y="492" width="49" height="16" rx="4" transform="rotate(-8 228 492)"/>
+<rect x="328" y="492" width="49" height="16" rx="4" transform="rotate(8 328 492)"/>
+</g>
+<g stroke="#111c1b" stroke-width="8" stroke-linecap="round"><path d="M257 563L344 563M303 516L294 562L312 562"/><path d="M250 595L358 595" stroke-width="3"/></g>
+<g fill="none" stroke="#d5e7a3" stroke-width="5"><path d="M300 360V450L275 479L307 505L293 554L327 587L307 664"/><path d="M293 554L249 568"/></g>
+<g stroke="#1b2221" stroke-width="5"><path d="M260 602L260 587M284 602L284 587M310 602L310 587M337 602L337 587"/></g>
+<g fill="#151d1b"><rect x="164" y="509" width="35" height="19"/><rect x="401" y="509" width="35" height="19"/></g>
+<path d="M55 767H545" stroke="#1d2722" stroke-width="7"/>
+<text x="300" y="826" text-anchor="middle" fill="#1d2722" font-family="Arial Black,Impact,Arial,sans-serif" font-weight="800" font-size="39" letter-spacing="3">MARY SHELLEY</text>
+
+<text transform="translate(18 769) rotate(-90)" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="600" letter-spacing="3" fill="#18231f">DENG AUDIO CLASSICS</text>
+<rect width="600" height="900" fill="#fff" filter="url(#grain)" opacity=".055" style="mix-blend-mode:soft-light" pointer-events="none"/>
+</svg>
