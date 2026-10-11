@@ -70,7 +70,7 @@
 }
 .deng-lib__header-right button:hover, .deng-lib__collection-footer button:hover { color: #5b7149; border-color: #5b7149; }
 
-/* Real WebGL corner, with a small editorial selection plate over the lower edge. */
+/* The room remains the main attraction; book details live in a separate lightbox. */
 .deng-lib__room {
   position: relative;
   isolation: isolate;
@@ -95,92 +95,6 @@
   -webkit-user-select: none;
   user-select: none;
 }
-.deng-lib__room-top {
-  position: absolute;
-  z-index: 3;
-  left: 22px;
-  right: 22px;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  pointer-events: none;
-  color: #44483f;
-  font-size: 9px;
-  font-weight: 810;
-  letter-spacing: .16em;
-  line-height: 1.4;
-  text-shadow: 0 1px 9px #f7f4e6;
-}
-.deng-lib__room-top { top: 23px; }
-.deng-lib__room-top { justify-content: flex-end; text-align: right; }
-
-.deng-lib__selected {
-  position: absolute;
-  z-index: 5;
-  bottom: 54px;
-  right: 26px;
-  width: min(355px, 38%);
-  min-width: 286px;
-  padding: 19px 21px 17px;
-  background: #faf8f0f5;
-  border: 1px solid rgb(51 51 37 / 14%);
-  box-shadow: 12px 16px 35px #28271824;
-  backdrop-filter: blur(14px);
-}
-.deng-lib__selected-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #d9d7cd;
-}
-.deng-lib__selected-index, .deng-lib__selected-mark {
-  font-size: 9px;
-  font-weight: 780;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: #747b6c;
-}
-.deng-lib__selected-mark { color: #4e6447; }
-.deng-lib__selected-main { display: flex; align-items: center; gap: 14px; padding: 14px 0 17px; }
-.deng-lib__selected-main > img {
-  display: block;
-  width: 49px;
-  height: 73px;
-  flex: 0 0 49px;
-  object-fit: cover;
-  box-shadow: 2px 3px 6px #13171833;
-}
-.deng-lib__selected-main > div { min-width: 0; }
-.deng-lib__selected-main h2 {
-  margin: 0 0 5px;
-  font: 400 clamp(24px, 2.65vw, 34px)/1.06 var(--lr-serif);
-  letter-spacing: -.025em;
-  overflow-wrap: anywhere;
-}
-.deng-lib__selected-main p { margin: 0; color: #808174; font-size: 11px; line-height: 1.5; }
-.deng-lib__selected-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; border-top: 1px solid #d9d7cd; }
-.deng-lib__selected-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 45px;
-  flex: 1;
-  border: 0;
-  border-right: 1px solid #d9d7cd;
-  background: transparent;
-  color: #31382d;
-  font-size: 11px;
-  font-weight: 740;
-}
-.deng-lib__selected-actions button:first-child { justify-content: flex-start; }
-.deng-lib__selected-actions button:last-child { border-right: 0; justify-content: flex-end; }
-.deng-lib__selected-actions button:hover { color: #64863f; }
-.deng-lib__select-invite > span { color: #788472; font-size: 10px; font-weight: 780; letter-spacing: .1em; }
-.deng-lib__select-invite p { margin: 12px 0 0; font: 400 27px/1.14 var(--lr-serif); }
 .deng-lib__room-loading { display: grid; place-items: center; height: 100%; color: #606657; font: italic 29px var(--lr-serif); }
 
 /* Explicit, readable fallback. No blank WebGL rectangle on unsupported devices. */
@@ -317,7 +231,6 @@
   min-width: 0;
   transition: background .16s ease;
 }
-.deng-lib__book-list li.is-selected { background: #ecefe3; }
 .deng-lib__row-index { align-self: center; color: #a0a398; font: italic 23px var(--lr-serif); text-align: center; }
 .deng-lib__row-book {
   display: flex;
@@ -385,7 +298,6 @@
 @media (max-width: 860px) {
   .app-page.deng-lib { padding: 27px 24px 110px; }
   .deng-lib__room-canvas { height: 620px; }
-  .deng-lib__selected { right: 18px; bottom: 42px; width: 312px; min-width: 0; }
   .deng-lib__resume { grid-template-columns: minmax(0,1fr) auto; }
   .deng-lib__resume-track { grid-column: 1/-1; grid-row: 2; }
 }
@@ -400,24 +312,6 @@
   .deng-lib__header-right button svg { width: 21px; height: 21px; }
   .deng-lib__room { border: 0; }
   .deng-lib__room-canvas { height: clamp(425px, 130vw, 560px); border: 1px solid #c3c6b9; }
-  .deng-lib__room-top { top: 14px; left: 14px; right: 14px; font-size: 8px; }
-  .deng-lib__room-top > :first-child { display: block; margin-left: auto; }
-  .deng-lib__selected {
-    position: relative;
-    bottom: auto;
-    right: auto;
-    width: 100%;
-    min-width: 0;
-    padding: 16px 14px 11px;
-    box-shadow: none;
-    border: 1px solid #c8cabe;
-    border-top: 0;
-    backdrop-filter: none;
-    background: #f9f7f0;
-  }
-  .deng-lib__selected-main { padding: 10px 0 14px; }
-  .deng-lib__selected-main h2 { font-size: 27px; }
-  .deng-lib__selected-actions button { min-height: 43px; }
   .deng-lib__resume { padding: 20px 0; grid-template-columns: minmax(0,1fr) auto; gap: 13px; }
   .deng-lib__resume > div:first-child { align-items: start; flex-direction: column; gap: 8px; }
   .deng-lib__resume > div:first-child > button { font-size: 24px; }
@@ -449,6 +343,318 @@
 
 @media (prefers-reduced-motion: reduce) {
   .deng-lib *, .deng-lib *::before, .deng-lib *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}
+
+/* The hardcover lives in a BODY portal. All selectors below are intentionally global. */
+.deng-booklight {
+  --bl-paper: #f7f4eb;
+  --bl-ink: #1d221c;
+  --bl-lime: #dbf7a6;
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  color: var(--bl-paper);
+  font-family: 'Manrope', 'DM Sans', sans-serif;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 58px clamp(22px, 4vw, 66px);
+  -webkit-font-smoothing: antialiased;
+}
+.deng-booklight, .deng-booklight *,
+.deng-booklight *::before, .deng-booklight *::after { box-sizing: border-box; }
+.deng-booklight button { appearance: none; border-radius: 0; cursor: pointer; font: inherit; }
+.deng-booklight button:focus-visible { outline: 2px solid #def8aa; outline-offset: 5px; }
+.deng-booklight__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgb(16 19 15 / .64);
+  -webkit-backdrop-filter: blur(13px) saturate(.8);
+  backdrop-filter: blur(13px) saturate(.8);
+  opacity: 1;
+  transition: opacity 540ms ease, -webkit-backdrop-filter 540ms ease, backdrop-filter 540ms ease;
+}
+.deng-booklight--opening .deng-booklight__backdrop,
+.deng-booklight--closing .deng-booklight__backdrop { opacity: 0; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); }
+.deng-booklight__dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 730px);
+  min-width: 0;
+  margin: auto;
+  padding: clamp(35px, 3.7vw, 59px) 8px 25px;
+  outline: none;
+}
+.deng-booklight__dialog::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: #e1e9d52e;
+  pointer-events: none;
+}
+.deng-booklight__close {
+  position: absolute;
+  z-index: 5;
+  top: -31px;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 43px;
+  padding: 4px 0 4px 12px;
+  border: 0;
+  background: transparent;
+  color: #efefe5;
+  font-size: 12px !important;
+  font-weight: 680 !important;
+}
+.deng-booklight__close:hover { color: var(--bl-lime); }
+.deng-booklight__book-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  width: 100%;
+  min-height: min(58vh, 560px);
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+.deng-booklight__cover-flight {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 344px);
+  aspect-ratio: 2 / 3;
+  transform-origin: top left;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.deng-booklight__hardcover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform: rotateY(-8deg) rotateZ(-2.2deg);
+  transform-style: preserve-3d;
+  filter: drop-shadow(28px 33px 25px rgb(0 0 0 / .45));
+  transition: transform 520ms cubic-bezier(.19, 1, .27, 1);
+}
+.deng-booklight--open .deng-booklight__book-stage:hover .deng-booklight__hardcover {
+  transform: rotateY(-4deg) rotateZ(-1deg) translateY(-5px);
+}
+.deng-booklight__hardcover > img {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: 2 / 3;
+  border-radius: 1px 3px 3px 1px;
+  box-shadow: inset 4px 0 11px rgb(0 0 0 / .4);
+}
+.deng-booklight__hardcover::after {
+  content: '';
+  position: absolute;
+  z-index: 4;
+  inset: 0 auto 0 0;
+  width: 15px;
+  background: linear-gradient(90deg, rgb(0 0 0 / .36), rgb(255 255 255 / .15) 35%, rgb(0 0 0 / .13) 70%, transparent);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.deng-booklight__spine {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 23px;
+  background: #272e26;
+  transform: rotateY(-84deg) translateZ(0);
+  transform-origin: left center;
+  box-shadow: inset 0 0 9px #0008;
+}
+.deng-booklight__pages {
+  position: absolute;
+  z-index: 1;
+  top: 5px;
+  right: -11px;
+  width: 13px;
+  height: calc(100% - 10px);
+  background: repeating-linear-gradient(90deg, #e8e0d1 0 1px, #c5bfaf 1px 2px, #ede7d8 2px 3px);
+  transform: rotateY(78deg);
+  transform-origin: left center;
+  box-shadow: 5px 3px 8px #0004;
+}
+.deng-booklight__stage-shadow {
+  position: absolute;
+  z-index: 0;
+  width: min(75%, 340px);
+  height: 25px;
+  bottom: 2%;
+  left: calc(50% - min(38%, 170px));
+  border-radius: 50%;
+  background: rgb(0 0 0 / .5);
+  filter: blur(19px);
+  transform: rotate(-3deg);
+  opacity: .8;
+  transition: opacity 420ms ease;
+}
+.deng-booklight__details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: min(100%, 670px);
+  min-width: 0;
+  padding: 0;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 410ms ease 130ms, transform 520ms cubic-bezier(.2,.75,.22,1) 90ms;
+}
+.deng-booklight--opening .deng-booklight__details,
+.deng-booklight--closing .deng-booklight__details {
+  opacity: 0;
+  transform: translateY(25px);
+  transition-delay: 0ms;
+  pointer-events: none;
+}
+.deng-booklight__genre {
+  color: #c1cbb6;
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.deng-booklight__details h2 {
+  margin: 0 0 5px;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(43px, 5vw, 71px);
+  font-weight: 400;
+  letter-spacing: -.046em;
+  line-height: .94;
+  overflow-wrap: anywhere;
+}
+.deng-booklight__author {
+  margin: 0;
+  color: #dde0d2;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(18px, 2vw, 26px);
+}
+.deng-booklight__description {
+  margin: 41px 0 0;
+  max-width: 430px;
+  color: #d1d3c9;
+  font-size: clamp(13px, 1.15vw, 16px);
+  line-height: 1.75;
+}
+.deng-booklight__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  width: 100%;
+  margin-top: 32px;
+  padding-top: 17px;
+  border-top: 1px solid #ecefe829;
+  color: #a7b0a4;
+  font-size: 11px;
+}
+.deng-booklight__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 25px;
+  margin-top: 24px;
+  width: 100%;
+}
+.deng-booklight__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 2px;
+  border: 0;
+  border-bottom: 1px solid #e7eddb87;
+  color: #e7e9e0;
+  background: none;
+  font-size: 12px;
+  font-weight: 710;
+  text-align: left;
+  transition: color .2s ease, background .2s ease;
+}
+.deng-booklight__actions button:hover { color: var(--bl-lime); border-bottom-color: var(--bl-lime); }
+.deng-booklight__actions .deng-booklight__play {
+  justify-content: space-between;
+  flex: 0 0 auto;
+  min-width: 168px;
+  min-height: 53px;
+  padding: 12px 17px;
+  border: 1px solid var(--bl-lime);
+  background: var(--bl-lime);
+  color: #1f281d;
+  font-size: 14px;
+  font-weight: 810;
+}
+.deng-booklight__play:hover { background: #f2ffcb !important; color: #192017 !important; }
+.deng-booklight__availability {
+  margin: 21px 0 0;
+  color: #b2b7a9;
+  font-size: 11px;
+}
+
+@media (max-width: 860px) {
+  .deng-booklight__book-stage { min-height: min(55vh, 530px); }
+  .deng-booklight__cover-flight { width: min(100%, 300px); }
+  .deng-booklight__details h2 { font-size: clamp(41px, 6vw, 65px); }
+}
+
+@media (max-width: 690px) {
+  .deng-booklight { padding: 28px 20px 42px; align-items: start; }
+  .deng-booklight__dialog {
+    gap: 11px;
+    max-width: 430px;
+    padding: 46px 0 20px;
+  }
+  .deng-booklight__close { top: -4px; right: 0; min-height: 42px; }
+  .deng-booklight__book-stage { min-height: 325px; height: clamp(305px, 47vh, 415px); }
+  .deng-booklight__cover-flight { width: min(53vw, 225px); }
+  .deng-booklight__hardcover { transform: rotateY(-7deg) rotateZ(-3deg); }
+  .deng-booklight__stage-shadow { bottom: 0; width: 220px; left: calc(50% - 110px); }
+  .deng-booklight__details { padding: 5px 0 0; }
+  .deng-booklight__genre { font-size: 9px; }
+  .deng-booklight__details h2 { margin: 0 0 3px; font-size: clamp(36px, 10vw, 55px); }
+  .deng-booklight__author { font-size: 20px; }
+  .deng-booklight__description { margin-top: 20px; font-size: 13px; line-height: 1.6; }
+  .deng-booklight__facts { margin-top: 18px; padding-top: 14px; }
+  .deng-booklight__actions { margin-top: 20px; gap: 7px 22px; }
+  .deng-booklight__actions button { min-height: 45px; }
+  .deng-booklight__actions .deng-booklight__play { flex: 1 0 100%; min-height: 54px; max-width: none; }
+  .deng-booklight__availability { margin-top: 14px; }
+}
+@media (max-width: 380px) {
+  .deng-booklight { padding-inline: 16px; }
+  .deng-booklight__book-stage { min-height: 290px; height: 305px; }
+  .deng-booklight__cover-flight { width: 51vw; }
+  .deng-booklight__details h2 { font-size: 39px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deng-booklight *, .deng-booklight *::before, .deng-booklight *::after {
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
   }

@@ -1,5 +1,5 @@
-import { Component, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Canvas, type ThreeEvent } from '@react-three/fiber'
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera, useCursor, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { books, coverFor, type Book } from './books'
@@ -7,9 +7,12 @@ import { books, coverFor, type Book } from './books'
 type LibraryRoomProps = {
   saved: Book[]
   selectedId: string | null
-  onSelect: (book: Book) => void
+  onSelect: (book: Book, origin?: BookScreenOrigin) => void
   className?: string
 }
+
+/** CSS pixels measured against the viewport, NOT against the WebGL canvas. */
+export type BookScreenOrigin = { x: number; y: number; width: number; height: number }
 
 type Point3 = [number, number, number]
 
@@ -229,21 +232,6 @@ function SideTable({ oak }: { oak: THREE.Texture }) {
   )
 }
 
-function BackgroundBook({ position, index, rotation = 0 }: { position: Point3; index: number; rotation?: number }) {
-  const width = .18 + (index % 4) * .038
-  const height = 1.08 + (index % 5) * .09
-  const color = JACKET_COLORS[index % JACKET_COLORS.length]
-  return (
-    <group position={[position[0], position[1] + height / 2, position[2]]} rotation={[0, rotation, 0]}>
-      <Block position={[0, 0, 0]} size={[width, height, .31]} color={color} roughness={.87} />
-      <Block position={[width / 2 + .004, 0, 0]} size={[.009, height - .075, .24]} color="#dfd1af" castShadow={false} />
-      <Block position={[0, height / 2 + .005, 0]} size={[width - .035, .008, .26]} color="#e9dcbc" castShadow={false} />
-      <Block position={[-width / 2 - .004, -.13, .05]} size={[.012, .022, .22]} color="#b49b64" castShadow={false} />
-      <Block position={[-width / 2 - .004, .14, .05]} size={[.012, .018, .22]} color="#b49b64" castShadow={false} />
-    </group>
-  )
-}
-
 /**
  * A genuine six-faced volume: jacket, visible paper block, spine, top page edge
  * and back boards have thickness. Only the front cover is a texture plane.
@@ -260,12 +248,17 @@ function BookVolume({
   position: Point3
   rotation: number
   selected: boolean
-  onSelect: (book: Book) => void
+  onSelect: (book: Book, origin?: BookScreenOrigin) => void
   order: number
 }) {
   const cover = useTexture(coverFor(book))
   const [hovered, setHovered] = useState(false)
   useCursor(hovered)
+  const animatedRef = useRef<THREE.Group>(null)
+  const coverRef = useRef<THREE.Mesh>(null)
+  const hoverRef = useRef(false)
+  const reducedRef = useRef(false)
+  const { camera, gl, invalidate } = useThree()
   const w = .68 + (order % 4) * .035
   const h = 1.44 + (order % 5) * .065
   const d = .16 + (order % 3) * .044
@@ -276,19 +269,92 @@ function BookVolume({
     cover.anisotropy = 4
   }, [cover])
 
+  useEffect(() => {
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    reducedRef.current = motion.matches
+    const listener = () => {
+      reducedRef.current = motion.matches
+      invalidate()
+    }
+    motion.addEventListener('change', listener)
+    return () => motion.removeEventListener('change', listener)
+  }, [invalidate])
+
+  // R3F uses demand rendering. Schedule the next frame only while the physical
+  // cover is still moving: silky hover without an always-running render loop.
+  useFrame((_, dt) => {
+    const animated = animatedRef.current
+    if (!animated) return
+    const active = hoverRef.current && !selected && !reducedRef.current
+    const y = active ? .15 : 0
+    const z = active ? .46 : 0
+    const tip = active ? -.055 : 0
+    const speed = reducedRef.current ? 80 : 12
+    const step = Math.min(dt, .05)
+    animated.position.y = THREE.MathUtils.damp(animated.position.y, y, speed, step)
+    animated.position.z = THREE.MathUtils.damp(animated.position.z, z, speed, step)
+    animated.rotation.x = THREE.MathUtils.damp(animated.rotation.x, tip, speed, step)
+    if (Math.abs(animated.position.y - y) > .0007 ||
+        Math.abs(animated.position.z - z) > .0007 ||
+        Math.abs(animated.rotation.x - tip) > .0007) invalidate()
+  })
+
+  function projectedCover(): BookScreenOrigin | undefined {
+    const plane = coverRef.current
+    if (!plane) return
+    plane.updateWorldMatrix(true, false)
+    camera.updateWorldMatrix(true, false)
+    const bounds = gl.domElement.getBoundingClientRect()
+    if (!bounds.width || !bounds.height) return
+    // Exact corners of the FRONT artwork, including tilt, thickness and hover
+    // offset. Project them to viewport pixels so the overlay can FLIP outward.
+    const hw = (w - .008) / 2
+    const hh = (h - .008) / 2
+    const corners = [
+      [-hw, -hh], [-hw, hh], [hw, -hh], [hw, hh],
+    ] as const
+    const pixels = corners.map(([x, y]) => {
+      const point = plane.localToWorld(new THREE.Vector3(x, y, 0)).project(camera)
+      return {
+        x: bounds.left + (point.x + 1) * bounds.width / 2,
+        y: bounds.top + (1 - point.y) * bounds.height / 2,
+      }
+    })
+    const minX = Math.min(...pixels.map(p => p.x))
+    const minY = Math.min(...pixels.map(p => p.y))
+    const maxX = Math.max(...pixels.map(p => p.x))
+    const maxY = Math.max(...pixels.map(p => p.y))
+    if (![minX, minY, maxX, maxY].every(Number.isFinite)) return
+    return { x: minX, y: minY, width: Math.max(1, maxX - minX), height: Math.max(1, maxY - minY) }
+  }
+
   const click = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
-    onSelect(book)
+    // Do not open a book when the user finishes an OrbitControls drag.
+    if (event.delta > 6) return
+    onSelect(book, projectedCover())
   }
   return (
     <group
       position={[position[0], position[1] + h / 2, position[2]]}
-      rotation={[0, rotation, (order % 6 === 4 ? -.09 : .005)]}
+      rotation={[0, rotation, order % 7 === 4 ? -.025 : .005]}
+      visible={!selected}
       onClick={click}
-      onPointerOver={event => { event.stopPropagation(); setHovered(true) }}
-      onPointerOut={event => { event.stopPropagation(); setHovered(false) }}
+      onPointerOver={event => {
+        event.stopPropagation()
+        if (event.pointerType === 'touch' || selected) return
+        hoverRef.current = true
+        setHovered(true)
+        invalidate()
+      }}
+      onPointerOut={event => {
+        event.stopPropagation()
+        hoverRef.current = false
+        setHovered(false)
+        invalidate()
+      }}
     >
-      <group position={[0, hovered || selected ? .045 : 0, 0]}>
+      <group ref={animatedRef}>
         {/* Deliberately larger than the jacket to make phone selection practical. */}
         <mesh>
           <boxGeometry args={[w + .2, h + .09, d + .35]} />
@@ -300,17 +366,11 @@ function BookVolume({
         <Block position={[0, h / 2 - .031, 0]} size={[w - .065, .016, d - .04]} color="#f0e5cc" castShadow={false} />
         <Block position={[0, -h / 2 + .03, 0]} size={[w - .067, .016, d - .04]} color="#cabb9d" castShadow={false} />
         <Block position={[-w / 2 + .027, 0, .005]} size={[.045, h - .01, d + .015]} color={shade} />
-        <mesh position={[0, 0, d / 2 + .004]} castShadow>
+        <mesh ref={coverRef} position={[0, 0, d / 2 + .004]} castShadow>
           <planeGeometry args={[w - .008, h - .008]} />
           <meshStandardMaterial map={cover} roughness={.72} metalness={0} side={THREE.FrontSide} />
         </mesh>
         <Block position={[0, 0, -d / 2 - .005]} size={[w, h, .009]} color={shade} castShadow={false} />
-        {selected && (
-          <mesh position={[0, -h / 2 + .018, d / 2 + .011]}>
-            <boxGeometry args={[w + .06, .038, .045]} />
-            <meshStandardMaterial color="#d6bb80" metalness={.63} roughness={.36} emissive="#61471d" emissiveIntensity={.15} />
-          </mesh>
-        )}
       </group>
     </group>
   )
@@ -322,36 +382,32 @@ function ShelfContents({
   saved,
 }: {
   selectedId: string | null
-  onSelect: (book: Book) => void
+  onSelect: (book: Book, origin?: BookScreenOrigin) => void
   saved: Book[]
 }) {
   const arranged = useMemo(() => {
-    const kept = saved.slice(0, 7)
-    const keptIds = new Set(kept.map(book => book.id))
-    const rest = books.filter(book => !keptIds.has(book.id))
-    // Three distinct shelves: a central personally saved shelf and two curated rows.
-    const mid = kept.length ? kept : rest.splice(0, 5)
-    return [rest.slice(0, 5), mid, rest.slice(5, 11)]
+    // Every volume is backed by one catalogue record and shown exactly once.
+    // Saved titles occupy the central personal shelf; overflow remains real.
+    const savedIds = new Set(saved.map(book => book.id))
+    const kept = books.filter(book => savedIds.has(book.id))
+    const personal = kept.slice(0, 6)
+    const rest = [...kept.slice(6), ...books.filter(book => !savedIds.has(book.id))]
+    const upperCount = Math.ceil(rest.length / 2)
+    return [rest.slice(0, upperCount), personal, rest.slice(upperCount)]
   }, [saved])
 
   return (
     <group>
       {arranged.map((row, rowIndex) => {
         const y = ROW_BASES[rowIndex]
-        const slots = rowIndex === 1 ? [-4.7, -3.72, -2.76, -1.8, -.84, .12, 1.08] : [-4.65, -3.32, -1.99, -.66, .67, 1.98]
         return (
           <group key={rowIndex}>
-            {/* Anonymous physical book-spines quietly complete the furnished shelves. */}
-            {Array.from({ length: rowIndex === 1 ? 12 : 14 }, (_, i) => {
-              const x = -4.95 + i * .38
-              return <BackgroundBook key={i} index={rowIndex * 15 + i} position={[x, y, -1.47]} rotation={i % 6 === 2 ? -.14 : 0} />
-            })}
             {row.map((book, index) => (
-              <Suspense key={book.id} fallback={<BackgroundBook index={index + 20} position={[slots[index], y, -.85]} />}>
+              <Suspense key={book.id} fallback={null}>
                 <BookVolume
                   book={book}
-                  position={[slots[index], y, -.83 + (index % 3) * .045]}
-                  rotation={index % 4 === 1 ? -.25 : index % 4 === 2 ? .23 : -.065}
+                  position={[FRAME_X + (index - (row.length - 1) / 2) * 1.05, y, -.93]}
+                  rotation={index % 4 === 1 ? -.09 : index % 4 === 2 ? .075 : -.015}
                   selected={selectedId === book.id}
                   onSelect={onSelect}
                   order={rowIndex * 7 + index}
@@ -362,11 +418,11 @@ function ShelfContents({
         )
       })}
       {/* A ceramic sculptural vessel, rather than another UI badge. */}
-      <mesh position={[1.72, 1.47, -.97]} castShadow>
+      <mesh position={[2.12, 1.47, -.97]} castShadow>
         <cylinderGeometry args={[.22, .16, .48, 16]} />
         <meshStandardMaterial color="#d8cabc" roughness={.97} />
       </mesh>
-      <mesh position={[1.72, 1.75, -.97]}>
+      <mesh position={[2.12, 1.75, -.97]}>
         <cylinderGeometry args={[.09, .09, .06, 16]} />
         <meshStandardMaterial color="#e8d8c7" roughness={.95} />
       </mesh>
@@ -386,7 +442,7 @@ function LibraryScene({ saved, selectedId, onSelect, compact }: LibraryRoomProps
     <>
       <PerspectiveCamera
         makeDefault
-        position={compact ? [4.8, 3.9, 13.1] : [5.1, 3.55, 12.1]}
+        position={compact ? [-.6, 2.5, 13.8] : [-.05, 2.2, 12.7]}
         fov={compact ? 40 : 37.5}
         near={.1}
         far={65}
@@ -417,7 +473,7 @@ function LibraryScene({ saved, selectedId, onSelect, compact }: LibraryRoomProps
       <SideTable oak={oak} />
       <OrbitControls
         makeDefault
-        target={compact ? [-.65, -.85, -1.15] : [-.5, -.68, -1.15]}
+        target={compact ? [-.55, -.55, -1.15] : [-.15, -.55, -1.15]}
         enablePan={false}
         enableDamping
         dampingFactor={.065}
@@ -427,8 +483,8 @@ function LibraryScene({ saved, selectedId, onSelect, compact }: LibraryRoomProps
         maxDistance={compact ? 21 : 19}
         minPolarAngle={.95}
         maxPolarAngle={1.62}
-        minAzimuthAngle={-.67}
-        maxAzimuthAngle={.72}
+        minAzimuthAngle={-.3}
+        maxAzimuthAngle={.3}
         enableRotate
         enableZoom={false}
       />

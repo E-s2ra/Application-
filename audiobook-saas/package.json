@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "qa:visual": "node ./qa/visual-check.mjs",
     "qa:layout": "node ./qa/layout-audit.mjs",
-    "qa:functional": "node ./qa/functional-audit.mjs"
+    "qa:functional": "node ./qa/functional-audit.mjs",
+    "qa:library-motion": "node ./qa/library-motion-audit.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
